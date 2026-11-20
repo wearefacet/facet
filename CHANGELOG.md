@@ -2,7 +2,7 @@
 
 Notable changes to Facet. The project is pre-1.0: a release can contain breaking changes.
 
-## 0.1.0 — V1 beta (unreleased)
+## 0.2.0 — V1 beta (2026-11-20)
 
 First public beta: a document store with event sourcing for mid-sized organizations.
 

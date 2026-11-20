@@ -9,7 +9,7 @@
 [![E2E](https://github.com/wearefacet/facet/actions/workflows/e2e.yml/badge.svg)](https://github.com/wearefacet/facet/actions/workflows/e2e.yml)
 [![Docker images](https://github.com/wearefacet/facet/actions/workflows/docker.yml/badge.svg)](https://github.com/wearefacet/facet/actions/workflows/docker.yml)
 [![Release npm package](https://github.com/wearefacet/facet/actions/workflows/release-npm.yml/badge.svg)](https://github.com/wearefacet/facet/actions/workflows/release-npm.yml)
-[![version](https://img.shields.io/badge/version-0.1.0--beta-D9822B)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-0.2.0--beta-D9822B)](CHANGELOG.md)
 
 </div>
 
