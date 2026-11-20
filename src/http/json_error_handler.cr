@@ -32,12 +32,21 @@ module Facet
     # - `Kemal::Exceptions::InvalidQueryRequest` — a QUERY body without a
     #   `Content-Type` header → JSON 400 (RFC 10008).
     #
-    # - `PQ::PQError` — an unexpected database failure. One case is
-    #   expected and actionable: the concurrent-write race on the mutation
-    #   log (SQLSTATE 23505 on `idx_mutations_doc_id_idx`, detected by
-    #   `Helpers.mutation_write_conflict?`). It maps to a 409 with a retry
-    #   hint instead of an opaque 500. Every other database error keeps the
-    #   generic JSON 500.
+    # - `PQ::PQError` — an unexpected database failure. Two cases are
+    #   expected and actionable:
+    #
+    #   - the concurrent-write race on the mutation log (SQLSTATE 23505 on
+    #     `idx_mutations_doc_id_idx`, detected by
+    #     `Helpers.mutation_write_conflict?`) → 409 with a retry hint;
+    #   - a `unique: true` field constraint enforced by a managed unique
+    #     index (`idx_env_*`, detected by
+    #     `Helpers.projection_unique_conflict?`) → 422 with the conflicting
+    #     key named in `details`. The Crystal pre-check
+    #     (`Document::UniqueConstraint`) answers the common case; this maps
+    #     the race window where a competing write committed between the
+    #     check and the insert.
+    #
+    #   Every other database error keeps the generic JSON 500.
     #
     # Anything else is a genuine unexpected exception → JSON 500.
     class JsonErrorHandler < Kemal::Handler
@@ -81,6 +90,14 @@ module Facet
           # is the operator signal the error-log contract promises.
           Helpers::HTTP_LOG.warn { "#{env.request.method} #{env.request.path} → 409 #{MUTATION_CONFLICT_MESSAGE}" }
           write_error(env, 409, MUTATION_CONFLICT_MESSAGE)
+        elsif Helpers.projection_unique_conflict?(ex)
+          # A `unique: true` field constraint enforced by a managed unique
+          # index rejected the write — the race window the Crystal
+          # pre-check cannot close (a competing write committed between
+          # the check and the insert). Answers the same 422 shape the
+          # pre-check answers, with the conflicting key named in `details`.
+          Helpers::HTTP_LOG.warn { "#{env.request.method} #{env.request.path} → 422 unique field constraint" }
+          write_unique_conflict(env, ex)
         else
           # An unexpected database failure never names its SQL or constraint
           # in the response body — the class/message/backtrace stay in the
@@ -118,6 +135,17 @@ module Facet
         env.response.content_type = "application/json"
         Helpers.no_store(env)
         env.response.print({error: message}.to_json)
+      end
+
+      # Renders the 422 for a lost unique-index race: the standard error
+      # envelope plus the structured `details` array the document
+      # validation errors use, so clients branch on the same shape.
+      private def write_unique_conflict(env, ex : PQ::PQError) : Nil
+        env.response.status_code = 422
+        env.response.content_type = "application/json"
+        Helpers.no_store(env)
+        error = Helpers.projection_unique_conflict_error(ex)
+        env.response.print({error: "Document validation failed", details: [error]}.to_json)
       end
 
       # Kemal's `InitHandler` stamps `text/html` on every response before

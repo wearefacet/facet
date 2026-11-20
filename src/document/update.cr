@@ -96,116 +96,126 @@ module Facet
             return result
           end
 
-          # 0. Authorize the update. `skip_authorization` is set by callers
-          # that have ALREADY enforced an equivalent (or stronger) gate at a
-          # higher layer — today only the nested per-document sidecar route,
-          # which runs the host read gate plus the nested sidecar update grant.
-          if err = authorize_update(db, domain, doc_type, doc_id, auth_context, skip_authorization, authorize_path)
-            return Telemetry.record_error(span, err)
-          end
-
-          # 1-3. Fetch the definition, parse the patch, and validate it
-          #      against the doctype definition (partial update).
+          # 0-7. Lock the projection row first, then authorize, read, check,
+          #      and persist — all inside one transaction.
           #
-          #      Hydrate the currency registry first: the patch validation
-          #      (`MoneyType#validate`) and the lifecycle check below read
-          #      the in-process snapshot, which rebuilds here only after the
-          #      Pub/Sub subscriber marked it stale.
-          Currency::Registry.ensure_fresh(db)
-          parsed = parse_and_validate_patch(db, span, domain, doc_type, body, reentrant, auth_context, allow_computed_writes)
-          return Telemetry.record_error(span, parsed) if parsed.is_a?(Facet::ServiceError)
-          defn, patch = parsed
-
-          # 4. Fetch the current projection
-          projection = Mutation::Client.fetch_projection_or_404(db, domain, doc_type, doc_id, "Document #{domain}.#{doc_type}##{doc_id} not found")
-          if projection.is_a?(Facet::ServiceError)
-            Telemetry.record_error(span, projection)
-            return projection
-          end
-          projection = projection.as(Mutation::Client::Projection)
-
-          # 5. Check if document is deleted
-          return Telemetry.record_error(span, Facet::ServiceError.new(404, "Document #{doc_id} not found")) if projection.deleted_at
-
-          # 6. Deep-merge the patch over the current content
-          current = projection.content
-          merged = deep_merge(current, patch)
-
-          # 6a. Unique constraint check on the merged document. Only fields
-          # whose value changed in this update are queried; the target
-          # document's own row is excluded, so keeping an existing value is
-          # always a no-op for this check. Runs after the merge so it sees
-          # the exact state the mutation would land on.
-          if unique_error = check_unique_constraints(db, domain, doc_type, projection.id, current, merged, defn)
-            return Telemetry.record_error(span, unique_error)
-          end
-
-          # 6b. Currency lifecycle on the money paths this update touches.
-          # The check runs on the merged document against the stored
-          # content: a money path re-saved with the same ticker passes even
-          # when the currency row went inactive ("stays up and running");
-          # switching a path to a new ticker requires an active row.
-          # Unknown tickers already fail as `schema` errors in
-          # `MoneyType#validate` — the patch was validated before the merge,
-          # so `validate_patch` holds neither the old content nor the
-          # merged state; this seam holds both.
-          currency_errors = MoneyCurrencyCheck.check_update(defn, merged, current, currency_check_mode)
-          unless currency_errors.empty?
-            err = Facet::ServiceError.new(422, "Document validation failed", details: currency_errors)
-            return Telemetry.record_error(span, err)
-          end
-
-          # 6c. Authoring-time RBAC validation for role and domain documents.
-          # Re-checks the merged content so malformed or unknown-scope-alias
-          # permissions / context sets are rejected at PATCH time, not just at
-          # create time. Grant documents run the same dispatch (self-grant,
-          # resource shape, empty tags) against the producer parent.
-          if rbac_error = validate_rbac_definitions?(db, span, domain, doc_type, merged, projection, patch)
-            return rbac_error
-          end
-
-          # 6d–6e. Write-time semantic gates, one dispatch per doctype.
-          # The definition owns shape and the Lua script owns the singleton
-          # guards; these branches own every rule the definition cannot
-          # express (the settings singleton's smtp-host cross-field rule,
-          # the production dev-adapter gate with escape-hatch parity, the
-          # IAM policy enums, the `oidc_only` needs-a-provider rule, and
-          # the account email immutability). Bad values answer 422 at save
-          # time. One combined call keeps the complexity of `call` flat —
-          # each new gate joins the dispatch instead of the flow.
-          if gate_error = validate_semantic_gates?(db, span, domain, doc_type, current, merged)
-            return gate_error
-          end
-
-          # 6f. Role-authority boundary for the IAM doctypes. Runs on the
-          # merged content against the stored content, after normalization
-          # and structural validation, and before the lifecycle hook. The
-          # guard is independent of route-level `skip_authorization` — only
-          # the System principal bypasses it.
-          if auth_error = RBAC::RoleAuthority.authorize_transition(db, "update", domain, doc_type, current, merged, auth_context)
-            return Telemetry.record_error(span, auth_error)
-          end
-
-          # 7. Run the Lua update lifecycle hook (validate and/or mutate)
-          #    and re-run computed fields after mutation. The hook may write
-          #    unique fields, so the constraint check is deliberately not
-          #    repeated after it: the hook is trusted system code, and the
-          #    merged state below is what the mutation lands on.
+          #      The lock serialises every caller of `Update.call` per
+          #      document, not only the HTTP routes that pre-lock with
+          #      `lock_with_chain`. Internal writers (the Lua `document.update`
+          #      helper, IAM account patches, app deploy, parent recompute)
+          #      hold no such lock, so without this they read the projection
+          #      at step 4, run the merge, the unique and role-authority
+          #      checks, and the Lua hook against that read, and only meet
+          #      the row lock at the coalesce/persist step — where the
+          #      `state` read there is discarded, never compared. A write
+          #      that committed in between silently landed under them.
           #
-          #    The mutation ULID is minted first so the hook's Lua
-          #    `document.*` writes can stamp it as their `cause.parent`.
-          mut_id = Util::ScriptHelpers.ulid
-          merged, pending = run_script_update(span, db, defn, merged, current, actioner_id, domain, doc_type, doc_id, patch, cause: cause.try(&.child_of(mut_id)), provenance: provenance, auth_context: auth_context, authorize_path: authorize_path) do |err_merged|
-            return err_merged
+          #      Lock-then-read under READ COMMITTED: the `FOR UPDATE`
+          #      answers only after every competing writer committed, so
+          #      the fetch below sees the winning state and the derived
+          #      columns (search, display_name, links) staged from the
+          #      merged content can never drift from the content the
+          #      trigger lands.
+          result = Database.with_transaction(db, ignore_if_set: true) do |txn|
+            # The lock answers `false` for a missing row and for a
+            # tombstone — the same 404 the fetch used to answer at steps
+            # 4-5, now before any check runs.
+            unless RowAccess.lock_live_projection_for_update(txn, domain, doc_type, doc_id)
+              err = Facet::ServiceError.new(404, "Document #{domain}.#{doc_type}##{doc_id} not found")
+              next Telemetry.record_error(span, err)
+            end
+
+            # 0. Authorize the update. `skip_authorization` is set by callers
+            # that have ALREADY enforced an equivalent (or stronger) gate at a
+            # higher layer — today only the nested per-document sidecar route,
+            # which runs the host read gate plus the nested sidecar update grant.
+            if err = authorize_update(txn, domain, doc_type, doc_id, auth_context, skip_authorization, authorize_path)
+              next Telemetry.record_error(span, err)
+            end
+
+            # 1-3. Fetch the definition, parse the patch, and validate it
+            #      against the doctype definition (partial update).
+            #
+            #      Hydrate the currency registry first: the patch validation
+            #      (`MoneyType#validate`) and the lifecycle check below read
+            #      the in-process snapshot, which rebuilds here only after the
+            #      Pub/Sub subscriber marked it stale.
+            Currency::Registry.ensure_fresh(txn)
+            parsed = parse_and_validate_patch(txn, span, domain, doc_type, body, reentrant, auth_context, allow_computed_writes)
+            next Telemetry.record_error(span, parsed) if parsed.is_a?(Facet::ServiceError)
+            defn, patch = parsed
+
+            # 4. Fetch the current projection
+            projection = Mutation::Client.fetch_projection_or_404(txn, domain, doc_type, doc_id, "Document #{domain}.#{doc_type}##{doc_id} not found")
+            if projection.is_a?(Facet::ServiceError)
+              Telemetry.record_error(span, projection)
+              next projection
+            end
+            projection = projection.as(Mutation::Client::Projection)
+
+            # 5. Check if document is deleted. Unreachable through the lock
+            #    above (a tombstone answers `false` there); kept as the
+            #    cheap explicit guard it always was.
+            next Telemetry.record_error(span, Facet::ServiceError.new(404, "Document #{doc_id} not found")) if projection.deleted_at
+
+            # 6. Deep-merge the patch over the current content
+            current = projection.content
+            merged = deep_merge(current, patch)
+
+            # 6a. Unique constraint check on the merged document. Only fields
+            # whose value changed in this update are queried; the target
+            # document's own row is excluded, so keeping an existing value is
+            # always a no-op for this check. Runs after the merge so it sees
+            # the exact state the mutation would land on.
+            if unique_error = check_unique_constraints(txn, domain, doc_type, projection.id, current, merged, defn)
+              next Telemetry.record_error(span, unique_error)
+            end
+
+            # 6b. Currency lifecycle on the money paths this update touches.
+            # The check runs on the merged document against the stored
+            # content: a money path re-saved with the same ticker passes even
+            # when the currency row went inactive ("stays up and running");
+            # switching a path to a new ticker requires an active row.
+            # Unknown tickers already fail as `schema` errors in
+            # `MoneyType#validate` — the patch was validated before the merge,
+            # so `validate_patch` holds neither the old content nor the
+            # merged state; this seam holds both.
+            currency_errors = MoneyCurrencyCheck.check_update(defn, merged, current, currency_check_mode)
+            unless currency_errors.empty?
+              err = Facet::ServiceError.new(422, "Document validation failed", details: currency_errors)
+              next Telemetry.record_error(span, err)
+            end
+
+            # 6c–6f. Authoring-time RBAC validation, write-time semantic
+            #       gates, and the role-authority boundary — one dispatch
+            #       per doctype, in guard order. See `run_write_gates`.
+            if gate_error = run_write_gates(txn, span, domain, doc_type, current, merged, projection, patch, auth_context)
+              next gate_error
+            end
+
+            # 7. Run the Lua update lifecycle hook (validate and/or mutate)
+            #    and re-run computed fields after mutation. The hook may write
+            #    unique fields, so the constraint check is deliberately not
+            #    repeated after it: the hook is trusted system code, and the
+            #    merged state below is what the mutation lands on.
+            #
+            #    The mutation ULID is minted first so the hook's Lua
+            #    `document.*` writes can stamp it as their `cause.parent`.
+            mut_id = Util::ScriptHelpers.ulid
+            merged, pending = run_script_update(span, txn, defn, merged, current, actioner_id, domain, doc_type, doc_id, patch, cause: cause.try(&.child_of(mut_id)), provenance: provenance, auth_context: auth_context, authorize_path: authorize_path) do |err_merged|
+              return err_merged
+            end
+
+            result = finalize_and_persist(span, txn, defn, domain, doc_type, doc_id, actioner_id, auth_context, cause, provenance, mut_id, reentrant, current, merged, projection)
+
+            # Drain the update hook's notification queue now that the
+            # operation succeeded (a no-op update included — the hook ran
+            # and may have sent). `doc_ref = nil` entries resolve to the
+            # updated document.
+            Notification::Queue.drain(txn, pending, domain, doc_type, doc_id)
+
+            result
           end
-
-          result = finalize_and_persist(span, db, defn, domain, doc_type, doc_id, actioner_id, auth_context, cause, provenance, mut_id, reentrant, current, merged, projection)
-
-          # Drain the update hook's notification queue now that the
-          # operation succeeded (a no-op update included — the hook ran
-          # and may have sent). `doc_ref = nil` entries resolve to the
-          # updated document.
-          Notification::Queue.drain(db, pending, domain, doc_type, doc_id)
 
           result
         end
@@ -255,6 +265,40 @@ module Facet
         in Facet::ServiceError
           inner
         end
+      end
+
+      # Steps 6c-6f: the write-time gates that run on the merged content,
+      # in guard order — authoring-time RBAC validation for role, domain,
+      # and grant documents (6c), the per-doctype semantic gates the
+      # definition cannot express (6d-6e: the settings singleton's
+      # smtp-host cross-field rule, the production dev-adapter gate with
+      # escape-hatch parity, the IAM policy enums, the `oidc_only`
+      # needs-a-provider rule, and the account email immutability), and
+      # the role-authority boundary for the IAM doctypes (6f — the guard
+      # is independent of route-level `skip_authorization`; only the
+      # System principal bypasses it). One combined call keeps the
+      # complexity of `call` flat — each new gate joins the dispatch
+      # instead of the flow.
+      private def self.run_write_gates(
+        db : DB::Connection,
+        span,
+        domain : String,
+        doc_type : String,
+        current : JSON::Any,
+        merged : JSON::Any,
+        projection : Mutation::Client::Projection,
+        patch : JSON::Any,
+        auth_context : RBAC::AuthContext,
+      ) : Facet::ServiceError?
+        if rbac_error = validate_rbac_definitions?(db, span, domain, doc_type, merged, projection, patch)
+          return rbac_error
+        end
+
+        if gate_error = validate_semantic_gates?(db, span, domain, doc_type, current, merged)
+          return gate_error
+        end
+
+        RBAC::RoleAuthority.authorize_transition(db, "update", domain, doc_type, current, merged, auth_context)
       end
 
       # Finalizes the merged document (strip write-only fields, re-pull

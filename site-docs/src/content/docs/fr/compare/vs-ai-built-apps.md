@@ -71,7 +71,7 @@ enforce -> records
 | Objet premier | Ce que le prompt demandait | La même application, posée sur des données gouvernées |
 | Qui construit quoi | Vous et l’IA, à chaque coucheà : données, permissions, écrans, hébergement | L’IA écrit les écransà ; Facet fournit déj à les données, les droits, l’historique et l’hébergement |
 | Propriété et portabilité des données | Là  où l’IA l’a poséeà : base générée, tableur, fichiers sur un ordinateur portable | Votre propre PostgreSQLà; export/import de domaine, API, webhooks |
-| Hébergement et résidence des données | Vous l’hébergez, ou elle vit sur un forfait gratuit quelque part | Auto-hébergé (un petit déploiement tient sur 2 vCPU et 2–4 Go de RAM), ou hébergement géré en France |
+| Hébergement et résidence des données | Vous l’hébergez, ou elle vit sur un forfait gratuit quelque part | Auto-hébergé (un petit déploiement tient sur 2 vCPU et 2–4 Go de RAM), ou hébergement géré à l’emplacement de votre choix |
 | Déploiement de l’application | Un serveur, un pipeline, un domaine, un certificat, et quelqu’un qui sait comment tout s’assemble | Téléversez les fichiers construits dans Facet. Ni serveur, ni pipelineà ; chaque version antérieure peut être restaurée |
 | Permissions | Ce qui a été généré, s’il y en a, et rarement relu | Des rôles avec des attributions par ligne et par champ, appliqués dans la couche de données sur chaque chemin d’accès |
 | Audit et historique | Seulement si quelqu’un l’a demandé, et différent dans chaque application | Chaque changement enregistré par défautà : qui, quoi, quandà ; retour arrière sur n’importe quel document |
@@ -79,7 +79,7 @@ enforce -> records
 | Applications personnalisées | C’est l’application elle-même | Votre application vibe-codée sur le SDK, connectée par OAuthà ; Facet héberge ses fichiers |
 | IA | Un seul constructeurà ; l’IA dans l’application est votre problème | Le même constructeur, plus un assistant intégré, un assistant embarquable pour vos applications, et MCP pour les agents de code — le tout lié au rôle de l’utilisateur |
 | Logique et automatisation | Ce qui a été généré, pour chaque application | Des scripts Lua dans un domaineà ; des mises à jour en temps réelà ; des webhooks |
-| Rapports et analytique | Seulement si cela a été prévu | Aucun tableau de bord intégréà ; vos données résident dans un PostgreSQL standard, accessibles depuis tout outil BI par export ou par l’API |
+| Rapports et analytique | Seulement si cela a été prévu | Aucun tableau de bord intégré ; les lectures BI passent par l’export ou l’API, où les règles de rôles s’appliquent toujours. L’accès direct à la base est un privilège d’administration, en dehors du modèle de rôles |
 | Modules métier prêts à l’emploi | Non | Aucun préconstruità ; l’assistant intégré modélise votre domaine avec vous, ou notre équipe le conçoit |
 | Coût | Tokens de modèle, puis hébergement, TLS, maintenance et votre temps, pour chaque application | Gratuit à l’usage et à l’auto-hébergement (à  source disponible, BSL 1.1) ; vous apportez votre propre clé IAà; des services payants seulement si vous le voulez |
 | Maturité | Chaque application part de zéro | Un produit en bêta sur des fondations éprouvéesà : PostgreSQL, Redis, un journal d’événements |

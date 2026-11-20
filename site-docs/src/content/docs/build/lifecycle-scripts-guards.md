@@ -98,7 +98,7 @@ The script raised an error outside your `ctx.error` calls. The message names the
 
 ### The write answers with the instruction limit
 
-The script ran too long, most often in an unbounded loop. Facet stops a script at 10 million instructions, 5 seconds, or 100 megabytes of memory, whichever comes first.
+The script ran too long, most often in an unbounded loop. Facet stops a script at 1 million instructions, 0.5 seconds, or 32 megabytes of memory, whichever comes first.
 
 ### My fix did not take effect at once
 

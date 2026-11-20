@@ -120,7 +120,7 @@ comparer, comme le fait l’exemple avec `hire_date`.
 ### L’écriture répond avec la limite d’instructions
 
 Le script a tourné trop longtemps, le plus souvent dans une boucle sans fin.
-Facet arrête un script à 10 millions d’instructions, 5 secondes ou 100
+Facet arrête un script à 1 million d’instructions, 0,5 seconde ou 32
 mégaoctets de mémoire, au premier seuil atteint.
 
 ### Ma correction ne prend pas effet immédiatement

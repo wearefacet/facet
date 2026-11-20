@@ -46,6 +46,11 @@ module Facet
       # the concurrent-write race the index exists to catch.
       MUTATION_IDX_INDEX = "idx_mutations_doc_id_idx"
 
+      # Name prefix of every managed per-doctype index — see
+      # `Index::Naming::PREFIX`. The `unique_btree` members of that family
+      # enforce `unique: true` field constraints at the database level.
+      MANAGED_INDEX_PREFIX = "idx_env_"
+
       # True when the exception is the concurrent-write race on the mutation
       # log: the insert trigger assigns `idx = MAX(idx)+1` per document, and
       # the unique index `idx_mutations_doc_id_idx` is the guard when two
@@ -60,6 +65,38 @@ module Facet
         return false unless ex.is_a?(PQ::PQError)
         Util::PgError.sqlstate(ex) == UNIQUE_VIOLATION_SQLSTATE &&
           Util::PgError.constraint_name(ex) == MUTATION_IDX_INDEX
+      end
+
+      # True when the exception is a `unique: true` field constraint
+      # enforced by a managed unique index on `projections` (an
+      # `idx_env_*` `unique_btree` member from `Index::Planner`). The
+      # Crystal pre-check (`Document::UniqueConstraint`) answers the
+      # common case with a clean 422; this classifier catches the race
+      # the pre-check cannot see — a competing write that committed
+      # between the check and the mutation insert. Surfaces as HTTP 422
+      # (see `JsonErrorHandler`), the same status the pre-check answers.
+      def projection_unique_conflict?(ex : Exception) : Bool
+        return false unless ex.is_a?(PQ::PQError)
+        return false unless Util::PgError.sqlstate(ex) == UNIQUE_VIOLATION_SQLSTATE
+        name = Util::PgError.constraint_name(ex)
+        !name.nil? && name.starts_with?(MANAGED_INDEX_PREFIX)
+      end
+
+      # Builds the 422 validation error for a lost unique-index race.
+      # The index name hashes the (domain, doctype, field, type) tuple, so
+      # the field name is not recoverable from it; the server's `Detail:`
+      # line names the conflicting key and value instead
+      # (`Key (content->>'email')=(a@b.c) already exists.`). The detail is
+      # stable server output quoted verbatim — no SQL, no backtrace — so
+      # carrying it in the response is safe. When the detail is absent the
+      # message stays generic.
+      def projection_unique_conflict_error(ex : PQ::PQError) : Facet::ValidationError
+        message = if detail = Util::PgError.detail(ex)
+                    "Value conflicts with a unique field constraint — #{detail}"
+                  else
+                    "Value conflicts with a unique field constraint"
+                  end
+        Facet::ValidationError.new(message: message, code: "unique")
       end
 
       # True when the exception is a PG cancellation the caller can act on:

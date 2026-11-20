@@ -183,9 +183,9 @@ mail:
     use_tls: true
 
 # Lua sandbox limits for doctype scripts.
-# - instruction_limit: max Lua VM instructions per script execution (default: 10M)
-# - memory_limit_mb: max memory the Lua state may allocate (default: 100 MB)
-# - time_limit_s: max wall-clock execution time per script (default: 5.0 seconds)
+# - instruction_limit: max Lua VM instructions per script execution (code default: 1M)
+# - memory_limit_mb: max memory the Lua state may allocate (code default: 32 MB)
+# - time_limit_s: max wall-clock execution time per script (code default: 0.5 seconds)
 lua:
   instruction_limit: 10000000
   memory_limit_mb: 100

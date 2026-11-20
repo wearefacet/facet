@@ -39,14 +39,14 @@ In Facet, both live in the data layer. Every access path (the portal, the API, y
 | Primary purpose | Visual builder for internal tools over your databases and APIs; also a hosted PostgreSQL database and workflows | A governed home for your business data, plus the apps that run on it |
 | Who builds | Developers and analysts in a visual builder, on paid builder seats; an AI builder assists on every plan | Business people with the domain-builder assistant; apps through any AI coding tool or the SDK. No builder seats |
 | Data ownership & portability | Your databases and APIs keep the data; Retool queries them. The apps are stored in Retool's format | Your own PostgreSQL; domain export/import, API, webhooks. Apps are plain JavaScript you keep |
-| Hosting & data residency | Retool Cloud; self-hosted and air-gapped deployments on the Enterprise plan | Self-host anywhere on any plan, or managed hosting in France |
+| Hosting & data residency | Retool Cloud; self-hosted and air-gapped deployments on the Enterprise plan | Self-host anywhere on any plan, or managed hosting with your choice of location |
 | Deploying an app | Published inside Retool | The person who built it uploads it to Facet; any earlier version can be restored |
 | Permissions | Rich permissions from the Business plan; granular roles on Enterprise. Per-record rules live in each app's queries or in your database | Roles with row scopes and field tags, enforced in the data layer on every access path. Included, not a plan tier |
 | Audit & history | Audit logs from the Business plan: Retool activity, not your records' history | Full change log per record by default: who, what, when; per-document rollback. Retention set by you, globally or per document |
 | File storage | Through connected storage services you set up | Built-in, on S3-compatible storage, under the same grants as the records. Volume limited only by your storage |
 | AI | AI app builder on all plans; pooled AI credits; your own provider key on Enterprise only | In-app assistant and builder on your own API key, any provider, on day one; embeddable assistant for your apps; MCP for coding agents. Every AI acts within the user's role |
 | Logic & automation | Workflows with monthly run quotas, schedules and webhook triggers | Lua lifecycle hooks on document events inside a domain; real-time updates; webhooks to drive external automation tools |
-| Reporting & analytics | Dashboards you build | No built-in charts; your data sits in standard PostgreSQL, reachable from any BI tool through export or the API |
+| Reporting & analytics | Dashboards you build | No built-in charts; BI reads data through export or the API, so the role rules still apply. Direct database access is an admin privilege, outside the role model |
 | Ready-made business modules | No; a template gallery | None prebuilt; the assistant models your domain with you, or our team designs it |
 | Pricing model | Per builder per month, plus a per-internal-user rate; external users metered separately | Free to use and self-host (source-available, BSL 1.1), for any number of users; paid services only if you want them |
 | Maturity | Mature platform, large customer base and connector library | Young product in beta, small ecosystem, built on proven foundations: PostgreSQL, Redis, an event log |

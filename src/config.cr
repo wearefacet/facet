@@ -158,12 +158,17 @@ module Facet
       default_timezone : String = "UTC",
       default_language : String = "en"
 
-    # ── Lua sandbox limits ──────────────────────────────────────────────
-
+    # ── Lua sandbox limits ──────────────────────────────────────────
+    #
+    # Defaults are cut hard: the server runs as one single-threaded
+    # process, and a CPU-bound script on the event loop stalls every HTTP
+    # request, WebSocket, cron task, and job for up to `time_limit_s`.
+    # Deployments with heavier scripts raise the keys in
+    # `config.{env}.yml`.
     record LuaConfig,
-      instruction_limit : Int32 = 10_000_000,
-      memory_limit_mb : Int32 = 100,
-      time_limit_s : Float64 = 5.0
+      instruction_limit : Int32 = 1_000_000,
+      memory_limit_mb : Int32 = 32,
+      time_limit_s : Float64 = 0.5
 
     # ── Hooks (domain event/schedule hooks) ──────────────────────────────
     #
@@ -298,7 +303,7 @@ module Facet
     record WebsocketConfig,
       collection : WebsocketCollectionConfig = WebsocketCollectionConfig.new
 
-    def initialize(*, @snapshot_every : Int32 = 25,
+    def initialize(*, @snapshot_every : Int32 = 10,
                    @iam : IAMConfig = IAMConfig.new,
                    @event : Event::Config = Event::Config.new,
                    @host : String = "localhost:3000",
@@ -388,7 +393,7 @@ module Facet
     # `YAML.parse`) and exercise the fail-loud paths without writing a
     # temporary file to disk.
     def self.from_yaml_node(raw : YAML::Any) : Config
-      snapshot_every = raw["snapshot_every"]?.try(&.as_i) || 25
+      snapshot_every = raw["snapshot_every"]?.try(&.as_i) || 10
       iam_config = load_iam(raw)
       event_config = load_event(raw)
       host = raw["host"]?.try(&.as_s) || "localhost:3000"
@@ -597,9 +602,9 @@ module Facet
       return LuaConfig.new if lua_raw.nil? || lua_raw.raw.nil?
 
       LuaConfig.new(
-        instruction_limit: read_int(lua_raw["instruction_limit"]?, 10_000_000),
-        memory_limit_mb: read_int(lua_raw["memory_limit_mb"]?, 100),
-        time_limit_s: read_float(lua_raw["time_limit_s"]?, 5.0),
+        instruction_limit: read_int(lua_raw["instruction_limit"]?, 1_000_000),
+        memory_limit_mb: read_int(lua_raw["memory_limit_mb"]?, 32),
+        time_limit_s: read_float(lua_raw["time_limit_s"]?, 0.5),
       )
     end
 

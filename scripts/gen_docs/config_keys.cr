@@ -58,7 +58,7 @@ ROWS = [
   Row.new("", "artifact_base_url", "string", "required", "Origin that serves artifact bytes."),
   Row.new("", "artifact_grant_secret", "string", "required", "Signing key for artifact upload and download grants; may come from the ARTIFACT_GRANT_SECRET env var."),
   Row.new("", "artifact_grant_secret_previous", "string", "—", "Previous grant secret, still accepted during rotation; may come from the ARTIFACT_GRANT_SECRET_PREVIOUS env var."),
-  Row.new("", "snapshot_every", "integer", "25", "Mutations between automatic projection snapshots."),
+  Row.new("", "snapshot_every", "integer", "10", "Mutations between automatic projection snapshots."),
   Row.new("", "trusted_proxies", "string list", "[]", "Reverse-proxy addresses whose X-Forwarded-For chains the server trusts."),
   # ── domains ─────────────────────────────────────────────────────────────
   Row.new("domains", "included", "string list", "[]", "Serve only these domains when set."),
@@ -112,9 +112,9 @@ ROWS = [
   Row.new("assistant", "usage_retention_days", "integer", "0", "Days to keep the assistant usage ledger; 0 keeps it forever."),
   Row.new("assistant", "usage_prune_cron", "string", "\"30 4 * * *\"", "Schedule of the usage-ledger prune."),
   # ── lua ─────────────────────────────────────────────────────────────────
-  Row.new("lua", "instruction_limit", "integer", "10000000", "Lua VM instruction budget per script run."),
-  Row.new("lua", "memory_limit_mb", "integer", "100", "Lua VM memory cap, in MB."),
-  Row.new("lua", "time_limit_s", "number", "5.0", "Lua VM wall-clock cap, in seconds."),
+  Row.new("lua", "instruction_limit", "integer", "1000000", "Lua VM instruction budget per script run."),
+  Row.new("lua", "memory_limit_mb", "integer", "32", "Lua VM memory cap, in MB."),
+  Row.new("lua", "time_limit_s", "number", "0.5", "Lua VM wall-clock cap, in seconds."),
   # ── hooks ───────────────────────────────────────────────────────────────
   Row.new("hooks", "scheduler_poll_interval_s", "number", "5.0", "Seconds between hook scheduler polls."),
   Row.new("hooks", "lease_ttl_s", "integer", "600", "Hook scheduler lease lifetime, in seconds."),

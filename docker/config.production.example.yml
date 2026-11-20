@@ -127,11 +127,14 @@ domains:
   included: []
   excluded: []
 
-# ── Lua sandbox limits (doctype scripts) ──────────────────────────────────
+# ── Lua sandbox limits (doctype scripts) ──────────────────────────────
+# A CPU-bound script stalls the single-threaded event loop for up to
+# time_limit_s. The code defaults (1M / 32 MB / 0.5 s) are cut hard;
+# raise them here only for heavier scripts.
 lua:
-  instruction_limit: 10000000
-  memory_limit_mb: 100
-  time_limit_s: 5.0
+  instruction_limit: 1000000
+  memory_limit_mb: 32
+  time_limit_s: 0.5
 
 # Hooks (domain event/schedule hooks) scheduler tuning. The lease TTL
 # outlives lua.time_limit_s so a slow script can never cause a duplicate

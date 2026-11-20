@@ -74,10 +74,11 @@ module Facet
       end
 
       # Default values for sandbox limits. These are used when the LuaConfig
-      # is not explicitly provided. The config file is the canonical source.
-      DEFAULT_INSTRUCTION_LIMIT = 10_000_000_i64
-      DEFAULT_MEMORY_LIMIT_MB   =        100_i64
-      DEFAULT_TIME_LIMIT_S      =            5.0
+      # is not explicitly provided. They match the `Config::LuaConfig`
+      # defaults — the config file is the canonical source.
+      DEFAULT_INSTRUCTION_LIMIT = 1_000_000_i64
+      DEFAULT_MEMORY_LIMIT_MB   =        32_i64
+      DEFAULT_TIME_LIMIT_S      =           0.5
 
       # Registry name of the marker metatable attached to Lua tables that
       # were pushed from a Crystal `Array(Value)`. An empty Lua table is
@@ -110,19 +111,34 @@ module Facet
         rawget rawset rawequal
       ]
 
-      # ── Memory limit via custom allocator ──────────────────────────────
+      # ── Per-engine sandbox state ──────────────────────────────────────
 
-      # Per-engine allocation metadata. The tracker is heap-allocated and
+      # Per-engine sandbox state: the allocation budget plus the
+      # instruction and time budgets. The tracker is heap-allocated and
       # its pointer is passed as the `ud` (user data) argument to the
-      # custom allocator via `lua_setallocf`.
-      private struct AllocationTracker
+      # custom allocator via `lua_setallocf`. The debug hook reads the
+      # same pointer back from the state with `lua_getallocf`, so each
+      # engine owns its counters and limits. The engines share no hook
+      # state, even when runs overlap on different fibers.
+      private struct SandboxTracker
         property bytes_allocated : Int64 = 0_i64
         property limit : Int64
         property original_allocf : LibLua::Alloc
         property original_ud : Void*
+        property instruction_count : Int64
+        property instruction_limit : Int64
+        property time_limit : Float64
+        property start_instant : Time::Instant
 
-        def initialize(@limit : Int64, @original_allocf : LibLua::Alloc, @original_ud : Void*)
-          @bytes_allocated = 0_i64
+        def initialize(
+          @limit : Int64,
+          @original_allocf : LibLua::Alloc,
+          @original_ud : Void*,
+          @instruction_count : Int64 = 0_i64,
+          @instruction_limit : Int64 = DEFAULT_INSTRUCTION_LIMIT,
+          @time_limit : Float64 = DEFAULT_TIME_LIMIT_S,
+        )
+          @start_instant = Time.instant
         end
       end
 
@@ -131,14 +147,16 @@ module Facet
       # the net allocation delta. Returns NULL (out-of-memory) when the
       # limit would be exceeded, which causes Lua to raise a memory error.
       @@memory_allocator : LibLua::Alloc = ->(ud : Void*, ptr : Void*, osize : LibC::SizeT, nsize : LibC::SizeT) : Void* {
-        tracker = ud.as(AllocationTracker*)
+        tracker = ud.as(SandboxTracker*)
         alloc = tracker.value.original_allocf
         orig_ud = tracker.value.original_ud
 
         if nsize == 0
-          # Free: release the block and subtract the old size.
+          # Free: release the block and subtract the old size. Explicit
+          # read-modify-write: compound assignment through a pointer to a
+          # struct mutates a temporary copy and loses the update.
           result = alloc.call(orig_ud, ptr, osize, 0_u64)
-          tracker.value.bytes_allocated -= osize
+          tracker.value.bytes_allocated = tracker.value.bytes_allocated - osize.to_i64
           result
         elsif ptr.null?
           # Pure allocation: check limit before allocating.
@@ -147,7 +165,7 @@ module Facet
             Pointer(Void).null
           else
             result = alloc.call(orig_ud, ptr, osize, nsize)
-            tracker.value.bytes_allocated += nsize
+            tracker.value.bytes_allocated = tracker.value.bytes_allocated + nsize.to_i64
             result
           end
         else
@@ -158,7 +176,7 @@ module Facet
             Pointer(Void).null
           else
             result = alloc.call(orig_ud, ptr, osize, nsize)
-            tracker.value.bytes_allocated += delta
+            tracker.value.bytes_allocated = tracker.value.bytes_allocated + delta
             result
           end
         end
@@ -168,11 +186,10 @@ module Facet
 
       # The hook is called every HOOK_CHECK_EVERY instructions. It tracks
       # the cumulative instruction count and measures elapsed wall-clock
-      # time against the configured limits.
-      @@hook_instruction_count : Int64 = 0
-      @@hook_instruction_limit : Int64 = DEFAULT_INSTRUCTION_LIMIT
-      @@hook_time_limit : Float64 = DEFAULT_TIME_LIMIT_S
-      @@hook_start_instant : Time::Instant = Time.instant
+      # time against the configured limits. All values live in this
+      # engine's SandboxTracker, read back from the state's allocator user
+      # data. The hook is installed only after `set_memory_limit!`, so the
+      # user data always points at this engine's tracker.
 
       private HOOK_CHECK_EVERY = 100_000_i64
 
@@ -180,20 +197,26 @@ module Facet
       LUA_MASKCOUNT = 8
 
       @@combined_hook : LibLua::Hook = ->(state : LibLua::State, ar : LibLua::Debug*) {
-        # Accumulate instructions.
-        @@hook_instruction_count += HOOK_CHECK_EVERY
+        LibLua.getallocf(state, out ud)
+        tracker = ud.as(SandboxTracker*)
 
-        if @@hook_instruction_count > @@hook_instruction_limit
-          LibLua.pushstring(state, "instruction limit exceeded (#{@@hook_instruction_limit})")
+        # Accumulate instructions. Read-modify-write through the pointer:
+        # `tracker.value.instruction_count += ...` would mutate a temporary
+        # copy of the struct and lose the update.
+        count = tracker.value.instruction_count + HOOK_CHECK_EVERY
+        tracker.value.instruction_count = count
+
+        if count > tracker.value.instruction_limit
+          LibLua.pushstring(state, "instruction limit exceeded (#{tracker.value.instruction_limit})")
           LibLua.error(state)
           return
         end
 
         # Check wall-clock time.
-        if @@hook_time_limit > 0
-          elapsed = (Time.instant - @@hook_start_instant).total_seconds
-          if elapsed > @@hook_time_limit
-            LibLua.pushstring(state, "time limit exceeded (#{@@hook_time_limit}s)")
+        if tracker.value.time_limit > 0
+          elapsed = (Time.instant - tracker.value.start_instant).total_seconds
+          if elapsed > tracker.value.time_limit
+            LibLua.pushstring(state, "time limit exceeded (#{tracker.value.time_limit}s)")
             LibLua.error(state)
           end
         end
@@ -388,8 +411,8 @@ module Facet
         # and writes the user-data pointer via the out parameter.
         original_allocf = LibLua.getallocf(state, out original_ud)
 
-        @tracker_ptr = LibC.malloc(sizeof(AllocationTracker))
-        @tracker_ptr.as(AllocationTracker*).value = AllocationTracker.new(
+        @tracker_ptr = LibC.malloc(sizeof(SandboxTracker))
+        @tracker_ptr.as(SandboxTracker*).value = SandboxTracker.new(
           limit: limit_bytes > 0 ? limit_bytes : 0_i64,
           original_allocf: original_allocf,
           original_ud: original_ud,
@@ -399,17 +422,25 @@ module Facet
       end
 
       # Installs the combined instruction-count and wall-clock time hook.
+      # Runs after `set_memory_limit!`: the hook state lives in the
+      # tracker that method allocates.
       private def set_combined_hook!(instruction_limit : Int64, time_limit_s : Float64) : Nil
         state = stack_not_nil!.state
-        @@hook_instruction_limit = instruction_limit
-        @@hook_time_limit = time_limit_s
+        tracker = @tracker_ptr.as(SandboxTracker*)
+        tracker.value.instruction_limit = instruction_limit
+        tracker.value.time_limit = time_limit_s
         LibLua.sethook(state, @@combined_hook, LUA_MASKCOUNT, HOOK_CHECK_EVERY)
       end
 
-      # Resets the hook state counters before each run.
+      # Resets the instruction counter and the start instant before each
+      # run. The state belongs to this engine, so an overlapping run on
+      # another engine cannot reset this script's budget. Non-sandboxed
+      # engines have no tracker and no hook; nothing to reset.
       private def reset_hook_state! : Nil
-        @@hook_instruction_count = 0_i64
-        @@hook_start_instant = Time.instant
+        return if @tracker_ptr.null?
+        tracker = @tracker_ptr.as(SandboxTracker*)
+        tracker.value.instruction_count = 0_i64
+        tracker.value.start_instant = Time.instant
       end
 
       # Frees the allocation tracker if it was allocated.
