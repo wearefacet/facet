@@ -1,0 +1,9 @@
+---
+content:
+  email: kim.nguyen@facet.local
+  roles:
+  - iam.Roles.admin
+  status: active
+  mfa_enabled: false
+  name: Kim Nguyen
+meta: {}

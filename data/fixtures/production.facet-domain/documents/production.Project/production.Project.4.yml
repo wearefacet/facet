@@ -1,0 +1,8 @@
+---
+content:
+  name: Lifecycle Analytics
+  team: production.Team.team_growth
+  status: on_hold
+  owner_id: iam.Account.account_growth_sam
+  description: Cohort and retention dashboards for the growth team.
+meta: {}

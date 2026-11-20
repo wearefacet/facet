@@ -1,0 +1,25 @@
+---
+content:
+  kind: quickView
+  template:
+    type: col
+    children:
+    - type: row
+      layout: "auto auto 1fr"
+      children:
+      - type: capsule
+        value: $status
+    - type: hr
+    - type: section
+      label: Details
+      children:
+      - type: field
+        label: Assignee
+        value: $assignee
+      - type: field
+        label: Estimate (hours)
+        value: $estimate_hours
+    - type: record-meta
+  parent_doctype: production.Task
+meta:
+  parent_id: production.Task

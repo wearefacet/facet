@@ -1,0 +1,46 @@
+---
+content:
+  icon: link
+  domain: crm
+  fields:
+    role:
+      type: enum
+      title: Membership Role
+      values:
+      - key: primary
+        color: "#0089a7"
+        label: Primary
+      - key: secondary
+        color: "#97751a"
+        label: Secondary
+      - key: observer
+        color: "#b25e5e"
+        label: Observer
+      default: secondary
+      filters:
+        - equality
+      description: The contact's role at this company.
+    contact:
+      type: reference
+      title: Contact
+      doctype: crm.Contact
+      required: true
+      filters:
+        - equality
+      description: The contact that participates in this membership. Filtered by `contact__eq`
+        for the contact-side inverse read.
+    start_date:
+      type: date
+      title: Since
+      description: When the membership started.
+  script: !read_file crm.CompanyMembership.lua
+  doctype: CompanyMembership
+  member_of: Company
+  description: A membership record linking a Contact to a Company. Child of Company;
+    the parent linkage is the system-managed parent_id in meta.
+  display_name: "{{ role }} at {{ contact }}"
+  search: "{{ role }} {{ contact }}"
+  aggregate_root: false
+  schema_version: 1
+meta:
+  parent_id: crm

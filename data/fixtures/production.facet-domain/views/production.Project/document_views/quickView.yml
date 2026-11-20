@@ -1,0 +1,30 @@
+---
+content:
+  kind: quickView
+  template:
+    type: col
+    children:
+    - type: row
+      layout: "auto auto 1fr"
+      children:
+      - type: capsule
+        value: $status
+    - type: hr
+    - type: section
+      label: Overview
+      children:
+      - type: field
+        label: Team
+        value: $team
+      - type: field
+        label: Owner
+        value: $owner_id
+    - type: section
+      label: Description
+      children:
+      - type: input
+        field: description
+    - type: record-meta
+  parent_doctype: production.Project
+meta:
+  parent_id: production.Project

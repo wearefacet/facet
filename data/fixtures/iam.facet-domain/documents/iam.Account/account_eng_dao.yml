@@ -1,0 +1,9 @@
+---
+content:
+  email: dao.chen@facet.local
+  roles:
+  - iam.Roles.editor
+  status: active
+  mfa_enabled: false
+  name: Dao Chen
+meta: {}

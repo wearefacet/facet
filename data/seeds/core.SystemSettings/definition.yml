@@ -1,0 +1,215 @@
+# core.SystemSettings — the runtime-settings singleton.
+#
+# One document (id `settings`) whose content mirrors the assistant, mail,
+# artifact, retention, localization, and iam-policy sections of
+# `config.{env}.yml`. A non-null field pins the value; an explicit null
+# means "follow the file". The seed content carries null for every field,
+# so the seeded state follows the file everywhere. See
+# `doc/backend/system-settings.md`.
+#
+# The two credential fields are `secret` (sealed): values are staged
+# out-of-band (`POST /api/secrets/stage`) and adopted into the secret store
+# — they never enter `mutations` or `projections.content`. Neither secret
+# root field appears in `search` (omitted) or `display_name` (static).
+#
+# There is deliberately no `artifact.storage.type` field: the storage
+# adapter wires once per process from the config file, and a runtime
+# switch would strand the existing artifact bytes in the old backend. The
+# registry registers the path for read visibility only, and the write
+# gate refuses any value that reaches it.
+#
+# The `iam` object carries the security policy (the MFA factor type and
+# enforcement, the authentication mode, the OIDC provisioning baseline,
+# and the credential-token TTL) next to the localization defaults
+# (`localization` object) — both are hot keys the UI can pin; the value
+# grammar is enforced by the write gate (`SystemSettings::WriteGate`),
+# which also refuses `iam.auth.mode: oidc_only` while no enabled
+# `iam.OIDCProvider` document exists and a `provision_roles` entry that
+# does not name a live `iam.Roles` document.
+doctype: SystemSettings
+domain: core
+schema_version: 1
+aggregate_root: true
+display_name: "System settings"
+description: "Runtime platform configuration. The document nests exactly like the config file: an `assistant` object, a `mail` object (with an `smtp` sub-object), an `artifact` object, the retention knobs (`mutations`, `tombstone`), a `localization` object, and an `iam` object carrying the security policy. A non-null field pins the value and survives file changes; an explicit null returns the key to the file value. Only the platform seed may create the row and no one may delete it (the lifecycle script enforces both). Admin-only by default: the editor and viewer role seeds carve this doctype out of their wildcard read and write grants."
+fields:
+  assistant:
+    type: object
+    title: Assistant
+    description: "AI assistant connection. Endpoint, key, model, and sampling resolve together at every turn start, so a change reaches existing conversations on their next turn without a restart."
+    properties:
+      name:
+        type: string
+        title: Name
+        description: "Display name shown on every assistant surface — the workspace window, the builder window, and the top-bar entry point. Empty follows the file; the file default is Assistant. The write gate refuses a blank or a name over 40 characters."
+      api_endpoint:
+        type: string
+        title: API endpoint
+        description: "OpenAI-compatible endpoint URL. Provider-coupled with the model and key."
+      api_key:
+        type: secret
+        mode: sealed
+        title: API key
+        description: "Set through the stage/adopt flow; shows as set/not-set, never as a value. Clearing returns the key to the file value."
+      model:
+        type: string
+        title: Model
+        description: "Model identifier (e.g. 'gpt-4o'). Applies to every conversation's next turn. Same-provider switches are the verified path."
+      system_prompt:
+        type: longtext
+        title: System prompt
+        description: "Default persona prompt. The main assistant captures it at conversation create; workspace and builder assistants build their own prompts from context."
+      max_tokens:
+        type: integer
+        title: Max tokens
+        description: "Completion token cap. Empty follows the file; the file default is no cap."
+      temperature:
+        type: any
+        title: Temperature
+        description: "Sampling temperature, 0.0 to 2.0. Validated at save time (the schema has no float type)."
+      max_history:
+        type: integer
+        title: Max history
+        description: "Conversation turns kept in context. Empty means unlimited."
+      auto_execute_tools:
+        type: boolean
+        title: Auto-execute tools
+        description: "When true, registered tools run without a confirmation round-trip."
+  mail:
+    type: object
+    title: Mail
+    description: "Outbound email connector. The adapter, from-header, and SMTP access values feed the Carbon adapter; a change rebuilds it before the next send."
+    properties:
+      adapter:
+        type: enum
+        values: [dev, smtp]
+        title: Adapter
+        description: "'dev' prints emails to stdout; 'smtp' delivers through the smtp sub-object. Switching to 'smtp' requires a non-null smtp.host in the saved state, and 'dev' is refused in production unless the file's allow_dev_adapter_in_production escape hatch is set."
+      from_address:
+        type: string
+        title: From address
+        description: "Envelope and header sender address."
+      from_name:
+        type: string
+        title: From name
+        description: "Display name on the From header."
+      smtp:
+        type: object
+        title: SMTP
+        description: "Real-delivery transport. Host, port, TLS, and credentials feed the SMTP adapter build."
+        properties:
+          host:
+            type: string
+            title: Host
+            description: "SMTP server hostname. Required when the adapter is 'smtp'."
+          port:
+            type: integer
+            title: Port
+            description: "SMTP server port (1-65535)."
+          username:
+            type: string
+            title: Username
+            description: "SMTP auth username. Empty for unauthenticated relays."
+          password:
+            type: secret
+            mode: sealed
+            title: Password
+            description: "Set through the stage/adopt flow; shows as set/not-set, never as a value. Clearing returns the password to the file value."
+          use_tls:
+            type: boolean
+            title: Use TLS
+            description: "Upgrade the connection with STARTTLS after connecting."
+  artifact:
+    type: object
+    title: Artifacts
+    description: "File storage serving: signed download links and the prune window. The storage adapter itself is deployment material and lives only in the config file."
+    properties:
+      grant_ttl_seconds:
+        type: integer
+        title: Grant TTL
+        description: "Seconds a signed download link stays valid for documents and images. Empty follows the file; the file default is 3600 (one hour)."
+      grant_ttl_media_seconds:
+        type: integer
+        title: Media grant TTL
+        description: "Seconds a signed link stays valid for audio and video, so seeking mid-playback does not hit an expired URL. Empty follows the file; the file default is 21600 (six hours)."
+      prune_after_days:
+        type: integer
+        title: Prune delay
+        description: "Days an artifact stays protected after its last reference ends, before the prune run can delete it. Zero keeps every artifact forever — the prune skips. Empty follows the file; the file default is 30."
+  mutations:
+    type: object
+    title: Mutations
+    description: "Edit-history retention bounds the mutations log: how deep audit history and rollback reach."
+    properties:
+      retention_days:
+        type: integer
+        title: History retention
+        description: "Days of edit history kept per document; older entries fold into one snapshot, and rollback past the window answers 404. Zero keeps history forever — compaction skips, and the per-doctype file overrides stop applying. Empty follows the file; the file default is 180."
+  tombstone:
+    type: object
+    title: Tombstones
+    description: "Deleted documents keep their payload so audit views can identify and restore them."
+    properties:
+      content_retention_days:
+        type: integer
+        title: Deleted content retention
+        description: "Days a deleted document keeps its content before the prune clears it. Zero keeps every payload forever — the prune skips. Empty follows the file; the file default is 30."
+  localization:
+    type: object
+    title: Localization
+    description: "Instance defaults every account follows until it picks its own values. The personal settings page renders them as the 'Server default' option."
+    properties:
+      default_timezone:
+        type: string
+        title: Default timezone
+        description: "IANA timezone name (e.g. 'Europe/Paris') applied to accounts without their own timezone. The write gate requires a loadable name. Empty follows the file; the file default is UTC."
+      default_language:
+        type: string
+        title: Default language
+        description: "Language code applied to accounts without their own language. Validated against the platform language allowlist. Empty follows the file; the file default is en."
+  iam:
+    type: object
+    title: Security
+    description: "Authentication policy: the MFA factor type and enforcement, the authentication mode, and the credential-token TTL. Policy changes apply to the next login — existing sessions survive."
+    properties:
+      mfa:
+        type: object
+        title: MFA
+        description: "Multi-factor policy. The factor type grammar stays open for future factor kinds (WebAuthn, ...); the TOTP parameters (window, issuer) stay file-only — implementation knobs, not policy."
+        properties:
+          type:
+            type: enum
+            values: [none, totp]
+            title: Factor type
+            description: "'totp' enables TOTP MFA; 'none' turns MFA off — no challenge, no enroll hold. Enrolled accounts keep their factor data, so re-enabling the type reactivates it. Empty follows the file's totp.enabled flag."
+          enforcement:
+            type: enum
+            values: [preferred, always]
+            title: Enforcement
+            description: "'preferred' asks but never blocks; 'always' holds every un-enrolled login at the enrollment step. A meaningful control only while the factor type is 'totp'. Empty follows the file."
+      auth:
+        type: object
+        title: Authentication
+        description: "The login paths the instance accepts. Flipping the mode is a server boundary: the login, password-reset, and first-credential routes refuse under 'oidc_only'."
+        properties:
+          mode:
+            type: enum
+            values: [hybrid, oidc_only]
+            title: Authentication mode
+            description: "'hybrid' allows password and federated login; 'oidc_only' removes the password path. Saving 'oidc_only' requires at least one enabled iam.OIDCProvider — the write gate refuses a save that would lock every login path out. Empty follows the file; the file default is hybrid. Recovery: `facet auth:mode hybrid`."
+      oidc:
+        type: object
+        title: OIDC provisioning
+        description: "The instance-wide baseline for accounts created automatically through federated login (JIT provisioning). A provider document that sets its own default_role overrides this list entirely."
+        properties:
+          provision_roles:
+            type: array
+            title: Provisioning roles
+            description: "Roles assigned to every JIT-provisioned account whose provider sets no default_role — e.g. an 'employee' role. Entries are iam.Roles references; the write gate refuses an entry that does not name an existing role. An empty list (or a reset to file) means no instance baseline: only providers with their own default_role can provision."
+            items:
+              type: reference
+              doctype: iam.Roles
+      change_password_expiration:
+        type: integer
+        title: Credential token TTL
+        description: "Seconds a credential link stays valid: the password-reset link, the invite link, and the first-credential change token share one window. A change applies to every link minted afterwards; links already sent keep the window they were minted with. Empty follows the file; the file default is 86400 (one day)."

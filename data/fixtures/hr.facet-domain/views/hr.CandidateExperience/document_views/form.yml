@@ -1,0 +1,40 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+    - type: section
+      label: Role
+      children:
+      - type: row
+        layout: 1fr 240px
+        children:
+        - type: input
+          field: title
+        - type: input
+          field: company
+      - type: input
+        field: location
+      - type: input
+        field: type
+    - type: section
+      label: Tenure
+      children:
+      - type: row
+        layout: minmax(200px, 1fr) minmax(280px, 2fr)
+        children:
+        - type: input
+          field: start
+        - type: input
+          field: end
+      - type: input
+        field: current
+    - type: section
+      label: Details
+      children:
+      - type: input
+        field: desc
+  parent_doctype: hr.CandidateExperience
+meta:
+  parent_id: hr.CandidateExperience

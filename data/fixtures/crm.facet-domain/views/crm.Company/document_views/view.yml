@@ -1,0 +1,94 @@
+---
+content:
+  kind: view
+  template:
+    type: col
+    children:
+    - type: header
+      chips:
+      - industry
+      - company_size
+      subtitle: $domain_name
+      statusField: status
+      logo: logo
+    - type: grid
+      layout: 3 1
+      children:
+      - type: col
+        children:
+        - type: section
+          label: Firmographics
+          children:
+          - type: field
+            label: Domain
+            value: $domain_name
+          - type: field
+            label: Revenue
+            value: $annual_revenue
+        - type: section
+          label: Contact
+          children:
+          - type: field
+            label: Phone
+            value: $phone
+          - type: field
+            label: Website
+            value: $website
+        - type: section
+          label: Address
+          children:
+          - type: object
+            field: address
+            children:
+            - type: field
+              label: Street
+              value: $street
+            - type: field
+              label: City
+              value: $city
+            - type: field
+              label: ZIP
+              value: $zip
+            - type: field
+              label: Country
+              value: $country
+      - type: sidebar
+        children:
+        - type: section
+          label: Owner
+          children:
+          - type: field
+            value: $owner_id
+        - type: record-meta
+          history: true
+    - tabs:
+      - type: tab
+        label: Contacts
+        children:
+        - type: relation
+          view: table
+          label: Contacts
+          limit: 25
+          source:
+            rel: memberships
+            kind: children
+          doctype: crm.CompanyMembership
+          referenceField: contact
+          columns:
+          - key: contact.full_name
+            label: Name
+          - key: contact.email
+            label: Email
+            width: 220px
+          - key: contact.phone
+            label: Phone
+            width: 150px
+          - key: contact.job_title
+            label: Title
+          - key: role
+            label: Role at company
+            width: 130px
+      type: tabs
+  parent_doctype: crm.Company
+meta:
+  parent_id: crm.Company

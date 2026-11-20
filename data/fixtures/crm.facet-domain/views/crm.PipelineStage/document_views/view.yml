@@ -1,0 +1,48 @@
+---
+content:
+  kind: view
+  template:
+    type: col
+    children:
+    - type: header
+      subtitle: Stage #$order
+      title: $name
+    - type: grid
+      layout: 3 1
+      children:
+      - type: col
+        children:
+        - type: section
+          label: Stage
+          children:
+          - type: field
+            label: Sort Order
+            value: $order
+          - type: field
+            label: Default Probability
+            value: $probability_default
+          - type: field
+            label: Display Color
+            value: $color
+        - type: section
+          label: Behavior
+          children:
+          - type: if
+            field: is_closing_stage
+            value: true
+            children:
+            - type: label
+              value: "🏆 Closing stage — deals that land here count as won"
+            else:
+            - type: label
+              value: "🔄 Mid-pipeline stage — deals here are still in flight"
+          - type: field
+            label: Is Closing Stage
+            value: $is_closing_stage
+      - type: sidebar
+        children:
+        - type: record-meta
+          history: true
+  parent_doctype: crm.PipelineStage
+meta:
+  parent_id: crm.PipelineStage

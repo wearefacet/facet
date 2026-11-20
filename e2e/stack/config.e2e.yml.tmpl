@@ -1,0 +1,54 @@
+# Facet config for the docker e2e stacks.
+#
+# The backend entrypoint copies this template to /app/config.e2e.yml before
+# Facet::Config reads it (APP_ENV=e2e — harness §5, decision D3). Service
+# names and ports are fixed inside each compose network; every value in the
+# file is therefore constant across stacks.
+
+# Everything collapses to the facet.localhost vhost (Caddy terminates TLS
+# on :3443 and routes /Api /OAuth /A /Ws /.well-known to this backend).
+host: "https://facet.localhost:3443"
+base_url: "https://facet.localhost:3443"
+artifact_base_url: "https://facet.localhost:3443"
+
+# Fixed grant secret for artifact signed URLs. Throwaway stacks carry no
+# real bytes, so — like the dev literals in config.dev.yml — the key ships
+# checked in rather than plumbed through the environment. NEVER copy these
+# values to a production config.
+artifact_grant_secret: "bO4QaIhVyGAsqT8w04afV73UpRYOwemPakDAyPZ/MZk="
+
+artifact:
+  # Filesystem store on the stack's ephemeral tmpfs (harness §B, D6 — no
+  # S3/MinIO in stacks).
+  storage:
+    type: filesystem
+    directory: /data/store
+
+# Redis is a required dependency. The `stream:` block keeps the dev
+# defaults; only the host changes inside the stacks.
+event:
+  url: "redis://redis:6379/0"
+
+iam:
+  jwt:
+    access_token_ttl: 900
+    refresh_token_ttl: 1209600
+    refresh_grace_window: 10
+  mfa:
+    # D7: TOTP gates stay out of the suite for now. `enforcement` keeps
+    # its `preferred` default — see harness §9.
+    totp:
+      enabled: false
+  # Plain HTTP behind Caddy inside the stacks; the browser hop is TLS.
+  secure_cookies: false
+
+# AI assistant out of every scenario (D11): a dead stub address makes an
+# accidental call fail deterministic and offline.
+assistant:
+  api_endpoint: "http://127.0.0.1:9"
+
+# Fixed master key for the secret store (same convention as the grant
+# secret above: e2e throwaway data, production must use `!env` / env-only
+# files).
+secrets:
+  master_key: "49gumVbDv5NcxjyvbO34MrTmnaHQ+blLRNqEnVbCjtA="

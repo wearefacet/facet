@@ -1,0 +1,101 @@
+/*
+ * Design tokens — canonical source of truth: example/design-guideline.html
+ * Brand accent is GOLD. Fill (--accent) and ink (--accent-ink) are distinct on
+ * purpose: see "Gold fill ≠ gold text" rule in the design guideline.
+ */
+:root {
+	/* neutrals */
+	--ground: #f4f6f8;
+	--surface: #ffffff;
+	--surface-2: #fafbfc;
+	--sunken: #eef1f4;
+	--border: #e4e7ec;
+	--border-strong: #d2d7df;
+
+	/* ink */
+	--text: #1a1d24;
+	--text-2: #5a6473;
+	--text-3: #646b78; /* AA-contrast on all light surfaces/sunken/ground */
+
+	/* brand — GOLD (fill vs ink are distinct on purpose) */
+	--accent: #e4b61a; /* fill: buttons, toggles, active fills */
+	--accent-press: #c8a312; /* pressed/hover fill */
+	--accent-ink: #8c6410; /* readable gold for text/links/focus on light surfaces (AA-contrast) */
+	--accent-weak: rgba(228, 182, 26, 0.15);
+	--on-accent: #20180a; /* text/icons sitting ON a gold fill (dark, not white) */
+
+	/* semantic (inks darkened for AA contrast on their *-weak backgrounds) */
+	--ok: #1a6b3c;
+	--ok-weak: rgba(31, 122, 69, 0.12);
+	--ok-ink: #ffffff; /* text/icons sitting ON an ok fill (the saved .save-btn) */
+	--warn: #9a5414;
+	--warn-weak: rgba(154, 84, 20, 0.14);
+	--danger: #b8333d;
+	--danger-weak: rgba(184, 51, 61, 0.11);
+	--danger-ink: #ffffff; /* text/icons sitting ON a danger fill (the filled .danger-btn) */
+	--info: #2f5fb0;
+	--info-weak: rgba(47, 95, 176, 0.12);
+
+	/* per-doctype tints (the customisation axis) */
+	--dt-invoice: #8f4720; /* copper — moved off amber so it never reads as the brand */
+	--dt-shipment: #145f76;
+	--dt-contact: #5840c7;
+	--dt-task: #176e3a;
+	--dt-document: #4a5774;
+	--dt-contract: #8f3866;
+
+	/* layout */
+	--topbar-h: 56px; /* app top bar height — shared with the show page's sticky sidecar rail */
+
+	/* shape */
+	--r-sm: 6px;
+	--r: 9px;
+	--r-lg: 13px;
+	--r-pill: 999px;
+	--sh-1: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 1px rgba(16, 24, 40, 0.04);
+	--sh-2: 0 8px 24px -8px rgba(16, 24, 40, 0.16);
+
+	/* type */
+	--font-display: 'Space Grotesk', system-ui, sans-serif;
+	--font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+	--font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+[data-theme='dark'],
+.dark {
+	--ground: #0b0e13;
+	--surface: #11151c;
+	--surface-2: #151a22;
+	--sunken: #0e1218;
+	--border: #222a35;
+	--border-strong: #2f3845;
+	--text: #e9edf3;
+	--text-2: #97a1b0;
+	--text-3: #828d9b; /* AA-contrast on dark surfaces/sunken/ground */
+
+	--accent: #f0cc4d;
+	--accent-press: #f5d866;
+	--accent-ink: #f0cc4d;
+	--accent-weak: rgba(240, 204, 77, 0.18);
+	--on-accent: #1a1405;
+
+	--ok: #46b07a;
+	--ok-weak: rgba(70, 176, 122, 0.16);
+	--ok-ink: #0b2415; /* dark ink on the lighter dark-theme ok fill */
+	--warn: #d97e2e;
+	--warn-weak: rgba(217, 126, 46, 0.16);
+	--danger: #e26464;
+	--danger-weak: rgba(226, 100, 100, 0.16);
+	--info: #6e93e0;
+	--info-weak: rgba(110, 147, 224, 0.16);
+
+	--dt-invoice: #d98a52;
+	--dt-shipment: #46aec6;
+	--dt-contact: #9a82ff;
+	--dt-task: #54b985;
+	--dt-document: #8593b5;
+	--dt-contract: #d67aac;
+
+	--sh-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+	--sh-2: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+}

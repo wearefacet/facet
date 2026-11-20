@@ -1,0 +1,54 @@
+---
+content:
+  kind: view
+  template:
+    type: col
+    children:
+    - type: header
+      chips:
+      - type
+      subtitle: $datetime
+      title: $subject
+    - type: grid
+      layout: 3 1
+      children:
+      - type: col
+        children:
+        - type: section
+          label: Body
+          children:
+          - type: markdown
+            field: body
+        - type: section
+          label: Details
+          children:
+          - type: field
+            label: Duration (minutes)
+            value: $duration_minutes
+          - type: field
+            label: Completed
+            value: $completed
+        - type: section
+          label: Relations
+          children:
+          - type: field
+            label: Company
+            value: $company_id
+          - type: field
+            label: Contact
+            value: $contact_id
+          - type: field
+            label: Deal
+            value: $deal_id
+      - type: sidebar
+        children:
+        - type: section
+          label: Owner
+          children:
+          - type: field
+            value: $owner_id
+        - type: record-meta
+          history: true
+  parent_doctype: crm.Activity
+meta:
+  parent_id: crm.Activity

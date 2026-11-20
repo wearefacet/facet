@@ -1,0 +1,6 @@
+# Feature IDs exempt from the coverage check, each with a one-line reason.
+# An excluded ID does not fail the check when no page documents it.
+# Source: doc/plans/documentation/whole-doc.md §5 and decision D7.
+
+- id: DOC-08
+  reason: Internal copy primitive with no user-facing surface.

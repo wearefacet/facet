@@ -1,0 +1,159 @@
+---
+content:
+  icon: building-2
+  color: "#2196F3"
+  domain: crm
+  fields:
+    name:
+      type: string
+      title: Company Name
+      unique: true
+      required: true
+      filters:
+        - equality
+        - text_search
+      description: The legal or trading name of the company.
+    phone:
+      type: phone
+      title: Phone Number
+      description: The company's primary phone number.
+    status:
+      type: enum
+      title: Status
+      values:
+      - key: lead
+        color: "#008c9b"
+        label: Lead
+      - key: active
+        color: "#b16147"
+        label: Active
+      - key: churned
+        color: "#7c6db6"
+        label: Churned
+      default: lead
+      filters:
+        - equality
+      description: The relationship status with this company.
+    address:
+      type: object
+      title: Address
+      properties:
+        zip:
+          type: string
+        city:
+          type: string
+        street:
+          type: string
+        country:
+          type: string
+      description: The company's physical address.
+    website:
+      type: url
+      title: Website
+      description: The company's website URL.
+    industry:
+      type: enum
+      title: Industry
+      values:
+      - key: technology
+        color: "#b25e5b"
+        label: Technology
+      - key: finance
+        color: "#76822d"
+        label: Finance
+      - key: healthcare
+        color: "#7570b8"
+        label: Healthcare
+      - key: manufacturing
+        color: "#078f74"
+        label: Manufacturing
+      - key: retail
+        color: "#aa6831"
+        label: Retail
+      - key: other
+        color: "#b25e5e"
+        label: Other
+      filters:
+        - equality
+      description: The primary industry the company operates in.
+    owner_id:
+      type: reference
+      title: Owner
+      doctype: iam.Account
+      description: The sales representative who owns this account.
+    domain_name:
+      type: string
+      title: Domain Name
+      description: The company's primary web domain (e.g. 'acme.com').
+    search_text:
+      type: data
+      title: Search Text
+      compute: company_search_text
+      description: Computed full-text search field concatenating name and domain.
+      compute_when:
+      - name
+      - domain_name
+    company_size:
+      type: enum
+      title: Company Size
+      values:
+      - key: 1-10
+        color: "#9963a1"
+        label: 1-10
+      - key: 11-50
+        color: "#517abb"
+        label: 11-50
+      - key: 51-200
+        color: "#008f82"
+        label: 51-200
+      - key: 201-1000
+        color: "#ad6638"
+        label: 201-1000
+      - key: 1001+
+        color: "#856ab2"
+        label: 1001+
+      filters:
+        - equality
+      description: The approximate number of employees.
+    annual_revenue:
+      type: money
+      currency: USD
+      title: Annual Revenue
+      precision: 0
+      filters:
+        - comparison
+        - currency
+      description: Estimated annual revenue.
+    logo:
+      type: file
+      title: Logo
+      accept:
+      - image/*
+      description: The company logo or brand image.
+  script: !read_file crm.Company.lua
+  actions:
+    merge:
+      args:
+        source_company_id:
+          type: string
+          required: true
+    convert:
+      args: {}
+  doctype: Company
+  search: "{{ name }} {{ domain_name }}"
+  children:
+    memberships:
+      doctype: CompanyMembership
+      collection: true
+      description: The membership rows linking this company to contacts. Each row
+        carries a contact reference and a per-company role.
+  sidecars:
+    comments:
+      doctype: core.Comment
+      column: target
+  description: A B2B organization that is a customer, prospect, or partner.
+  display_name: "{{ name }}"
+  aggregate_root: true
+  schema_version: 1
+meta:
+  parent_id: crm

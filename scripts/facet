@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# Facet CLI wrapper: build the dev binary (quick, non-release) if any source
+# changed, then run it. The build is mtime-tracked by `make` — a no-op when
+# `build/facet` is newer than every source under `src/` and `lib/`.
+
+set -euo pipefail
+
+root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$root"
+
+command -v make >/dev/null 2>&1 || { echo "[facet] Error: make not on PATH" >&2; exit 1; }
+command -v crystal >/dev/null 2>&1 || { echo "[facet] Error: crystal not on PATH" >&2; exit 1; }
+
+make build
+exec build/facet "$@"

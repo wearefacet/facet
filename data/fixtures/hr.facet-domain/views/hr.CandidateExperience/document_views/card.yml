@@ -1,0 +1,18 @@
+---
+content:
+  kind: card
+  template:
+    type: col
+    children:
+    - type: field
+      label: Title
+      value: $title
+    - type: field
+      label: Company
+      value: $company
+    - type: field
+      label: Employment Type
+      value: $type
+  parent_doctype: hr.CandidateExperience
+meta:
+  parent_id: hr.CandidateExperience

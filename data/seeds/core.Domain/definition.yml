@@ -1,0 +1,60 @@
+doctype: Domain
+domain: core
+schema_version: 1
+aggregate_root: true
+description: "A domain groups doctypes under a common namespace. Each domain acts as a bounded context with its own set of document types. A domain grants cross-domain read access to its doctypes through core.DomainGrant documents held in its own tree, and defines context sets for RBAC scope resolution."
+display_name: "{% if label %}{{ label }}{% else %}{{ name }}{% endif %}"
+color: "#3F51B5"
+fields:
+  description:
+    type: longtext
+    title: Description
+    description: "A human-readable description of what this domain represents."
+  label:
+    type: string
+    title: Label
+    description: "Human display name for this domain, shown by the interface instead of the domain name. Optional; when absent or empty, every surface falls back to the domain's name."
+    max: 64
+    filters: [text_search]
+  name:
+    type: string
+    title: "Domain Name"
+    description: "The domain's id-contract name: lowercase alphanumeric with dashes, starting with a letter. On drafts this is the name the author intends the domain to take when published (or merged into an existing domain); the draft itself keeps an auto-generated temporary id, so an authoring-time typo is caught before publish."
+    min: 1
+    max: 64
+    pattern: "^[a-z][a-z0-9\\-]*$"
+    pattern_flags: ""
+    filters: [equality, text_search]
+  color:
+    type: color
+    title: Color
+    description: "A color used to visually identify this domain in the UI (e.g. '#4CAF50'). Accepts hex, rgb, rgba, hsl, hsla formats. Always stored as 8-character hex."
+  context_sets:
+    type: any
+    title: "RBAC Context Sets"
+    description: "Free-form map of named context sets used by the RBAC system. Each set is validated by RBAC::Validator. Format: { name: { from: 'DocType', select: 'field', where: { field: '$self' } } }."
+  hooks:
+    type: any
+    title: "Domain Hooks"
+    description: "Array of domain-owned Lua hooks that fire on a trigger. Two kinds: 'event' hooks run when a source mutation event is observed; 'schedule' hooks run on a cron schedule. Validated at authoring time by Hooks::Validator (script compile, required export per kind, cron expression shape). See doc/backend/hooks.md."
+  draft:
+    type: boolean
+    title: Draft
+    description: "When true, this domain is a throwaway draft — its doctypes can be freely rewritten without version/migration discipline, and the domain cannot be referenced by live-domain replication. Set once at create time; flipped to false by the publish action (which copies structure into a fresh real domain and drops the draft). Cannot be changed afterwards via document update."
+    filters: [equality]
+children:
+  doctypes:
+    doctype: DocType
+    collection: true
+    description: "Doctype definitions belonging to this domain. Cascade-deleted when the domain is deleted — a domain cannot outlive its doctypes."
+  grants:
+    doctype: DomainGrant
+    collection: true
+    description: "Cross-domain data-sharing contracts this domain issues as the producer. Each grant names one consumer domain and the resources (doctypes + field tags) it may read. Cascade-deleted with the domain — a grant cannot outlive its producer."
+scopes:
+  domain_editor:
+    description: "Domains the actioner is a domain editor of (matches on the row id — a domain's name is its core.Domain row id)"
+    where: { "$doc_id": "$editor_domains" }
+  domain_editor_draft:
+    description: "Draft domains the actioner is a domain editor of — the subset of the edited domains whose draft flag is set; backs discard rights on drafts"
+    where: { "$doc_id": "$editor_draft_domains" }

@@ -1,0 +1,105 @@
+/*
+ * SPDX-License-Identifier: BUSL-1.1
+ * Copyright (c) 2026 Amplitude Solutions Ltd
+ *
+ * The shadow-root sheet — injected once into every element's shadow root.
+ *
+ * Design tokens are re-declared here with a `--facet-*` prefix so they can
+ * never collide with the host page's own custom properties. The values mirror
+ * the main application's `src/lib/styles/tokens.css`: a light default on
+ * `:host`, a dark block on `:host([data-theme='dark'])`. A host themes the
+ * widget by overriding tokens on the element itself — custom properties
+ * inherit into the shadow root:
+ *
+ *   facet-assistant { --facet-accent: #008f79; }
+ *
+ * Component CSS lives in the components themselves; Svelte injects it into
+ * the same shadow root at render time. Nothing here targets the host page.
+ */
+
+:host {
+	/* Neutrals */
+	--facet-ground: #f4f6f8;
+	--facet-surface: #ffffff;
+	--facet-surface-2: #fafbfc;
+	--facet-sunken: #eef1f4;
+	--facet-border: #e4e7ec;
+	--facet-border-strong: #d2d7df;
+
+	/* Ink */
+	--facet-text: #1a1d24;
+	--facet-text-2: #5a6473;
+	--facet-text-3: #646b78;
+
+	/* Brand (gold) */
+	--facet-accent: #e4b61a;
+	--facet-accent-press: #c8a312;
+	--facet-accent-ink: #8c6410;
+	--facet-accent-weak: rgba(228, 182, 26, 0.15);
+	--facet-on-accent: #20180a;
+
+	/* Semantic */
+	--facet-ok: #1a6b3c;
+	--facet-ok-weak: rgba(31, 122, 69, 0.12);
+	--facet-warn: #9a5414;
+	--facet-warn-weak: rgba(154, 84, 20, 0.14);
+	--facet-warn-ink: inherit;
+	--facet-danger: #b8333d;
+	--facet-danger-strong: #a93226;
+	--facet-danger-weak: rgba(184, 51, 61, 0.11);
+	--facet-danger-ink: #ffffff;
+	--facet-info: #2f5fb0;
+	--facet-info-weak: rgba(47, 95, 176, 0.12);
+
+	/* Shape */
+	--facet-r-sm: 6px;
+	--facet-r: 9px;
+	--facet-r-lg: 13px;
+	--facet-r-pill: 999px;
+	--facet-sh-1: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 1px rgba(16, 24, 40, 0.04);
+
+	/* Type */
+	--facet-font-display: 'Space Grotesk', system-ui, sans-serif;
+	--facet-font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+	--facet-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+	display: block;
+	font-family: var(--facet-font-sans);
+	color: var(--facet-text);
+}
+
+:host([data-theme='dark']) {
+	--facet-ground: #0b0e13;
+	--facet-surface: #11151c;
+	--facet-surface-2: #151a22;
+	--facet-sunken: #0e1218;
+	--facet-border: #222a35;
+	--facet-border-strong: #2f3845;
+
+	--facet-text: #e9edf3;
+	--facet-text-2: #97a1b0;
+	--facet-text-3: #828d9b;
+
+	--facet-accent: #f0cc4d;
+	--facet-accent-press: #f5d866;
+	--facet-accent-ink: #f0cc4d;
+	--facet-accent-weak: rgba(240, 204, 77, 0.18);
+	--facet-on-accent: #1a1405;
+
+	--facet-ok: #46b07a;
+	--facet-ok-weak: rgba(70, 176, 122, 0.16);
+	--facet-warn: #d97e2e;
+	--facet-warn-weak: rgba(217, 126, 46, 0.16);
+	--facet-danger: #e26464;
+	--facet-danger-weak: rgba(226, 100, 100, 0.16);
+	--facet-info: #6e93e0;
+	--facet-info-weak: rgba(110, 147, 224, 0.16);
+}
+
+/* Minimal reset inside the shadow root — the host page's reset does not
+   reach past the shadow boundary. */
+:host *,
+:host *::before,
+:host *::after {
+	box-sizing: border-box;
+}

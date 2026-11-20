@@ -1,0 +1,16 @@
+---
+content:
+  name: Won
+  config:
+    columns:
+    - key: title
+      label: Deal
+    - key: value
+      label: Value
+      width: 120px
+    - key: actual_close_date
+      label: Closed On
+      width: 150px
+  surface: table
+meta:
+  parent_id: crm.Deal

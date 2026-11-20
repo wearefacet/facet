@@ -1,0 +1,28 @@
+---
+content:
+  kind: quickView
+  template:
+    type: col
+    children:
+    - type: row
+      layout: "auto auto 1fr"
+      children:
+      - type: capsule
+        value: $category
+    - type: hr
+    - type: section
+      label: Skill
+      children:
+      - type: field
+        label: Skill Name
+        value: $name
+      - type: field
+        label: Proficiency Level
+        value: $level
+      - type: field
+        label: Years of Experience
+        value: $years
+    - type: record-meta
+  parent_doctype: hr.CandidateSkill
+meta:
+  parent_id: hr.CandidateSkill

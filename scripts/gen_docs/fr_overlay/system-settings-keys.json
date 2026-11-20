@@ -1,0 +1,17 @@
+{
+  "description": "Chaque clé de réglage système, avec son type et sa valeur par défaut.",
+  "generated_note": "> Généré depuis `src/system_settings/spec.cr` et `data/seeds/core.SystemSettings/definition.yml` par `make gen-docs-system-settings`. Ne modifiez pas ce fichier à la main.",
+  "intro": "Cette page sert à trouver une clé de réglage système, son type et sa valeur par défaut.",
+  "doc_intro": "Les réglages système sont la configuration de la plateforme à l’exécution. Un document, `core.SystemSettings` (id `settings`), porte toutes les clés.",
+  "rule_pin": "- **Un champ non nul épingle la valeur.**",
+  "rule_null": "- **Un null explicite rend la clé au fichier de configuration.**",
+  "registry_note": "Le registre liste chaque clé, son type, et la valeur par défaut intégrée que sert le palier fichier.",
+  "computed_note": "Les valeurs par défaut sont calculées, pas stockées. Le générateur construit la configuration intégrée depuis un YAML minimal en mémoire et exécute le repli fichier de chaque entrée — le troisième palier du code. À l’exécution, une valeur épinglée dans le document prime sur la valeur par défaut.",
+  "secrets_note": "Les clés secrètes n’apparaissent jamais dans une réponse d’API de lecture. Un opérateur les définit par le flux déposer-et-adopter\u00a0; la valeur se trouve dans le magasin de secrets, et son effacement rend la clé au fichier de configuration.",
+  "col_key": "Clé",
+  "col_type": "Type",
+  "col_default": "Défaut",
+  "col_purpose": "Rôle",
+  "related_heading": "Voir aussi",
+  "related_system_settings": "- [/fr/operate/system-settings/](/fr/operate/system-settings/)"
+}

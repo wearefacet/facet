@@ -1,0 +1,47 @@
+---
+content:
+  icon: user-plus
+  domain: production
+  fields:
+    role:
+      type: enum
+      title: Member Role
+      values:
+      - key: member
+        color: "#008b9f"
+        label: Member
+      - key: admin
+        color: "#ad5d7c"
+        label: Admin
+      default: member
+      filters:
+        - equality
+      description: The account's role within the team. Used for fine-grained team-scoped
+        permissions.
+    account:
+      type: reference
+      title: Account
+      unique: true
+      doctype: iam.Account
+      required: true
+      description: 'The account that is a member of the parent team. Used by the `my_teams`
+        RBAC context set (`where: { account: $self }`, `select: $parent_id`).'
+  scopes:
+    mine:
+      where:
+        account: $self
+      description: Memberships where the account is the actioner
+    admins:
+      where:
+        role: admin
+      description: Memberships with the admin role
+  doctype: TeamMember
+  member_of: Team
+  description: A membership record linking an iam.Account to a Team. Child of Team;
+    the team linkage is the system-managed parent_id in meta.
+  display_name: "{{ account }} - {{ role }}"
+  search: "{{ account }} {{ role }}"
+  aggregate_root: false
+  schema_version: 1
+meta:
+  parent_id: production

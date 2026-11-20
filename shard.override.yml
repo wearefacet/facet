@@ -1,0 +1,18 @@
+# Shard overrides — dependencies whose source differs from what the
+# dependency graph would otherwise resolve.
+#
+# `opentelemetry` depends on `jgaskins/mpsc`. That release calls
+# `@receive_mutex.unlock` unconditionally in `send`/`close`, which raises
+# `Can't unlock Sync::MU that isn't held` whenever a send lands with no
+# receiver parked. `OpenTelemetry::BatchExporter` sends a trace then sleeps
+# 100 ms, so this fired on ~99% of sends and crashed the span path (NS-20).
+#
+# The fork guards the unlock with a parked-receiver flag. It cannot be added
+# as a plain `dependencies:` entry — shards rejects two sources for the same
+# name — so it overrides the transitive entry here.
+#
+# Bump the SHA deliberately, then run make check and make test.
+dependencies:
+  mpsc:
+    github: anykeyh/mpsc
+    commit: f156f9ac5d96512cf8794593f006d7d3b02a52b3

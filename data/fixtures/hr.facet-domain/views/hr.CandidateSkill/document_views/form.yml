@@ -1,0 +1,26 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+    - type: section
+      label: Skill
+      children:
+      - type: row
+        layout: 1fr 240px
+        children:
+        - type: input
+          field: name
+        - type: input
+          field: category
+      - type: row
+        layout: repeat(3, minmax(160px, 1fr))
+        children:
+        - type: input
+          field: level
+        - type: input
+          field: years
+  parent_doctype: hr.CandidateSkill
+meta:
+  parent_id: hr.CandidateSkill

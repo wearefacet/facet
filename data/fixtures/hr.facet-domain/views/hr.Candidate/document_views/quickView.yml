@@ -1,0 +1,54 @@
+---
+content:
+  kind: quickView
+  template:
+    type: col
+    children:
+    - type: row
+      layout: "auto auto 1fr"
+      children:
+      - type: capsule
+        value: $source
+      - type: capsule
+        value: $remote_pref
+    - type: hr
+    - type: section
+      label: Contact
+      children:
+      - type: field
+        label: Email
+        value: $email
+      - type: field
+        label: Phone
+        value: $phone
+    - type: section
+      label: Application
+      children:
+      - type: field
+        label: Applied Date
+        value: $applied_date
+      - type: field
+        label: Salary Expectation
+        value: $salary_exp
+      - type: field
+        label: Available From
+        value: $available_from
+    - type: section
+      label: Background
+      children:
+      - type: field
+        label: Total Experience
+        value: $total_exp
+      - type: field
+        label: Rating
+        value: $rating
+    - type: section
+      label: Ownership
+      children:
+      - type: field
+        label: Owner
+        value: $owner
+    - type: record-meta
+  parent_doctype: hr.Candidate
+meta:
+  parent_id: hr.Candidate

@@ -1,0 +1,34 @@
+---
+content:
+  kind: quickView
+  template:
+    type: col
+    children:
+    - type: row
+      layout: "auto auto 1fr"
+      children:
+      - type: capsule
+        value: $industry
+    - type: hr
+    - type: section
+      label: Firmographics
+      children:
+      - type: field
+        label: Industry
+        value: $industry
+    - type: section
+      label: Relations
+      children:
+      - type: field
+        label: Company
+        value: $company_id
+    - type: section
+      label: Ownership
+      children:
+      - type: field
+        label: Owner
+        value: $owner_id
+    - type: record-meta
+  parent_doctype: crm.Customer
+meta:
+  parent_id: crm.Customer

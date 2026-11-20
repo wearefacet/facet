@@ -1,0 +1,46 @@
+---
+content:
+  kind: quickView
+  template:
+    type: col
+    children:
+    - type: row
+      layout: "auto auto 1fr"
+      children:
+      - type: capsule
+        value: $type
+    - type: hr
+    - type: section
+      label: Details
+      children:
+      - type: field
+        label: Date/Time
+        value: $datetime
+      - type: field
+        label: Duration (minutes)
+        value: $duration_minutes
+      - type: field
+        label: Completed
+        value: $completed
+    - type: section
+      label: Relations
+      children:
+      - type: field
+        label: Company
+        value: $company_id
+      - type: field
+        label: Contact
+        value: $contact_id
+      - type: field
+        label: Deal
+        value: $deal_id
+    - type: section
+      label: Ownership
+      children:
+      - type: field
+        label: Owner
+        value: $owner_id
+    - type: record-meta
+  parent_doctype: crm.Activity
+meta:
+  parent_id: crm.Activity

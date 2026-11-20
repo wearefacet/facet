@@ -1,0 +1,53 @@
+# core.SchematicLayout — the saved node positions of a domain schematic.
+#
+# One document per target domain, hosted in `core`. The document's `domain`
+# field names the arranged domain (its `core.Domain` row id); the create and
+# update hooks admit exactly one layout row per domain. `positions` is a
+# dictionary keyed by the target domain's qualified doctype ids, each value
+# carrying the top-left corner of that doctype's node in schematic pixels.
+# The frontend saves the full map after every drag (debounced), so the row
+# is write-heavy and low-value history — the 7-day per-doctype compaction
+# override (`mutations.retention_overrides` in `config.{env}.yml`) folds
+# older mutation history into one snapshot.
+#
+# There is deliberately no documents.yml: layouts are created lazily by the
+# Configure UI on the first drag save, so a layout row exists only for
+# domains someone actually arranged. Writes are scoped to domain editors
+# (the `domain_editor` named scope against the `editor_domains` context
+# set); reads ride the editor/viewer read blanket.
+doctype: SchematicLayout
+domain: core
+schema_version: 1
+aggregate_root: true
+display_name: "Layout of {{ domain }}"
+description: "The saved arrangement of one domain's schematic — the node positions of its doctypes in the Configure doctypes tab. One row per domain; the hooks admit exactly one row per target domain and gate writes on domain-editor membership."
+fields:
+  domain:
+    type: string
+    required: true
+    title: Domain
+    description: "The arranged domain — the id of its live core.Domain document row. A layout is looked up by this field, not by the row id: the UI creates the row lazily on the first drag save, so the row id is a server-assigned ULID."
+    pattern: "^(_[0-9a-z]+|[a-z][a-z0-9\\-]*)$"
+    pattern_flags: ""
+    filters: [equality]
+  positions:
+    type: dictionary
+    title: Positions
+    description: "Node positions keyed by the domain's qualified doctype id (e.g. 'hr.Employee'). Written as the full map on every save; keys with no matching doctype are ignored on restore."
+    values:
+      type: object
+      title: Position
+      description: "Top-left corner of one doctype node, in schematic pixels (1 unit = 1 CSS px), rounded to integers."
+      properties:
+        x:
+          type: integer
+          title: X
+          description: "Horizontal distance from the stage origin."
+        y:
+          type: integer
+          title: Y
+          description: "Vertical distance from the stage origin."
+scopes:
+  domain_editor:
+    description: "Layouts of domains the actioner is a domain editor of"
+    where: { domain: "$editor_domains" }

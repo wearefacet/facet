@@ -1,0 +1,32 @@
+---
+content:
+  kind: view
+  template:
+    type: col
+    children:
+    - type: header
+      chips:
+      - role
+      subtitle: $contact
+      title: $role
+    - type: grid
+      layout: 3 1
+      children:
+      - type: col
+        children:
+        - type: section
+          label: Membership
+          children:
+          - type: field
+            label: Contact
+            value: $contact
+          - type: field
+            label: Since
+            value: $start_date
+      - type: sidebar
+        children:
+        - type: record-meta
+          history: true
+  parent_doctype: crm.CompanyMembership
+meta:
+  parent_id: crm.CompanyMembership

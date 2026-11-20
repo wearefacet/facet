@@ -1,0 +1,35 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+    - type: section
+      label: Identity
+      children:
+      - type: row
+        layout: 1fr 240px
+        children:
+        - type: input
+          field: name
+          required: true
+        - type: input
+          field: status
+    - type: section
+      label: Firmographics
+      children:
+      - type: row
+        layout: minmax(200px, 1fr) minmax(280px, 2fr)
+        children:
+        - type: input
+          field: industry
+        - type: input
+          field: company_id
+    - type: section
+      label: Account
+      children:
+      - type: input
+        field: owner_id
+  parent_doctype: crm.Prospect
+meta:
+  parent_id: crm.Prospect

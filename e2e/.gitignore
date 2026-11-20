@@ -1,0 +1,13 @@
+# node / playwright droppings
+node_modules/
+.auth/
+artifacts/
+test-results/
+
+# pnpm
+.pnpm-store/
+probe/
+
+# The chat-package browser bundle the runner image drops into the fixture
+# folder at build time (see e2e/docker/runner.Dockerfile).
+fixtures/miniapp/facet-assistant.js

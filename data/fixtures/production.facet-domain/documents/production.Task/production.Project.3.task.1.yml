@@ -1,0 +1,8 @@
+---
+content:
+  title: Audit current onboarding drop-off
+  status: done
+  assignee: iam.Account.account_growth_sam
+  estimate_hours: 6
+meta:
+  parent_id: production.Project.3

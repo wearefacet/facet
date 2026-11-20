@@ -1,0 +1,8 @@
+---
+content:
+  title: 'Spike: event store candidates'
+  status: done
+  assignee: iam.Account.account_eng_dao
+  estimate_hours: 8
+meta:
+  parent_id: production.Project.1

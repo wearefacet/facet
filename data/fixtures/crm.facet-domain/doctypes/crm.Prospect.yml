@@ -1,0 +1,72 @@
+---
+content:
+  icon: user-search
+  color: "#FF5722"
+  domain: crm
+  fields:
+    name:
+      type: string
+      title: Company Name
+      filters:
+      - equality
+      - text_search
+      replicate:
+        via: company_id
+        field: name
+      description: The name of the prospect company, replicated from the referenced Company.
+    status:
+      type: enum
+      title: Status
+      values:
+      - key: lead
+        color: "#008c9b"
+        label: Lead
+      - key: active
+        color: "#b16147"
+        label: Active
+      - key: churned
+        color: "#7c6db6"
+        label: Churned
+      default: lead
+      filters:
+        - equality
+      description: The relationship status.
+    industry:
+      type: string
+      title: Industry
+      description: The industry of the prospect.
+    owner_id:
+      type: reference
+      title: Owner
+      doctype: iam.Account
+      description: The sales representative who owns this prospect.
+    company_id:
+      type: reference
+      title: Company
+      doctype: crm.Company
+      filters:
+        - equality
+      description: The company this prospect refers to.
+  script: !read_file crm.Prospect.lua
+  actions:
+    convert:
+      args:
+        customer_status:
+          type: string
+          required: false
+  doctype: Prospect
+  sidecars:
+    comments:
+      doctype: core.Comment
+      column: target
+  identifier:
+    genonly: false
+    template: PROS-{year}-####
+  description: A potential customer in the sales pipeline. References a Company; contacts
+    and deals are owned by the Company, not the Prospect.
+  display_name: "{{ name }}"
+  search: "{{ name }} {{ industry }}"
+  aggregate_root: true
+  schema_version: 1
+meta:
+  parent_id: crm

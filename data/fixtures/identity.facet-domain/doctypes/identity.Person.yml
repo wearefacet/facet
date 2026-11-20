@@ -1,0 +1,45 @@
+---
+content:
+  icon: user
+  domain: identity
+  fields:
+    kind:
+      type: enum
+      values:
+      - key: internal
+        color: "#b25e5a"
+        label: Internal
+      - key: external
+        color: "#3d8d5c"
+        label: External
+      default: external
+      filters:
+        - equality
+    email:
+      type: string
+      unique: true
+      required: true
+      filters:
+        - equality
+        - text_search
+    contact:
+      type: object
+      title: Contact
+      description: 'Phone and postal address for the person. Free-form: any keys accepted.'
+    full_name:
+      type: string
+      required: true
+      filters:
+        - equality
+        - text_search
+    date_of_birth:
+      type: date
+      required: true
+  doctype: Person
+  description: A person record referenced by other doctypes (e.g. Employee).
+  search: "{{ full_name }} {{ email }}"
+  display_name: "{{ full_name }}"
+  aggregate_root: true
+  schema_version: 1
+meta:
+  parent_id: identity

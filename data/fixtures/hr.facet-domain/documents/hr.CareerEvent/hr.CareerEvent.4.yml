@@ -1,0 +1,12 @@
+---
+content:
+  seq: 2
+  note: Promoted to Engineering Manager
+  new_title: Engineering Manager
+  event_type: promoted
+  new_salary:
+    value: "185000"
+    currency: USD
+  effective_date: "2023-04-01"
+meta:
+  parent_id: hr.Employee.2

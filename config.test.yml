@@ -1,0 +1,184 @@
+artifact:
+  storage:
+    type: filesystem
+    directory: tmp/uploads/test/store
+
+host: "localhost:3000"
+base_url: "http://localhost:3000"
+
+# No trusted proxies in the suite: requests run in-process with no socket
+# peer, so the client-IP resolver (`Util::ClientIp`) returns nothing and
+# X-Forwarded-For stays ignored everywhere. See `doc/backend/config.md`.
+trusted_proxies: []
+
+# Separate origin for artifact bytes; see `doc/backend/artifact.md`.
+# Tests do not actually bind a second HTTP server, but the config must be
+# present and distinct from `base_url` so the constraint is enforced.
+artifact_base_url: "http://localhost:3001"
+
+# HMAC secret for artifact grant signed URLs. Tests construct and verify
+# grants directly, so a fixed known value is fine. Specs that exercise
+# two-key rotation install `artifact_grant_secret_previous` via
+# `Config.instance =` per-example rather than editing this file.
+artifact_grant_secret: "test-grant-secret-fixed"
+
+event:
+  url: "redis://localhost:6379/1"
+  partitions: 16
+  maxlen: 1000000
+  stream:
+    max_block_time: 0.5
+    min_block_time: 0.05
+    block_time_delta: 0.5
+    max_messages_count: 10
+
+# Statement timeout for pooled connections in the test suite. The spec
+# suite runs small row counts, so 5 s leaves headroom while still catching
+# runaway statements. See `Facet::Config::DatabaseConfig`.
+#
+# The `cluster` section is the suite-wide read/write tripwire (the
+# segregation design, §5.4): `main` points at the worker database and
+# carries a `replica:` at the same URL, so every ro request gets an
+# enforced pool — `SET default_transaction_read_only = on` — while rw
+# requests keep the primary pool. One physical database is enough: the
+# hook, not the host, refuses writes. Any read-path code that writes then
+# fails its own spec, which is what turns the read-path classification
+# sweep into a suite-verified property.
+database:
+  statement_timeout_ms: 5000
+  cluster:
+    databases:
+      main:
+        # !env expands at config load; the suite provisions the worker
+        # database and exports DATABASE_URL before `Config.instance` loads.
+        url: !env DATABASE_URL
+        resources: ["*"]
+        replica:
+          url: !env DATABASE_URL
+
+iam:
+  # Short TTL for tests so expiry paths are quick to exercise.
+  change_password_expiration: 3600
+
+# Lua sandbox limits for doctype scripts. These match the code defaults
+# (`Config::LuaConfig`) — kept here as the visible reference for the knobs.
+lua:
+  instruction_limit: 10000000
+  memory_limit_mb: 100
+  time_limit_s: 5.0
+
+# Hooks (domain event/schedule hooks) scheduler tuning. The section is
+# optional — `Hooks::Config` returns these defaults when absent.
+hooks:
+  scheduler_poll_interval_s: 5.0
+  lease_ttl_s: 600
+
+# Webhook target policy for specs. The B-76 host gate refuses targets whose
+# host does not resolve or resolves private; spec fixtures author webhooks
+# against `receiver.example` / `receiver.example.com` (and never dial them —
+# the transport is stubbed), so both hostnames are allowlisted here to keep
+# the suite DNS-independent. Specs that exercise the gate itself swap the
+# config singleton with their own entries.
+webhook:
+  allowed_hosts:
+    - receiver.test
+    - receiver.example
+    - receiver.example.com
+
+# Background jobs (PostgreSQL-only job queue). Workers are disabled in
+# the test config — specs that exercise the worker construct
+# `Jobs::Manager` / `Jobs::Worker` explicitly with their own settings,
+# so enqueue-only mode is the safe default here.
+jobs:
+  enabled: false
+
+# Document import/export wait mode. Test values keep wait-mode specs fast:
+# a fast poll and a short fallback make the timeout path observable without
+# sleeping several seconds.
+import_export:
+  wait_poll_ms: 20
+  wait_timeout_s: 1
+  # Row cap of one import file (see config.dev.yml). The suite default is
+  # the same 100000; specs that exercise the cap swap the singleton via
+  # `Config.instance =` instead of editing this file.
+  max_import_rows: 100000
+
+# Sidecar subsystem (cross-doctype nested records). Optional; the
+# `reconcile_cron` schedules the orphan-reconciliation cron task. The
+# event-driven `SidecarSweep` subscriber (started in production by
+# `main.cr`) handles the common path; this cron is the backstop.
+sidecar:
+  reconcile_cron: "0 */1 * * *"
+
+# Tombstone content retention. Optional; the prune cron clears
+# content/links/search on expired tombstones. Defaults are fine for tests —
+# specs that exercise the prune age rows directly with SQL and pass an
+# explicit retention window to `TombstoneContentPrune.prune`.
+tombstone:
+  content_retention_days: 30
+  prune_cron: "15 4 * * *"
+
+# Mutations retention and coalescing. Coalescing is disabled for the
+# suite: existing specs assert mutation counts and idx sequences that a
+# folding write would change. The coalesce spec opts in by swapping the
+# config singleton. Compaction specs pass explicit retention windows to
+# `MutationCompaction.compact`, like the tombstone prune specs.
+mutations:
+  retention_days: 180
+  retention_overrides:
+    # Pins the per-doctype override the suite asserts on
+    # (spec/cron/mutation_compaction_spec.cr → core.SchematicLayout).
+    "core.SchematicLayout": 7
+  compaction_cron: "45 3 * * *"
+  coalesce_window_minutes: 0
+
+# Generalized secret store. Required — the store fails closed at config
+# load when master_key is missing or decodes to fewer than 32 bytes.
+# Test value is a literal (not a production secret); bcrypt_cost is low so
+# the suite stays fast.
+secrets:
+  master_key: "j6v38U28kkx2TJnNc1azCe1PMsUt8IGoGV7GLRv1exk="
+  bcrypt_cost: 4
+  staging_ttl_seconds: 900
+  prune_after_days: 30
+  prune_cron: "45 4 * * *"
+
+# WebSocket bridge tuning. Optional; defaults are fine for tests.
+websocket:
+  collection:
+    max_subscribers_per_doctype: 32
+
+# Process-cache staleness bound. Disabled for the suite: examples truncate
+# the projections table and seed some registries in memory, so a live bound
+# would rebuild from truncated data mid-suite. Specs that exercise the
+# bound swap the config singleton with a small window (see
+# `spec/support/cache_freshness_helper.cr` and the per-cache specs).
+cache:
+  staleness_ttl_s: 0
+
+mail:
+  # Dev adapter prints to stdout; tests can override the adapter on
+  # BaseEmail directly when they need to assert delivery.
+  adapter: dev
+  from_address: "no-reply@example.test"
+  from_name: "Facet Tests"
+  smtp:
+    host: "localhost"
+    port: 587
+    username: null
+    password: null
+    use_tls: true
+
+# AI Assistant. Tests load assistant-cr's mock HTTP server per-spec rather than
+# hitting a real endpoint, so api_key stays null. cancel_ttl_seconds is short
+# so cancel-key TTL expiry tests don't block the suite.
+assistant:
+  api_endpoint: "https://api.openai.com/v1"
+  api_key: null
+  model: "gpt-4o"
+  cancel_ttl_seconds: 1
+  # The usage-ledger prune is off by default (retention 0 = never). Specs
+  # that exercise the prune age rows directly with SQL and pass an
+  # explicit retention window to `AssistantUsagePrune.prune`.
+  usage_retention_days: 0
+  usage_prune_cron: "30 4 * * *"

@@ -1,0 +1,62 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+    - type: section
+      label: Identity
+      children:
+      - type: row
+        layout: 1fr 240px
+        children:
+        - type: input
+          field: person
+          label: Person
+        - type: input
+          field: status
+          label: Status
+      - type: input
+        field: manager
+        label: Manager
+    - type: section
+      label: Employment
+      children:
+      - type: row
+        layout: minmax(200px, 1fr) minmax(280px, 2fr)
+        children:
+        - type: input
+          field: job_title
+          label: Job Title
+        - type: input
+          field: department
+          label: Department
+      - type: row
+        layout: minmax(200px, 1fr) minmax(280px, 2fr)
+        children:
+        - type: input
+          field: hire_date
+          label: Hire Date
+        - type: input
+          field: termination_date
+          label: Termination Date
+      - type: row
+        layout: minmax(200px, 1fr) minmax(280px, 2fr)
+        children:
+        - type: input
+          field: salary
+          label: Salary
+        - type: input
+          field: remote
+          label: Remote
+    - type: relation
+      label: Career Events
+      limit: 25
+      source:
+        rel: career_events
+        kind: children
+      doctype: hr.CareerEvent
+      editable: true
+  parent_doctype: hr.Employee
+meta:
+  parent_id: hr.Employee

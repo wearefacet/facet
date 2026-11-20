@@ -1,0 +1,74 @@
+# Throwaway PostgreSQL for the backend spec suite (`crystal spec`).
+#
+# The suite connects through `DATABASE_URL` in `.env.test` (port 5433).
+# Data lives on a tmpfs mount and the instance runs a non-durable profile
+# (`fsync=off`, `synchronous_commit=off`, `full_page_writes=off`,
+# `wal_level=minimal`): the suite truncates tables thousands of times, and on
+# durable storage each `DROP DATABASE` waits minutes for a checkpoint that
+# must fsync that churn. See `doc/backend/test-database.md`.
+#
+# The dev database (`facet`, port 5432) stays on the main instance,
+# untouched. Data here dies with the container — `spec/spec_helper.cr`
+# rebuilds the template database on every suite run.
+
+name: facet-test
+
+services:
+  postgres:
+    # Postgres 17 + pgvector. The schema does not require pgvector (0001
+    # enables the optional `vector` extension only when the server has it),
+    # but this image keeps the test stack RAG-ready for assistant retrieval
+    # embeddings. Same major as the dev instance.
+    image: pgvector/pgvector:0.8.0-pg17
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: facet_test
+    command:
+      - postgres
+      # Non-durable test profile. The data lives on tmpfs and dies with the
+      # container, so crash safety is pure overhead. `fsync=off` and
+      # `full_page_writes=off` remove the durability work; `wal_level=minimal`
+      # (with `max_wal_senders=0`) lets PostgreSQL skip WAL entirely for bulk
+      # operations such as `CREATE DATABASE ... TEMPLATE` and `CREATE TABLE AS`.
+      # Without full-page writes there is no FPI/checkpoint feedback loop, so
+      # WAL volume drops sharply and a larger `max_wal_size` fits the tmpfs.
+      - -c
+      - fsync=off
+      - -c
+      - synchronous_commit=off
+      - -c
+      - full_page_writes=off
+      - -c
+      - wal_level=minimal
+      - -c
+      - max_wal_senders=0
+      - -c
+      - max_connections=200
+      # Fewer, larger checkpoints. `max_wal_size` is a soft limit that never
+      # blocks a query, and `checkpoint_timeout` only bounds the timed path.
+      # The old 256 MB cap made checkpoints fire every ~130 MB of WAL
+      # (`max_wal_size / (1 + checkpoint_completion_target)`), which the suite
+      # reached every ~20 s.
+      - -c
+      - checkpoint_timeout=30min
+      - -c
+      - max_wal_size=512MB
+      - -c
+      - min_wal_size=32MB
+      - -c
+      - shared_buffers=256MB
+    ports:
+      - "5433:5432"
+    volumes:
+      # Ephemeral by design — the database dies with the container.
+      - type: tmpfs
+        target: /var/lib/postgresql/data
+        tmpfs:
+          size: 1gb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    restart: unless-stopped

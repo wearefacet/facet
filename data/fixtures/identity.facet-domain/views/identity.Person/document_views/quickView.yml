@@ -1,0 +1,31 @@
+---
+content:
+  kind: quickView
+  template:
+    type: col
+    children:
+    - type: row
+      layout: "auto auto 1fr"
+      children:
+      - type: capsule
+        value: $kind
+    - type: hr
+    - type: section
+      label: Identity
+      children:
+      - type: field
+        label: Email
+        value: $email
+      - type: field
+        label: Date of Birth
+        value: $date_of_birth
+    - type: section
+      label: Contact
+      children:
+      - type: field
+        label: Contact
+        value: $contact
+    - type: record-meta
+  parent_doctype: identity.Person
+meta:
+  parent_id: identity.Person

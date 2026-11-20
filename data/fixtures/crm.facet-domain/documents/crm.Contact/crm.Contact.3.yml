@@ -1,0 +1,12 @@
+---
+content:
+  role: decision_maker
+  email: carol.martinez@globex.com
+  phone: +1-555-0201
+  owner_id: iam.Account.account_eng_dao
+  job_title: CFO
+  last_name: Martinez
+  department: Finance
+  first_name: Carol
+  is_primary: true
+meta: {}

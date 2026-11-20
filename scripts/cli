@@ -1,0 +1,26 @@
+#!/bin/sh
+
+# Facet CLI wrapper: build the npm CLI (@facetapp/cli) when the emitted bundle
+# is missing or stale, then run it. The build is mtime-tracked — a no-op when
+# `dist/index.js` is newer than every file under `packages/cli/src/` and the
+# build inputs (`package.json`, `tsconfig.json`).
+
+set -euo pipefail
+
+root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$root"
+
+command -v node >/dev/null 2>&1 || { echo "[cli] Error: node not on PATH" >&2; exit 1; }
+command -v pnpm >/dev/null 2>&1 || { echo "[cli] Error: pnpm not on PATH" >&2; exit 1; }
+
+cd packages/cli
+
+if [ ! -d node_modules ]; then
+	pnpm install
+fi
+
+if [ ! -f dist/index.js ] || [ -n "$(find src package.json tsconfig.json -newer dist/index.js -print -quit)" ]; then
+	pnpm build
+fi
+
+exec node dist/index.js "$@"

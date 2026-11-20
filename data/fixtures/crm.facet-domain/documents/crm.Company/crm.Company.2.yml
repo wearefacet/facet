@@ -1,0 +1,19 @@
+---
+content:
+  name: Globex Inc
+  phone: +1-555-0200
+  status: lead
+  address:
+    zip: "10005"
+    city: New York
+    street: 200 Wall Street
+    country: USA
+  website: https://globex.com
+  industry: finance
+  owner_id: iam.Account.account_eng_dao
+  domain_name: globex.com
+  company_size: 51-200
+  annual_revenue:
+    value: "10000000"
+    currency: USD
+meta: {}

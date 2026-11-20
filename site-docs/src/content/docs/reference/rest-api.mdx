@@ -1,0 +1,39 @@
+---
+title: REST API
+description: The REST API reference, rendered from the OpenAPI specification.
+audience: [developer, operator]
+features: [PLT-12]
+sidebar:
+  order: 1
+verified_at: 008dd880
+---
+
+Use this page to look up a route: its methods, parameters, and status codes.
+
+This page embeds the interactive REST API reference for the document, audit, and IAM routes.
+The site vendors a copy of `doc/api/openapi.json` at `/api/openapi.json`.
+`make gen-docs-rest-api` refreshes the copy.
+
+The how-to pages under `/apps/` teach the same routes with worked examples.
+
+:::note
+The OpenAPI file covers a subset of the REST surface (feature `PLT-12`), so this reference is partial.
+The file serves these route groups:
+
+- document CRUD: list, create, read, update, and delete documents of one doctype
+- document history, rollback, and restore, including child documents
+- backlinks: the documents that reference one document
+- the global audit log and its rollback route
+- the IAM account routes: current account profile, credential states, temporary password, and invite
+
+Every other route group — webhooks, files, secrets, search, WebSocket, and authentication —
+is documented on the hand-written pages under `/apps/`.
+:::
+
+<script id="api-reference" data-url="/api/openapi.json" is:inline></script>
+<script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference" is:inline></script>
+
+## Related
+
+- [Use the REST API](/apps/rest-api/)
+- [The TypeScript SDK (`@facetapp/sdk`)](/apps/typescript-sdk/)

@@ -1,0 +1,15 @@
+---
+content:
+  name: Intake
+  status: in_progress
+  ends_at: "2026-03-16T10:00:00Z"
+  subject: Filter bank
+  starts_at: "2026-03-16T08:30:00Z"
+  scheduled_on: "2026-03-16"
+  scheduled_days:
+    end: "2026-03-16"
+    start: "2026-03-16"
+  scheduled_window:
+    end: "2026-03-16T10:00:00Z"
+    start: "2026-03-16T08:30:00Z"
+meta: {}

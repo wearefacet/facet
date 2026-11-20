@@ -1,0 +1,27 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+    - type: section
+      label: Identity
+      children:
+      - type: input
+        field: name
+    - type: section
+      label: Description
+      children:
+      - type: input
+        field: description
+    - type: relation
+      label: Members
+      source:
+        rel: members
+        kind: children
+      doctype: production.TeamMember
+      editable: true
+      limit: 25
+  parent_doctype: production.Team
+meta:
+  parent_id: production.Team

@@ -1,0 +1,15 @@
+---
+content:
+  name: Prep
+  status: planned
+  ends_at: "2026-04-05T10:00:00Z"
+  subject: April turnover
+  starts_at: "2026-04-05T08:00:00Z"
+  scheduled_on: "2026-04-05"
+  scheduled_days:
+    end: "2026-04-05"
+    start: "2026-04-05"
+  scheduled_window:
+    end: "2026-04-05T10:00:00Z"
+    start: "2026-04-05T08:00:00Z"
+meta: {}

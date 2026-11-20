@@ -1,0 +1,25 @@
+---
+content:
+  kind: quickView
+  template:
+    type: col
+    children:
+    - type: row
+      layout: "auto auto 1fr"
+      children:
+      - type: capsule
+        value: $role
+    - type: hr
+    - type: section
+      label: Membership
+      children:
+      - type: field
+        label: Contact
+        value: $contact
+      - type: field
+        label: Since
+        value: $start_date
+    - type: record-meta
+  parent_doctype: crm.CompanyMembership
+meta:
+  parent_id: crm.CompanyMembership

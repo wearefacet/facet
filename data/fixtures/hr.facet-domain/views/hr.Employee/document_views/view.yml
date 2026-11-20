@@ -1,0 +1,74 @@
+---
+content:
+  kind: view
+  template:
+    type: col
+    children:
+    - type: header
+      statusField: status
+      subtitle: $current_title
+      title: $person
+    - type: grid
+      layout: 3 1
+      children:
+      - type: col
+        children:
+        - type: section
+          label: Employment
+          children:
+          - type: field
+            label: Job Title
+            value: $job_title
+          - type: field
+            label: Department
+            value: $department
+          - type: field
+            label: Hire Date
+            value: $hire_date
+          - type: field
+            label: Termination Date
+            value: $termination_date
+          - type: field
+            label: Salary
+            value: $salary
+          - type: field
+            label: Remote
+            value: $remote
+        - type: section
+          label: Tenure
+          children:
+          - type: field
+            label: Current Title
+            value: $current_title
+          - type: field
+            label: Tenure (days)
+            value: $tenure_days
+      - type: sidebar
+        children:
+        - type: section
+          label: Reporting
+          children:
+          - type: field
+            label: Person
+            value: $person
+          - type: field
+            label: Manager
+            value: $manager
+        - type: record-meta
+          history: true
+    - tabs:
+      - type: tab
+        label: Career Events
+        children:
+        - type: relation
+          view: inline
+          label: Career Events
+          limit: 25
+          source:
+            rel: career_events
+            kind: children
+          doctype: hr.CareerEvent
+      type: tabs
+  parent_doctype: hr.Employee
+meta:
+  parent_id: hr.Employee

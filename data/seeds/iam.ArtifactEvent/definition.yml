@@ -1,0 +1,53 @@
+doctype: ArtifactEvent
+domain: iam
+schema_version: 1
+aggregate_root: true
+display_name: "{{ filename }}"
+description: "Append-only audit log for artifact destruction. Written in the same transaction as the artifact delete by both destruction paths — the operator force-delete route (DELETE /api/Artifacts/:id) and the `artifacts:prune --hard` CLI — so no artifact leaves the system without a matching audit record. The artifact row is gone when this event exists, so the content facts (filename, MIME type, size, SHA-256) are snapshotted here."
+icon: trash-2
+fields:
+  artifact_id:
+    type: string
+    required: true
+    title: "Artifact ID"
+    description: "The ULID of the destroyed artifact row."
+  event:
+    type: enum
+    required: true
+    values: [purged]
+    title: "Event Type"
+    description: "The destruction event kind."
+  filename:
+    type: string
+    required: true
+    title: Filename
+    description: "The artifact's filename at destruction time."
+  mime_type:
+    type: string
+    required: true
+    title: "MIME Type"
+    description: "The artifact's MIME type at destruction time."
+  size:
+    type: integer
+    required: true
+    title: Size
+    description: "Byte size at destruction time."
+  sha256:
+    type: string
+    required: true
+    title: "SHA-256"
+    description: "Content hash at destruction time — identifies the destroyed bytes even after dedup re-uploads."
+  owner_count:
+    type: integer
+    required: true
+    title: "Owners"
+    description: "Number of `artifact_owners` rows destroyed by the cascade."
+  reference_count:
+    type: integer
+    required: true
+    title: "References"
+    description: "Number of `artifact_references` rows destroyed by the cascade."
+  details:
+    type: longtext
+    title: Details
+    description: "Optional free text — the operator's reason from the force-delete confirm dialog."

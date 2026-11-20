@@ -1,0 +1,34 @@
+- id: core
+  content:
+    color: "#3F51B5"
+    context_sets:
+      # Slugs of the domains the actioner is a domain editor of. The root
+      # set — the other two hang off it.
+      editor_domains:
+        from: DomainEditor
+        select: domain
+        where: { account: "$self" }
+      # Qualified ids of the doctypes of those domains. $doc_id projects the
+      # row id, which for core.DocType rows is the qualified
+      # {domain}.{Doctype} — the same shape core.DocumentView.parent_doctype
+      # stores, so the join is exact (no slug-prefix hazard).
+      editor_doctypes:
+        from: DocType
+        select: "$doc_id"
+        where: { domain: "$editor_domains" }
+      # The subset of the edited domains that are drafts (backing discard
+      # rights). Resolves through SQL only: content->>'draft' = 'true'
+      # compares text against the boolean's JSON form. The in-process
+      # matcher compares raw JSON — a Bool never equals the string "true" —
+      # which is why this filter lives inside a context set and never in a
+      # named scope.
+      editor_draft_domains:
+        from: Domain
+        select: "$doc_id"
+        where: { "$doc_id": "$editor_domains", draft: "true" }
+- id: iam
+  content:
+    color: "#009688"
+- id: app
+  content:
+    color: "#7B1FA2"

@@ -1,0 +1,20 @@
+---
+content:
+  name: By Value
+  config:
+    kanban:
+      mode: custom
+      page_size: 25
+      lanes:
+      - label: Under 25k
+        filter:
+          value__lt: "USD 25000"
+      - label: 25k to 100k
+        filter:
+          value__between: ["USD 25000", "USD 100000"]
+      - label: Over 100k
+        filter:
+          value__gt: "USD 100000"
+  surface: kanban
+meta:
+  parent_id: crm.Deal

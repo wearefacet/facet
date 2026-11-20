@@ -1,0 +1,1017 @@
+# Document view templates seeded for the system doctypes.
+#
+# Children of the `core.DocType` projection for each doctype: each row
+# carries `meta.parent_id` (the child-slot linkage the document-view routes
+# read) plus the required `content.parent_doctype` member. Seeds go through
+# the real create pipeline, so the DocumentView Lua hook's duplicate-kind
+# rule applies to these rows like any other.
+#
+# Kinds: `view` (show page), `form` (edit + new), `quickView` (peek
+# drawer). `card` and `inline` stay unseeded — those surfaces fall back
+# to the definition-generated rendering until a template is authored.
+#
+# The matrix: admin-facing
+# doctypes get the three standard kinds, read-only records get view +
+# quickView (their writers are bespoke routes), and doctypes owned by
+# bespoke surfaces (comments, attachments, audit rows, builder meta)
+# stay on the fallbacks.
+#
+# `core.Currency` — system data: the `ticker` is the registry key, so the
+# form surfaces `active` / `favorite` / `digits` / `grouping` as the
+# everyday edits and keeps `ticker` visible but secondary; its help text
+# states the blast radius. The show view's `header.title` interpolates
+# `$name`; the projection's display_name ("{{ name }} ({{ ticker }})")
+# only renders in chrome that reads the projection, not inside a template.
+- id: core.Currency.view
+  meta: { parent_id: core.Currency }
+  content:
+    parent_doctype: core.Currency
+    kind: view
+    template:
+      type: col
+      children:
+      - type: header
+        title: $name
+        subtitle: "Registry key for money fields"
+      - type: grid
+        layout: 3 1
+        children:
+        - type: col
+          children:
+          - type: section
+            label: Identity
+            children:
+            - type: field
+              label: Ticker
+              value: $ticker
+            - type: field
+              label: Name
+              value: $name
+            - type: field
+              label: Symbol
+              value: $symbol
+          - type: section
+            label: Display
+            children:
+            - type: field
+              label: Digits
+              value: $digits
+            - type: field
+              label: Grouping
+              value: $grouping
+        - type: sidebar
+          children:
+          - type: field
+            label: Active
+            value: $active
+          - type: field
+            label: Favorite
+            value: $favorite
+          - type: record-meta
+            history: true
+- id: core.Currency.form
+  meta: { parent_id: core.Currency }
+  content:
+    parent_doctype: core.Currency
+    kind: form
+    template:
+      type: col
+      children:
+      - type: section
+        label: Identity
+        children:
+        - type: row
+          layout: 1fr 2fr 1fr
+          children:
+          - type: input
+            field: ticker
+            helper: "ISO code, uppercase — the registry key for money fields."
+          - type: input
+            field: name
+          - type: input
+            field: symbol
+            helper: "Display glyph, e.g. €. Empty renders the bare ticker."
+      - type: section
+        label: Display
+        children:
+        - type: row
+          layout: 1fr 2fr
+          children:
+          - type: input
+            field: digits
+            helper: "Sub-unit precision: 0 whole units, 2 cents, 3 millis."
+          - type: input
+            field: grouping
+      - type: section
+        label: Visibility
+        children:
+        - type: input
+          field: active
+        - type: input
+          field: favorite
+- id: core.Currency.quickView
+  meta: { parent_id: core.Currency }
+  content:
+    parent_doctype: core.Currency
+    kind: quickView
+    template:
+      type: col
+      children:
+      - type: hr
+      - type: section
+        label: Identity
+        children:
+        - type: field
+          label: Ticker
+          value: $ticker
+        - type: field
+          label: Symbol
+          value: $symbol
+      - type: section
+        label: Display
+        children:
+        - type: field
+          label: Digits
+          value: $digits
+        - type: field
+          label: Grouping
+          value: $grouping
+      - type: record-meta
+# ── iam.Account ──────────────────────────────────────────────────────────────
+#
+# The flagship templates. The form edits scalars + `default_role` only:
+# `roles` (array of references) has no input node and stays on the
+# assignments page; `mfa_enabled` stays on the credential actions panel
+# (a form toggle would invite a raw boolean write that bypasses the
+# "Reset MFA" route). The create hook's pending-status rule is stated in
+# the status helper.
+- id: iam.Account.form
+  meta: { parent_id: iam.Account }
+  content:
+    parent_doctype: iam.Account
+    kind: form
+    template:
+      type: col
+      children:
+      - type: section
+        label: Identity
+        children:
+        - type: row
+          layout: minmax(240px, 2fr) minmax(200px, 1fr)
+          children:
+          - type: input-text
+            field: email
+            label: Email
+            inputType: email
+            required: true
+            helper: "Used for sign-in and identification. Must be unique."
+          - type: input
+            field: name
+        - type: row
+          layout: minmax(200px, 1fr) minmax(240px, 2fr)
+          children:
+          - type: input
+            field: status
+            helper: "A new human account starts as pending. It becomes active at first sign-in."
+          - type: input
+            field: organizational_unit
+            placeholder: /engineering/
+            helper: "A path that starts and ends with '/'. Used by RBAC scope predicates."
+      - type: section
+        label: Roles
+        children:
+        - type: input
+          field: default_role
+          helper: "Used when no role is requested at login. Falls back to the first assigned role."
+      - type: section
+        label: Security
+        children:
+        - type: row
+          layout: repeat(3, minmax(160px, 1fr))
+          children:
+          - type: input
+            field: must_change_pw
+          - type: input
+            field: service_account
+- id: iam.Account.view
+  meta: { parent_id: iam.Account }
+  content:
+    parent_doctype: iam.Account
+    kind: view
+    template:
+      type: col
+      children:
+      - type: header
+        title: $name
+        subtitle: $email
+        statusField: status
+      - type: grid
+        layout: 3 1
+        children:
+        - type: col
+          children:
+          - type: section
+            label: Identity
+            children:
+            - type: email
+              href: $email
+              label: $email
+            - type: field
+              label: Display Name
+              value: $name
+            - type: field
+              label: Organizational Unit
+              value: $organizational_unit
+          - type: section
+            label: Security
+            children:
+            - type: field
+              label: MFA Enabled
+              value: $mfa_enabled
+            - type: field
+              label: Must Change Password
+              value: $must_change_pw
+            - type: field
+              label: Service Account
+              value: $service_account
+          - type: section
+            label: Federated Identities
+            children:
+            - type: array
+              field: federated_identities
+              children:
+              - type: row
+                layout: 160px 2fr auto
+                children:
+                - type: field
+                  value: $provider
+                - type: field
+                  value: $subject
+                - type: field
+                  value: $linked_at
+        - type: sidebar
+          children:
+          - type: section
+            label: Roles
+            children:
+            - type: array
+              field: roles
+              children:
+              - type: capsule
+                value: $value
+            - type: field
+              label: Default Role
+              value: $default_role
+          - type: record-meta
+            history: true
+- id: iam.Account.quickView
+  meta: { parent_id: iam.Account }
+  content:
+    parent_doctype: iam.Account
+    kind: quickView
+    template:
+      type: col
+      children:
+      - type: row
+        layout: auto 1fr
+        children:
+        - type: capsule
+          value: $status
+      - type: hr
+      - type: section
+        label: Identity
+        children:
+        - type: email
+          href: $email
+          label: $email
+        - type: field
+          label: Display Name
+          value: $name
+        - type: field
+          label: Organizational Unit
+          value: $organizational_unit
+      - type: section
+        label: Roles
+        children:
+        - type: array
+          field: roles
+          children:
+          - type: capsule
+            value: $value
+        - type: field
+          label: Default Role
+          value: $default_role
+      - type: record-meta
+# ── iam.Roles ────────────────────────────────────────────────────────────────
+#
+# `permissions` stays on the RbacEditor — the structured editor is the
+# better authoring UX for RBAC. The show view renders each permission as
+# action + target with its optional scope/except lists as capsules.
+- id: iam.Roles.form
+  meta: { parent_id: iam.Roles }
+  content:
+    parent_doctype: iam.Roles
+    kind: form
+    template:
+      type: col
+      children:
+      - type: section
+        label: Identity
+        children:
+        - type: input
+          field: name
+          helper: "Lowercase letters, digits and underscores — unique across the workspace."
+        - type: input
+          field: description
+          placeholder: "What this role grants access to…"
+      - type: section
+        label: Connectivity
+        children:
+        - type: row
+          layout: minmax(240px, 2fr) minmax(200px, 1fr)
+          children:
+          - type: input-list
+            field: connectivity
+            label: Channels
+            helper: "Programmatic channels this role may use: mcp, webhook, api (API keys), assistant. Empty = a workplace-only role (browser access only)."
+          - type: input
+            field: assistant_token_budget
+            helper: "Max assistant tokens per account over a rolling 30-day window for accounts this role enables. The largest budget across held enabling roles applies. Empty = unlimited."
+      - type: section
+        label: Visibility
+        children:
+        - type: input-list
+          field: visible_tags
+          label: Visible Tags
+          placeholder: default
+          helper: "Field-level read visibility: a field is emitted only when all of its view tags are listed here. Use ['*'] for full visibility."
+- id: iam.Roles.view
+  meta: { parent_id: iam.Roles }
+  content:
+    parent_doctype: iam.Roles
+    kind: view
+    template:
+      type: col
+      children:
+      - type: header
+        title: $name
+      - type: grid
+        layout: 3 1
+        children:
+        - type: col
+          children:
+          - type: section
+            label: Identity
+            children:
+            - type: field
+              label: Description
+              value: $description
+          - type: section
+            label: Connectivity
+            children:
+            - type: field
+              label: Connectivity channels
+              value: $connectivity
+            - type: field
+              label: Assistant Token Budget
+              value: $assistant_token_budget
+          - type: section
+            label: Permissions
+            children:
+            - type: array
+              field: permissions
+              children:
+              - type: row
+                layout: minmax(120px, 0.5fr) 2fr
+                children:
+                - type: field
+                  value: $action
+                - type: field
+                  value: $on
+              - type: row
+                layout: 1fr 1fr
+                children:
+                - type: field
+                  label: Scope
+                  value: $scope
+                  children:
+                  - type: array
+                    field: scope
+                    children:
+                    - type: capsule
+                      value: $value
+                - type: field
+                  label: Except
+                  value: $except
+                  children:
+                  - type: array
+                    field: except
+                    children:
+                    - type: capsule
+                      value: $value
+        - type: sidebar
+          children:
+          - type: section
+            label: Visibility
+            children:
+            - type: array
+              field: visible_tags
+              children:
+              - type: capsule
+                value: $value
+          - type: record-meta
+            history: true
+- id: iam.Roles.quickView
+  meta: { parent_id: iam.Roles }
+  content:
+    parent_doctype: iam.Roles
+    kind: quickView
+    template:
+      type: col
+      children:
+      - type: hr
+      - type: section
+        label: Identity
+        children:
+        - type: field
+          label: Description
+          value: $description
+      - type: section
+        label: Permissions
+        children:
+        - type: array
+          field: permissions
+          children:
+          - type: row
+            layout: minmax(120px, 0.5fr) 2fr
+            children:
+            - type: field
+              value: $action
+            - type: field
+              value: $on
+      - type: record-meta
+# ── core.Webhook ─────────────────────────────────────────────────────────────
+#
+# `secret`, `account_id` and `role_id` are read-only (stamped by the create
+# hook): the form excludes them — the read_only skip in the form seed/patch
+# path makes that safe — and the view displays them. `headers` is a
+# free-form object with no input node; it renders read-only as a dict.
+- id: core.Webhook.form
+  meta: { parent_id: core.Webhook }
+  content:
+    parent_doctype: core.Webhook
+    kind: form
+    template:
+      type: col
+      children:
+      - type: section
+        label: Delivery
+        children:
+        - type: input
+          field: label
+          helper: "Human-readable name of the webhook."
+        - type: row
+          layout: minmax(280px, 2fr) minmax(160px, 1fr)
+          children:
+          - type: input
+            field: url
+            helper: "Absolute https URL the signed event envelope is POSTed to. http is accepted only when webhook.allow_insecure_urls is true (dev/test)."
+          - type: input
+            field: enabled
+      - type: section
+        label: Source
+        children:
+        - type: input
+          field: source_doctype
+          label: Source Doctype
+          helper: "The doctype whose mutations fire this webhook. One doctype per webhook."
+        - type: input-list
+          field: events
+          label: Events
+          placeholder: created
+          helper: "Event names that fire this webhook (e.g. created, updated, or a named action). Omit to fire on every event."
+- id: core.Webhook.view
+  meta: { parent_id: core.Webhook }
+  content:
+    parent_doctype: core.Webhook
+    kind: view
+    template:
+      type: col
+      children:
+      - type: header
+        title: $label
+        subtitle: $url
+      - type: grid
+        layout: 3 1
+        children:
+        - type: col
+          children:
+          - type: if
+            field: enabled
+            children:
+            - type: capsule
+              value: Delivering
+            else:
+            - type: capsule
+              value: Paused
+          - type: section
+            label: Delivery
+            children:
+            - type: field
+              label: Target URL
+              value: $url
+            - type: field
+              label: Enabled
+              value: $enabled
+          - type: if
+            field: headers
+            children:
+            - type: section
+              label: Custom Headers
+              children:
+              - type: dict
+                field: headers
+                children:
+                - type: field
+                  value: $key
+                - type: field
+                  value: $value
+          - type: section
+            label: Source
+            children:
+            - type: field
+              label: Source Doctype
+              value: $source_doctype
+            - type: if
+              field: events
+              children:
+              - type: array
+                field: events
+                children:
+                - type: capsule
+                  value: $value
+              else:
+              - type: field
+                value: "Every event on the source doctype"
+        - type: sidebar
+          children:
+          - type: section
+            label: Ownership
+            children:
+            - type: field
+              label: Bound Account
+              value: $account_id
+            - type: field
+              label: Bound Role
+              value: $role_id
+            - type: field
+              label: Signing Secret
+              value: $secret
+          - type: record-meta
+            history: true
+- id: core.Webhook.quickView
+  meta: { parent_id: core.Webhook }
+  content:
+    parent_doctype: core.Webhook
+    kind: quickView
+    template:
+      type: col
+      children:
+      - type: hr
+      - type: if
+        field: enabled
+        children:
+        - type: capsule
+          value: Enabled
+        else:
+        - type: capsule
+          value: Paused
+      - type: section
+        label: Source
+        children:
+        - type: field
+          label: Source Doctype
+          value: $source_doctype
+        - type: if
+          field: events
+          children:
+          - type: array
+            field: events
+            children:
+            - type: capsule
+              value: $value
+          else:
+          - type: field
+            value: "Every event on the source doctype"
+      - type: record-meta
+# ── core.DomainEditor ────────────────────────────────────────────────────────
+#
+# Two fields; the grant is the whole document. The header titles on the
+# domain id (readable); the account renders as a hydrated reference
+# capsule in the body — a header title interpolates a reference as its
+# raw qualified id, so the account must live in the body to hydrate.
+- id: core.DomainEditor.form
+  meta: { parent_id: core.DomainEditor }
+  content:
+    parent_doctype: core.DomainEditor
+    kind: form
+    template:
+      type: col
+      children:
+      - type: section
+        label: Grant
+        children:
+        - type: row
+          layout: minmax(240px, 1fr) minmax(200px, 1fr)
+          children:
+          - type: input
+            field: account
+            helper: "The account that may edit the domain."
+          - type: input
+            field: domain
+            helper: "The id of the core.Domain document — the live slug (crm) or the draft id (_abc123)."
+- id: core.DomainEditor.view
+  meta: { parent_id: core.DomainEditor }
+  content:
+    parent_doctype: core.DomainEditor
+    kind: view
+    template:
+      type: col
+      children:
+      - type: header
+        title: $domain
+      - type: section
+        label: Editor
+        children:
+        - type: field
+          label: Account
+          value: $account
+      - type: record-meta
+        history: true
+- id: core.DomainEditor.quickView
+  meta: { parent_id: core.DomainEditor }
+  content:
+    parent_doctype: core.DomainEditor
+    kind: quickView
+    template:
+      type: col
+      children:
+      - type: hr
+      - type: section
+        label: Editor
+        children:
+        - type: field
+          label: Account
+          value: $account
+        - type: field
+          label: Domain
+          value: $domain
+      - type: record-meta
+# ── core.Domain ──────────────────────────────────────────────────────────────
+#
+# Structure edits (doctypes, hooks, context sets) stay on the configure
+# DomainEditor; the document view is the domain's identity card. Grants
+# reference core.Domain rows by id — the id is the domain name, so the
+# plain field renders it readably without hydration.
+- id: core.Domain.view
+  meta: { parent_id: core.Domain }
+  content:
+    parent_doctype: core.Domain
+    kind: view
+    template:
+      type: col
+      children:
+      - type: header
+        title: $name
+      - type: grid
+        layout: 3 1
+        children:
+        - type: col
+          children:
+          - type: if
+            field: draft
+            children:
+            - type: capsule
+              value: Draft
+          - type: section
+            label: Identity
+            children:
+            - type: field
+              label: Name
+              value: $name
+            - type: field
+              label: Color
+              value: $color
+          - type: section
+            label: Description
+            children:
+            - type: field
+              value: $description
+        - type: sidebar
+          children:
+          - type: record-meta
+            history: true
+- id: core.Domain.quickView
+  meta: { parent_id: core.Domain }
+  content:
+    parent_doctype: core.Domain
+    kind: quickView
+    template:
+      type: col
+      children:
+      - type: hr
+      - type: section
+        label: Identity
+        children:
+        - type: field
+          label: Color
+          value: $color
+      - type: section
+        label: Description
+        children:
+        - type: field
+          value: $description
+      - type: record-meta
+# ── app.App ──────────────────────────────────────────────────────────────────
+#
+# Create/edit stays on the apps wizard + detail pages — view + quickView
+# only. `no_launcher` / `no_asset` are booleans: they render as field rows
+# (✓/✕) instead of header chips, which would print "False" on most apps.
+# `grants` and `compatible_roles` stay on the app detail pages.
+- id: app.App.view
+  meta: { parent_id: app.App }
+  content:
+    parent_doctype: app.App
+    kind: view
+    template:
+      type: col
+      children:
+      - type: header
+        title: $name
+        subtitle: $slug
+        statusField: status
+        chips: [client_type]
+      - type: grid
+        layout: 3 1
+        children:
+        - type: col
+          children:
+          - type: section
+            label: Identity
+            children:
+            - type: field
+              label: Client ID
+              value: $client_id
+            - type: field
+              label: Host
+              value: $host
+            - type: field
+              label: No Launcher
+              value: $no_launcher
+            - type: field
+              label: No Asset
+              value: $no_asset
+          - type: section
+            label: Description
+            children:
+            - type: field
+              value: $description
+          - type: section
+            label: Redirect URIs
+            children:
+            - type: array
+              field: redirect_uris
+              children:
+              - type: capsule
+                value: $value
+          - type: section
+            label: Allowed Origins
+            children:
+            - type: array
+              field: allowed_origins
+              children:
+              - type: capsule
+                value: $value
+        - type: sidebar
+          children:
+          - type: section
+            label: Deployment
+            children:
+            - type: field
+              label: Active Deployment
+              value: $active_deployment
+            - type: field
+              label: Owner
+              value: $owner_id
+          - type: record-meta
+            history: true
+- id: app.App.quickView
+  meta: { parent_id: app.App }
+  content:
+    parent_doctype: app.App
+    kind: quickView
+    template:
+      type: col
+      children:
+      - type: hr
+      - type: row
+        layout: auto auto 1fr
+        children:
+        - type: capsule
+          value: $status
+        - type: capsule
+          value: $client_type
+      - type: section
+        label: Identity
+        children:
+        - type: field
+          label: Client ID
+          value: $client_id
+        - type: field
+          label: Host
+          value: $host
+      - type: section
+        label: Deployment
+        children:
+        - type: field
+          label: Active Deployment
+          value: $active_deployment
+      - type: record-meta
+# ── app.Deployment ───────────────────────────────────────────────────────────
+#
+# A read-only record — the deploy route is the only writer, so there is no
+# form. The revision is promoted into the header subtitle.
+- id: app.Deployment.view
+  meta: { parent_id: app.Deployment }
+  content:
+    parent_doctype: app.Deployment
+    kind: view
+    template:
+      type: col
+      children:
+      - type: header
+        title: $note
+        subtitle: "Revision $revision"
+      - type: grid
+        layout: 3 1
+        children:
+        - type: col
+          children:
+          - type: section
+            label: Build
+            children:
+            - type: field
+              label: App
+              value: $app_id
+            - type: field
+              label: Note
+              value: $note
+            - type: field
+              label: SPA
+              value: $spa
+          - type: section
+            label: Files
+            children:
+            - type: array
+              field: files
+              children:
+              - type: field
+                value: $path
+        - type: sidebar
+          children:
+          - type: record-meta
+            history: true
+- id: app.Deployment.quickView
+  meta: { parent_id: app.Deployment }
+  content:
+    parent_doctype: app.Deployment
+    kind: quickView
+    template:
+      type: col
+      children:
+      - type: hr
+      - type: section
+        label: Build
+        children:
+        - type: field
+          label: App
+          value: $app_id
+        - type: field
+          label: Revision
+          value: $revision
+        - type: field
+          label: Note
+          value: $note
+      - type: record-meta
+# ── iam.OIDCProvider ─────────────────────────────────────────────────────────
+#
+# Editing (create/edit + the secret stage/adopt flow) stays on the OIDC
+# dialog — view + quickView only. The secret renders through the typed
+# field badge (set / not set), never as a value. A follow-up plan may
+# migrate the dialog onto a seeded `form` using `input-secret`.
+- id: iam.OIDCProvider.view
+  meta: { parent_id: iam.OIDCProvider }
+  content:
+    parent_doctype: iam.OIDCProvider
+    kind: view
+    template:
+      type: col
+      children:
+      - type: header
+        title: $label
+        subtitle: $issuer
+      - type: grid
+        layout: 3 1
+        children:
+        - type: col
+          children:
+          - type: if
+            field: enabled
+            children:
+            - type: capsule
+              value: Enabled
+            else:
+            - type: capsule
+              value: Disabled
+          - type: section
+            label: Configuration
+            children:
+            - type: field
+              label: Name
+              value: $name
+            - type: field
+              label: Issuer
+              value: $issuer
+            - type: field
+              label: Client ID
+              value: $client_id
+            - type: field
+              label: Client Secret
+              value: $client_secret
+          - type: section
+            label: Federation
+            children:
+            - type: field
+              label: Auto-provision
+              value: $auto_provision
+            - type: field
+              label: Default Role
+              value: $default_role
+            - type: field
+              label: Email Domains
+              value: $domains
+              children:
+              - type: array
+                field: domains
+                children:
+                - type: capsule
+                  value: $value
+            - type: field
+              label: Scopes
+              value: $scopes
+              children:
+              - type: array
+                field: scopes
+                children:
+                - type: capsule
+                  value: $value
+        - type: sidebar
+          children:
+          - type: record-meta
+            history: true
+- id: iam.OIDCProvider.quickView
+  meta: { parent_id: iam.OIDCProvider }
+  content:
+    parent_doctype: iam.OIDCProvider
+    kind: quickView
+    template:
+      type: col
+      children:
+      - type: hr
+      - type: if
+        field: enabled
+        children:
+        - type: capsule
+          value: Enabled
+        else:
+        - type: capsule
+          value: Disabled
+      - type: section
+        label: Configuration
+        children:
+        - type: field
+          label: Issuer
+          value: $issuer
+        - type: field
+          label: Client ID
+          value: $client_id
+      - type: section
+        label: Federation
+        children:
+        - type: field
+          label: Default Role
+          value: $default_role
+        - type: field
+          label: Auto-provision
+          value: $auto_provision
+      - type: record-meta

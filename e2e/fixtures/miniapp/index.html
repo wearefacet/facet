@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>CrudWorks Portal</title>
+		<style>
+			:root {
+				color-scheme: light dark;
+				font-family: system-ui, sans-serif;
+			}
+			body {
+				margin: 0 auto;
+				padding: 32px 20px;
+				max-width: 640px;
+				line-height: 1.5;
+			}
+			h1 {
+				font-size: 22px;
+				font-weight: 600;
+				margin: 0 0 4px;
+			}
+			h2 {
+				font-size: 16px;
+				font-weight: 600;
+				margin: 24px 0 8px;
+			}
+			.sub {
+				color: #667085;
+				font-size: 14px;
+				margin: 0 0 24px;
+			}
+			button {
+				font: inherit;
+				font-weight: 600;
+				padding: 10px 18px;
+				border-radius: 8px;
+				border: 1px solid #7c3aed;
+				background: #7c3aed;
+				color: #fff;
+				cursor: pointer;
+			}
+			button:disabled {
+				opacity: 0.55;
+				cursor: default;
+			}
+			dl {
+				display: grid;
+				grid-template-columns: max-content 1fr;
+				gap: 4px 14px;
+				font-size: 13.5px;
+				background: #f6f6f9;
+				border: 1px solid #e4e4ec;
+				border-radius: 10px;
+				padding: 14px 16px;
+			}
+			dt {
+				color: #667085;
+			}
+			dd {
+				margin: 0;
+				font-family: ui-monospace, monospace;
+				overflow-wrap: anywhere;
+			}
+			ul {
+				margin: 8px 0 0;
+				padding: 0 0 0 18px;
+				font-size: 14px;
+			}
+			.error {
+				color: #b42318;
+				background: #fef3f2;
+				border: 1px solid #fda29b;
+				border-radius: 10px;
+				padding: 12px 14px;
+				font-size: 13.5px;
+				white-space: pre-wrap;
+			}
+			[hidden] {
+				display: none !important;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>CrudWorks Portal</h1>
+		<p class="sub">A hosted Facet app — OAuth (PKCE) with DPoP-bound tokens.</p>
+
+		<section id="landing" data-test="landing">
+			<p class="sub" data-test="issuer-line">
+				Authorization server: <code data-test="issuer"></code>
+			</p>
+			<button id="signin" type="button">Sign in with Facet</button>
+		</section>
+
+		<section id="session" data-test="session" hidden>
+			<dl>
+				<dt>token_type</dt>
+				<dd data-test="token-type"></dd>
+				<dt>signed in as</dt>
+				<dd data-test="role"></dd>
+				<dt>client_id</dt>
+				<dd data-test="client-name"></dd>
+				<dt>issuer</dt>
+				<dd data-test="issuer-token"></dd>
+				<dt>sub (account)</dt>
+				<dd data-test="sub"></dd>
+				<dt>app claim</dt>
+				<dd data-test="app-claim"></dd>
+				<dt>cnf.jkt</dt>
+				<dd data-test="jkt"></dd>
+			</dl>
+
+			<h2>Companies (read with the app token)</h2>
+			<p class="sub" data-test="companies-note" hidden></p>
+			<ul data-test="companies"></ul>
+
+			<h2>Assistant</h2>
+			<p class="sub" data-test="assistant-note" hidden></p>
+		</section>
+
+		<p class="error" data-test="error" hidden></p>
+
+		<script type="module">
+			// ── Deployment-injected configuration ──────────────────────────────
+			// The build step replaces these two placeholders before the CLI
+			// uploads the bundle. A public app carries no secret: client_id is
+			// public information, baked into the build like any other config.
+			const CLIENT_ID = '__FACET_CLIENT_ID__';
+			const API_ORIGIN = '__FACET_ORIGIN__';
+
+			const CALLBACK_PATH = '/oauth/callback';
+			const AUTHORIZE_PATH = '/OAuth/authorize';
+			const TOKEN_PATH = '/OAuth/token';
+			const COMPANY_LIST_PATH = '/Api/crm/Company';
+
+			// The assistant mount (the @facetapp/chat package): the window title
+			// the e2e asserts on. The bundle ships next to this file in every
+			// deployed build.
+			const ASSISTANT_NAME = 'CrudWorks Assistant';
+
+			const els = {
+				landing: document.querySelector('[data-test="landing"]'),
+				session: document.querySelector('[data-test="session"]'),
+				error: document.querySelector('[data-test="error"]')
+			};
+
+			function fail(message) {
+				els.error.textContent = message;
+				els.error.hidden = false;
+			}
+
+			function field(name) {
+				return document.querySelector(`[data-test="${name}"]`);
+			}
+
+			function showSession() {
+				els.landing.hidden = true;
+				els.session.hidden = false;
+			}
+
+			function b64url(bytes) {
+				let bin = '';
+				for (const byte of bytes) bin += String.fromCharCode(byte);
+				return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+			}
+
+			function randomB64url(characters) {
+				const bytes = new Uint8Array(characters);
+				crypto.getRandomValues(bytes);
+				return b64url(bytes).slice(0, characters);
+			}
+
+			async function sha256B64url(text) {
+				const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+				return b64url(new Uint8Array(digest));
+			}
+
+			// ── DPoP (RFC 9449) ────────────────────────────────────────────────
+			// One key pair for the whole sign-in. The page keeps the private JWK
+			// in sessionStorage (never sent to Facet) and exports only the public
+			// members in every proof header. Each proof is fresh: new jti, iat
+			// now, and ath on token-bearing calls.
+
+			function publicJwk(jwk) {
+				// Only the RFC 7638 members travel in the proof header.
+				return { kty: jwk.kty, crv: jwk.crv, x: jwk.x, y: jwk.y };
+			}
+
+			function canonicalThumbprint(jwk) {
+				// RFC 7638: canonical JSON, members sorted lexicographically,
+				// no whitespace — sha-256 encoded base64url.
+				return JSON.stringify({ crv: jwk.crv, kty: jwk.kty, x: jwk.x, y: jwk.y });
+			}
+
+			async function generateDpopKey() {
+				const pair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, [
+					'sign',
+					'verify'
+				]);
+				const jwk = await crypto.subtle.exportKey('jwk', pair.publicKey);
+				const pub = publicJwk(jwk);
+				const jkt = await sha256B64url(canonicalThumbprint(pub));
+				const privateJwk = await crypto.subtle.exportKey('jwk', pair.privateKey);
+				return { pub, jkt, privateJwk };
+			}
+
+			async function importSigningKey(privateJwk) {
+				return crypto.subtle.importKey(
+					'jwk',
+					privateJwk,
+					{ name: 'ECDSA', namedCurve: 'P-256' },
+					false,
+					['sign']
+				);
+			}
+
+			async function signDpopProof(dpopKey, htm, htu, ath) {
+				const header = { alg: 'ES256', typ: 'dpop+jwt', jwk: dpopKey.pub };
+				const payload = {
+					jti: crypto.randomUUID(),
+					htm,
+					htu,
+					iat: Math.floor(Date.now() / 1000)
+				};
+				if (ath !== undefined) payload.ath = ath;
+
+				const encoder = new TextEncoder();
+				const signingInput = `${b64url(encoder.encode(JSON.stringify(header)))}.${b64url(encoder.encode(JSON.stringify(payload)))}`;
+				const signature = await crypto.subtle.sign(
+					{ name: 'ECDSA', hash: 'SHA-256' },
+					await importSigningKey(dpopKey.privateJwk),
+					encoder.encode(signingInput)
+				);
+				return `${signingInput}.${b64url(new Uint8Array(signature))}`;
+			}
+
+			// ── Session storage (this sign-in attempt + DPoP key) ──────────────
+
+			function saveAttempt(attempt) {
+				sessionStorage.setItem('crudworks.oauth', JSON.stringify(attempt));
+			}
+
+			function loadAttempt() {
+				const raw = sessionStorage.getItem('crudworks.oauth');
+				return raw ? JSON.parse(raw) : null;
+			}
+
+			function saveDpopKey(dpopKey) {
+				// Two entries: the *public* half (proof headers) and the private
+				// half (signing). Only the public half is ever needed by code that
+				// reads the session state; the private half exists so callback
+				// loads after a full page reload can still sign.
+				sessionStorage.setItem(
+					'crudworks.dpop.pub',
+					JSON.stringify({ jwk: dpopKey.pub, jkt: dpopKey.jkt })
+				);
+				sessionStorage.setItem('crudworks.dpop.priv', JSON.stringify(dpopKey.privateJwk));
+			}
+
+			function loadDpopPublic() {
+				const raw = sessionStorage.getItem('crudworks.dpop.pub');
+				return raw ? JSON.parse(raw) : null;
+			}
+
+			function loadDpopPrivate() {
+				const raw = sessionStorage.getItem('crudworks.dpop.priv');
+				return raw ? JSON.parse(raw) : null;
+			}
+
+			/** The saved key material as one object, for signing new proofs.
+			 * `null` when this browser session has no DPoP key — the callers
+			 * render without signing rather than crash. */
+			function dpopKey() {
+				const pub = loadDpopPublic();
+				if (!pub) return null;
+				return { pub: pub.jwk, jkt: pub.jkt, privateJwk: loadDpopPrivate() };
+			}
+
+			// ── Authorization-code + PKCE round trip ───────────────────────────
+
+			async function loadDiscovery() {
+				const response = await fetch(`${API_ORIGIN}/.well-known/oauth-authorization-server`);
+				if (!response.ok) throw new Error(`Discovery document failed (HTTP ${response.status})`);
+				return response.json();
+			}
+
+			async function startSignIn() {
+				const verifier = randomB64url(64);
+				const state = randomB64url(16);
+				const challenge = await sha256B64url(verifier);
+				const dpopKey = await generateDpopKey();
+
+				saveAttempt({ verifier, state, client_id: CLIENT_ID });
+				saveDpopKey(dpopKey);
+
+				const url = new URL(AUTHORIZE_PATH, API_ORIGIN);
+				url.searchParams.set('response_type', 'code');
+				url.searchParams.set('client_id', CLIENT_ID);
+				url.searchParams.set('redirect_uri', `${location.origin}${CALLBACK_PATH}`);
+				url.searchParams.set('code_challenge', challenge);
+				url.searchParams.set('code_challenge_method', 'S256');
+				url.searchParams.set('state', state);
+				location.assign(url.toString());
+			}
+
+			async function exchangeCode(code, oauthState) {
+				const attempt = loadAttempt();
+				if (!attempt) throw new Error('No sign-in attempt found in this browser session.');
+				if (attempt.state !== oauthState) {
+					throw new Error(
+						'State mismatch — the redirect did not come from the sign-in this browser started.'
+					);
+				}
+				const key = dpopKey();
+				if (!key) throw new Error('No DPoP key in this browser session.');
+
+				// Proof over the token URL — htu carries no query, no fragment.
+				const tokenHtu = new URL(TOKEN_PATH, API_ORIGIN).toString();
+				const proof = await signDpopProof(key, 'POST', tokenHtu);
+
+				const body = new URLSearchParams({
+					grant_type: 'authorization_code',
+					code,
+					client_id: attempt.client_id,
+					redirect_uri: `${location.origin}${CALLBACK_PATH}`,
+					code_verifier: attempt.verifier
+				});
+
+				const response = await fetch(tokenHtu, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/x-www-form-urlencoded', DPoP: proof },
+					body
+				});
+				const payload = await response.json();
+				if (!response.ok) {
+					throw new Error(
+						`Token exchange failed (HTTP ${response.status} ${payload.error ?? ''}): ${payload.error_description ?? ''}`
+					);
+				}
+				if (payload.token_type !== 'DPoP') {
+					throw new Error(`Expected token_type DPoP, got ${payload.token_type}`);
+				}
+				return payload;
+			}
+
+			async function loadCompanies(accessToken) {
+				const key = dpopKey();
+				if (!key) throw new Error('No DPoP key in this browser session.');
+				const htu = new URL(COMPANY_LIST_PATH, API_ORIGIN).toString();
+				const proof = await signDpopProof(key, 'GET', htu, await sha256B64url(accessToken));
+				const response = await fetch(htu, {
+					headers: { Authorization: `DPoP ${accessToken}`, DPoP: proof }
+				});
+				const payload = await response.json();
+				if (!response.ok) {
+					throw new Error(
+						`Company read failed (HTTP ${response.status}): ${JSON.stringify(payload).slice(0, 200)}`
+					);
+				}
+				return payload;
+			}
+
+			// ── The assistant (@facetapp/chat) ───────────────────────────
+			// The package never sees credentials: the host wraps every driver
+			// call with the DPoP proof and the CSRF header (the README "Host
+			// auth" contract). The backend compares the proof's htu ignoring the
+			// query, so signing the natural request URL is fine.
+			async function hostFetch(input, init = {}) {
+				const token = sessionStorage.getItem('crudworks.token');
+				if (!token) throw new Error('No app token in this browser session.');
+				const key = dpopKey();
+				if (!key) throw new Error('No DPoP key in this browser session.');
+				const method = (init.method ?? 'GET').toUpperCase();
+				const url = new URL(typeof input === 'string' ? input : input.url, location.origin);
+				const proof = await signDpopProof(key, method, url.toString(), await sha256B64url(token));
+				const headers = new Headers(init.headers);
+				headers.set('Authorization', `DPoP ${token}`);
+				headers.set('DPoP', proof);
+				headers.set('X-Requested-With', 'XMLHttpRequest');
+				return fetch(url.toString(), { ...init, headers });
+			}
+
+			async function mountAssistant(appId) {
+				const note = field('assistant-note');
+				note.hidden = false;
+				try {
+					// Root-relative on purpose: the OAuth callback lives at
+					// /oauth/callback, and a page-relative path would resolve
+					// under /oauth/ — a module fetch there is an asset
+					// request, so the serving fallback 404s it instead of
+					// the bundle.
+					const chat = await import('/facet-assistant.js');
+					chat.FacetAssistant.open({
+						baseUrl: API_ORIGIN,
+						fetch: hostFetch,
+						appId,
+						name: ASSISTANT_NAME
+					});
+					note.textContent = `${ASSISTANT_NAME} mounted for app ${appId}`;
+				} catch (error) {
+					note.textContent = `assistant failed to mount: ${error.message}`;
+				}
+			}
+
+			// ── Boot ───────────────────────────────────────────────────────────
+
+			function decodeClaims(access_token) {
+				const mid = access_token.split('.')[1];
+				const json = atob(mid.replace(/-/g, '+').replace(/_/g, '/'));
+				return JSON.parse(json);
+			}
+
+			async function boot() {
+				if (CLIENT_ID.startsWith('__FACET_') || API_ORIGIN.startsWith('__FACET_')) {
+					fail(
+						'Build placeholders left unsubstituted — the deployed bundle was not built with a client id and origin.'
+					);
+					return;
+				}
+
+				const query = new URLSearchParams(location.search);
+				const code = query.get('code');
+
+				field('client-name').textContent = CLIENT_ID;
+				field('issuer-token').textContent = API_ORIGIN;
+
+				if (code !== null) {
+					try {
+						const issued = await exchangeCode(code, query.get('state'));
+
+						// Test seam: the e2e runner reads the issued token and the
+						// DPoP key material back from sessionStorage to drive the
+						// enforcement probes from outside the browser. The full
+						// payload also feeds the session restore below (a plain
+						// navigation back to the app — no code in the URL).
+						sessionStorage.setItem('crudworks.token', issued.access_token);
+						sessionStorage.setItem(
+							'crudworks.session',
+							JSON.stringify({ token_type: issued.token_type, access_token: issued.access_token })
+						);
+
+						await renderSession(issued);
+					} catch (error) {
+						fail(error.message);
+					}
+					return;
+				}
+
+				// Session restore: a signed-in browser coming back to the app
+				// without a fresh code (a reload, or a detour through another
+				// page). The token and the DPoP key are already in sessionStorage.
+				const saved = sessionStorage.getItem('crudworks.session');
+				if (saved !== null) {
+					try {
+						await renderSession(JSON.parse(saved));
+					} catch (error) {
+						fail(error.message);
+					}
+					return;
+				}
+
+				// Landing view: prove the browser can read the discovery document
+				// cross-origin before offering the sign-in button.
+				try {
+					const discovery = await loadDiscovery();
+					field('issuer').textContent = discovery.issuer;
+				} catch (error) {
+					fail(`Discovery fetch failed — is the app origin registered? ${error.message}`);
+					return;
+				}
+				document.getElementById('signin').addEventListener('click', () => {
+					startSignIn().catch((error) => fail(`Sign-in could not start: ${error.message}`));
+				});
+			}
+
+			/** Renders the signed-in view from an issued token payload: the
+			 * session fields, the company list, then the assistant mount. Shared
+			 * by the OAuth callback and the session restore. */
+			async function renderSession(issued) {
+				const claims = decodeClaims(issued.access_token);
+				const dpop = loadDpopPublic();
+
+				field('token-type').textContent = issued.token_type;
+				field('role').textContent = claims.role;
+				field('sub').textContent = claims.sub;
+				field('app-claim').textContent = claims.app ?? '(none)';
+				field('jkt').textContent =
+					claims.cnf?.jkt && dpop && claims.cnf.jkt === dpop.jkt
+						? `${claims.cnf.jkt} (matches the proof key)`
+						: String(claims.cnf?.jkt ?? '(none)');
+
+				const list = await loadCompanies(issued.access_token);
+				const rows = list.data ?? [];
+				const note = field('companies-note');
+				note.textContent = `${rows.length} company row(s) read with the DPoP-bound token`;
+				note.hidden = false;
+				const ul = field('companies');
+				ul.textContent = '';
+				for (const row of rows) {
+					const li = document.createElement('li');
+					li.textContent = row.data?.name ?? row.meta?.display_name ?? row.meta?.id;
+					ul.appendChild(li);
+				}
+
+				showSession();
+				await mountAssistant(claims.app);
+			}
+
+			boot();
+		</script>
+	</body>
+</html>

@@ -1,0 +1,15 @@
+---
+content:
+  kind: card
+  template:
+    type: col
+    children:
+    - type: field
+      label: Status
+      value: $status
+    - type: field
+      label: Industry
+      value: $industry
+  parent_doctype: crm.Prospect
+meta:
+  parent_id: crm.Prospect

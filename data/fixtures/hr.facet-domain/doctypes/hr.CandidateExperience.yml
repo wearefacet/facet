@@ -1,0 +1,79 @@
+---
+content:
+  icon: briefcase-business
+  domain: hr
+  fields:
+    end:
+      type: date
+      title: End Date
+      filters:
+        - comparison
+      description: End date of the role (null if current).
+    desc:
+      type: longtext
+      title: Description
+      description: Description of responsibilities and achievements.
+    type:
+      type: enum
+      title: Employment Type
+      values:
+      - key: full_time
+        color: "#008f78"
+        label: Full Time
+      - key: part_time
+        color: "#a75e8a"
+        label: Part Time
+      - key: contract
+        color: "#63873e"
+        label: Contract
+      - key: internship
+        color: "#9664a3"
+        label: Internship
+      default: full_time
+      filters:
+        - equality
+      description: Type of employment.
+    start:
+      type: date
+      title: Start Date
+      required: true
+      filters:
+        - comparison
+      description: Start date of the role.
+    title:
+      type: string
+      title: Title
+      required: true
+      filters:
+        - equality
+        - text_search
+      description: Job title at the company.
+    company:
+      type: string
+      title: Company
+      required: true
+      filters:
+        - equality
+        - text_search
+      description: Employer name.
+    current:
+      type: boolean
+      title: Current Position
+      default: false
+      filters:
+        - equality
+      description: Whether this is the candidate's current role.
+    location:
+      type: string
+      title: Location
+      description: Work location.
+  doctype: CandidateExperience
+  member_of: Candidate
+  description: A work experience entry for a candidate. Linked to the parent Candidate
+    via member_of.
+  display_name: "{{ title }} at {{ company }}"
+  search: "{{ title }} {{ company }} {{ location }}"
+  aggregate_root: false
+  schema_version: 1
+meta:
+  parent_id: hr

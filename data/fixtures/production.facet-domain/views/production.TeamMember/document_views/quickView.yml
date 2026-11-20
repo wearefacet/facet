@@ -1,0 +1,22 @@
+---
+content:
+  kind: quickView
+  template:
+    type: col
+    children:
+    - type: row
+      layout: "auto auto 1fr"
+      children:
+      - type: capsule
+        value: $role
+    - type: hr
+    - type: section
+      label: Membership
+      children:
+      - type: field
+        label: Account
+        value: $account
+    - type: record-meta
+  parent_doctype: production.TeamMember
+meta:
+  parent_id: production.TeamMember

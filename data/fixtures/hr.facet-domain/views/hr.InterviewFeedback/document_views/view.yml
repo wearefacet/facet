@@ -1,0 +1,47 @@
+---
+content:
+  kind: view
+  template:
+    type: col
+    children:
+    - type: header
+      chips:
+      - round
+      - rec
+      subtitle: $by
+      title: $round
+    - type: grid
+      layout: 3 1
+      children:
+      - type: col
+        children:
+        - type: section
+          label: Interview
+          children:
+          - type: field
+            label: Interview Round
+            value: $round
+          - type: field
+            label: Interviewer
+            value: $by
+          - type: field
+            label: Interview Date
+            value: $date
+        - type: section
+          label: Assessment
+          children:
+          - type: field
+            label: Score
+            value: $score
+          - type: field
+            label: Recommendation
+            value: $rec
+          - type: input
+            field: notes
+      - type: sidebar
+        children:
+        - type: record-meta
+          history: true
+  parent_doctype: hr.InterviewFeedback
+meta:
+  parent_id: hr.InterviewFeedback

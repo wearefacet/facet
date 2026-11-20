@@ -1,0 +1,37 @@
+doctype: Attachment
+domain: core
+schema_version: 1
+aggregate_root: true
+sidecar: true
+surface: attachment
+display_name: "{{ name }}"
+description: "Sidecar doctype for file attachments on any document."
+fields:
+  target:
+    type: reference
+    required: true
+    read_only: true
+    dangling: true
+    title: "Target"
+    description: "The document this attachment is attached to. Set by the nested-create route; cannot be supplied or changed by the user. Polymorphic, so the data layer never existence-checks it — the host is verified at the write door (`SidecarHandler` locks the host row for every principal); the import door accepts the field verbatim, matching the create path."
+  uploaded_by:
+    type: reference
+    doctype: "iam.Account"
+    read_only: true
+    title: "Uploaded by"
+    description: "The account that uploaded the file. Forced by the Lua create hook from the caller's identity; read-only so callers cannot spoof it. Null for system-created attachments."
+    filters: [equality]
+  name:
+    type: string
+    required: true
+    title: "Name"
+    description: "The user-facing label for the attached file."
+  file:
+    type: file
+    required: true
+    title: "File"
+    description: "The stored file. Holds an artifact id; the bytes and MIME type live in the artifact subsystem. No accept list — any file type is allowed."
+scopes:
+  mine:
+    description: "Attachments uploaded by the actioner"
+    where: { uploaded_by: '$self' }

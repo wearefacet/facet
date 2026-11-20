@@ -1,0 +1,9 @@
+---
+content:
+  seq: 1
+  note: Initial hire
+  new_title: Software Engineer
+  event_type: hired
+  effective_date: "2022-03-15"
+meta:
+  parent_id: hr.Employee.1

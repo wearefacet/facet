@@ -1,0 +1,8 @@
+---
+content:
+  name: API Rate Limiting
+  team: production.Team.team_platform
+  status: planned
+  owner_id: iam.Account.account_eng_dao
+  description: Introduce per-tenant rate limits at the edge.
+meta: {}

@@ -1,0 +1,15 @@
+---
+content:
+  name: Recal
+  status: done
+  ends_at: "2026-03-13T16:00:00Z"
+  subject: Sensor 2
+  starts_at: "2026-03-12T07:00:00Z"
+  scheduled_on: "2026-03-12"
+  scheduled_days:
+    end: "2026-03-13"
+    start: "2026-03-12"
+  scheduled_window:
+    end: "2026-03-13T16:00:00Z"
+    start: "2026-03-12T07:00:00Z"
+meta: {}

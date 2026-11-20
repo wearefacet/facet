@@ -1,0 +1,59 @@
+---
+content:
+  kind: view
+  template:
+    type: col
+    children:
+    - type: header
+      title: $name
+      statusField: status
+      subtitle: $team
+    - type: grid
+      layout: 3 1
+      children:
+      - type: col
+        children:
+        - type: section
+          label: Overview
+          children:
+          - type: field
+            label: Team
+            value: $team
+          - type: input
+            field: description
+      - type: sidebar
+        children:
+        - type: section
+          label: Owner
+          children:
+          - type: field
+            value: $owner_id
+        - type: record-meta
+          history: true
+    - tabs:
+      - type: tab
+        label: Tasks
+        children:
+        - type: relation
+          view: table
+          label: Tasks
+          limit: 25
+          source:
+            rel: tasks
+            kind: children
+          doctype: production.Task
+          columns:
+          - key: title
+            label: Title
+          - key: status
+            label: Status
+            width: 130px
+          - key: assignee
+            label: Assignee
+          - key: estimate_hours
+            label: Estimate (hrs)
+            width: 130px
+      type: tabs
+  parent_doctype: production.Project
+meta:
+  parent_id: production.Project

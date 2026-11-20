@@ -1,0 +1,12 @@
+---
+content:
+  kind: card
+  template:
+    type: col
+    children:
+    - type: field
+      label: Member Role
+      value: $role
+  parent_doctype: production.TeamMember
+meta:
+  parent_id: production.TeamMember

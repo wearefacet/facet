@@ -1,0 +1,39 @@
+---
+content:
+  kind: quickView
+  template:
+    type: col
+    children:
+    - type: row
+      layout: "auto auto 1fr"
+      children:
+      - type: capsule
+        value: $type
+      - type: capsule
+        value: $company
+    - type: hr
+    - type: section
+      label: Role
+      children:
+      - type: field
+        label: Title
+        value: $title
+      - type: field
+        label: Location
+        value: $location
+    - type: section
+      label: Tenure
+      children:
+      - type: field
+        label: Start Date
+        value: $start
+      - type: field
+        label: End Date
+        value: $end
+      - type: field
+        label: Current Position
+        value: $current
+    - type: record-meta
+  parent_doctype: hr.CandidateExperience
+meta:
+  parent_id: hr.CandidateExperience

@@ -1,0 +1,14 @@
+---
+content:
+  body: Sent pricing breakdown for the enterprise tier. Awaiting feedback from their
+    procurement team.
+  type: email
+  deal_id: crm.Deal.3
+  subject: Follow-up on proposal
+  datetime: "2026-06-18T10:30:00Z"
+  owner_id: iam.Account.account_recruiter_kim
+  completed: true
+  company_id: crm.Company.1
+  contact_id: crm.Contact.2
+  duration_minutes:
+meta: {}

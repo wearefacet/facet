@@ -1,0 +1,19 @@
+---
+content:
+  name: Acme Corp
+  phone: +1-555-0100
+  status: active
+  address:
+    zip: "94105"
+    city: San Francisco
+    street: 100 Innovation Drive
+    country: USA
+  website: https://acme.com
+  industry: technology
+  owner_id: iam.Account.account_recruiter_kim
+  domain_name: acme.com
+  company_size: 201-1000
+  annual_revenue:
+    value: "50000000"
+    currency: USD
+meta: {}

@@ -1,0 +1,91 @@
+# core.Webhook — outbound HTTP webhook registration.
+#
+# Follows doc/backend/webhook.md. Deviation from the original locked schema:
+# `secret` drops `required: true` (keeps `read_only: true` and
+# `min: 16`). The engine's create validation rejects a missing required field
+# before the Lua hook can stamp it, and rejects a caller-supplied value as
+# read-only — no create body can pass with `required: true`. This mirrors the
+# `app.App.client_id` precedent: a hook-stamped field is read_only but not
+# required. The create hook is the only writer, so every stored webhook
+# carries a secret.
+doctype: Webhook
+domain: core
+schema_version: 1
+aggregate_root: true
+display_name: "{{ label }}"
+description: "An outbound HTTP webhook registered by an account with the create core.Webhook permission. Fires on mutations of a source doctype, delivering a signed event envelope to the target URL. The bound account + role are stamped at create time and re-validated against the source document once, at enqueue time (when the source mutation is observed)."
+fields:
+  label:
+    type: string
+    required: true
+    title: Label
+    description: "Human-readable name of the webhook."
+    filters: [equality, text_search]
+  enabled:
+    type: boolean
+    default: true
+    title: Enabled
+    description: "When false the webhook is paused — no new deliveries are enqueued. Existing pending jobs are still attempted once, then the enqueue-time check stops further ones."
+    filters: [equality]
+  url:
+    type: url
+    required: true
+    title: Target URL
+    description: "Absolute https URL the signed event envelope is POSTed to. http is accepted only when webhook.allow_insecure_urls is true (dev/test)."
+  headers:
+    type: object
+    title: Custom headers
+    description: "Optional HTTP headers merged into every outbound POST, on top of the Facet-mandated ones (Content-Type, User-Agent, X-Facet-*). Useful for receiver-side authentication tokens (e.g. Authorization: Bearer …) or routing tags. Keys must match the HTTP field-name grammar (RFC 7230 §3.2.6: token characters only); values must be strings. The Facet-mandated X-Facet-* headers are always emitted and cannot be overridden — an attempt to set a key starting with `X-Facet-` (case-insensitive) in this field is rejected at authoring time (422). The X-Facet-Signature header is computed by the dispatcher after merging: it always signs the body produced from the merged header set, so a receiver that uses the signature to authenticate should still rely on the signature, not on the presence of custom headers."
+  # No `properties` key: the object is free-form (ObjectType validates sub-
+  # keys only against a present `properties` schema). The key / value rules
+  # above are enforced by the create / update lifecycle hooks, not here.
+  # read_only, stamped by the create lifecycle hook. Not `required` — see the
+  # file header note. The hook overwrites any caller-supplied value.
+  secret:
+    type: string
+    min: 16
+    read_only: true
+    title: Per-webhook secret
+    description: "Server-generated ULID. Read-only: callers cannot supply it. The whole signing key for X-Facet-Signature (HMAC-SHA256(webhook.secret, raw_body) — there is no config-level secret). Stamped by the create lifecycle hook; readable by the webhook's author so they can configure their receiver to verify the signature."
+  source_doctype:
+    type: reference
+    doctype: core.DocType
+    required: true
+    title: Source doctype
+    description: "The doctype whose mutations fire this webhook. v1: exactly one doctype per webhook (no domain-wide selector)."
+    filters: [equality]
+  events:
+    type: array
+    title: Events
+    description: "Event names that fire this webhook. Omit the field to fire on the standard events of the source doctype. Set an empty list to fire on nothing. The allowed names are the mutation verbs (created, updated, deleted), the repair events (migrated, rolled_back), the opt-in events (notified, child_changed), and the eight job-lifecycle events (export_completed, export_failed, import_completed, import_failed, domain_export_completed, domain_export_failed, domain_import_completed, domain_import_failed). An opt-in event fires only when the list names it. The create and update hooks validate each name against this event vocabulary; an unknown name is rejected with 422."
+    items:
+      type: string
+  # The following fields are read_only and stamped by the create hook:
+  account_id:
+    type: reference
+    doctype: iam.Account
+    read_only: true
+    title: Bound account
+    description: "The iam.Account that created this webhook. The bound identity for outbound authorization — re-validated once, at enqueue time, against the source document. Stamped at create time from ctx.actor.id; immutable afterwards."
+    filters: [equality]
+  role_id:
+    type: reference
+    doctype: iam.Roles
+    read_only: true
+    title: Bound role
+    description: "The iam.Roles that was active at create time. The bound role for outbound authorization — re-validated once, at enqueue time, against the source document. Stored as a qualified reference (e.g. 'iam.Roles.admin'). Stamped at create time from ctx.actor.role_id; immutable afterwards. Authoring-time existence validation is provided by the standard `reference` field `Document::ReferenceCheck` contract."
+    filters: [equality]
+
+actions: {}  # no named actions — enable/disable is `PATCH enabled=true|false`.
+
+# Ownership scope (B-76 arbitration): a webhook is managed by the account
+# that minted it. Non-admin roles hold read/update/delete on core.Webhook
+# only through `$mine`; create stays unrestricted so any role with the
+# blanket create can author — and the binding stamps the creator, so a
+# webhook is its creator's from birth. The create hook already overwrites
+# any caller-supplied account_id, and the update hook rejects PATCHes that
+# touch account_id / role_id / secret, so ownership is immutable.
+scopes:
+  mine:
+    description: "Webhooks created by the actioner"
+    where: { account_id: '$self' }

@@ -1,0 +1,12 @@
+---
+content:
+  name: Timeline
+  config:
+    calendar:
+      color_by: status
+      week_start: monday
+      discriminator: expected_close_date
+      title_template: "{{ title }}"
+  surface: calendar
+meta:
+  parent_id: crm.Deal

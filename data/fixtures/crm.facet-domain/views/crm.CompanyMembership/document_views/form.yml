@@ -1,0 +1,22 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+    - type: section
+      label: Membership
+      children:
+      - type: row
+        layout: 1fr 240px
+        children:
+        - type: input
+          field: contact
+        - type: input
+          field: role
+          label: Role
+      - type: input
+        field: start_date
+  parent_doctype: crm.CompanyMembership
+meta:
+  parent_id: crm.CompanyMembership

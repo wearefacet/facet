@@ -1,0 +1,12 @@
+---
+content:
+  role: influencer
+  email: bob.williams@acme.com
+  phone: +1-555-0102
+  owner_id: iam.Account.account_recruiter_kim
+  job_title: VP Engineering
+  last_name: Williams
+  department: Engineering
+  first_name: Bob
+  is_primary: false
+meta: {}

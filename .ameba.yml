@@ -1,0 +1,114 @@
+# Ameba configuration — Crystal backend lint rules.
+#
+# Maintained by hand. Each entry records a deliberate decision: either the
+# rule passes clean, or it is disabled/excluded with a comment saying why.
+# Revisit the disabled ones when the code style they target changes.
+#
+# Generated records were last regenerated against Ameba 1.7.0; the excluded
+# paths and severities below are hand-curated.
+
+# Scratch area for throwaway Crystal scripts (gitignored); never linted.
+# `lib` re-states ameba's default exclusion (a top-level `Excluded` list
+# replaces the default set — without it the shard sources get linted).
+Excluded:
+  - lib
+  - tmp
+
+# `not_nil!` is accepted in src (specs are excluded): the codebase uses it
+# where nil is structurally impossible and a runtime raise is the correct
+# failure mode.
+Lint/NotNil:
+  Description: Identifies usage of `not_nil!` calls
+  Enabled: true
+  Excluded:
+    - spec/**/*.cr
+  Severity: Warning
+
+Lint/UselessAssign:
+  Description: Disallows useless variable assignments
+  Enabled: true
+  Severity: Warning
+
+# Block parameters like `db`, `rs`, `g` are established short names in this
+# codebase; the rule's noise outweighs its value here.
+Naming/BlockParameterName:
+  Description: Disallows non-descriptive block parameter names
+  MinNameLength: 3
+  AllowNamesEndingInNumbers: true
+  Enabled: false
+  Severity: Convention
+
+# `req_s` / `req_any` (tools.cr) are macros that reference the tool
+# callback's `args` block parameter after expansion. Ameba analyses the raw
+# AST without expanding macros, so the blocks that only touch `args`
+# through these macros are reported as unused arguments.
+Lint/UnusedArgument:
+  Excluded:
+    - src/assistant/domain_builder/tools/**
+
+# Boolean properties keep their JSON/config spelling (`sensitive`,
+# `aggregate_root`) — the `?` suffix would leak storage naming into the
+# public definition API.
+Naming/QueryBoolMethods:
+  Description: Reports boolean properties without the `?` suffix
+  Excluded:
+    - src/doctype/field_definition.cr
+    - src/doctype/action_definition.cr
+    - src/doctype/doctype_definition.cr
+  Enabled: true
+  Severity: Convention
+
+# Multi-line string literals (%(...) and quoted) are the established form
+# for SQL, Lua snippets, and spec payloads across the codebase. Heredoc
+# markers would touch hundreds of sites for no behavioural gain.
+Style/MultilineStringLiteral:
+  Enabled: false
+
+# Heredoc bodies follow the surrounding code indentation. Re-indenting
+# them risks changing string content (SQL) for a style-only win.
+Style/HeredocIndent:
+  Enabled: false
+
+# Explicit `return nil` (and `else nil`) is the codebase idiom — the
+# explicit form documents the nil path at call sites that read the value.
+Style/RedundantNilInControlExpression:
+  Enabled: false
+
+Lint/ElseNil:
+  Enabled: false
+
+# Explicit `begin` blocks inside `do`...`end` blocks are the established
+# error-handling form; block-level `rescue` would re-indent every site for
+# a style-only win.
+Style/RedundantBegin:
+  Enabled: false
+
+# Macro expressions use the compact `{{key}}` form throughout the macro
+# DSLs in this codebase.
+Lint/WhitespaceAroundMacroExpression:
+  Enabled: false
+
+# `src/shutdown.cr` traps INT/TERM/HUP individually on purpose: the
+# handler logs the specific `Signal` value. `Process.on_terminate` hands
+# the block a `Process::ExitReason`, which would lose the signal name.
+Lint/SignalTrap:
+  Enabled: false
+
+# Threshold raised from 10 to 12 when ameba 1.7 started counting `unless`
+# as a decision point. Methods at 11–12 stay; the methods that needed
+# splitting were split. No exclusions remain: `src/iam/routes.cr` now
+# holds one `handle_*` method per endpoint, and every method sits under
+# the budget.
+Metrics/CyclomaticComplexity:
+  Description: Disallows methods with a cyclomatic complexity higher than `MaxComplexity`
+  MaxComplexity: 12
+  Enabled: true
+  Severity: Warning
+
+# `Shrine.settings.storages.any?` (uploader) and the inner `msgs.any?`
+# (stream) check element truthiness on purpose; `present?` would change
+# the semantics of a nil-element collection.
+Performance/AnyInsteadOfPresent:
+  Excluded:
+    - src/artifact/uploader.cr
+    - src/event/subscriber/stream.cr

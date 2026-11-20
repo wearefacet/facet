@@ -1,0 +1,64 @@
+{
+	"name": "@facetapp/chat",
+	"version": "0.0.1",
+	"description": "Embeddable assistant chat for Facet — driver, mock, and chat elements.",
+	"license": "BUSL-1.1",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/wearefacet/facet.git",
+		"directory": "packages/chat"
+	},
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"engines": {
+		"node": ">=20"
+	},
+	"scripts": {
+		"build": "rm -rf dist && vite build && tsc -p tsconfig.build.json",
+		"check": "svelte-check --tsconfig ./tsconfig.json",
+		"lint": "prettier --check .",
+		"format": "prettier --write .",
+		"test": "vitest run",
+		"prepublishOnly": "npm run build"
+	},
+	"dependencies": {
+		"@lucide/svelte": "^1.71.0",
+		"highlight.js": "^11.12.0",
+		"marked": "^18.2.0"
+	},
+	"peerDependencies": {
+		"mermaid": "^11.0.0 || ^12.0.0",
+		"svelte": "^5.0.0"
+	},
+	"peerDependenciesMeta": {
+		"mermaid": {
+			"optional": true
+		}
+	},
+	"devDependencies": {
+		"@sveltejs/vite-plugin-svelte": "^7.3.1",
+		"@types/node": "^26.6.6",
+		"happy-dom": "^21.0.4",
+		"mermaid": "^12.3.0",
+		"prettier": "^3.9.10",
+		"prettier-plugin-svelte": "^4.1.1",
+		"svelte": "^5.56.1",
+		"svelte-check": "^4.6.0",
+		"typescript": "^6.0.3",
+		"vite": "^8.0.16",
+		"vitest": "^5.1.0"
+	}
+}

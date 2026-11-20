@@ -1,0 +1,14 @@
+---
+content:
+  person: identity.Person.2
+  remote: false
+  salary:
+    value: "185000"
+    currency: USD
+  status: active
+  manager:
+  hire_date: "2020-01-10"
+  job_title: Engineering Manager
+  department: Engineering
+  termination_date:
+meta: {}

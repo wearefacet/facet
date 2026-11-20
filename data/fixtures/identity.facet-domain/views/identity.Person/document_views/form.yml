@@ -1,0 +1,32 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+    - type: section
+      label: Identity
+      children:
+      - type: row
+        layout: 1fr 240px
+        children:
+        - type: input
+          field: full_name
+          label: Full Name
+        - type: input
+          field: kind
+          label: Kind
+      - type: row
+        layout: minmax(200px, 1fr) minmax(280px, 2fr)
+        children:
+        - type: input-text
+          field: email
+          label: Email
+          required: true
+          inputType: email
+        - type: input
+          field: date_of_birth
+          label: Date of Birth
+  parent_doctype: identity.Person
+meta:
+  parent_id: identity.Person

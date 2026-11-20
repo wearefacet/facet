@@ -1,0 +1,15 @@
+---
+content:
+  name: Valve
+  status: planned
+  ends_at: "2026-03-18T11:30:00Z"
+  subject: Valve 3
+  starts_at: "2026-03-18T10:00:00Z"
+  scheduled_on: "2026-03-18"
+  scheduled_days:
+    end: "2026-03-18"
+    start: "2026-03-18"
+  scheduled_window:
+    end: "2026-03-18T11:30:00Z"
+    start: "2026-03-18T10:00:00Z"
+meta: {}

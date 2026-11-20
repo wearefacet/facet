@@ -1,0 +1,43 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+    - type: section
+      label: Task
+      children:
+      - type: row
+        layout: 2fr 1fr
+        children:
+        - type: input
+          field: name
+        - type: input
+          field: status
+          required: true
+      - type: input
+        field: subject
+    - type: section
+      label: Schedule
+      children:
+      - type: row
+        layout: minmax(320px, 1fr) minmax(260px, 1fr)
+        children:
+        - type: input
+          field: scheduled_window
+          helper: UTC bounds — start must be strictly before end
+        - type: input
+          field: scheduled_days
+          helper: Calendar dates — inclusive both ends
+      - type: row
+        layout: repeat(3, minmax(180px, 1fr))
+        children:
+        - type: input
+          field: starts_at
+        - type: input
+          field: ends_at
+        - type: input
+          field: scheduled_on
+  parent_doctype: ops.MaintenanceTask
+meta:
+  parent_id: ops.MaintenanceTask

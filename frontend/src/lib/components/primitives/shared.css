@@ -1,0 +1,181 @@
+/*
+ * Shared primitive CSS — one small layer for delegated visual systems
+ * used by more than one primitive package. Plain global classes; the
+ * same layering precedent as the base styles.
+ *
+ * 1. Menu surfaces      — dropdown menus, select dropdowns, shell menus
+ * 2. Fullscreen expand  — scrim, fixed panel, entrance animation
+ * 3. Capsule shell      — the reference/link/file capsule look
+ */
+
+/* ── 1. Menu surface, item, separator ──────────────────────────────── */
+/* The classes are plain global CSS; components compose them with their
+ * own class for the trigger-specific extras (min-width, z-index tier,
+ * selected states). */
+
+.menu-surface {
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r);
+	box-shadow: var(--sh-2);
+	padding: 4px;
+}
+
+.menu-item {
+	padding: 7px 10px;
+	font-size: 13px;
+	color: var(--text);
+	border-radius: var(--r-sm);
+	cursor: pointer;
+	list-style: none;
+	display: flex;
+	align-items: center;
+}
+
+.menu-item:hover {
+	background: var(--surface-2);
+}
+
+.menu-item[data-highlighted] {
+	background: var(--accent-weak);
+	outline: none;
+}
+
+.menu-item[data-disabled] {
+	opacity: 0.4;
+	cursor: not-allowed;
+	pointer-events: none;
+}
+
+.menu-separator {
+	height: 1px;
+	background: var(--border);
+	margin: 4px 8px;
+}
+
+/* ── 2. Fullscreen-expand shell ─────────────────────────────────────── */
+/* Scrim, fixed panel and entrance animation, shared by the two
+ * expandable form surfaces (`Markdown`, `CodeEditor`). The scrim is a
+ * sibling that renders before the panel — never a child of it. The panel
+ * has a `z-index`, so it makes a stacking context; a nested scrim with
+ * `z-index: -1` would then paint above the panel background and darken
+ * it. Tiers follow the app dialog pairing: scrim 100, panel 101.
+ * Component-specific inner sizing (editor height, content column) stays
+ * in each component. */
+
+.fullscreen-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 100;
+	background: rgba(0, 0, 0, 0.35);
+	backdrop-filter: blur(4px);
+}
+
+.fullscreen-panel {
+	position: fixed;
+	inset: 32px;
+	z-index: 101;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: var(--r-lg);
+	box-shadow: var(--sh-2);
+	animation: fullscreen-in 0.12s ease-out;
+}
+
+@keyframes fullscreen-in {
+	from {
+		opacity: 0;
+		transform: scale(0.97);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+/* ── 3. Capsule shell ───────────────────────────────────────────────── */
+/* The common capsule look for copy / link / file capsules. Components
+ * parameterize it with custom properties:
+ *   --tint                    the identity colour driving border and fill
+ *   --capsule-shell-width     truncation width (default 30ch)
+ *   --capsule-shell-font      font-family override (e.g. var(--font-mono))
+ *   --capsule-shell-size      font-size (default 12.5px)
+ *   --capsule-shell-line      line-height (default 20px)
+ *   --capsule-shell-ink       text colour override (defaults to --text)
+ */
+
+.capsule-shell {
+	--tint: var(--text-3);
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	max-width: var(--capsule-shell-width, 30ch);
+	min-width: 0;
+	padding: 1px 6px 1px 8px;
+	border-radius: var(--r-sm);
+	border: 1px solid color-mix(in srgb, var(--tint) 34%, transparent);
+	background: color-mix(in srgb, var(--tint) 9%, var(--surface));
+	font-family: var(--capsule-shell-font, inherit);
+	font-size: var(--capsule-shell-size, 12.5px);
+	font-weight: 500;
+	line-height: var(--capsule-shell-line, 20px);
+	color: var(--capsule-shell-ink, var(--text));
+	text-decoration: none;
+	cursor: pointer;
+	transition:
+		background 0.12s,
+		border-color 0.12s,
+		color 0.12s;
+}
+
+.capsule-shell:hover {
+	border-color: color-mix(in srgb, var(--tint) 50%, transparent);
+	background: color-mix(in srgb, var(--tint) 12%, var(--surface));
+}
+
+.capsule-shell:focus-visible {
+	outline: 2px solid var(--accent-ink);
+	outline-offset: 1px;
+}
+
+/* Truncated value text — shrinks inside the flex capsule. */
+.capsule-shell-text {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	min-width: 0;
+	flex: 1 1 0%;
+}
+
+/* Trailing icon — never shrinks. */
+.capsule-shell-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	opacity: 0.7;
+	transition: opacity 0.12s;
+}
+
+.capsule-shell:hover .capsule-shell-icon {
+	opacity: 1;
+}
+
+/* ── 4. Tooltip ─────────────────────────────── */
+/* Content shape for Bits UI `Tooltip.Content` — the one tooltip look.
+ * Components parametize it with:
+ *   --tooltip-font   font-family override (default var(--font-sans))
+ */
+
+.tooltip-pop {
+	background: var(--surface-2);
+	color: var(--text);
+	border: 1px solid var(--border);
+	border-radius: var(--r-sm);
+	padding: 6px 9px;
+	font-family: var(--tooltip-font, var(--font-sans));
+	font-size: 12px;
+	line-height: 1.4;
+	max-width: 260px;
+	box-shadow: var(--sh-1);
+}

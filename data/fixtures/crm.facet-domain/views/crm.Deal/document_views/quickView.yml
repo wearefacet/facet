@@ -1,0 +1,43 @@
+---
+content:
+  kind: quickView
+  template:
+    type: col
+    children:
+    - type: row
+      layout: "auto auto 1fr"
+      children:
+      - type: capsule
+        value: $value
+    - type: hr
+    - type: section
+      label: Deal
+      children:
+      - type: field
+        label: Probability
+        value: $probability
+      - type: field
+        label: Weighted Value
+        value: $weighted_value
+      - type: field
+        label: Expected Close
+        value: $expected_close_date
+    - type: section
+      label: Relations
+      children:
+      - type: field
+        label: Company
+        value: $company_id
+      - type: field
+        label: Stage
+        value: $stage_id
+    - type: section
+      label: Ownership
+      children:
+      - type: field
+        label: Owner
+        value: $owner_id
+    - type: record-meta
+  parent_doctype: crm.Deal
+meta:
+  parent_id: crm.Deal

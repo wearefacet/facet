@@ -1,0 +1,8 @@
+---
+content:
+  name: Onboarding Redesign
+  team: production.Team.team_growth
+  status: active
+  owner_id: iam.Account.account_recruiter_kim
+  description: Rebuild the first-run onboarding flow for activation.
+meta: {}

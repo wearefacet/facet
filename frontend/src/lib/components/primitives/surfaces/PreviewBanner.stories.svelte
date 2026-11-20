@@ -1,0 +1,43 @@
+<!-- SPDX-License-Identifier: BUSL-1.1 -->
+<!-- Copyright (c) 2026 Amplitude Solutions Ltd -->
+
+<script lang="ts" module>
+	import { defineMeta } from '@storybook/addon-svelte-csf';
+	import { expect, userEvent, within } from 'storybook/test';
+	import PreviewBanner from './PreviewBanner.svelte';
+
+	const { Story } = defineMeta({
+		title: 'Components/Primitives/Surfaces/PreviewBanner',
+		component: PreviewBanner,
+		tags: ['autodocs']
+	});
+
+	// Exit spy — one slot, reset at the top of the play.
+	let exitCalled = false;
+	const onexit = () => {
+		exitCalled = true;
+	};
+</script>
+
+<Story
+	name="Default"
+	args={{ draftId: 'hr.Q8ZK4M2P' }}
+	play={async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		// The banner names the draft and offers the exit control.
+		await expect(canvas.getByText('Previewing draft hr.Q8ZK4M2P')).toBeVisible();
+		await expect(canvas.getByRole('status')).toBeVisible();
+		await expect(canvas.getByRole('button', { name: 'Exit preview' })).toBeVisible();
+	}}
+/>
+
+<Story
+	name="ExitCallsBack"
+	args={{ draftId: 'hr.Q8ZK4M2P', onexit }}
+	play={async ({ canvasElement }) => {
+		exitCalled = false;
+		const canvas = within(canvasElement);
+		await userEvent.click(canvas.getByRole('button', { name: 'Exit preview' }));
+		await expect(exitCalled).toBe(true);
+	}}
+/>

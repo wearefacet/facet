@@ -1,0 +1,15 @@
+---
+content:
+  name: Line 3 shutdown
+  status: in_progress
+  ends_at: "2026-03-11T18:00:00Z"
+  subject: Annual maintenance
+  starts_at: "2026-03-09T06:00:00Z"
+  scheduled_on: "2026-03-09"
+  scheduled_days:
+    end: "2026-03-11"
+    start: "2026-03-09"
+  scheduled_window:
+    end: "2026-03-11T18:00:00Z"
+    start: "2026-03-09T06:00:00Z"
+meta: {}

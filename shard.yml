@@ -1,0 +1,71 @@
+name: facet
+version: 0.1.0
+
+authors:
+  - Yacine Petitprez <anykeyh@gmail.com>
+
+description: |
+  A data substrate for middle sized organizations
+
+dependencies:
+  pg:
+    github: will/crystal-pg
+    version: "~> 0.30"
+  lua:
+    # Crystal bindings to Lua — the upstream project (veelenga/lua.cr). The
+    # project author forked it to fix non-ASCII chunk truncation
+    # (l_loadbufferx needs the byte count, not the character count) and a
+    # Crystal compilation issue; that work landed upstream through PR #45,
+    # and PR #47 added stack-value fixes on top. No release tag carries the
+    # fixes yet (v0.4.0 predates them), so this pins a commit. Bump the SHA
+    # deliberately, then run make check and make test.
+    github: veelenga/lua.cr
+    commit: c5e3e09c5e9857414306bbe1fd56937cf1a87902
+  kemal:
+    github: kemalcr/kemal
+  shrine:
+    github: jetrockets/shrine.cr
+    version: ~> 0.6.5
+  redis:
+    github: jgaskins/redis
+  jwt:
+    github: crystal-community/jwt
+    version: ~> 1.2
+  opentelemetry:
+    github: jgaskins/opentelemetry
+    # Span end and export run in an unguarded `ensure` in this shard (B-354);
+    # the crash frames are verified at this exact version.
+    version: 0.3.5
+  agent-cr:
+    # Author-owned shard (not a fork): the LLM agent loop behind both
+    # assistants. Pinned to a commit so a push to its master cannot change a
+    # build without an edit here. Bump deliberately, then run make check and
+    # make test.
+    #
+    # 03c9cd5 — Run the handler chain around tool-argument parse and
+    # validation failures (B-83): both error paths in
+    # `execute_registered_tools` now dispatch a `ToolCallContext`, so
+    # handlers (the tool-trace middleware) observe schema/JSON rejections
+    # instead of the turn dying silently at the iteration limit.
+    #
+    # 593bbdd — StreamParser: route tool-call delta fragments by id, then
+    # index, then most-recent (name-mismatch guard). Some OpenRouter
+    # upstreams omit `index`, which used to merge distinct parallel tool
+    # calls into one (arguments concatenated into invalid JSON).
+    github: anykeyh/agent.cr
+    commit: 03c9cd5ac31856c3a5a035315a2ecf1613b0339f
+  carbon:
+    github: luckyframework/carbon
+  carbon_smtp_adapter:
+    github: luckyframework/carbon_smtp_adapter
+  cron_parser:
+    github: kostya/cron_parser
+  crinja:
+    github: straight-shoota/crinja
+    version: ~> 0.5
+development_dependencies:
+  ameba:
+    github: crystal-ameba/ameba
+    version: ~> 1.7
+
+license: BUSL-1.1

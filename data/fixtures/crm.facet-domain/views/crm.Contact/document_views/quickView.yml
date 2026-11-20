@@ -1,0 +1,44 @@
+---
+content:
+  kind: quickView
+  template:
+    type: col
+    children:
+    - type: row
+      layout: "auto auto 1fr"
+      children:
+      - type: capsule
+        value: $role
+    - type: hr
+    - type: section
+      label: Contact
+      children:
+      - type: field
+        label: Job Title
+        value: $job_title
+      - type: field
+        label: Department
+        value: $department
+      - type: field
+        label: Email
+        value: $email
+        children:
+        - href: $email
+          type: email
+          label: $email
+      - type: field
+        label: Phone
+        value: $phone
+      - type: field
+        label: Primary
+        value: $is_primary
+    - type: section
+      label: Ownership
+      children:
+      - type: field
+        label: Owner
+        value: $owner_id
+    - type: record-meta
+  parent_doctype: crm.Contact
+meta:
+  parent_id: crm.Contact

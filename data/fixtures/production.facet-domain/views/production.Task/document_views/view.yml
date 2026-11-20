@@ -1,0 +1,31 @@
+---
+content:
+  kind: view
+  template:
+    type: col
+    children:
+    - type: header
+      title: $title
+      statusField: status
+      subtitle: $assignee
+    - type: grid
+      layout: 3 1
+      children:
+      - type: col
+        children:
+        - type: section
+          label: Details
+          children:
+          - type: field
+            label: Assignee
+            value: $assignee
+          - type: field
+            label: Estimate (hours)
+            value: $estimate_hours
+      - type: sidebar
+        children:
+        - type: record-meta
+          history: true
+  parent_doctype: production.Task
+meta:
+  parent_id: production.Task

@@ -1,0 +1,77 @@
+doctype: Roles
+domain: iam
+schema_version: 1
+aggregate_root: true
+display_name: "{{ name }}"
+search: "{{ name }} {{ description }}"
+description: "A named role that groups a set of permissions. Roles are assigned to accounts to grant access to resources and actions."
+icon: badge-check
+fields:
+  name:
+    type: string
+    required: true
+    unique: true
+    title: "Role Name"
+    description: "A unique name for the role (e.g. 'admin', 'editor', 'viewer')."
+    pattern: "^[a-z][a-z0-9_]*$"
+    pattern_flags: ""
+    filters: [equality, text_search]
+  level:
+    type: integer
+    required: true
+    min: 0
+    max: 100
+    title: Level
+    description: "Authority level from 0 through 100. A caller may only assign roles at or below its elected role's level, may only author roles whose level does not exceed it, and cannot edit or delete a role (or an account) whose current level is above it."
+    filters: [equality, comparison]
+  description:
+    type: longtext
+    title: Description
+    description: "A human-readable description of what this role grants access to."
+  visible_tags:
+    type: array
+    title: "Visible Tags"
+    description: 'Tags controlling field-level read visibility. Only fields whose `view` tags are all present in this list will be emitted on read. Defaults to ["default"] if not set. Use ["*"] for full visibility.'
+    items:
+      type: string
+  connectivity:
+    type: array
+    title: "Connectivity"
+    description: "Programmatic channels this role may use: 'mcp', 'webhook', 'api' (API keys), 'assistant'. Browser access — the core application and hosted apps — is always available and is not governed here. Empty list = a workplace-only role."
+    items:
+      type: string
+    default: []
+  assistant_token_budget:
+    type: integer
+    min: 0
+    title: "Assistant Token Budget"
+    description: "Maximum assistant tokens per account over a rolling 30-day window for accounts this role enables. The largest budget across held enabling roles applies; empty = unlimited."
+  permissions:
+    type: array
+    title: Permissions
+    description: "A list of structured permission objects. Each permission has 'action', 'on', and optional 'scope' and 'except' fields."
+    items:
+      type: object
+      properties:
+        action:
+          type: string
+          required: true
+          title: Action
+          description: "The granted action: 'read', 'create', 'update', 'delete', 'action_name', or '*' for all."
+        "on":
+          type: string
+          required: true
+          title: "On"
+          description: "The target resource path: 'domain.DocType' or 'domain.DocType.ChildDocType' or '*.*' for all."
+        scope:
+          type: array
+          title: Scope
+          description: "Optional list of named-scope aliases referencing `scopes:` entries on the leaf doctype. Pass one or more '$<name>' aliases to restrict this permission to rows matching any (OR) of those named scopes' `where` clauses. Omit (or include '$all') for unrestricted access. Roles cannot author custom query predicates."
+          items:
+            type: string
+        except:
+          type: array
+          title: Except
+          description: "Optional list of concrete 'domain.Doctype' paths subtracted from the permission's reach. A target matching an entry never matches the permission, even when it matches 'on'; entries prefix-match (an entry on 'core.DocType' also excludes 'core.DocType.Comment'). No wildcards. Lets a blanket line step aside for a scoped re-grant on the same doctypes."
+          items:
+            type: string

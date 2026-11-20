@@ -1,0 +1,51 @@
+---
+content:
+  icon: milestone
+  domain: hr
+  fields:
+    seq:
+      type: integer
+      required: true
+    note:
+      type: string
+    new_title:
+      type: string
+    event_type:
+      type: enum
+      values:
+      - key: hired
+        color: "#3f8d5a"
+        label: Hired
+      - key: promoted
+        color: "#9e711e"
+        label: Promoted
+      - key: transferred
+        color: "#7470b9"
+        label: Transferred
+      - key: salary_changed
+        color: "#7c8028"
+        label: Salary Changed
+      - key: terminated
+        color: "#308e63"
+        label: Terminated
+      required: true
+      filters:
+        - equality
+    new_salary:
+      type: money
+      currency: USD
+      filters:
+        - comparison
+        - currency
+    effective_date:
+      type: date
+      required: true
+  doctype: CareerEvent
+  member_of: Employee
+  description: A career event in an employee's history. Child of Employee.
+  display_name: "{{ event_type }} {{ effective_date }}"
+  search: "{{ event_type }} {{ new_title }} {{ note }}"
+  aggregate_root: false
+  schema_version: 1
+meta:
+  parent_id: hr

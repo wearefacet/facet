@@ -1,0 +1,9 @@
+<h1>Hello <%= @display_name %>,</h1>
+
+<p>We received a request to reset your Facet password. You can choose a new password using the link below:</p>
+
+<p><a href="<%= @reset_link %>"><%= @reset_link %></a></p>
+
+<p style="color: #6b7280; font-size: 13px;">This link expires in <%= @validity %>. If you didn't request a password reset, you can safely ignore this email — your password will not be changed.</p>
+
+<p style="color: #6b7280; font-size: 13px;">— Facet</p>

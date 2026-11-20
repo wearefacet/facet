@@ -1,0 +1,34 @@
+# The first-party Facet CLI: a public OAuth client (authorization code +
+# PKCE, loopback redirects) the CLI binary signs in through. The user's
+# elected role at consent intersects with these grants — so the role must
+# allow deploying applications, all or a narrower scope. The registration
+# is headless: no host, no service account, and the `no_asset` /
+# `no_launcher` flags keep it out of the deploy route and the dashboard.
+- id: facet-cli
+  content:
+    slug: facet-cli
+    name: Facet CLI
+    description: "First-party command-line tool. Creates, reads, edits, deletes, and deploys applications."
+    client_type: public
+    status: active
+    no_launcher: true
+    no_asset: true
+    redirect_uris:
+      - http://localhost:*
+      - http://127.0.0.1:*
+      - "http://[::1]:*"
+    grants:
+      - target: app.App
+        actions:
+          - name: read
+            required: true
+          - name: write
+            required: true
+          - name: delete
+            required: true
+          - name: deploy
+            required: true
+      - target: app.Deployment
+        actions:
+          - name: read
+            required: true

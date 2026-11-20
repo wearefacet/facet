@@ -1,0 +1,241 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    # Doc-only changes skip the pipeline. The committed OpenAPI artifact
+    # (doc/api/openapi.json) must still be diffed when it changes, so the
+    # exclude list names the doc subdirectories and leaves doc/api in.
+    # (`paths-ignore` cannot re-include a subdirectory of an excluded
+    # directory, so 'doc/**' would silence the artifact's own drift signal.)
+    paths-ignore: ['**/*.md', 'doc/backend/**', 'doc/frontend/**', 'doc/ops/**', 'doc/packages/**', 'doc/plans/**', 'doc/shared/**']
+  push:
+    branches: [master]
+    paths-ignore: ['**/*.md', 'doc/backend/**', 'doc/frontend/**', 'doc/ops/**', 'doc/packages/**', 'doc/plans/**', 'doc/shared/**']
+  workflow_dispatch:
+
+# One run per ref. A new push cancels the superseded PR run.
+# Runs on master never cancel: the final state must always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  backend-fast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Refresh apt package lists
+        # install-crystal apt-installs Crystal's system libraries. The runner
+        # image's cached lists can 404 after a point release supersedes them.
+        run: sudo apt-get update
+      - uses: crystal-lang/install-crystal@v1
+        with:
+          crystal: 1.21.0
+      - name: Install Lua headers
+        # The `lua` shard links the system library at build time
+        # (same package as `e2e/docker/backend.Dockerfile`).
+        run: sudo apt-get install -y --no-install-recommends liblua5.4-dev
+      - name: Cache shards
+        uses: actions/cache@v4
+        with:
+          path: |
+            lib
+            ~/.cache/shards
+          key: shards-${{ hashFiles('shard.lock') }}
+      - name: Install shards
+        run: shards install
+      - name: Cache ameba
+        uses: actions/cache@v4
+        with:
+          path: bin/ameba
+          key: ameba-${{ hashFiles('shard.lock', 'bin/ameba.cr') }}
+      - name: Build ameba (no-op on cache hit)
+        run: test -x bin/ameba || crystal build bin/ameba.cr -o bin/ameba
+      - name: License headers
+        run: make license_check
+      - name: Format check
+        run: crystal tool format --check src spec scripts
+      - name: Spec def collision check
+        # Top-level defs are program-wide; the last one compiled wins and
+        # spec file order is unsorted readdir order. Same-named helpers
+        # across spec files must be deduped into spec/support/ or private.
+        run: make spec_defs_check
+      - name: Lint (ameba)
+        run: bin/ameba
+      - name: Type check
+        run: make check
+
+  frontend-fast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Compile Paraglide messages
+        # svelte-check resolves `$lib/paraglide/*` as real .d.ts files, but the
+        # output is gitignored and the Vite plugin only generates it on
+        # `pnpm dev` / `pnpm build`. Compile it before any check.
+        run: pnpm exec paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide
+      - run: pnpm lint
+      - run: pnpm check
+      # Pure-logic tests only: Node environment, no browser.
+      - run: pnpm exec vitest run --project server
+
+  cli:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: packages/cli
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: packages/cli/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm check
+      - run: pnpm test
+
+  backend-full:
+    needs: backend-fast
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    # Swap makes the spec compile slower than a memory-resident run; 45
+    # leaves headroom for compile + suite + runner setup.
+    timeout-minutes: 45
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - '6379:6379'
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Refresh apt package lists
+        # install-crystal apt-installs Crystal's system libraries. The runner
+        # image's cached lists can 404 after a point release supersedes them.
+        run: sudo apt-get update
+      - uses: crystal-lang/install-crystal@v1
+        with:
+          crystal: 1.21.0
+      - name: Install Lua headers
+        run: sudo apt-get install -y --no-install-recommends liblua5.4-dev
+      - name: Cache shards
+        uses: actions/cache@v4
+        with:
+          path: |
+            lib
+            ~/.cache/shards
+          key: shards-${{ hashFiles('shard.lock') }}
+      - name: Install shards
+        run: shards install
+      - name: Add swap
+        # The whole-program spec compile with `--debug` peaks past the 7 GB
+        # of a standard private-repo runner. The kernel OOM killer then
+        # SIGKILLs the compiler mid-compile (`make: *** ... Killed`). The
+        # swapfile absorbs the peak; `/mnt` sits on the large temp disk.
+        run: |
+          sudo fallocate -l 8G /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+      # `make test` starts the compose stack from `compose.test.yml` — the
+      # same tuned throwaway PostgreSQL the dev boxes use (tmpfs data dir,
+      # fsync=off, max_connections=200). A bare service container runs on
+      # durable storage: checkpoint storms stall commits past the pool's
+      # 5s checkout timeout, and every request 500s with an empty message.
+      - name: Spec suite
+        run: make test
+      - name: OOM diagnosis
+        if: failure()
+        # A SIGKILL leaves no compiler error. The kernel log names the
+        # killed process and shows the memory pressure at that moment.
+        run: sudo dmesg -T | grep -iE 'out of memory|oom|killed process' || true
+
+  frontend-full:
+    needs: frontend-fast
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      # Paraglide output is gitignored; the storybook project reads it too.
+      - name: Compile Paraglide messages
+        run: pnpm exec paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+      - name: Install Chromium
+        # `--with-deps` apt-installs the browser's system libraries.
+        run: sudo apt-get update && pnpm exec playwright install --with-deps chromium
+      # Story play functions in a real browser. The `server` project
+      # already ran in `frontend-fast`.
+      - run: pnpm exec vitest run --project storybook
+
+  openapi-drift:
+    # The committed OpenAPI artifact (doc/api/openapi.json) must match the
+    # declarative spec in src/http/openapi.cr. The generator is DB-free
+    # (route registration opens no connection), so the job needs no
+    # PostgreSQL. Fails when a route change landed without regenerating.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Refresh apt package lists
+        run: sudo apt-get update
+      - uses: crystal-lang/install-crystal@v1
+        with:
+          crystal: 1.21.0
+      - name: Install Lua headers
+        # The route modules link the `lua` shard at build time.
+        run: sudo apt-get install -y --no-install-recommends liblua5.4-dev
+      - name: Cache shards
+        uses: actions/cache@v4
+        with:
+          path: |
+            lib
+            ~/.cache/shards
+          key: shards-${{ hashFiles('shard.lock') }}
+      - name: Install shards
+        run: shards install
+      - name: Regenerate OpenAPI spec
+        run: crystal run scripts/gen_openapi.cr
+      - name: Fail on drift
+        run: git diff --exit-code doc/api/openapi.json

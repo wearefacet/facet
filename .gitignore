@@ -1,0 +1,13 @@
+/lib/
+/tmp/
+
+/bin/
+/build/
+
+main
+
+/.zed
+
+.env*
+!.env.example
+tmp/

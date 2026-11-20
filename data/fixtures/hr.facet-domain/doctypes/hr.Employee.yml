@@ -1,0 +1,103 @@
+---
+content:
+  icon: id-card
+  color: "#4CAF50"
+  domain: hr
+  fields:
+    person:
+      type: reference
+      unique: true
+      doctype: identity.Person
+      required: true
+    remote:
+      type: boolean
+      default: false
+      filters:
+        - equality
+    salary:
+      type: money
+      currency: USD
+      filters:
+        - comparison
+        - currency
+    status:
+      type: enum
+      values:
+      - key: active
+        color: "#b16147"
+        label: Active
+      - key: on_leave
+        color: "#008f82"
+        label: On Leave
+      - key: terminated
+        color: "#308e63"
+        label: Terminated
+      default: active
+      filters:
+        - equality
+    manager:
+      type: reference
+      doctype: hr.Employee
+    hire_date:
+      type: date
+      required: true
+      filters:
+        - comparison
+    job_title:
+      type: string
+      required: true
+    department:
+      type: string
+      filters:
+        - equality
+        - text_search
+    tenure_days:
+      type: data
+      compute: employee_tenure_days
+      compute_when:
+      - hire_date
+      - termination_date
+    current_title:
+      type: data
+      compute: employee_current_title
+      compute_when:
+      - job_title
+    termination_date:
+      type: date
+      filters:
+        - comparison
+  script: !read_file hr.Employee.lua
+  actions:
+    promote:
+      args:
+        new_title:
+          type: string
+          required: true
+    terminate:
+      args:
+        effective_date:
+          type: string
+    change_salary:
+      args:
+        new_salary:
+          type: money
+          required: true
+  doctype: Employee
+  children:
+    career_events:
+      doctype: CareerEvent
+      collection: true
+  sidecars:
+    comments:
+      doctype: core.Comment
+      column: target
+    attachments:
+      doctype: core.Attachment
+      column: target
+  description: An employee record with computed tenure and title fields.
+  display_name: "{{ person }}"
+  search: "{{ person }} {{ job_title }} {{ department }}"
+  aggregate_root: true
+  schema_version: 1
+meta:
+  parent_id: hr

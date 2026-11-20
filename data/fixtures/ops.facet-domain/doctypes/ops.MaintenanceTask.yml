@@ -1,0 +1,79 @@
+---
+content:
+  icon: wrench
+  color: "#176e3a"
+  domain: ops
+  fields:
+    name:
+      type: string
+      title: Task Name
+      required: true
+    status:
+      type: enum
+      title: Status
+      values:
+      - key: planned
+        color: "#85B7EB"
+        label: Planned
+      - key: in_progress
+        color: "#EF9F27"
+        label: In Progress
+      - key: done
+        color: "#5DCAA5"
+        label: Done
+      - key: blocked
+        color: "#F09595"
+        label: Blocked
+      default: planned
+      filters:
+        - equality
+    ends_at:
+      type: datetime
+      title: Ends At
+      description: When combined with `starts_at`, forms a two-field datetime range.
+      filters:
+        - comparison
+    subject:
+      type: string
+      title: Subject
+    starts_at:
+      type: datetime
+      title: Starts At
+      description: A single datetime the task starts at.
+      filters:
+        - comparison
+    scheduled_on:
+      type: date
+      title: Scheduled On
+      description: A single calendar date the task is anchored to.
+      filters:
+        - comparison
+    scheduled_days:
+      type: dateperiod
+      title: Scheduled Days
+      description: A native calendar-date range — start and end dates inclusive both
+        ends. Used as a one-field date-range discriminator.
+    scheduled_window:
+      type: period
+      title: Scheduled Window
+      description: A native datetime range — start and end timestamps. Used as a one-field
+        datetime-range discriminator.
+  scopes:
+    mine:
+      where:
+        status: planned
+      description: Tasks with no explicit owner
+  doctype: MaintenanceTask
+  sidecars:
+    comments:
+      doctype: core.Comment
+      column: target
+  description: A maintenance task scheduling fixture for the calendar view story.
+    Includes a date, datetime, dateperiod, and period field so the calendar can be
+    switched between discriminator kinds inside one doctype.
+  display_name: "{{ name }}"
+  search: "{{ name }} {{ subject }}"
+  aggregate_root: true
+  schema_version: 1
+meta:
+  parent_id: ops

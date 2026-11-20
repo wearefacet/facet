@@ -1,0 +1,21 @@
+{
+  "description": "Chaque clé acceptée par la définition d’un doctype, avec son type, son statut obligatoire et son rôle.",
+  "generated_note": "> Généré depuis `src/doctype` par `make gen-docs-doctype-schema`. Ne modifiez pas ce fichier à la main.",
+  "intro": "Cette page sert à vérifier les clés qu’accepte une définition de doctype.",
+  "definition_intro": "Une définition de doctype est le document JSON qui enregistre un type de document. Le parseur sous `src/doctype/` accepte exactement les clés ci-dessous et refuse toute autre clé avec un 422. Les définitions peuvent aussi s’écrire en YAML ; le chargeur le convertit dans la même grammaire JSON.",
+  "top_level_heading": "## Clés de premier niveau",
+  "col_key": "Clé",
+  "col_type": "Type",
+  "col_required": "Obligatoire",
+  "col_purpose": "Rôle",
+  "json_schema_heading": "## Schéma JSON",
+  "json_schema_intro": "Le schéma exprime les ensembles de clés, les clés obligatoires, les motifs et les énumérations que le code applique. Les règles que le schéma ne peut pas exprimer suivent.",
+  "rules_heading": "## Règles que le schéma ne peut pas exprimer",
+  "col_rule": "Règle",
+  "col_what": "Ce qu’elle implique",
+  "col_sources": "Sources",
+  "related_heading": "Voir aussi",
+  "related_designing": "- [Concevoir des doctypes](/fr/build/designing-doctypes/) — comment modéliser un domaine avec ces clés.",
+  "related_evolving": "- [Faire évoluer un schéma](/fr/build/evolving-schema/) — versions de schéma et migrations.",
+  "related_parent_child": "- [Composition parent et enfant](/fr/build/parent-child-composition/) — la paire children et member_of."
+}

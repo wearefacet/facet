@@ -1,0 +1,7 @@
+---
+content:
+  role: observer
+  contact: crm.Contact.1
+  start_date: "2024-02-01"
+meta:
+  parent_id: crm.Company.2

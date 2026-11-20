@@ -1,0 +1,29 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+    - type: section
+      label: Identity
+      children:
+      - type: row
+        layout: 1fr 240px
+        children:
+        - type: input
+          field: title
+        - type: input
+          field: status
+    - type: section
+      label: Details
+      children:
+      - type: row
+        layout: minmax(220px, 1fr) minmax(280px, 2fr)
+        children:
+        - type: input
+          field: assignee
+        - type: input
+          field: estimate_hours
+  parent_doctype: production.Task
+meta:
+  parent_id: production.Task

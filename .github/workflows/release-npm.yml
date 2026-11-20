@@ -1,0 +1,127 @@
+name: Release npm package
+
+# Tag-driven npm publishing. Each npm package owns a tag prefix: `cli-v*`
+# publishes @facetapp/cli from packages/cli, `sdk-v*` @facetapp/sdk from
+# packages/sdk, `chat-v*` @facetapp/chat from packages/chat. A new package
+# adds one pattern to `tags` and one row to the mapping step below. Prefixes
+# are never shared with another release workflow — one tag starts exactly one
+# release pipeline.
+on:
+  push:
+    tags: ['sdk-v*', 'chat-v*', 'cli-v*']
+
+permissions:
+  # `gh release create`
+  contents: write
+  # npm trusted publishing (OIDC). Provenance is generated automatically on
+  # publishes from GitHub Actions — no flag needed.
+  id-token: write
+
+concurrency:
+  # Serialize publishes repo-wide; a running publish is never cancelled.
+  group: release-npm
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Map tag prefix to package
+        run: |
+          case "${GITHUB_REF_NAME}" in
+            sdk-v*) package_dir=packages/sdk ;;
+            chat-v*) package_dir=packages/chat ;;
+            cli-v*) package_dir=packages/cli ;;
+            *) echo "::error::tag ${GITHUB_REF_NAME} matches no package prefix" ; exit 1 ;;
+          esac
+          echo "PACKAGE_DIR=${package_dir}" >> "$GITHUB_ENV"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          # npm trusted publishing needs Node >= 22.14.0.
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: ${{ env.PACKAGE_DIR }}/pnpm-lock.yaml
+
+      - name: Guard — tag version matches package.json
+        working-directory: ${{ env.PACKAGE_DIR }}
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          expected_tag="${GITHUB_REF_NAME%%-v*}-v${package_version}"
+          if [ "$GITHUB_REF_NAME" != "$expected_tag" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match the package.json version (${expected_tag}). Bump the version, then push a new tag."
+            exit 1
+          fi
+          case "$package_version" in
+            # A prerelease (x.y.z-suffix) must never become `latest`.
+            *-*) dist_tag=beta ;;
+            *) dist_tag=latest ;;
+          esac
+          echo "NPM_DIST_TAG=${dist_tag}" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        working-directory: ${{ env.PACKAGE_DIR }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        working-directory: ${{ env.PACKAGE_DIR }}
+        run: pnpm lint
+
+      - name: Type check
+        working-directory: ${{ env.PACKAGE_DIR }}
+        run: pnpm check
+
+      - name: Tests
+        working-directory: ${{ env.PACKAGE_DIR }}
+        run: pnpm test
+
+      - name: Build
+        working-directory: ${{ env.PACKAGE_DIR }}
+        run: pnpm build
+
+      - name: Smoke — the CLI starts
+        if: env.PACKAGE_DIR == 'packages/cli'
+        working-directory: ${{ env.PACKAGE_DIR }}
+        run: node dist/index.js --help
+
+      - name: Smoke — tarball contents
+        working-directory: ${{ env.PACKAGE_DIR }}
+        run: |
+          npm pack --dry-run --json | node -e '
+            const pack = JSON.parse(require("fs").readFileSync(0, "utf8"))[0];
+            const paths = pack.files.map((file) => file.path);
+            const allowed = (path) =>
+              path === "package.json" ||
+              path === "README.md" ||
+              path === "LICENSE" ||
+              path.startsWith("dist/");
+            const stray = paths.filter((path) => !allowed(path));
+            if (stray.length > 0) {
+              console.error(`Unexpected tarball files: ${stray.join(", ")}`);
+              process.exit(1);
+            }
+            if (!paths.includes("dist/index.js")) {
+              console.error("Tarball is missing dist/index.js (the entry point)");
+              process.exit(1);
+            }
+            console.log(`Tarball contents OK (${paths.length} files)`);
+          '
+
+      - name: Publish to npm
+        working-directory: ${{ env.PACKAGE_DIR }}
+        run: |
+          # Node 22 bundles npm 10; OIDC trusted publishing needs npm >= 11.5.1.
+          npm install -g npm@^11
+          npm publish --access public --tag "$NPM_DIST_TAG"
+
+      - name: GitHub release
+        run: gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}

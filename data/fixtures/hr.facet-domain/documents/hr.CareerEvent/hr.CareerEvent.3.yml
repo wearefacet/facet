@@ -1,0 +1,9 @@
+---
+content:
+  seq: 1
+  note: Initial hire
+  new_title: Software Engineering Lead
+  event_type: hired
+  effective_date: "2020-01-10"
+meta:
+  parent_id: hr.Employee.2

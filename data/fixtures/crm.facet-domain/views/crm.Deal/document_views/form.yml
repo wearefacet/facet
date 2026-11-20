@@ -1,0 +1,63 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+    - type: section
+      label: Identity
+      children:
+      - type: row
+        layout: 1fr 240px
+        children:
+        - type: input
+          field: title
+        - type: input
+          field: status
+    - type: section
+      label: Deal
+      children:
+      - type: row
+        layout: minmax(200px, 1fr) minmax(280px, 2fr)
+        children:
+        - type: input
+          field: value
+        - type: input
+          field: probability
+      - type: row
+        layout: repeat(2, minmax(160px, 1fr))
+        children:
+        - type: input
+          field: expected_close_date
+        - type: input
+          field: actual_close_date
+      - type: input
+        field: lost_reason
+      - type: input
+        field: contract
+        placeholder: Drop the signed contract or click to attach
+    - type: section
+      label: Relations
+      children:
+      - type: row
+        layout: repeat(3, minmax(160px, 1fr))
+        children:
+        - type: input
+          field: company_id
+        - type: input
+          field: primary_contact_id
+        - type: input
+          field: stage_id
+      - type: input
+        field: owner_id
+    - type: relation
+      label: Activities
+      source:
+        kind: filter
+        field: deal_id
+      doctype: crm.Activity
+      referenceField: deal_id
+      limit: 25
+  parent_doctype: crm.Deal
+meta:
+  parent_id: crm.Deal

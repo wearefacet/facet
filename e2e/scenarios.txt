@@ -1,0 +1,16 @@
+# One scenario project name per line. Single source of truth:
+#
+# - `playwright.config.ts` binds one Playwright project to
+#   `tests/<name>.e2e.ts` per line (harness §7 — testMatch binding).
+# - `run-suite.sh` boots one Docker stack per listed scenario, runs its
+#   project inside that stack, then tears the stack down (harness §2 — one
+#   scenario file = one stack). Every listed scenario must have a file
+#   under `tests/` — the run fails when one does not, so the manifest
+#   cannot promise coverage the suite does not carry.
+smoke
+user-lifecycle
+rbac-scoped-grants
+containment
+draft-publish
+platform-use
+app-head-to-toe

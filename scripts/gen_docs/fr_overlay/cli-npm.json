@@ -1,0 +1,14 @@
+{
+  "description": "Commandes et options de l'outil développeur @facetapp/cli.",
+  "generated_note": "> Généré depuis `packages/cli` par `make gen-docs-npm-cli`. Ne modifiez pas ce fichier à la main.",
+  "intro": "Le paquet npm `@facetapp/cli` déploie un dossier de build statique comme nouvelle révision d'une app Facet. Il liste et active les révisions, et gère la connexion à une instance Facet. Aucune installation n'est nécessaire : lancez les commandes via `pnpx @facetapp/cli`. Le paquet demande Node 20 ou plus récent. Les commandes lisent `facet.config.json` dans le répertoire courant ; `init` l'écrit.",
+  "commands_heading": "## Commandes",
+  "col_command": "Commande",
+  "col_options": "Options",
+  "col_purpose": "Rôle",
+  "help_heading": "## Sortie d'aide",
+  "help_intro": "Les blocs ci-dessous sont les textes d'aide capturés du paquet.",
+  "related_heading": "Voir aussi",
+  "related_quickstart": "- [Premiers pas avec le CLI dev](/fr/apps/quickstart-dev-cli/) — premier déploiement sans installation.",
+  "related_hosting": "- [Héberger et déployer des apps](/fr/apps/hosting-deploy/) — ce qu'est un déploiement et comment fonctionne l'activation."
+}

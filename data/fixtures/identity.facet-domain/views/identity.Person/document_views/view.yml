@@ -1,0 +1,38 @@
+---
+content:
+  kind: view
+  template:
+    type: col
+    children:
+    - type: header
+      chips:
+      - kind
+      subtitle: $email
+      title: $full_name
+    - type: grid
+      layout: 3 1
+      children:
+      - type: col
+        children:
+        - type: section
+          label: Identity
+          children:
+          - type: field
+            label: Email
+            value: $email
+          - type: field
+            label: Date of Birth
+            value: $date_of_birth
+        - type: section
+          label: Contact
+          children:
+          - type: field
+            label: Contact
+            value: $contact
+      - type: sidebar
+        children:
+        - type: record-meta
+          history: true
+  parent_doctype: identity.Person
+meta:
+  parent_id: identity.Person

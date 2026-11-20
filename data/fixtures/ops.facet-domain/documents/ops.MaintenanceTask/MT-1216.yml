@@ -1,0 +1,15 @@
+---
+content:
+  name: Leak
+  status: blocked
+  ends_at: "2026-03-16T13:15:00Z"
+  subject: Pipe 4B
+  starts_at: "2026-03-16T12:00:00Z"
+  scheduled_on: "2026-03-16"
+  scheduled_days:
+    end: "2026-03-16"
+    start: "2026-03-16"
+  scheduled_window:
+    end: "2026-03-16T13:15:00Z"
+    start: "2026-03-16T12:00:00Z"
+meta: {}

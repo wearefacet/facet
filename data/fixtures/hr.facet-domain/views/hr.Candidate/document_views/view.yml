@@ -1,0 +1,191 @@
+---
+content:
+  kind: view
+  template:
+    type: col
+    children:
+    - type: header
+      chips:
+      - source
+      - remote_pref
+      subtitle: $headline
+      statusField: status
+      title: $full_name
+    - type: grid
+      layout: 3 1
+      children:
+      - type: col
+        children:
+        - type: image
+          src: $photo
+          alt: Candidate photo
+          variant: avatar
+        - type: section
+          label: Contact
+          children:
+          - type: field
+            label: Email
+            value: $email
+            children:
+            - href: $email
+              type: email
+              label: $email
+          - type: field
+            label: Phone
+            value: $phone
+          - type: field
+            label: Resume
+            value: $resume
+        - type: section
+          label: Application
+          children:
+          - type: field
+            label: Applied Date
+            value: $applied_date
+          - type: field
+            label: Available From
+            value: $available_from
+          - type: field
+            label: Notice Period
+            value: $notice_days
+          - type: field
+            label: Willing to Relocate
+            value: $willing_reloc
+          - type: field
+            label: Salary Expectation
+            value: $salary_exp
+        - type: section
+          label: Background
+          children:
+          - type: field
+            label: Total Experience
+            value: $total_exp
+          - type: field
+            label: Average Interview Score
+            value: $avg_score
+          - type: field
+            label: Date of Birth
+            value: $birth_date
+          - type: field
+            label: Gender
+            value: $gender
+          - type: field
+            label: Nationality
+            value: $nationality
+          - type: field
+            label: Rating
+            value: $rating
+        - type: section
+          label: Address
+          children:
+          - type: object
+            field: address
+            children:
+            - type: field
+              label: Street
+              value: $street
+            - type: field
+              label: City
+              value: $city
+            - type: field
+              label: Region
+              value: $region
+            - type: field
+              label: Postal Code
+              value: $postal_code
+            - type: field
+              label: Country
+              value: $country
+        - type: section
+          label: Social
+          children:
+          - type: object
+            field: social
+            children:
+            - type: field
+              label: GitHub
+              value: $github
+            - type: field
+              label: LinkedIn
+              value: $linkedin
+            - type: field
+              label: Portfolio
+              value: $portfolio
+        - type: section
+          label: Emergency Contact
+          children:
+          - type: object
+            field: emergency
+            children:
+            - type: field
+              label: Name
+              value: $name
+            - type: field
+              label: Phone
+              value: $phone
+            - type: field
+              label: Relationship
+              value: $relationship
+        - type: section
+          label: Summary
+          children:
+          - type: input
+            field: summary
+      - type: sidebar
+        children:
+        - type: section
+          label: Owner
+          children:
+          - type: field
+            value: $owner
+        - type: record-meta
+          history: true
+    - tabs:
+      - type: tab
+        label: Experience
+        children:
+        - type: relation
+          view: inline
+          label: Work Experience
+          limit: 25
+          source:
+            rel: experiences
+            kind: children
+          doctype: hr.CandidateExperience
+      - type: tab
+        label: Education
+        children:
+        - type: relation
+          view: inline
+          label: Education
+          limit: 25
+          source:
+            rel: education
+            kind: children
+          doctype: hr.CandidateEducation
+      - type: tab
+        label: Skills
+        children:
+        - type: relation
+          view: inline
+          label: Skills
+          limit: 25
+          source:
+            rel: skills
+            kind: children
+          doctype: hr.CandidateSkill
+      - type: tab
+        label: Interviews
+        children:
+        - type: relation
+          view: inline
+          label: Interviews
+          limit: 25
+          source:
+            rel: interviews
+            kind: children
+          doctype: hr.InterviewFeedback
+      type: tabs
+  parent_doctype: hr.Candidate
+meta:
+  parent_id: hr.Candidate

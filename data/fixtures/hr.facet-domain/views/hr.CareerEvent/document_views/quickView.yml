@@ -1,0 +1,37 @@
+---
+content:
+  kind: quickView
+  template:
+    type: col
+    children:
+    - type: row
+      layout: "auto auto 1fr"
+      children:
+      - type: capsule
+        value: $event_type
+      - type: title
+        level: 4
+        value: $effective_date
+    - type: hr
+    - type: if
+      field: new_title
+      children:
+      - type: field
+        label: New Title
+        value: $new_title
+    - type: if
+      field: new_salary
+      children:
+      - type: field
+        label: New Salary
+        value: $new_salary
+    - type: if
+      field: note
+      children:
+      - type: field
+        label: Note
+        value: $note
+    - type: record-meta
+  parent_doctype: hr.CareerEvent
+meta:
+  parent_id: hr.CareerEvent

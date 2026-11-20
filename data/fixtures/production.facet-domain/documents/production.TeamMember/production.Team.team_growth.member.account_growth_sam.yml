@@ -1,0 +1,6 @@
+---
+content:
+  role: member
+  account: iam.Account.account_growth_sam
+meta:
+  parent_id: production.Team.team_growth

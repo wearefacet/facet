@@ -1,0 +1,12 @@
+---
+content:
+  color: "#10B981"
+  description: Production planning — teams, projects, and tasks. Used to exercise
+    RBAC team-scoped access.
+  context_sets:
+    my_teams:
+      from: TeamMember
+      where:
+        account: $self
+      select: $parent_id
+meta: {}

@@ -1,0 +1,39 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+    - type: section
+      label: Event
+      children:
+      - type: row
+        layout: 1fr 240px
+        children:
+        - type: input
+          field: event_type
+          label: Event Type
+        - type: input
+          field: seq
+          label: Sequence
+      - type: input
+        field: effective_date
+        label: Effective Date
+    - type: section
+      label: Changes
+      children:
+      - type: row
+        layout: minmax(200px, 1fr) minmax(280px, 2fr)
+        children:
+        - type: input
+          field: new_title
+          label: New Title
+        - type: input
+          field: new_salary
+          label: New Salary
+      - type: input
+        field: note
+        label: Note
+  parent_doctype: hr.CareerEvent
+meta:
+  parent_id: hr.CareerEvent

@@ -1,0 +1,8 @@
+---
+content:
+  name: Proposal
+  color: "#FF9800"
+  order: 3
+  is_closing_stage: false
+  probability_default: 50
+meta: {}

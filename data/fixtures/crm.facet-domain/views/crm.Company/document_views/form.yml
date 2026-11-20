@@ -1,0 +1,89 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+    - type: section
+      label: Identity
+      children:
+      - type: row
+        layout: 1fr 240px
+        children:
+        - type: input
+          field: name
+        - type: input
+          field: domain_name
+          label: Domain
+      - type: input
+        field: logo
+        placeholder: Drop the company logo or click to attach
+    - type: section
+      label: Firmographics
+      children:
+      - type: row
+        layout: repeat(3, minmax(160px, 1fr))
+        children:
+        - type: input
+          field: industry
+        - type: input
+          field: company_size
+        - type: input
+          field: status
+    - type: section
+      label: Contact
+      children:
+      - type: row
+        layout: minmax(200px, 1fr) minmax(280px, 2fr)
+        children:
+        - type: input
+          field: phone
+        - type: input-text
+          field: website
+          label: Website
+          prefix: https://
+          inputType: url
+    - type: section
+      label: Address
+      children:
+      - type: object
+        field: address
+        children:
+        - type: row
+          layout: minmax(260px, 2fr) minmax(140px, 1fr) minmax(90px, 0.6fr) minmax(140px,
+            1fr)
+          children:
+          - type: input
+            field: street
+            label: Street
+          - type: input
+            field: city
+            label: City
+          - type: input
+            field: zip
+            label: ZIP
+          - type: input
+            field: country
+            label: Country
+    - type: section
+      label: Account
+      children:
+      - type: row
+        layout: minmax(220px, 1fr) minmax(280px, 2fr)
+        children:
+        - type: input
+          field: annual_revenue
+        - type: input
+          field: owner_id
+    - type: relation
+      label: Contacts
+      source:
+        rel: memberships
+        kind: children
+      doctype: crm.CompanyMembership
+      referenceField: contact
+      editable: true
+      limit: 25
+  parent_doctype: crm.Company
+meta:
+  parent_id: crm.Company

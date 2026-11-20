@@ -1,0 +1,44 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+    - type: section
+      label: Details
+      children:
+      - type: row
+        layout: 1fr 240px
+        children:
+        - type: input
+          field: subject
+        - type: input
+          field: type
+      - type: input
+        field: body
+      - type: row
+        layout: minmax(200px, 1fr) minmax(280px, 2fr)
+        children:
+        - type: input
+          field: datetime
+        - type: input
+          field: duration_minutes
+      - type: input
+        field: completed
+    - type: section
+      label: Relations
+      children:
+      - type: row
+        layout: repeat(3, minmax(160px, 1fr))
+        children:
+        - type: input
+          field: company_id
+        - type: input
+          field: contact_id
+        - type: input
+          field: deal_id
+      - type: input
+        field: owner_id
+  parent_doctype: crm.Activity
+meta:
+  parent_id: crm.Activity

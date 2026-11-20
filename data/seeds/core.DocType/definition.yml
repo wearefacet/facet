@@ -1,0 +1,473 @@
+doctype: DocType
+domain: core
+schema_version: 1
+aggregate_root: false
+member_of: Domain
+display_name: "{% if content.label %}{{ content.label }}{% else %}{{ content.doctype }}{% endif %}"
+search: "{% if content.label %}{{ content.label }} {% endif %}{{ content.domain }}.{{ content.doctype }}"
+description: "Schema that describes a document type. Each DocType defines the fields, actions, and lifecycle of documents belonging to it."
+color: "#1565C0"
+fields:
+  doctype:
+    type: string
+    required: true
+    title: "Document Type Name"
+    description: "The unique name of the document type in CamelCase (e.g. 'Order', 'Customer')."
+    pattern: "^[A-Z][a-zA-Z0-9]*$"
+    pattern_flags: ""
+    min: 1
+    max: 64
+    filters: [equality]
+  domain:
+    type: string
+    required: true
+    title: Domain
+    description: "The domain namespace for the document type. Lowercase alphanumeric with hyphens (e.g. 'core', 'catalog')."
+    pattern: "^[a-z][a-z0-9\\-]*$"
+    pattern_flags: ""
+    min: 1
+    max: 48
+    filters: [equality]
+  schema_version:
+    type: integer
+    default: 1
+    title: "Schema Version"
+    description: "The current version number of this DocType definition. Increment on breaking changes. Defaults to 1."
+    min: 1
+    max: 9999
+  aggregate_root:
+    type: boolean
+    default: false
+    title: "Aggregate Root"
+    description: "When true, the document type is an aggregate root (top-level entity). When false, it must belong to a parent via 'member_of'."
+    filters: [equality]
+  member_of:
+    type: string
+    title: "Member Of"
+    description: "The parent aggregate root doctype this type belongs to, in CamelCase (e.g. 'Order'). Only valid when aggregate_root is false."
+    pattern: "^[A-Z][a-zA-Z0-9]*$"
+    pattern_flags: ""
+  description:
+    type: longtext
+    title: Description
+    description: "A human-readable description of what this document type represents."
+  label:
+    type: string
+    title: Label
+    description: "Human display name for this doctype, shown by the interface instead of the CamelCase name. Optional; when absent or empty, every surface falls back to the bare doctype name."
+  fields:
+    type: dictionary
+    title: Fields
+    description: "A map of field names to their field definitions. Each key is a field name (lower_case_with_underscores or camelCase), and the value is a field definition object specifying type, constraints, and metadata."
+    values:
+      type: object
+      title: "Field Definition"
+      description: "Defines a single field in a document type: its type, constraints, validation rules, access control, and metadata."
+      properties:
+        type:
+          type: string
+          required: true
+          title: "Field Type"
+          description: "The data type of the field. Supported types: string, longtext, integer, boolean, enum, money, datetime, object, array, dictionary, reference, child, data, any, color."
+        required:
+          type: boolean
+          title: Required
+          description: "When true, the field must be provided on document creation."
+        title:
+          type: string
+          title: Title
+          description: "Human-readable label for the field (e.g. 'Email Address')."
+        description:
+          type: string
+          title: Description
+          description: "Detailed description of the field's purpose and expected values."
+        default:
+          type: any
+          title: "Default Value"
+          description: "Default value applied when the field is not provided during creation."
+        pattern:
+          type: string
+          title: "Regex Pattern"
+          description: "Regular expression that string or long text field values must match."
+        pattern_flags:
+          type: string
+          title: "Pattern Flags"
+          description: "Flags for the regex pattern. Supported: 'i' (case-insensitive), 'm' (multiline), 'x' (extended)."
+        min:
+          type: integer
+          title: "Minimum Value"
+          description: "Minimum allowed value for integer, money, or datetime fields; minimum length in characters for string and longtext fields."
+        max:
+          type: integer
+          title: "Maximum Value"
+          description: "Maximum allowed value for integer, money, or datetime fields; maximum length in characters for string and longtext fields."
+        unique:
+          type: boolean
+          title: Unique
+          description: "When true, the field value must be unique across all documents of this doctype."
+        values:
+          type: array
+          title: "Allowed Values (Enum)"
+          description: "For enum fields: the closed set of allowed values. Each entry is an object with a required `key`, and optional `label` (human-readable name) and `color` (hex). Legacy string form is also accepted (each string becomes the key with auto-derived label and color)."
+          items:
+            type: object
+            title: "Enum Value"
+            description: "A single enum value entry."
+            properties:
+              key:
+                type: string
+                required: true
+                title: "Key"
+                description: "The stored string value. Required, unique within the field, max 64 characters."
+              label:
+                type: string
+                title: "Label"
+                description: "Human-readable label. Defaults to humanized key (e.g. 'in_progress' -> 'In Progress')."
+              color:
+                type: string
+                title: "Color"
+                description: "CSS hex color (#RRGGBB) for visual identification. Defaults to a deterministic hash of the key."
+        items:
+          type: object
+          title: "Array Item Definition"
+          description: "For array fields: defines the type and constraints for each element. The value is itself a FieldDefinition object (same shape as described here), enabling nested arrays and structured items."
+          properties:
+            type:
+              type: string
+              required: true
+              description: "The data type of each element in the array."
+        properties:
+          type: dictionary
+          title: "Object Sub-Fields"
+          description: "For object fields: defines the inline sub-schema as a map of sub-field names to their FieldDefinition objects. Each value is itself a FieldDefinition object (same shape as described here). When present, sub-fields are validated; when absent the object is free-form."
+          values:
+            type: object
+            title: "Sub-Field Definition"
+            description: "A FieldDefinition describing a sub-field."
+        doctype:
+          type: string
+          title: "Target Doctype"
+          description: "The target doctype identifier. For a reference field: the qualified 'domain.DocType' form (e.g. 'hr.Employee') — a bare name is refused at authoring time. For a child field: the target doctype name within the same domain (e.g. 'Line')."
+        collection:
+          type: boolean
+          title: Collection
+          description: "For reference fields: when true, the field holds an array of references."
+        owned:
+          type: boolean
+          title: "Owned Reference"
+          description: "For reference fields: when true, the referenced document is owned and cascade-deleted on parent deletion."
+        compute:
+          type: string
+          title: "Lua Compute Function"
+          description: "The suffix of the Lua export function that computes this field's value. The full function name is 'compute_{suffix}'."
+        compute_when:
+          type: array
+          title: "Computation Triggers"
+          description: "List of field names whose changes trigger re-computation of this field."
+          items:
+            type: string
+            title: "Trigger Field"
+        replicate:
+          type: object
+          title: "Replication Config"
+          description: "Configuration for cross-domain field replication. When present, the field is read-only and populated from a source document in another domain."
+          properties:
+            via:
+              type: string
+              required: true
+              description: "The local reference field on this doctype whose target provides the source value."
+            field:
+              type: string
+              required: true
+              description: "The field name on the source doctype to replicate from."
+        on_source_delete:
+          type: enum
+          title: "Behaviour on Source Deletion"
+          description: "For replicated fields: 'keep' retains the last value when the source is deleted, 'unset' removes it."
+          default: keep
+          values:
+            - keep
+            - unset
+        read_only:
+          type: boolean
+          title: "Read Only"
+          description: "When true, the field is stored in the document but rejected in user input. Only the Lua script can set it."
+        write_only:
+          type: boolean
+          title: "Write Only"
+          description: "When true, the field is accepted in input but stripped before persistence (e.g. for password hashing)."
+        tags:
+          type: array
+          title: "Sensitivity Tags"
+          description: "Free-form sensitivity labels on the field. Two gates read them: role visibility (a field is emitted only when the caller's role visible_tags cover every tag; untagged fields need only 'default') and cross-domain grants (a core.DomainGrant resource entry names tags; a field flows when any of its tags matches; untagged fields resolve to ['default'])."
+          items:
+            type: string
+            title: "Tag"
+        filters:
+          type: array
+          title: "Filter Capabilities"
+          description: "Supported filter capabilities. Valid: equality, comparison, text_search, interval, membership, currency. Each expands to a family of runtime operators and drives index creation."
+          items:
+            type: string
+            title: Capability
+        currency:
+          type: string
+          title: "Currency Code"
+          description: "For money fields: the ISO 4217 currency code (e.g. 'USD', 'EUR')."
+        mode:
+          type: string
+          title: "Secret Mode"
+          description: "For secret fields: the stage mode (hash, sealed, or token). Declared so the document GET mask keeps the key (B-124) — an undeclared key is dropped for Real principals and a GET → PUT round-trip loses it."
+        ttl_seconds:
+          type: integer
+          title: "TTL Seconds"
+          description: "For token-mode secret fields: the handle lifetime in seconds."
+        accept:
+          type: array
+          title: "Accepted MIME Types"
+          description: "For file fields: the allowed MIME types."
+          items:
+            type: string
+            title: "MIME Type"
+        filter:
+          type: any
+          title: "Filter Declaration"
+          description: "Authored filter capabilities object (declared so the GET mask keeps it)."
+        dangling:
+          type: boolean
+          title: "Dangling"
+          description: "For reference fields: when true, the reference may point at a missing target."
+        precision:
+          type: integer
+          title: Precision
+          description: "For number fields: the decimal precision."
+        operators:
+          type: array
+          title: "Derived Operators"
+          description: "Read-only derived member: the runtime operator vocabulary the declared filter capabilities expand to (stamped by Doctype::DerivedOperators)."
+          items:
+            type: string
+            title: Operator
+  color:
+    type: color
+    title: Color
+    description: "A color used to visually identify this doctype in the UI (e.g. '#2196F3'). Accepts hex, rgb, rgba, hsl, hsla formats. Always stored as 8-character hex."
+  icon:
+    type: string
+    title: Icon
+    description: "Optional Lucide icon name (kebab-case, e.g. 'building-2') shown in doctype marks. When absent or not a known icon, the UI falls back to the signature diamond. The frontend picker is the source of truth for valid values."
+  plural_label:
+    type: string
+    title: Plural Label
+    description: "Human-readable plural noun for this doctype, used in consent screens and grant summaries (e.g. 'contacts' for Contact, 'company memberships' for CompanyMembership). Optional; when absent the frontend falls back to a naive pluraliser."
+  sensitive:
+    type: boolean
+    default: false
+    title: Sensitive
+    description: "When true, this doctype holds data that requires heightened awareness. The app permissions editor shows a lock icon and the consent screen notes that access is logged. This is a coarse doctype-level signal; field-level sensitivity is not expressed here."
+    filters: [equality]
+  nav_visible:
+    type: boolean
+    default: false
+    title: "Nav Visible"
+    description: "Only meaningful for child doctypes (member_of set). When true, the child doctype appears in the sidebar navbar as its own entry despite being composition-owned. Defaults to false — children are reached through their parent's relations surface. Ignored for aggregate roots, which are always visible."
+    filters: [equality]
+  display_name:
+    type: string
+    title: "Display Name Template"
+    description: "Optional Jinja2 template rendered at mutation time into the 'display_name' column on the projection — the document label. Variables are the doctype's fields (e.g. '{{ first_name }} {{ last_name }}'; nested paths with dots work too). Reference fields resolve to the referenced document's label; money fields render as '<currency> <value>'; missing fields render empty. Max 255 characters."
+  search:
+    type: string
+    title: "Search Template"
+    description: "Optional Jinja2 template rendered at write time into the 'search' column on the projection — the row's search corpus (e.g. '{{ first_name }} {{ last_name }}'). The template is the searchability flag: a doctype with no template is not searchable. Only this system seed may declare the field; the authoring gate reserves the name on user schemas."
+  actions:
+    type: dictionary
+    title: "Named Actions"
+    description: "A map of action names to action definitions. Each action declares typed arguments and must have a corresponding Lua export function. Action names are lowercase_snake_case and cannot be reserved (validate, create, update, delete, migrate, snapshot, history, rollback)."
+    values:
+      type: object
+      title: "Action Definition"
+      description: "Defines a lifecycle action on a document type."
+      properties:
+        args:
+          type: dictionary
+          title: "Action Arguments"
+          description: "A map of argument names to their definitions. Arguments are preflight-validated before the Lua function runs."
+          values:
+            type: object
+            title: "Argument Definition"
+            description: "Defines a single argument for a lifecycle action."
+            properties:
+              type:
+                type: string
+                required: true
+                title: "Argument Type"
+                description: "The data type of this argument. Supported: string, integer, boolean, enum, money, datetime, object, reference."
+              required:
+                type: boolean
+                title: Required
+                description: "When true, the argument must be provided when invoking the action."
+              default:
+                type: any
+                title: "Default Value"
+                description: "Default value if the argument is not provided."
+              values:
+                type: array
+                title: "Enum Values"
+                description: "For enum-type arguments: the closed set of allowed string values."
+                items:
+                  type: string
+                  title: "Enum Value"
+              min:
+                type: integer
+                title: Minimum
+                description: "Minimum value for integer/money/datetime arguments; minimum length in characters for string arguments."
+              max:
+                type: integer
+                title: Maximum
+                description: "Maximum value for integer/money/datetime arguments; maximum length in characters for string arguments."
+              doctype:
+                type: string
+                title: "Target Doctype"
+                description: "For reference-type arguments: the target doctype identifier."
+              collection:
+                type: boolean
+                title: Collection
+                description: "When true, the argument accepts an array of the specified type."
+        event_name:
+          type: string
+          title: "Event Name Override"
+          description: "Optional explicit event name. When omitted, the event name is derived by inflecting the action key to past tense (e.g. 'approve_document' -> 'document_approved'). Must be lowercase_snake_case."
+          pattern: "^[a-z][a-z0-9_]*$"
+        description:
+          type: string
+          title: Description
+          description: "What the action does, shown to the caller. Declared so the document GET mask keeps the key (B-125) — an undeclared key is dropped for Real principals and a GET → PUT round-trip loses it."
+        states:
+          type: dictionary
+          title: "State Gate"
+          description: "Optional state gate (B-323): a map of content field names to the values the field must carry for the action to be available. An action without states is available in every state. Declared so the document GET mask keeps the key (B-124, B-125)."
+          values:
+            type: array
+            title: "Allowed Values"
+            description: "The values the gated field must carry for the action to be available."
+            items:
+              type: string
+              title: "Allowed Value"
+  children:
+    type: dictionary
+    title: Children
+    description: "A map of child relationship names to their child definitions. Each key is a relationship name (lower_case_with_underscores), and the value specifies the target doctype and cardinality. Children are stored as separate projection rows linked via parent_id."
+    values:
+      type: object
+      title: "Child Definition"
+      description: "Defines a child relationship in the document composition tree."
+      properties:
+        doctype:
+          type: string
+          required: true
+          title: "Target Doctype"
+          description: "The target doctype for this child relationship, in CamelCase (e.g. 'CareerEvent'). Must be in the same domain as the parent."
+        collection:
+          type: boolean
+          title: Collection
+          description: "When true, holds multiple child documents (array). When false, a single child document."
+          default: true
+        description:
+          type: string
+          title: Description
+          description: "A human-readable description of this child relationship."
+  migrations:
+    type: dictionary
+    title: Migrations
+    description: "A map of source version numbers to Lua migration function names. Each entry enables migration from that version to the next. Keys are source version strings (e.g. '1'), values are Lua export function names (e.g. 'migrate_from_1')."
+    values:
+      type: string
+      title: "Migration Function Name"
+      description: "The name of the Lua export function that migrates documents from this version to the next."
+    default: {}
+  script:
+    type: string
+    title: "Lua Script"
+    description: "The Lua script implementing lifecycle hooks (create, update, delete), named actions, computed fields, and migration functions. Must use the module pattern: 'local export = {}; ...; return export'."
+  sidecar:
+    type: boolean
+    title: Sidecar
+    description: "When true, this doctype is a sidecar: it lives in the core domain, its documents attach to host documents through a required read-only 'target' reference field, and it is created and reached only through the host's nested routes."
+    filters: [equality]
+  sidecars:
+    type: dictionary
+    title: Sidecars
+    description: "A map of sidecar segment names to sidecar references. Each entry attaches a sidecar doctype to this host doctype and drives its nested routes and tabs. Segment names are lower_case_with_underscores and must not collide with children or actions entries."
+    values:
+      type: object
+      title: "Sidecar Reference"
+      description: "Attaches one sidecar doctype to this host doctype."
+      properties:
+        doctype:
+          type: string
+          required: true
+          title: "Sidecar Doctype"
+          description: "The qualified sidecar doctype id (e.g. 'core.Comment'). Sidecar doctypes live in the core domain and declare sidecar: true."
+        column:
+          type: string
+          title: "Reference Column"
+          description: "The reference field on the sidecar doctype that points back at the host document. Defaults to 'target'."
+        order:
+          type: integer
+          title: "Tab Order"
+          description: "Optional tab order. Tabs sort by order, then by segment name. The default is 0."
+        label:
+          type: string
+          title: "Tab Label"
+          description: "Optional host-owned tab label (e.g. 'Notes'). When absent, the frontend uses the humanized segment name."
+  surface:
+    type: string
+    title: Surface
+    description: "Optional frontend surface id for a sidecar doctype (e.g. 'comment'). Only meaningful together with sidecar: true. Must be a lowercase identifier; the frontend falls back to its basic surface for unknown ids."
+  scopes:
+    type: dictionary
+    title: "Named Scopes"
+    description: "A map of named RBAC scope aliases. Permissions reference them by '$<name>'; the enforcer expands the alias to the 'where' map at enforcement time. Names are lower_case_with_underscores."
+    values:
+      type: object
+      title: "Named Scope"
+      description: "One named scope: a single-predicate block over this doctype's own fields."
+      properties:
+        description:
+          type: string
+          title: Description
+          description: "Human-readable text that says who the scope matches."
+        where:
+          type: dictionary
+          title: Where
+          description: "A map of field name to expected value. Field names must exist on this doctype. Values are literals, '$self' (the actioner), '$parent_id', or '$<context_set>'."
+          values:
+            type: string
+            title: "Expected Value"
+  identifier:
+    type: data
+    title: Identifier
+    description: "Sequential identifier configuration. When present, document ids are generated from 'template' (e.g. 'INV-{year}-####') instead of ULIDs. The server owns this value; clients read it but never write it."
+    properties:
+      template:
+        type: string
+        title: Template
+        description: "The id template. Runs of '#' mark digit groups; {year}, {month}, and {day} insert time parts."
+      genonly:
+        type: boolean
+        title: "Generate Only"
+        description: "When true, the system always generates the id and callers cannot supply one."
+children:
+  document_view:
+    doctype: DocumentView
+    collection: true
+    description: "Per-document presentation templates (view, form, inline, card, quickView) for documents of this type. Each view specifies a presentation mode and template configuration. Linked to its parent DocType via meta.parent_id."
+  collection_view:
+    doctype: CollectionView
+    collection: true
+    description: "Saved listing surfaces (table, kanban, grid) for this doctype's document listing. Each view has a name shown as a tab label and a surface-specific config. General views are shared (owner_id is null); personal views are owner-bound (owner_id is the creator's account id). Linked to its parent DocType via meta.parent_id."
+scopes:
+  domain_editor:
+    description: "Doctypes belonging to a domain the actioner is a domain editor of"
+    where: { domain: "$editor_domains" }

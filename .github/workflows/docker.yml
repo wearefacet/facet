@@ -1,0 +1,261 @@
+name: Docker images
+
+# Container image publishing. This workflow claims the `v*` tag namespace
+# (product releases → container images); `release-npm.yml` claims `cli-v*`.
+# One tag starts exactly one release pipeline.
+#
+# Pipeline (doc/plans/container-release.md §5.9):
+#   build — matrix image × arch, native runners, push by digest with the
+#           `sha-*` tag; type=gha cache scoped per image and arch.
+#   smoke — per arch, native: pull the two digests of that arch and run the
+#           §5.8 checks against them (docker/smoke.sh, the same gate as
+#           `make docker_smoke`).
+#   merge — `imagetools create` folds the four digests into the channel tags.
+#           Tags move last: a failed smoke leaves the registry untouched
+#           apart from a prunable `sha-*` tag.
+#
+# Triggers:
+#   push tag v*      — the full release pipeline: build → smoke → merge
+#                      (semver + latest).
+#   push master      — the rolling channel: build → smoke → the `master` and
+#                      `nightly` tags move. `latest` stays release-only.
+#   workflow_dispatch— build + smoke + the `sha-*` tag only; no channel tag
+#                      moves. The safe way to validate Dockerfile changes
+#                      before a release.
+#   pull_request     — docker/** or this workflow, AND the `docker` label on
+#                      the PR: build + smoke on local tags re-materialized
+#                      from the GHA cache. Nothing is pushed. The label gate
+#                      keeps PR runs free by default — a native compile
+#                      burns ~15 CPU-minutes per image × arch.
+#
+# After the first push, set both GHCR packages to public once in the
+# package settings; later pushes keep the setting.
+
+on:
+  push:
+    tags: ['v*']
+    branches: [master]
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'docker/**'
+      - '.github/workflows/docker.yml'
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  # One pipeline per ref. Branch builds (master, PRs) cancel superseded runs —
+  # a burst of merges cannot stack hours of queued Crystal compiles, and the
+  # channel tag simply moves on the next green build. Release tags are never
+  # cancelled.
+  group: docker-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: wearefacet
+
+jobs:
+  build:
+    # PR runs cost nothing by default; the `docker` label opts a PR into the
+    # native build + smoke pipeline.
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'docker')
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [facet, facet-frontend]
+        arch: [amd64, arm64]
+        include:
+          - image: facet
+            dockerfile: docker/backend.Dockerfile
+          - image: facet-frontend
+            dockerfile: docker/frontend.Dockerfile
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      # The only tag the build pushes is sha-<sha> (short sha, metadata-action
+      # type=sha). Semver and latest are created by the merge job, after the
+      # smoke gate. A PR build pushes nothing.
+      - name: Derive image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ matrix.image }}
+          tags: type=sha,enable=${{ github.event_name != 'pull_request' }}
+
+      # Native per-arch runners keep the arm build out of QEMU — never
+      # cross-compile the whole-program Crystal release build under emulation.
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/${{ matrix.arch }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            REVISION=${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.image }}-${{ matrix.arch }}
+          cache-to: type=gha,scope=${{ matrix.image }}-${{ matrix.arch }},mode=max
+
+      - name: Export digest
+        run: |
+          mkdir -p digests
+          echo "${{ steps.build.outputs.digest }}" > "digests/${{ matrix.image }}-${{ matrix.arch }}.txt"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.image }}-${{ matrix.arch }}
+          path: digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  smoke:
+    needs: build
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'docker')
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pull-request path: nothing was pushed, so the images are
+      # re-materialized from the GHA cache under the local tags the smoke
+      # stack defaults to. A cache hit is minutes; a changed source pays the
+      # native compile once here.
+      - uses: docker/setup-buildx-action@v3
+        if: github.event_name == 'pull_request'
+
+      - name: Materialize facet from cache
+        if: github.event_name == 'pull_request'
+        run: |
+          docker buildx build --load \
+            --cache-from type=gha,scope=facet-${{ matrix.arch }} \
+            -f docker/backend.Dockerfile -t facet .
+
+      - name: Materialize facet-frontend from cache
+        if: github.event_name == 'pull_request'
+        run: |
+          docker buildx build --load \
+            --cache-from type=gha,scope=facet-frontend-${{ matrix.arch }} \
+            -f docker/frontend.Dockerfile -t facet-frontend .
+
+      # Tag / dispatch path: pull the exact digests the build job pushed.
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - uses: actions/download-artifact@v4
+        if: github.event_name != 'pull_request'
+        with:
+          pattern: digests-*-${{ matrix.arch }}
+          merge-multiple: true
+          path: digests
+
+      - name: Pull the built images by digest
+        if: github.event_name != 'pull_request'
+        run: |
+          docker pull "${REGISTRY}/${OWNER}/facet@$(cat digests/facet-${{ matrix.arch }}.txt)"
+          docker pull "${REGISTRY}/${OWNER}/facet-frontend@$(cat digests/facet-frontend-${{ matrix.arch }}.txt)"
+
+      - name: Run the smoke checks
+        if: github.event_name == 'pull_request'
+        run: docker/smoke.sh
+
+      - name: Run the smoke checks (digest refs)
+        if: github.event_name != 'pull_request'
+        run: |
+          export BACKEND_IMAGE="${REGISTRY}/${OWNER}/facet@$(cat digests/facet-${{ matrix.arch }}.txt)"
+          export FRONTEND_IMAGE="${REGISTRY}/${OWNER}/facet-frontend@$(cat digests/facet-frontend-${{ matrix.arch }}.txt)"
+          docker/smoke.sh
+
+  merge:
+    # Channel tags move only here — build and smoke green on both arches.
+    if: github.event_name == 'push'
+    needs: [build, smoke]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: digests-*
+          merge-multiple: true
+          path: digests
+
+      - name: Fold the arch digests into the channel tags
+        run: |
+          ref="${GITHUB_REF_NAME}"
+          version=""
+          case "$ref" in
+            # Release channel: a vX.Y.Z tag moves the semver tags and `latest`.
+            v[0-9]*.[0-9]*.[0-9]*)
+              version="${ref#v}"
+              minor="${version%.*}"
+              ;;
+            # Rolling channel: every green master build moves `master` and
+            # `nightly` — never `latest`; that stays release-only.
+            master)
+              ;;
+            *)
+              echo "::error::ref ${ref} publishes no channel (not vX.Y.Z, not master)"; exit 1 ;;
+          esac
+          for image in facet facet-frontend; do
+            refs=""
+            tag_args=()
+            if [ -n "$version" ]; then
+              tag_args+=(--tag "${REGISTRY}/${OWNER}/${image}:${version}"
+                         --tag "${REGISTRY}/${OWNER}/${image}:${minor}"
+                         --tag "${REGISTRY}/${OWNER}/${image}:latest")
+            else
+              tag_args+=(--tag "${REGISTRY}/${OWNER}/${image}:master"
+                         --tag "${REGISTRY}/${OWNER}/${image}:nightly")
+            fi
+            for arch in amd64 arm64; do
+              refs="$refs ${REGISTRY}/${OWNER}/${image}@$(cat "digests/${image}-${arch}.txt")"
+            done
+            docker buildx imagetools create "${tag_args[@]}" $refs
+          done

@@ -1,0 +1,94 @@
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	height: 100%;
+}
+
+body {
+	margin: 0;
+	font-family: var(--font-sans);
+	background: var(--ground);
+	color: var(--text);
+	font-size: 14px;
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+}
+
+::selection {
+	background: var(--accent-weak);
+}
+
+/*
+ * Scrollbars follow the theme tokens — a subtle thumb on a transparent
+ * track, readable on both the light and the dark surface. `scrollbar-*`
+ * inherits to every scroller in the app.
+ */
+html {
+	scrollbar-width: thin;
+	scrollbar-color: var(--border-strong) transparent;
+}
+
+button {
+	font: inherit;
+	color: inherit;
+	cursor: pointer;
+	border: none;
+	background: none;
+}
+
+/*
+ * Focus ring uses --accent-ink (readable gold on light surfaces), not the raw
+ * --accent fill. See "Gold fill ≠ gold text" in example/design-guideline.html.
+ */
+:focus-visible {
+	outline: 2px solid var(--accent-ink);
+	outline-offset: 2px;
+	border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation: none !important;
+		transition: none !important;
+	}
+}
+
+/*
+ * Print — when the user prints a document, drop the application chrome
+ * (the sidebar and the top bar) and let the document content flow across
+ * the full page. Without this, the app's fixed-height grid clips the
+ * content and prints only the visible viewport. The `!important` flags beat
+ * the component-scoped rules, which are injected later in the cascade.
+ */
+@media print {
+	.side,
+	.top {
+		display: none !important;
+	}
+
+	.app {
+		display: block !important;
+		height: auto;
+		overflow: visible;
+	}
+
+	.main {
+		overflow: visible;
+		position: static;
+	}
+
+	/* The document header's interactive controls (back link, Share/Print/
+	   History/Edit actions) are not document content — omit them. */
+	.doctype-head .back,
+	.doctype-head-actions {
+		display: none !important;
+	}
+}

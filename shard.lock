@@ -1,0 +1,122 @@
+version: 2.0
+shards:
+  agent-cr:
+    git: https://github.com/anykeyh/agent.cr.git
+    version: 0.2.0+git.commit.03c9cd5ac31856c3a5a035315a2ecf1613b0339f
+
+  ameba:
+    git: https://github.com/crystal-ameba/ameba.git
+    version: 1.7.0
+
+  awscr-s3:
+    git: https://github.com/taylorfinnell/awscr-s3.git
+    version: 0.8.3
+
+  awscr-signer:
+    git: https://github.com/taylorfinnell/awscr-signer.git
+    version: 0.8.2
+
+  backtracer:
+    git: https://github.com/sija/backtracer.cr.git
+    version: 1.2.4
+
+  bindata:
+    git: https://github.com/spider-gazelle/bindata.git
+    version: 3.2.1
+
+  carbon:
+    git: https://github.com/luckyframework/carbon.git
+    version: 0.6.1
+
+  carbon_smtp_adapter:
+    git: https://github.com/luckyframework/carbon_smtp_adapter.git
+    version: 0.5.0
+
+  content_disposition:
+    git: https://github.com/jetrockets/content_disposition.cr.git
+    version: 1.2.0
+
+  crinja:
+    git: https://github.com/straight-shoota/crinja.git
+    version: 0.9.0
+
+  cron_parser:
+    git: https://github.com/kostya/cron_parser.git
+    version: 0.4.0
+
+  db:
+    git: https://github.com/crystal-lang/crystal-db.git
+    version: 0.14.0
+
+  ed25519:
+    git: https://github.com/spider-gazelle/ed25519.git
+    version: 1.1.0
+
+  email:
+    git: https://github.com/arcage/crystal-email.git
+    version: 0.7.1
+
+  exception_page:
+    git: https://github.com/crystal-loot/exception_page.git
+    version: 0.5.0
+
+  habitat:
+    git: https://github.com/luckyframework/habitat.git
+    version: 0.4.9
+
+  jwt:
+    git: https://github.com/crystal-community/jwt.git
+    version: 1.7.2
+
+  kemal:
+    git: https://github.com/kemalcr/kemal.git
+    version: 1.14.0
+
+  lua:
+    git: https://github.com/veelenga/lua.cr.git
+    version: 0.4.0+git.commit.c5e3e09c5e9857414306bbe1fd56937cf1a87902
+
+  lucky_task:
+    git: https://github.com/luckyframework/lucky_task.git
+    version: 0.3.0
+
+  lucky_template:
+    git: https://github.com/luckyframework/lucky_template.git
+    version: 0.2.0
+
+  mpsc:
+    git: https://github.com/anykeyh/mpsc.git
+    version: 0.1.0+git.commit.f156f9ac5d96512cf8794593f006d7d3b02a52b3
+
+  openssl_ext:
+    git: https://github.com/spider-gazelle/openssl_ext.git
+    version: 2.8.5
+
+  opentelemetry:
+    git: https://github.com/jgaskins/opentelemetry.git
+    version: 0.3.5
+
+  pg:
+    git: https://github.com/will/crystal-pg.git
+    version: 0.30.0
+
+  protobuf:
+    git: https://github.com/jeromegn/protobuf.cr.git
+    version: 2.3.1
+
+  radix:
+    git: https://github.com/luislavena/radix.git
+    version: 0.4.1
+
+  redis:
+    git: https://github.com/jgaskins/redis.git
+    version: 0.16.0
+
+  shrine:
+    git: https://github.com/jetrockets/shrine.cr.git
+    version: 0.6.5
+
+  wordsmith:
+    git: https://github.com/luckyframework/wordsmith.git
+    version: 0.5.0
+

@@ -1,0 +1,18 @@
+---
+content:
+  kind: card
+  template:
+    type: col
+    children:
+    - type: field
+      label: Internal / External
+      value: $kind
+    - type: field
+      label: Email
+      value: $email
+    - type: field
+      label: Date of Birth
+      value: $date_of_birth
+  parent_doctype: identity.Person
+meta:
+  parent_id: identity.Person

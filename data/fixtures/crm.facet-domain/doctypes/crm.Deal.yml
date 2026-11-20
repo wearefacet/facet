@@ -1,0 +1,148 @@
+---
+content:
+  icon: handshake
+  color: "#FF9800"
+  domain: crm
+  fields:
+    title:
+      type: string
+      title: Deal Title
+      required: true
+      filters:
+        - equality
+        - text_search
+      description: A descriptive name for the deal.
+    value:
+      type: money
+      currency: USD
+      title: Deal Value
+      required: true
+      filters:
+        - comparison
+        - currency
+      description: The expected monetary value of the deal.
+    status:
+      type: enum
+      title: Status
+      values:
+      - key: open
+        color: "#816bb3"
+        label: Open
+      - key: won
+        color: "#008f77"
+        label: Won
+      - key: lost
+        color: "#0a86ac"
+        label: Lost
+      - key: abandoned
+        color: "#4b7cba"
+        label: Abandoned
+      default: open
+      filters:
+        - equality
+        - comparison
+      description: The current status of the deal.
+    owner_id:
+      type: reference
+      title: Owner
+      doctype: iam.Account
+      filters:
+        - equality
+      description: The sales representative who owns this deal.
+    stage_id:
+      type: reference
+      title: Pipeline Stage
+      doctype: crm.PipelineStage
+      required: true
+      filters:
+        - equality
+      description: The current pipeline stage.
+    company_id:
+      type: reference
+      title: Company
+      doctype: crm.Company
+      required: true
+      filters:
+        - equality
+      description: The company this deal belongs to.
+    lost_reason:
+      type: string
+      title: Lost Reason
+      description: The reason the deal was lost (required when status -> lost).
+    contract:
+      type: file
+      title: Contract
+      description: The signed contract or proposal document attached to this deal.
+    probability:
+      max: 100
+      min: 0
+      type: integer
+      title: Probability
+      default: 0
+      filters:
+        - comparison
+      description: Win probability percentage (0-100).
+    weighted_value:
+      type: data
+      title: Weighted Value
+      compute: deal_weighted_value
+      description: Computed as value x (probability / 100).
+      compute_when:
+      - value
+      - probability
+    actual_close_date:
+      type: date
+      title: Actual Close Date
+      filters:
+        - comparison
+      description: The date the deal was actually won or lost.
+    primary_contact_id:
+      type: reference
+      title: Primary Contact
+      doctype: crm.Contact
+      filters:
+        - equality
+      description: The main contact for this deal.
+    expected_close_date:
+      type: date
+      title: Expected Close Date
+      filters:
+        - comparison
+      description: The target close date for the deal.
+  script: !read_file crm.Deal.lua
+  actions:
+    win:
+      args:
+        actual_close_date:
+          type: date
+          required: true
+    lose:
+      args:
+        reason:
+          type: string
+          required: true
+        actual_close_date:
+          type: date
+          required: true
+    move_stage:
+      args:
+        target_stage_id:
+          type: reference
+          doctype: crm.PipelineStage
+          required: true
+  doctype: Deal
+  sidecars:
+    comments:
+      doctype: core.Comment
+      column: target
+  identifier:
+    genonly: false
+    template: DEAL-{year}-####
+  description: A sales opportunity. Can be a child of Prospect or Customer through
+    nested routing.
+  display_name: "{{ title }}"
+  search: "{{ title }} {{ value }}"
+  aggregate_root: true
+  schema_version: 1
+meta:
+  parent_id: crm

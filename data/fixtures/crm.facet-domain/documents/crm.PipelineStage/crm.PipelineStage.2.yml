@@ -1,0 +1,8 @@
+---
+content:
+  name: Discovery
+  color: "#2196F3"
+  order: 2
+  is_closing_stage: false
+  probability_default: 25
+meta: {}

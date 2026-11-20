@@ -1,0 +1,92 @@
+---
+content:
+  kind: view
+  template:
+    type: col
+    children:
+    - type: header
+      subtitle: $company_id
+      statusField: status
+      title: $title
+    - type: grid
+      layout: 3 1
+      children:
+      - type: col
+        children:
+        - type: section
+          label: Deal
+          children:
+          - type: field
+            label: Deal Value
+            value: $value
+          - type: field
+            label: Weighted Value
+            value: $weighted_value
+          - type: field
+            label: Probability
+            value: $probability
+          - type: field
+            label: Expected Close Date
+            value: $expected_close_date
+          - type: field
+            label: Actual Close Date
+            value: $actual_close_date
+          - type: field
+            label: Lost Reason
+            value: $lost_reason
+        - type: section
+          label: Contract
+          children:
+          - type: field
+            label: Contract
+            value: $contract
+        - type: section
+          label: Relations
+          children:
+          - type: field
+            label: Company
+            value: $company_id
+          - type: field
+            label: Primary Contact
+            value: $primary_contact_id
+          - type: field
+            label: Pipeline Stage
+            value: $stage_id
+      - type: sidebar
+        children:
+        - type: section
+          label: Owner
+          children:
+          - type: field
+            value: $owner_id
+        - type: record-meta
+          history: true
+    - tabs:
+      - type: tab
+        label: Activities
+        children:
+        - type: relation
+          view: table
+          label: Activities
+          limit: 25
+          source:
+            kind: filter
+            field: deal_id
+          doctype: crm.Activity
+          referenceField: deal_id
+          columns:
+          - key: subject
+            label: Subject
+          - key: type
+            label: Type
+            width: 130px
+          - key: datetime
+            label: Date/Time
+            width: 180px
+          - key: completed
+            label: Completed
+            width: 120px
+      type: tabs
+  parent_doctype: crm.Deal
+meta:
+  parent_id: crm.Deal

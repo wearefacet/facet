@@ -1,0 +1,45 @@
+{
+	"name": "@facetapp/sdk",
+	"version": "0.0.1",
+	"description": "TypeScript SDK for Facet.",
+	"license": "BUSL-1.1",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/wearefacet/facet.git",
+		"directory": "packages/sdk"
+	},
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"engines": {
+		"node": ">=20"
+	},
+	"scripts": {
+		"build": "tsc",
+		"check": "tsc --noEmit",
+		"lint": "prettier --check .",
+		"format": "prettier --write .",
+		"test": "vitest run",
+		"prepublishOnly": "npm run build"
+	},
+	"devDependencies": {
+		"@types/node": "^26.6.6",
+		"prettier": "^3.9.10",
+		"typescript": "^7.0.2",
+		"vitest": "^5.1.0"
+	}
+}

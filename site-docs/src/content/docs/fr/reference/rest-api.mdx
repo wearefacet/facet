@@ -1,0 +1,48 @@
+---
+title: API REST
+description: La référence de l’API REST, produite à partir de la spécification OpenAPI.
+audience: [developer, operator]
+features: [PLT-12]
+sidebar:
+  order: 1
+verified_at: 008dd880
+---
+
+Utilisez cette page pour consulter une routeà : ses méthodes, ses
+paramètres et ses codes de statut.
+
+Cette page intègre la référence interactive de l’API REST des routes de
+documents, d’audit et d’IAM. Le site embarque une copie de
+`doc/api/openapi.json`, servie à l’adresse `/api/openapi.json`.
+`make gen-docs-rest-api` actualise cette copie.
+
+Les guides pratiques sous `/apps/` présentent les mêmes routes avec des
+exemples concrets.
+
+:::note
+Le fichier OpenAPI couvre un sous-ensemble de la surface REST (la
+fonctionnalité `PLT-12`) ; cette référence est donc partielle. Le fichier
+dessert ces groupes de routesà :
+
+- CRUD des documentsà : lister, créer, lire, mettre à jour et supprimer les
+  documents d’un doctype
+- historique des documents, retour arrière et restauration, y compris les
+  documents enfants
+- liens entrantsà : les documents qui référencent un document
+- le journal d’audit global et sa route de retour arrière
+- les routes de comptes IAMà: profil du compte courant, états des
+  identifiants, mot de passe temporaire et invitation
+
+Tous les autres groupes de routes — webhooks, fichiers, secrets, recherche,
+WebSocket et authentification — sont documentés dans les pages rédigées à
+
+la main sous `/apps/`.
+:::
+
+<script id="api-reference" data-url="/api/openapi.json" is:inline></script>
+<script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference" is:inline></script>
+
+## Voir aussi
+
+- [Utiliser l’API REST](/fr/apps/rest-api/)
+- [Le SDK TypeScript (`@facetapp/sdk`)](/fr/apps/typescript-sdk/)

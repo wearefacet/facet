@@ -1,0 +1,54 @@
+---
+content:
+  kind: quickView
+  template:
+    type: col
+    children:
+    - type: row
+      layout: "auto auto 1fr"
+      children:
+      - type: capsule
+        value: $industry
+      - type: capsule
+        value: $company_size
+    - type: hr
+    - type: section
+      label: Firmographics
+      children:
+      - type: field
+        label: Domain
+        value: $domain_name
+      - type: field
+        label: Annual Revenue
+        value: $annual_revenue
+    - type: section
+      label: Contact
+      children:
+      - type: field
+        label: Phone
+        value: $phone
+      - type: field
+        label: Website
+        value: $website
+    - type: section
+      label: Location
+      children:
+      - type: object
+        field: address
+        children:
+        - type: field
+          label: City
+          value: $city
+        - type: field
+          label: Country
+          value: $country
+    - type: section
+      label: Ownership
+      children:
+      - type: field
+        label: Owner
+        value: $owner_id
+    - type: record-meta
+  parent_doctype: crm.Company
+meta:
+  parent_id: crm.Company

@@ -1,0 +1,14 @@
+---
+content:
+  body: Discussed platform license renewal and expansion opportunities. Alice mentioned
+    interest in the enterprise tier.
+  type: meeting
+  deal_id: crm.Deal.1
+  subject: Q3 Planning with Acme CTO
+  datetime: "2026-06-15T14:00:00Z"
+  owner_id: iam.Account.account_recruiter_kim
+  completed: true
+  company_id: crm.Company.1
+  contact_id: crm.Contact.1
+  duration_minutes: 60
+meta: {}

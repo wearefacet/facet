@@ -1,0 +1,34 @@
+---
+content:
+  icon: users
+  color: "#10B981"
+  domain: production
+  fields:
+    name:
+      type: string
+      title: Team Name
+      unique: true
+      required: true
+      filters:
+        - equality
+        - text_search
+      description: A unique name for the team (e.g. 'Platform', 'Growth').
+    description:
+      type: longtext
+      title: Description
+      description: A short description of what this team is responsible for.
+  doctype: Team
+  children:
+    members:
+      doctype: TeamMember
+      collection: true
+      description: The accounts that belong to this team. Used by the `my_teams` RBAC
+        context set to resolve team-scoped access.
+  description: A team that owns projects and groups members. Aggregate root for TeamMember
+    children.
+  display_name: "{{ name }}"
+  search: "{{ name }} {{ description }}"
+  aggregate_root: true
+  schema_version: 1
+meta:
+  parent_id: production

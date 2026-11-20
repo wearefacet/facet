@@ -1,0 +1,66 @@
+# core.Currency — one row per world currency.
+#
+# Single source for the money display and validation registry
+# (`Facet::Currency::Registry`): ticker, name, symbol, sub-unit digits,
+# display grouping, and the `active` / `favorite` picker flags.
+#
+# Seed documents come from the ISO-4217 list-one (SIX Group), with symbols
+# from currency-symbol-map plus curation. Precious metals, the SDR, bond
+# units, fund / unit-of-account codes, test and no-currency codes are
+# excluded — circulating currencies only.
+#
+# The seed ships a basic setup: CHF, CNY, EUR, GBP, JPY, USD are active;
+# every other row is inactive and an admin enables more from the Configure
+# Currency page. A currency created by hand still starts active (the
+# doctype default).
+doctype: Currency
+domain: core
+schema_version: 1
+aggregate_root: true
+display_name: "{{ name }} ({{ ticker }})"
+description: "A world currency. The registry key for money field validation and display: a money value's currency must be an active, registered currency for new use, while stored values keep working when the row turns inactive or is deleted. `favorite` pins the row to the top of the currency picker. `symbol`, `digits` (0 whole units, 2 cents, 3 millis) and `grouping` (standard thousands, lakhs Indian 1,00,000) drive rendering."
+fields:
+  ticker:
+    type: string
+    required: true
+    unique: true
+    pattern: "^[A-Z][A-Z0-9]{2,9}$"
+    title: Ticker
+    description: "ISO-4217-style code, uppercase. The registry key; also the document id in the seeds."
+    filters: [equality]
+  name:
+    type: string
+    required: true
+    title: Name
+    description: "English currency name, e.g. 'Euro'."
+  symbol:
+    type: string
+    title: Symbol
+    description: "Display glyph, e.g. '€'. Optional — an empty symbol renders the bare ticker."
+  digits:
+    type: integer
+    required: true
+    min: 0
+    max: 4
+    default: 2
+    title: Digits
+    description: "Sub-unit precision: 0 whole units, 2 cents, 3 millis."
+  grouping:
+    type: enum
+    values: [standard, lakhs]
+    default: standard
+    title: Grouping
+    description: "Display grouping. 'standard' uses thousands separators; 'lakhs' renders 12,34,567."
+  active:
+    type: boolean
+    default: true
+    title: Active
+    description: "Visible and selectable when true. Inactive rows vanish from create flows but keep working where a field already holds them."
+    filters: [equality]
+  favorite:
+    type: boolean
+    default: false
+    title: Favorite
+    description: "Pinned at the top of the currency picker when true."
+    filters: [equality]
+actions: {}

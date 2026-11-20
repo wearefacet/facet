@@ -1,0 +1,6 @@
+---
+content:
+  role: member
+  account: iam.Account.account_eng_dao
+meta:
+  parent_id: production.Team.team_platform

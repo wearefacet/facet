@@ -1,0 +1,19 @@
+---
+content:
+  name: By Probability
+  config:
+    kanban:
+      mode: custom
+      page_size: 25
+      filters:
+        status__ne: abandoned
+      lanes:
+      - label: Low odds
+        filter:
+          probability__lt: 50
+      - label: High odds
+        filter:
+          probability__gte: 50
+  surface: kanban
+meta:
+  parent_id: crm.Deal

@@ -1,0 +1,7 @@
+---
+content:
+  role: primary
+  contact: crm.Contact.1
+  start_date: "2023-01-15"
+meta:
+  parent_id: crm.Company.1

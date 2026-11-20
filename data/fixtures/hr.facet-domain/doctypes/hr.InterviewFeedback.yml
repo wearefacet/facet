@@ -1,0 +1,79 @@
+---
+content:
+  icon: message-square
+  domain: hr
+  fields:
+    by:
+      type: reference
+      title: Interviewer
+      doctype: iam.Account
+      required: true
+      description: The account that conducted the interview.
+    rec:
+      type: enum
+      title: Recommendation
+      values:
+      - key: "no"
+        color: "#b25d61"
+        label: "No"
+      - key: maybe
+        color: "#517abb"
+        label: Maybe
+      - key: "yes"
+        color: "#0087aa"
+        label: "Yes"
+      - key: strong_yes
+        color: "#5b78bc"
+        label: Strong Yes
+      filters:
+        - equality
+      description: The interviewer's recommendation.
+    date:
+      type: date
+      title: Interview Date
+      required: true
+      filters:
+        - comparison
+      description: Date the interview took place.
+    notes:
+      type: longtext
+      title: Notes
+      description: Detailed feedback notes.
+    round:
+      type: enum
+      title: Interview Round
+      values:
+      - key: screen
+        color: "#a85e89"
+        label: Screen
+      - key: technical
+        color: "#8969af"
+        label: Technical
+      - key: cultural
+        color: "#7271b9"
+        label: Cultural
+      - key: presentation
+        color: "#718432"
+        label: Presentation
+      - key: final
+        color: "#96751a"
+        label: Final
+      required: true
+      filters:
+        - equality
+      description: Which round in the interview process.
+    score:
+      max: 5
+      min: 1
+      type: integer
+      title: Score
+      description: Numerical score (1-5).
+  doctype: InterviewFeedback
+  member_of: Candidate
+  description: Interview feedback from a single round for a candidate.
+  display_name: "{{ round }} - {{ by }}"
+  search: "{{ round }} {{ by }} {{ rec }} {{ notes }}"
+  aggregate_root: false
+  schema_version: 1
+meta:
+  parent_id: hr

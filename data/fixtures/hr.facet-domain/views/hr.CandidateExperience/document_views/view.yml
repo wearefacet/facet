@@ -1,0 +1,55 @@
+---
+content:
+  kind: view
+  template:
+    type: col
+    children:
+    - type: header
+      chips:
+      - type
+      subtitle: $company
+      title: $title
+    - type: grid
+      layout: 3 1
+      children:
+      - type: col
+        children:
+        - type: section
+          label: Role
+          children:
+          - type: field
+            label: Title
+            value: $title
+          - type: field
+            label: Company
+            value: $company
+          - type: field
+            label: Location
+            value: $location
+          - type: field
+            label: Employment Type
+            value: $type
+        - type: section
+          label: Tenure
+          children:
+          - type: field
+            label: Start Date
+            value: $start
+          - type: field
+            label: End Date
+            value: $end
+          - type: field
+            label: Current Position
+            value: $current
+        - type: section
+          label: Details
+          children:
+          - type: input
+            field: desc
+      - type: sidebar
+        children:
+        - type: record-meta
+          history: true
+  parent_doctype: hr.CandidateExperience
+meta:
+  parent_id: hr.CandidateExperience

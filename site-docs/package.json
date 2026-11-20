@@ -1,0 +1,31 @@
+{
+  "name": "site-docs",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "prebuild": "node scripts/check-coverage.mjs",
+    "diagrams": "node scripts/build-diagrams.mjs",
+    "predev": "node scripts/build-diagrams.mjs",
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "node scripts/build-diagrams.mjs && node scripts/check-diagrams.mjs && astro build && node scripts/emit-md.mjs && node scripts/emit-robots.mjs",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.6",
+    "@astrojs/starlight": "^0.42.10",
+    "@astrojs/starlight-tailwind": "^5.0.0",
+    "@astrojs/svelte": "^9.1.5",
+    "@tailwindcss/vite": "^4.3.5",
+    "astro": "^7.3.6",
+    "sharp": "^0.35.3",
+    "starlight-llms-txt": "^0.12.0",
+    "svelte": "^5.57.3",
+    "tailwindcss": "^4.3.5",
+    "typescript": "^6.0.3"
+  },
+  "devDependencies": {
+    "@terrastruct/d2": "^0.1.33"
+  }
+}

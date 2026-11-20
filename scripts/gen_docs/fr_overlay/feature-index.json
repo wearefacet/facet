@@ -1,0 +1,15 @@
+{
+  "description": "Chaque identifiant de fonctionnalité de l'inventaire, avec les pages qui le couvrent.",
+  "generated_note": "> Généré depuis `site-docs/inventory.yml` par `make gen-docs-feature-index`. Ne modifiez pas ce fichier à la main.",
+  "intro": "Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonctionnalités dans 10 domaines) aux pages de documentation qui le couvrent. Le contrôle de couverture du build demande à chaque identifiant d'apparaître sur au moins une page ou de figurer sur la liste d'exclusion de `site-docs/coverage-exclude.yml`. Un tiret signifie qu'aucune page ne cite encore l'identifiant.",
+  "col_id": "ID",
+  "col_feature": "Fonctionnalité",
+  "col_pages": "Pages",
+  "excluded_note": "Exclu de la documentation utilisateur",
+  "related_heading": "Voir aussi",
+  "related_start": "- [Pour commencer](/fr/start/)",
+  "related_build": "- [Construire des domaines](/fr/build/)",
+  "related_govern": "- [Gouverner l'accès](/fr/govern/)",
+  "related_apps": "- [Construire des apps](/fr/apps/)",
+  "related_operate": "- [Opérer](/fr/operate/)"
+}

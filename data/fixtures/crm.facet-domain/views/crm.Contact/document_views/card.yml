@@ -1,0 +1,21 @@
+---
+content:
+  kind: card
+  template:
+    type: col
+    children:
+    - type: field
+      label: Job Title
+      value: $job_title
+    - type: field
+      label: Department
+      value: $department
+    - type: field
+      label: Email
+      value: $email
+    - type: field
+      label: Phone
+      value: $phone
+  parent_doctype: crm.Contact
+meta:
+  parent_id: crm.Contact

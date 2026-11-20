@@ -1,0 +1,19 @@
+{
+  "description": "Chaque outil d’agent, avec sa classe d’accès et ses paramètres.",
+  "generated_note": "> Généré depuis `src/agent_tools/` par `make gen-docs-agent-tools`. Ne modifiez pas ce fichier à la main.",
+  "intro": "Cette page sert à consulter un outil, sa classe d’accès et ses paramètres.",
+  "catalogue_intro": "Facet expose un catalogue unique d’outils documentaires à toutes les surfaces d’agent. Le serveur de ressources MCP liste tout le catalogue sous `tools/list`\u00a0; les assistants embarqués montent le sous-ensemble dont ils ont besoin. Le registre contient 23 outils. La visibilité filtre la liste par rôle\u00a0; le contrôle s’exécute toujours à l’appel, exactement comme en REST.",
+  "access_intro": "La colonne Accès porte la balise `requires` de l’outil dans le registre. Un rôle voit un outil quand sa carte de permissions passe la classe\u00a0:",
+  "access_read": "- **`read`** — au moins une ligne de lecture.",
+  "access_write": "- **`write`** — au moins une ligne create, update ou delete.",
+  "access_action": "- **`action`** — une action nommée ou le joker `*`.",
+  "access_none": "- **`none`** — toujours visible d’un principal connecté.",
+  "skills_note": "Un outil ne fait pas partie du registre\u00a0: `read_skill`, le chargeur de compétences. La surface MCP l’ajoute à `tools/list`, et l’assistant d’espace de travail monte le sien. Tous deux prennent un argument obligatoire, `name` (string). Ils servent le corpus de compétences partagé de `src/agent_tools/skills/`, filtré par le front-matter `surfaces` de chaque fichier de compétence.",
+  "col_tool": "Outil",
+  "col_access": "Accès",
+  "col_purpose": "Rôle",
+  "col_params": "Paramètres",
+  "related_heading": "Voir aussi",
+  "related_agent_tools": "- [/fr/apps/agent-tools/](/fr/apps/agent-tools/)",
+  "related_mcp_agents": "- [/fr/apps/mcp-agents/](/fr/apps/mcp-agents/)"
+}

@@ -1,0 +1,8 @@
+---
+content:
+  name: Closed Won
+  color: "#4CAF50"
+  order: 5
+  is_closing_stage: true
+  probability_default: 100
+meta: {}

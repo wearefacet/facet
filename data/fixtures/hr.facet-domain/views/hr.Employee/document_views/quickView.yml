@@ -1,0 +1,43 @@
+---
+content:
+  kind: quickView
+  template:
+    type: col
+    children:
+    - type: row
+      layout: "auto auto 1fr"
+      children:
+      - type: capsule
+        value: $status
+    - type: hr
+    - type: section
+      label: Employment
+      children:
+      - type: field
+        label: Job Title
+        value: $job_title
+      - type: field
+        label: Department
+        value: $department
+      - type: field
+        label: Hire Date
+        value: $hire_date
+      - type: field
+        label: Salary
+        value: $salary
+      - type: field
+        label: Remote
+        value: $remote
+    - type: section
+      label: Reporting
+      children:
+      - type: field
+        label: Person
+        value: $person
+      - type: field
+        label: Manager
+        value: $manager
+    - type: record-meta
+  parent_doctype: hr.Employee
+meta:
+  parent_id: hr.Employee

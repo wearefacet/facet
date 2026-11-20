@@ -1,0 +1,18 @@
+---
+content:
+  kind: card
+  template:
+    type: col
+    children:
+    - type: field
+      label: Degree
+      value: $degree
+    - type: field
+      label: School
+      value: $school
+    - type: field
+      label: End Year
+      value: $end
+  parent_doctype: hr.CandidateEducation
+meta:
+  parent_id: hr.CandidateEducation

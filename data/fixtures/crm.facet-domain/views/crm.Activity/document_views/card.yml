@@ -1,0 +1,18 @@
+---
+content:
+  kind: card
+  template:
+    type: col
+    children:
+    - type: field
+      label: Activity Type
+      value: $type
+    - type: field
+      label: Subject
+      value: $subject
+    - type: field
+      label: Date/Time
+      value: $datetime
+  parent_doctype: crm.Activity
+meta:
+  parent_id: crm.Activity

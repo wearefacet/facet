@@ -1,0 +1,18 @@
+---
+content:
+  kind: inline
+  template:
+    type: row
+    layout: auto auto 1fr auto
+    children:
+    - type: label
+      value: $title
+    - type: capsule
+      value: $company
+    - type: label
+      value: $start — $end
+    - type: capsule
+      value: $type
+  parent_doctype: hr.CandidateExperience
+meta:
+  parent_id: hr.CandidateExperience

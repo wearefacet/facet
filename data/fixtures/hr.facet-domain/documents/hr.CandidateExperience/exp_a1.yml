@@ -1,0 +1,12 @@
+---
+content:
+  end:
+  desc: Owns the ledger platform. Drove migration to event-sourced core.
+  type: full_time
+  start: "2022-03-01"
+  title: Staff Engineer
+  company: Monzo
+  current: true
+  location: London
+meta:
+  parent_id: cand_01HZX9Q2

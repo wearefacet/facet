@@ -1,0 +1,8 @@
+---
+content:
+  name: Ledger Migration
+  team: production.Team.team_platform
+  status: active
+  owner_id: iam.Account.account_pm_alex
+  description: Migrate the legacy ledger to the event-sourced core.
+meta: {}

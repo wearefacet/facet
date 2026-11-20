@@ -1,0 +1,28 @@
+---
+content:
+  kind: quickView
+  template:
+    type: col
+    children:
+    - type: row
+      layout: "auto auto 1fr"
+      children:
+      - type: capsule
+        value: Stage #$order
+    - type: hr
+    - type: section
+      label: Stage
+      children:
+      - type: field
+        label: Default Probability
+        value: $probability_default
+      - type: field
+        label: Is Closing Stage
+        value: $is_closing_stage
+      - type: field
+        label: Display Color
+        value: $color
+    - type: record-meta
+  parent_doctype: crm.PipelineStage
+meta:
+  parent_id: crm.PipelineStage

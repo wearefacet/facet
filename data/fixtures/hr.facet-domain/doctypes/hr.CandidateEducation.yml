@@ -1,0 +1,54 @@
+---
+content:
+  icon: graduation-cap
+  domain: hr
+  fields:
+    end:
+      type: integer
+      title: End Year
+      required: true
+      description: Year of graduation.
+    gpa:
+      max: 4
+      min: 0
+      type: integer
+      title: GPA
+      description: Grade point average (0-4 scale).
+    field:
+      type: string
+      title: Field of Study
+      required: true
+      filters:
+        - equality
+        - text_search
+      description: Major or field of study.
+    start:
+      type: integer
+      title: Start Year
+      required: true
+      description: Year the program started.
+    degree:
+      type: string
+      title: Degree
+      required: true
+      filters:
+        - equality
+        - text_search
+      description: Degree obtained (e.g. BSc, MEng, PhD).
+    school:
+      type: string
+      title: School
+      required: true
+      filters:
+        - equality
+        - text_search
+      description: Institution name.
+  doctype: CandidateEducation
+  member_of: Candidate
+  description: An education entry for a candidate.
+  display_name: "{{ degree }} in {{ field }} at {{ school }}"
+  search: "{{ degree }} {{ field }} {{ school }}"
+  aggregate_root: false
+  schema_version: 1
+meta:
+  parent_id: hr

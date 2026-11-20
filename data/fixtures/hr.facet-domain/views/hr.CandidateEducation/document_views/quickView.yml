@@ -1,0 +1,39 @@
+---
+content:
+  kind: quickView
+  template:
+    type: col
+    children:
+    - type: row
+      layout: "auto auto 1fr"
+      children:
+      - type: capsule
+        value: $degree
+      - type: capsule
+        value: $field
+    - type: hr
+    - type: section
+      label: Education
+      children:
+      - type: field
+        label: School
+        value: $school
+      - type: field
+        label: Degree
+        value: $degree
+    - type: section
+      label: Timeline
+      children:
+      - type: field
+        label: Start Year
+        value: $start
+      - type: field
+        label: End Year
+        value: $end
+      - type: field
+        label: GPA
+        value: $gpa
+    - type: record-meta
+  parent_doctype: hr.CandidateEducation
+meta:
+  parent_id: hr.CandidateEducation

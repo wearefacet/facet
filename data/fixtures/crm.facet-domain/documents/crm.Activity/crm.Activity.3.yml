@@ -1,0 +1,14 @@
+---
+content:
+  body: Intro call with Carol Martinez. She's interested in our consulting services
+    for their fintech division.
+  type: call
+  deal_id: crm.Deal.2
+  subject: Initial outreach to Globex
+  datetime: "2026-06-20T11:00:00Z"
+  owner_id: iam.Account.account_eng_dao
+  completed: true
+  company_id: crm.Company.2
+  contact_id: crm.Contact.3
+  duration_minutes: 30
+meta: {}

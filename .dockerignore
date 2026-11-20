@@ -1,0 +1,79 @@
+# Root build context for the e2e images (e2e/docker/backend.Dockerfile,
+# e2e/docker/frontend.Dockerfile and e2e/docker/runner.Dockerfile). Excludes
+# the heavy and irrelevant trees; the source paths the builds copy
+# (shard.yml, src/, db/, data/, frontend/...) must stay available
+# (NOTE: every line here is an exclusion — a stray name would drop it from
+# the context).
+#
+# This file only affects docker builds whose context is the repo root.
+
+.git
+build
+tmp
+doc
+packages
+spec
+lib
+bin
+main
+.env
+.coverage
+*.log
+
+# The release images (docker/*.Dockerfile) never build from the repo's
+# operational scripts or CI config — context weight only (doc/plans/
+# container-release.md §5.10: CI adds nothing a local build lacks).
+scripts
+.github
+
+# The runner image builds the facet CLI and the chat package from packages
+# (their sources only — node_modules is re-excluded below) (harness §3). The
+# negation restarts matching below packages/cli, so the child exclusions must
+# come AFTER it — a later pattern wins, and an exclusion listed before the
+# negation would be overridden by the re-included subtree.
+packages
+!packages/cli
+!packages/chat
+packages/cli/node_modules
+packages/cli/dist
+packages/cli/test
+packages/chat/node_modules
+packages/chat/dist
+packages/chat/test
+
+# The harness rides the backend context with its docker + stack files; the
+# runner image needs the whole e2e package (tests, fixtures, config) but
+# never its build directories (details re-excluded below).
+e2e/**
+!e2e/docker
+!e2e/docker/**
+!e2e/stack
+!e2e/stack/**
+!e2e/tests
+!e2e/tests/**
+!e2e/scripts
+!e2e/scripts/**
+!e2e/fixtures
+!e2e/fixtures/**
+!e2e/package.json
+!e2e/pnpm-lock.yaml
+!e2e/playwright.config.ts
+!e2e/tsconfig.json
+!e2e/scenarios.txt
+
+# Frontend build input stays; everything heavy under frontend/ goes
+# (this project keeps its SvelteKit config inline in vite.config.ts —
+# there is no svelte.config.js)
+frontend/node_modules
+frontend/.svelte-kit
+frontend/tmp
+frontend/example
+frontend/.storybook
+frontend/.vscode
+frontend/README.md
+
+# The docs image (docker/docs.Dockerfile) copies site-docs/ wholesale;
+# everything heavy or generated under it goes.
+site-docs/node_modules
+site-docs/dist
+site-docs/.astro

@@ -1,0 +1,20 @@
+{
+  "description": "Chaque champ de sonde de santé et chaque nom de métrique exposés par le serveur.",
+  "generated_note": "> Généré depuis `src/http/healthcheck.cr`, `src/event/loss.cr`, `src/event/consumer_health.cr` et `src/metrics.cr` par `make gen-docs-health-metrics`. Ne modifiez pas ce fichier à la main.",
+  "intro": "Cette page sert à lire une réponse de sonde ou à nommer une métrique dans vos tableaux de bord et vos alertes.",
+  "endpoints_intro": "Le serveur expose deux sondes et un point de collecte\u00a0:",
+  "ep_readiness": "- `GET /Healthcheck` vérifie la préparation.",
+  "ep_liveness": "- `GET /Healthcheck/live` vérifie la vivacité.",
+  "ep_metrics": "- `GET /metrics` sert le format d’exposition texte Prometheus 0.0.4.",
+  "auth_note": "Les deux sondes répondent sans authentification. La sonde de préparation répond HTTP 503 quand une dépendance est injoignable ou qu’un consommateur de flux est dégradé.",
+  "probe_heading": "## Sonde de santé",
+  "probe_intro": "Tout ce que renvoie `GET /Healthcheck`. Un chemin `[]` est une entrée du champ tableau\u00a0: la sonde renvoie une entrée de pool par pool de base de données et une entrée de consommateur par groupe de consommateurs de flux. La sonde de vivacité ne renvoie que les deux champs `live.*`.",
+  "metrics_heading": "## Métriques",
+  "metrics_intro": "Chaque nom de métrique émis par le serveur, avec son type d’exposition. Le même registre rend aussi tout nom non catalogué comme un compteur avec une ligne d’aide générique\u00a0; le catalogue ci-dessous est l’ensemble documenté complet.",
+  "col_field": "Champ",
+  "col_name": "Nom",
+  "col_type": "Type",
+  "col_meaning": "Signification",
+  "related_heading": "Voir aussi",
+  "related_ops_page": "- [/fr/operate/health-metrics-logs/](/fr/operate/health-metrics-logs/)"
+}

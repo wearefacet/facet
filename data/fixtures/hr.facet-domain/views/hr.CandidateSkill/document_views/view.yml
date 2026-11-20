@@ -1,0 +1,38 @@
+---
+content:
+  kind: view
+  template:
+    type: col
+    children:
+    - type: header
+      chips:
+      - category
+      subtitle: Level $level
+      title: $name
+    - type: grid
+      layout: 3 1
+      children:
+      - type: col
+        children:
+        - type: section
+          label: Skill
+          children:
+          - type: field
+            label: Skill Name
+            value: $name
+          - type: field
+            label: Category
+            value: $category
+          - type: field
+            label: Proficiency Level
+            value: $level
+          - type: field
+            label: Years of Experience
+            value: $years
+      - type: sidebar
+        children:
+        - type: record-meta
+          history: true
+  parent_doctype: hr.CandidateSkill
+meta:
+  parent_id: hr.CandidateSkill

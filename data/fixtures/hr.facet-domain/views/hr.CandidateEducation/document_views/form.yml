@@ -1,0 +1,33 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+    - type: section
+      label: Education
+      children:
+      - type: row
+        layout: 1fr 240px
+        children:
+        - type: input
+          field: school
+        - type: input
+          field: degree
+      - type: input
+        field: field
+    - type: section
+      label: Timeline
+      children:
+      - type: row
+        layout: repeat(3, minmax(160px, 1fr))
+        children:
+        - type: input
+          field: start
+        - type: input
+          field: end
+        - type: input
+          field: gpa
+  parent_doctype: hr.CandidateEducation
+meta:
+  parent_id: hr.CandidateEducation

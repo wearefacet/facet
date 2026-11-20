@@ -1,0 +1,8 @@
+---
+content:
+  name: Negotiation
+  color: "#F44336"
+  order: 4
+  is_closing_stage: false
+  probability_default: 75
+meta: {}

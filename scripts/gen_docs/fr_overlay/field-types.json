@@ -1,0 +1,16 @@
+{
+  "description": "Chaque type de champ, avec sa validation, sa normalisation et ses opérateurs de filtre.",
+  "generated_note": "> Généré depuis `src/doctype/field_types/` par `make gen-docs-field-types`. Ne modifiez pas ce fichier à la main.",
+  "intro": "Cette page sert à choisir un type de champ et à vérifier comment il valide, normalise et filtre.",
+  "body": "Un champ de doctype déclare l'un des types ci-dessous. Le générateur lit le registre des types et le compileur de filtres ; la formulation de la validation et de la normalisation se maintient dans le générateur.",
+  "bullet_normalization": "- **Normalisation** s'exécute avant la validation à chaque create et update.",
+  "bullet_operators": "- **Opérateurs de filtre** liste les suffixes que les routes de liste servent pour le type ; la page [opérateurs de filtre](/fr/reference/filter-operators/) donne à chacun sa signification.",
+  "col_type": "Type",
+  "col_validation": "Validation",
+  "col_normalization": "Normalisation",
+  "col_operators": "Opérateurs de filtre",
+  "related_heading": "Voir aussi",
+  "related_guide": "- [Types de champs (guide)](/fr/build/field-types/)",
+  "related_designing": "- [Concevoir des doctypes](/fr/build/designing-doctypes/)",
+  "related_operators": "- [Opérateurs de filtre](/fr/reference/filter-operators/)"
+}

@@ -1,0 +1,37 @@
+doctype: CollectionView
+domain: core
+schema_version: 1
+aggregate_root: false
+member_of: DocType
+description: "A saved collection-view surface (table, calendar, kanban) for a doctype's document listing. General views are shared (no owner); personal views are owner-bound (owner_id is the creator's account id). The parent linkage is carried by meta.parent_id via the children system; there is no redundant parent_doctype content field."
+fields:
+  name:
+    type: string
+    required: true
+    title: "View Name"
+    description: "Tab label shown in the listing UI (e.g. 'All', 'My Pipeline', 'Open Deals')."
+    filters: [equality, text_search]
+  surface:
+    type: enum
+    required: true
+    values: [table, calendar, kanban]
+    title: "Surface Type"
+    description: "Presentation layout for this listing view. 'table' shows an ordered column set; 'calendar' shows a date-based grid; 'kanban' shows cards in lanes. 'grid' will be added later."
+    filters: [equality]
+  config:
+    type: object
+    title: "View Configuration"
+    description: "Surface-specific configuration. For 'table': { columns: [{ key, label?, width?, editable? }] } — `editable: true` on a boolean column renders its cell as an inline toggle gated on the viewer's update permission. For 'calendar': { calendar: { discriminator, end_field?, color_by?, title_template?, week_start } }. For 'kanban': { kanban: { mode, group_by?, lanes?: [{ label, color?, filter }], filters?, sort?, page_size? } }."
+  owner_id:
+    type: reference
+    doctype: "iam.Account"
+    title: "Owner"
+    description: "Set to the creator's account id for personal views. Null for general (shared) views. Forced by the Lua create hook based on the matched permission's scope: $mine scopes the view to the caller (personal), unrestricted scope leaves it shared (general)."
+    filters: [equality]
+scopes:
+  mine:
+    description: "Personal views owned by the actioner"
+    where: { owner_id: '$self' }
+  general:
+    description: "General (shared) views with no owner"
+    where: { owner_id: '$null' }

@@ -1,0 +1,15 @@
+---
+content:
+  name: Shutdown line 3
+  status: done
+  ends_at: "2026-02-26T18:00:00Z"
+  subject: Line 3 annual
+  starts_at: "2026-02-23T06:00:00Z"
+  scheduled_on: "2026-02-23"
+  scheduled_days:
+    end: "2026-02-26"
+    start: "2026-02-23"
+  scheduled_window:
+    end: "2026-02-26T18:00:00Z"
+    start: "2026-02-23T06:00:00Z"
+meta: {}

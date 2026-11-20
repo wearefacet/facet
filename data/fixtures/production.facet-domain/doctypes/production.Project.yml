@@ -1,0 +1,81 @@
+---
+content:
+  icon: folder-kanban
+  color: "#F59E0B"
+  domain: production
+  fields:
+    name:
+      type: string
+      title: Project Name
+      required: true
+      filters:
+        - equality
+        - text_search
+      description: A descriptive name for the project.
+    team:
+      type: reference
+      title: Team
+      doctype: production.Team
+      required: true
+      description: The team that owns this project. Scoped by the `my_teams` context
+        set in permission rules.
+    status:
+      type: enum
+      title: Status
+      values:
+      - key: planned
+        color: "#6b8537"
+        label: Planned
+      - key: active
+        color: "#b16147"
+        label: Active
+      - key: on_hold
+        color: "#b16246"
+        label: On Hold
+      - key: completed
+        color: "#b06244"
+        label: Completed
+      - key: cancelled
+        color: "#398d5e"
+        label: Cancelled
+      default: planned
+      filters:
+        - equality
+      description: The current lifecycle status of the project.
+    owner_id:
+      type: reference
+      title: Owner
+      doctype: iam.Account
+      description: The account responsible for delivering the project.
+    description:
+      type: longtext
+      title: Description
+      description: A longer-form description of the project's goals and scope.
+  scopes:
+    mine:
+      where:
+        owner_id: $self
+      description: Projects owned by the actioner
+    active:
+      where:
+        status: active
+      description: Projects in the active status
+  script: !read_file production.Project.lua
+  doctype: Project
+  children:
+    tasks:
+      doctype: Task
+      collection: true
+      description: The tasks that make up this project.
+  sidecars:
+    comments:
+      doctype: core.Comment
+      column: target
+  description: A project owned by a team. RBAC-scoped via the team reference combined
+    with the `my_teams` context set.
+  display_name: "{{ name }}"
+  search: "{{ name }} {{ description }}"
+  aggregate_root: true
+  schema_version: 1
+meta:
+  parent_id: production

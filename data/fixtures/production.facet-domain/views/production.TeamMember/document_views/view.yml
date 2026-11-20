@@ -1,0 +1,28 @@
+---
+content:
+  kind: view
+  template:
+    type: col
+    children:
+    - type: header
+      title: $account
+      chips:
+      - role
+    - type: grid
+      layout: 3 1
+      children:
+      - type: col
+        children:
+        - type: section
+          label: Membership
+          children:
+          - type: field
+            label: Account
+            value: $account
+      - type: sidebar
+        children:
+        - type: record-meta
+          history: true
+  parent_doctype: production.TeamMember
+meta:
+  parent_id: production.TeamMember

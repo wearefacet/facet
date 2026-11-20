@@ -1,0 +1,9 @@
+---
+content:
+  email: sam.rivers@facet.local
+  roles:
+  - iam.Roles.editor
+  status: active
+  mfa_enabled: false
+  name: Sam Rivers
+meta: {}

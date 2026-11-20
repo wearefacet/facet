@@ -1,0 +1,15 @@
+---
+content:
+  name: Calibrate A
+  status: planned
+  ends_at: "2026-02-27T09:00:00Z"
+  subject: Sensor A
+  starts_at: "2026-02-27T08:00:00Z"
+  scheduled_on: "2026-02-27"
+  scheduled_days:
+    end: "2026-02-27"
+    start: "2026-02-27"
+  scheduled_window:
+    end: "2026-02-27T09:00:00Z"
+    start: "2026-02-27T08:00:00Z"
+meta: {}

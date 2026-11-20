@@ -1,0 +1,5 @@
+---
+content:
+  color: "#F44336"
+  description: Identity — person records referenced by other domains (e.g. Employee).
+meta: {}

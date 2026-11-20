@@ -1,0 +1,19 @@
+{
+	"name": "facet-e2e",
+	"private": true,
+	"license": "BUSL-1.1",
+	"type": "module",
+	"packageManager": "pnpm@10.30.3",
+	"scripts": {
+		"check": "tsc --noEmit"
+	},
+	"devDependencies": {
+		"@axe-core/playwright": "^4.10.2",
+		"@playwright/test": "1.61.0",
+		"@types/node": "^24",
+		"esbuild": "^0.25.12",
+		"esbuild-svelte": "^0.9.5",
+		"svelte": "^5.57.3",
+		"typescript": "^6.0.3"
+	}
+}

@@ -1,0 +1,691 @@
+<!-- SPDX-License-Identifier: BUSL-1.1 -->
+<!-- Copyright (c) 2026 Amplitude Solutions Ltd -->
+
+<script lang="ts" module>
+	import { defineMeta } from '@storybook/addon-svelte-csf';
+	import ListView from './ListView.svelte';
+	import CanFixture from '$lib/components/features/admin/CanFixture.svelte';
+	import { createMockDriver } from '$lib/datasource/mock-seed.js';
+	import { parseDoctypeDef } from '$lib/doctype/types.js';
+	import type { DataDriver, Domain } from '$lib/datasource/driver.js';
+	import type { DataSource } from '$lib/datasource/interface.js';
+
+	// Single mock driver seeded with all fixtures (doctype defs + documents,
+	// including the core.CollectionView children of crm.Deal).
+	const driver = createMockDriver();
+
+	// Separate driver for the TrashMode story: tombstoning a fixture document
+	// on the shared driver would leak into every other story. Mock mutations
+	// run synchronously, so the delete lands before the story mounts.
+	const trashDriver = createMockDriver();
+	void trashDriver.domain('crm').doctype('Deal').doc('crm.Deal.1').delete();
+
+	function defFor(qualified: string) {
+		const raw = driver.getDoctypeDefinition(qualified);
+		if (!raw) throw new Error(`Missing doctype definition for ${qualified}`);
+		return parseDoctypeDef(raw);
+	}
+
+	const dealDef = defFor('crm.Deal');
+	const companyDef = defFor('crm.Company');
+
+	/** Unrestricted creator/updater — the `+` and edit buttons are visible. */
+	const adminManifest = { '*.*': ['*'] };
+
+	const { Story } = defineMeta({
+		title: 'Components/Primitives/Data/ListView',
+		component: ListView,
+		tags: ['autodocs'],
+		args: {
+			driver,
+			doctype: dealDef,
+			parentDocId: 'crm.Deal',
+			pageSize: 25,
+			viewerId: 'iam.Account.viewer'
+		},
+		// A11y backlog (audit 22 — see .storybook/preview.ts): axe violations
+		// on this surface (contrast / ARIA structure). Fix, then remove.
+		parameters: { a11y: { test: 'todo' } }
+	});
+
+	/** Wait long enough for the async views fetch to settle in Storybook. */
+	const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+	// ── B-106 regression fixture ──────────────────────────────────────────
+	//
+	// A driver wrapper that counts every listing `list()` call. The
+	// saved-views fetch goes through `.doc().children()`, which delegates to
+	// the base source, so the count tracks the `Table` reload path only.
+	const listingCalls = { count: 0 };
+
+	/** Wrap a driver so each `domain().doctype()` source counts its `list()` calls. */
+	function countingDriverOf(base: DataDriver, counter: { count: number }): DataDriver {
+		function wrapDomain(name: string): Domain {
+			const domain = base.domain(name);
+			return {
+				doctype<T>(docName: string, seedData?: T[]): DataSource<T> {
+					const ds = domain.doctype<T>(docName, seedData);
+					return {
+						list: async (params) => {
+							counter.count += 1;
+							return ds.list(params);
+						},
+						create: (content) => ds.create(content),
+						doc: (id) => ds.doc(id)
+					};
+				}
+			};
+		}
+		return {
+			getDoctypeDefinition: (qualifiedName) => base.getDoctypeDefinition(qualifiedName),
+			domain: wrapDomain
+		};
+	}
+
+	const countedDriver = countingDriverOf(driver, listingCalls);
+</script>
+
+<script lang="ts">
+	import { expect, within, fireEvent, userEvent, waitFor } from 'storybook/test';
+
+	// Local state for the DoctypeChangeClosesQuickView story. The story
+	// mounts ListView against one doctype, opens the drawer, then swaps the
+	// props — asserting the drawer auto-closes (no stale document leaks
+	// across doctypes).
+	let swapDoctype = $state(dealDef);
+	let swapParentDocId = $state('crm.Deal');
+
+	// Local state for the PinView story — the pinned set and the toggle
+	// callback are injected so the story does not touch the real settings
+	// store (which would need the backend).
+	let pinnedIds = $state<string[]>([]);
+	let pinLog = $state<string[]>([]);
+	function handleTogglePin(viewId: string) {
+		pinnedIds = pinnedIds.includes(viewId)
+			? pinnedIds.filter((id) => id !== viewId)
+			: [...pinnedIds, viewId];
+		pinLog = [...pinLog, viewId];
+	}
+
+	// Local state for the RefreshSignalRelists story. The template button bumps
+	// it the same way the doctype page bumps `importRefresh` when an import
+	// job lands (`onimported` → `importRefresh++`).
+	let refreshSignal = $state(0);
+</script>
+
+<!--
+	Each story is wrapped in `<CanFixture>` so the `<Can>` gates inside
+	ListView (the `+` create button and the edit button) render with a
+	deterministic RBAC state — without a manifest they are fail-closed.
+-->
+
+<Story
+	name="Default"
+	play={async ({ canvasElement }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+		await expect(canvas.getByRole('tab', { name: 'All Deals' })).toBeVisible();
+		await expect(canvas.getByRole('tab', { name: 'Open' })).toBeVisible();
+		await expect(canvas.getByRole('tab', { name: 'Won' })).toBeVisible();
+		await expect(canvas.getByRole('button', { name: 'Create a new view' })).toBeVisible();
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={adminManifest}>
+			<div
+				style="position: relative; width: 100%; height: 80vh; min-height: 500px; overflow: hidden; padding: 24px;"
+			>
+				<ListView
+					{driver}
+					doctype={dealDef}
+					parentDocId="crm.Deal"
+					pageSize={25}
+					viewerId="iam.Account.viewer"
+				/>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<!--
+	Tab-less mode (`showTabs={false}`): no saved-view strip, no view CRUD
+	affordances — the listing renders the fallback columns straight away.
+	Used by admin surfaces that standardize on the default table.
+-->
+
+<Story
+	name="Tabless"
+	play={async ({ canvasElement }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+		await expect(canvas.queryByRole('tab')).toBeNull();
+		await expect(canvas.queryByRole('button', { name: 'Create a new view' })).toBeNull();
+		await expect(canvas.queryByRole('button', { name: 'Save default as new view' })).toBeNull();
+		await expect(canvas.getByRole('table')).toBeVisible();
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={adminManifest}>
+			<div
+				style="position: relative; width: 100%; height: 80vh; min-height: 500px; overflow: hidden; padding: 24px;"
+			>
+				<ListView
+					{driver}
+					doctype={dealDef}
+					parentDocId="crm.Deal"
+					pageSize={25}
+					showTabs={false}
+				/>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<Story
+	name="SecondViewActive"
+	play={async ({ canvasElement }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+		// Select the 'Open' saved view by name — the tab index depends on the
+		// fixture set, so the story must not hardcode an index.
+		const openTab = canvas.getByRole('tab', { name: 'Open' });
+		await fireEvent.click(openTab);
+		await sleep(120);
+		await expect(openTab).toHaveAttribute('aria-selected', 'true');
+		// The edit button is visible (admin can update), since the active tab
+		// is a real saved view.
+		await expect(canvas.getByRole('button', { name: 'Edit current view' })).toBeVisible();
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={adminManifest}>
+			<div
+				style="position: relative; width: 100%; height: 80vh; min-height: 500px; overflow: hidden; padding: 24px;"
+			>
+				<ListView
+					{driver}
+					doctype={dealDef}
+					parentDocId="crm.Deal"
+					pageSize={25}
+					active={1}
+					viewerId="iam.Account.viewer"
+				/>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<Story
+	name="CalendarView"
+	play={async ({ canvasElement }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+		// The Timeline tab is a calendar surface — selecting it renders the
+		// Calendar grid instead of the table.
+		const timelineTab = canvas.getByRole('tab', { name: 'Timeline' });
+		await fireEvent.click(timelineTab);
+		await sleep(120);
+		await expect(timelineTab).toHaveAttribute('aria-selected', 'true');
+		// The calendar toolbar (Month/Week segmented control) is visible.
+		await expect(canvas.getByRole('tab', { name: 'Month' })).toBeVisible();
+		await expect(canvas.getByRole('tab', { name: 'Week' })).toBeVisible();
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={adminManifest}>
+			<div
+				style="position: relative; width: 100%; height: 80vh; min-height: 500px; overflow: hidden; padding: 24px;"
+			>
+				<ListView
+					{driver}
+					doctype={dealDef}
+					parentDocId="crm.Deal"
+					pageSize={25}
+					viewerId="iam.Account.viewer"
+				/>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<Story
+	name="KanbanView"
+	play={async ({ canvasElement }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+		// The Pipeline tab is a kanban surface — selecting it renders the
+		// kanban board instead of the table.
+		const pipelineTab = canvas.getByRole('tab', { name: 'Pipeline' });
+		await fireEvent.click(pipelineTab);
+		await sleep(300);
+		await expect(pipelineTab).toHaveAttribute('aria-selected', 'true');
+		// The lane headers render inside the ListView (one per status enum
+		// value, in declaration order).
+		const laneLabels = [...canvasElement.querySelectorAll('.kb-col-label')].map((e) =>
+			e.textContent?.trim()
+		);
+		await expect(laneLabels).toEqual(['Open', 'Won', 'Lost', 'Abandoned']);
+		// Switching back to a table tab renders the table again.
+		await fireEvent.click(canvas.getByRole('tab', { name: 'All Deals' }));
+		await sleep(200);
+		await expect(canvas.getByRole('table')).toBeVisible();
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={adminManifest}>
+			<div
+				style="position: relative; width: 100%; height: 80vh; min-height: 500px; overflow: hidden; padding: 24px;"
+			>
+				<ListView
+					{driver}
+					doctype={dealDef}
+					parentDocId="crm.Deal"
+					pageSize={25}
+					viewerId="iam.Account.viewer"
+				/>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<Story
+	name="PinView"
+	play={async ({ canvasElement }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+		// The active tab is 'All Deals' (a real saved view) so the pin toggle
+		// is visible and unpinned.
+		const pin = canvas.getByRole('button', { name: 'Pin current view' });
+		await expect(pin).toHaveAttribute('aria-pressed', 'false');
+		await fireEvent.click(pin);
+		await sleep(40);
+		// After pinning, the toggle flips to unpin and the callback fired.
+		await expect(canvas.getByRole('button', { name: 'Unpin current view' })).toHaveAttribute(
+			'aria-pressed',
+			'true'
+		);
+		expect(pinLog.length).toBe(1);
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={adminManifest}>
+			<div
+				style="position: relative; width: 100%; height: 80vh; min-height: 500px; overflow: hidden; padding: 24px;"
+			>
+				<ListView
+					{driver}
+					doctype={dealDef}
+					parentDocId="crm.Deal"
+					pageSize={25}
+					viewerId="iam.Account.viewer"
+					pinnedViewIds={pinnedIds}
+					onTogglePin={handleTogglePin}
+				/>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<Story
+	name="EmptyViews"
+	play={async ({ canvasElement }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+		// No saved views → synthetic "Default" tab is shown (no DB row created).
+		await expect(canvas.getByRole('tab', { name: 'Default' })).toBeVisible();
+		await expect(canvas.getByRole('button', { name: 'Create a new view' })).toBeVisible();
+		// No real active view → the edit button is hidden.
+		await expect(canvas.queryByRole('button', { name: 'Edit current view' })).toBeNull();
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={adminManifest}>
+			<div
+				style="position: relative; width: 100%; height: 80vh; min-height: 500px; overflow: hidden; padding: 24px;"
+			>
+				<ListView
+					{driver}
+					doctype={companyDef}
+					parentDocId="crm.Company"
+					pageSize={25}
+					viewerId="iam.Account.viewer"
+				/>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<Story
+	name="CreateFlow"
+	play={async ({ canvasElement }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+		// The CollectionViewEditor dialog is Bits-portalled to document.body.
+		const body = within(document.body);
+		// Clicking "+" opens the CollectionViewEditor modal (create mode).
+		const before = await driver
+			.domain('core')
+			.doctype('DocType')
+			.doc('crm.Deal')
+			.children('collection_view')
+			.list({ items: 500 });
+
+		await fireEvent.click(canvas.getByRole('button', { name: 'Create a new view' }));
+		await sleep(40);
+		await expect(body.getByRole('heading', { name: 'New view' })).toBeVisible();
+		await fireEvent.click(body.getByRole('button', { name: 'Next' }));
+		await sleep(20);
+		await userEvent.type(body.getByRole('textbox', { name: /Name/ }), 'Quarterly review');
+		await sleep(10);
+		await fireEvent.click(body.getByRole('button', { name: 'Create view' }));
+		await sleep(60);
+
+		// A new tab is focused and a new CollectionView child exists.
+		await expect(canvas.getByRole('tab', { name: 'Quarterly review' })).toHaveAttribute(
+			'aria-selected',
+			'true'
+		);
+		const after = await driver
+			.domain('core')
+			.doctype('DocType')
+			.doc('crm.Deal')
+			.children('collection_view')
+			.list({ items: 500 });
+		expect(after.data.length).toBe(before.data.length + 1);
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={adminManifest}>
+			<div
+				style="position: relative; width: 100%; height: 80vh; min-height: 500px; overflow: hidden; padding: 24px;"
+			>
+				<ListView
+					{driver}
+					doctype={dealDef}
+					parentDocId="crm.Deal"
+					pageSize={25}
+					viewerId="iam.Account.viewer"
+				/>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<Story
+	name="NoPermissionsHidesActions"
+	play={async ({ canvasElement }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+		// With no manifest, `can()` is fail-closed: neither action is shown.
+		await expect(canvas.queryByRole('button', { name: 'Create a new view' })).toBeNull();
+		await expect(canvas.queryByRole('button', { name: 'Edit current view' })).toBeNull();
+		// …but the tabs and table still render.
+		await expect(canvas.getByRole('tab', { name: 'All Deals' })).toBeVisible();
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={null}>
+			<div
+				style="position: relative; width: 100%; height: 80vh; min-height: 500px; overflow: hidden; padding: 24px;"
+			>
+				<ListView
+					{driver}
+					doctype={dealDef}
+					parentDocId="crm.Deal"
+					pageSize={25}
+					viewerId="iam.Account.viewer"
+				/>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<Story
+	name="ClickRowOpensQuickView"
+	play={async ({ canvasElement }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+		// Clicking a body row (not a header) opens the QuickView peek drawer.
+		const before = canvas.queryByRole('button', { name: /Close/ });
+		await expect(before).toBeNull();
+
+		// The first body row is a deal row. Click anywhere on the row.
+		const rows = canvas.getAllByRole('row');
+		// rows[0] is the header row; rows[1] is the first body row.
+		await fireEvent.click(rows[1]);
+		await sleep(80);
+
+		// The QuickView drawer appears, scoped to the clicked deal.
+		const closeBtn = await canvas.findByRole('button', { name: 'Close' });
+		await expect(closeBtn).toBeVisible();
+
+		// Closing the drawer slides it out; the host drops it (and its Close
+		// button) when the slide-out finishes.
+		await fireEvent.click(closeBtn);
+		await waitFor(() => expect(canvas.queryByRole('button', { name: 'Close' })).toBeNull());
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={adminManifest}>
+			<div
+				style="position: relative; width: 100%; height: 80vh; min-height: 500px; overflow: hidden; padding: 24px;"
+			>
+				<ListView
+					{driver}
+					doctype={dealDef}
+					parentDocId="crm.Deal"
+					pageSize={25}
+					viewerId="iam.Account.viewer"
+				/>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<Story
+	name="DoctypeChangeClosesQuickView"
+	play={async ({ canvasElement }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+
+		// Open the peek drawer by clicking a body row.
+		const rows = canvas.getAllByRole('row');
+		await fireEvent.click(rows[1]);
+		await sleep(80);
+		const closeBtn = await canvas.findByRole('button', { name: 'Close' });
+		await expect(closeBtn).toBeVisible();
+
+		// Switching the doctype (as happens when the user clicks another
+		// doctype in the left NavPanel while the drawer is open) must reset
+		// all QuickView state so no stale document/id leaks into the URL.
+		await fireEvent.click(canvas.getByRole('button', { name: 'Switch doctype' }));
+		await sleep(60);
+		await expect(canvas.queryByRole('button', { name: 'Close' })).toBeNull();
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={adminManifest}>
+			<div
+				style="position: relative; width: 100%; height: 80vh; min-height: 500px; overflow: hidden; padding: 24px;"
+			>
+				<button
+					onclick={() => {
+						swapDoctype = companyDef;
+						swapParentDocId = 'crm.Company';
+					}}
+				>
+					Switch doctype
+				</button>
+				<ListView
+					{driver}
+					doctype={swapDoctype}
+					parentDocId={swapParentDocId}
+					pageSize={25}
+					viewerId="iam.Account.viewer"
+				/>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<Story
+	name="TrashMode"
+	play={async ({ canvasElement }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+
+		// Trash mode lists tombstones only — the deleted Deal row is present
+		// (its title survives the delete) and a Restore action column is
+		// rendered per row.
+		await expect(canvas.getByText('Acme Corp — Platform License')).toBeVisible();
+		await expect(canvas.getByText('Restore')).toBeVisible();
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={adminManifest}>
+			<div
+				style="position: relative; width: 100%; height: 80vh; min-height: 500px; overflow: hidden; padding: 24px;"
+			>
+				<ListView
+					driver={trashDriver}
+					doctype={dealDef}
+					parentDocId="crm.Deal"
+					pageSize={25}
+					viewerId="iam.Account.viewer"
+					includeDeleted
+				/>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<!--
+	B-106 regression: a `refreshSignal` bump must swap the `datasource`
+	identity in every mode, so the `Table` reload effect refetches. The play
+	asserts the counted source's `list()` call count grows after the bump —
+	an identity-only assertion would pass even when the listing never
+	reloads (the inert-fix failure shape).
+-->
+<Story
+	name="RefreshSignalRelists"
+	play={async ({ canvasElement }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+		await expect(canvas.getByRole('table')).toBeVisible();
+		const before = listingCalls.count;
+		// Bump the signal the way the doctype page does after an import.
+		await userEvent.click(canvas.getByRole('button', { name: 'Bump refresh signal' }));
+		await waitFor(() => expect(listingCalls.count).toBeGreaterThan(before));
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={adminManifest}>
+			<div
+				style="position: relative; width: 100%; height: 80vh; min-height: 500px; overflow: hidden; padding: 24px;"
+			>
+				<button onclick={() => (refreshSignal += 1)}>Bump refresh signal</button>
+				<ListView
+					driver={countedDriver}
+					doctype={dealDef}
+					parentDocId="crm.Deal"
+					pageSize={25}
+					viewerId="iam.Account.viewer"
+					{refreshSignal}
+				/>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<!--
+	The `toolbarActions` snippet receives the table's live state: the current
+	columns, the compacted filter map the datasource receives (a freshly added
+	empty-value chip must NOT ride it), and the current sort. The snippet
+	dumps the args into a data block the play reads back.
+-->
+
+<Story
+	name="ToolbarActionsCarryTableState"
+	play={async ({ canvasElement }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+
+		const stateBlock = () =>
+			JSON.parse(
+				canvasElement.querySelector('[data-testid=export-state]')?.textContent ?? '{}'
+			) as {
+				columns: { key: string }[];
+				filters: Record<string, unknown>;
+				sort: { key: string; desc: boolean } | null;
+			};
+
+		// Columns: the args carry exactly the table's rendered headers (the
+		// fallback column rule stays internal — the count ties the two).
+		const headers = canvas.getAllByRole('columnheader');
+		await expect(stateBlock().columns.length).toBe(headers.length);
+
+		// Sort: a header click reorders the table and the args agree.
+		const nameHeader = headers.find((h) => h.textContent?.includes('Company Name'));
+		await nameHeader?.click();
+		await sleep(60);
+		expect(stateBlock().sort).toEqual({ key: 'name', desc: false });
+		await expect(nameHeader).toHaveAttribute('aria-sort', 'ascending');
+
+		// Filters: a search term reaches the args after the debounce; a
+		// freshly added chip (seeded with an empty value) does not — the
+		// compacted map is what the datasource list call receives.
+		await userEvent.type(canvas.getByRole('textbox'), 'acme');
+		await sleep(400); // the search debounce is 250 ms
+		// The "+ Add filter" menu's pointer path trips the Bits UI
+		// pointer-events restore race (see the testing strategy) — drive the
+		// trigger and the item with scripted clicks, as the running-guard
+		// story does.
+		canvas
+			.getByRole('button', { name: '+ Add filter' })
+			.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+		const menuItem = await waitFor(
+			() => {
+				// The Bits UI dropdown portals its content to document.body,
+				// outside the story canvas — query the document.
+				const el = [...document.body.querySelectorAll('[role=menuitem], .menu-item')].find(
+					(n) => n.textContent?.trim() === 'Company Name'
+				);
+				if (!el) throw new Error('add-filter item not rendered yet');
+				return el as HTMLElement;
+			},
+			{ timeout: 2000 }
+		);
+		menuItem.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+		await sleep(60);
+		// The chip is visible on the table…
+		await expect(canvas.getAllByText('Company Name').length).toBeGreaterThan(0);
+		// …but its empty value never reaches the export args.
+		expect(stateBlock().filters).toEqual({ search: 'acme' });
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={adminManifest}>
+			<div
+				style="position: relative; width: 100%; height: 80vh; min-height: 500px; overflow: hidden; padding: 24px;"
+			>
+				<ListView
+					{driver}
+					doctype={companyDef}
+					parentDocId="crm.Company"
+					pageSize={25}
+					viewerId="iam.Account.viewer"
+				>
+					{#snippet toolbarActions(args)}
+						<div data-testid="export-state">
+							{JSON.stringify({
+								columns: args.columns.map((c) => ({ key: c.key })),
+								filters: args.filters,
+								sort: args.sort
+							})}
+						</div>
+					{/snippet}
+				</ListView>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>

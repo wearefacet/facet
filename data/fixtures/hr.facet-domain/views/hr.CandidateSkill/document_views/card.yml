@@ -1,0 +1,18 @@
+---
+content:
+  kind: card
+  template:
+    type: col
+    children:
+    - type: field
+      label: Proficiency Level
+      value: $level
+    - type: field
+      label: Years of Experience
+      value: $years
+    - type: field
+      label: Category
+      value: $category
+  parent_doctype: hr.CandidateSkill
+meta:
+  parent_id: hr.CandidateSkill

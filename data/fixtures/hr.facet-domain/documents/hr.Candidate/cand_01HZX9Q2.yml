@@ -1,0 +1,45 @@
+---
+content:
+  tags:
+  - backend
+  - crystal
+  - event-sourcing
+  - "\U0001F680 high-signal"
+  email: amara.okonkwo@example.com
+  owner: iam.Account.account_recruiter_kim
+  phone: +44 7700 900123
+  photo: https://files.local/cand/01HZX9Q2/photo.jpg
+  gender: female
+  rating:
+  social:
+    github: https://github.com/amarao
+    linkedin: https://linkedin.com/in/amaraokonkwo
+    portfolio:
+  source: referral
+  status: interviewing
+  address:
+    city: London
+    region: Greater London
+    street: 14 Pembroke Mews
+    country: GB
+    postal_code: W8 6EX
+  summary: "Twelve years building **high-throughput** backends.\n\nLed the rewrite
+    of a payments ledger handling ~40k tx/s. Comfortable across Crystal, Go, Rust.
+    Reads & writes français. Notes: handled <script>-like input & emojis \U0001F3AF,
+    em—dashes, \"smart quotes\", and a very long line that keeps going and going to
+    test wrapping and truncation behaviour in narrow grid cells without breaking layout.\n"
+  headline: Senior Backend Engineer — distributed systems, Crystal & Go
+  avg_score:
+  documents: []
+  emergency:
+  full_name: Amara Okonkwo
+  total_exp: 11
+  birth_date: "1991-08-22"
+  salary_exp:
+  nationality: Nigerian / British
+  notice_days: "30"
+  remote_pref: remote
+  applied_date: "2026-05-14"
+  willing_reloc: false
+  available_from:
+meta: {}

@@ -1,0 +1,18 @@
+---
+content:
+  kind: card
+  template:
+    type: col
+    children:
+    - type: field
+      label: Event Type
+      value: $event_type
+    - type: field
+      label: New Title
+      value: $new_title
+    - type: field
+      label: Effective Date
+      value: $effective_date
+  parent_doctype: hr.CareerEvent
+meta:
+  parent_id: hr.CareerEvent

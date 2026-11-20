@@ -1,0 +1,9 @@
+---
+content:
+  email: alex.okafor@facet.local
+  roles:
+  - iam.Roles.editor
+  status: active
+  mfa_enabled: false
+  name: Alex Okafor
+meta: {}

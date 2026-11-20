@@ -1,0 +1,48 @@
+# The singleton settings document. Every field is an explicit null: the
+# seeded state is "follow the file" for every key — including the
+# localization defaults and the iam policy. The id is load-bearing —
+# the secret store slots bind to `core.SystemSettings.settings`, and the
+# Lua create guard admits only the seed principal, so this row is the only
+# one that can ever exist.
+- id: "settings"
+  content:
+    assistant:
+      name: null
+      api_endpoint: null
+      api_key: null
+      model: null
+      system_prompt: null
+      max_tokens: null
+      temperature: null
+      max_history: null
+      auto_execute_tools: null
+    mail:
+      adapter: null
+      from_address: null
+      from_name: null
+      smtp:
+        host: null
+        port: null
+        username: null
+        password: null
+        use_tls: null
+    artifact:
+      grant_ttl_seconds: null
+      grant_ttl_media_seconds: null
+      prune_after_days: null
+    mutations:
+      retention_days: null
+    tombstone:
+      content_retention_days: null
+    localization:
+      default_timezone: null
+      default_language: null
+    iam:
+      mfa:
+        type: null
+        enforcement: null
+      auth:
+        mode: null
+      oidc:
+        provision_roles: null
+      change_password_expiration: null

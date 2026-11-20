@@ -1,0 +1,9 @@
+<h1>Hello <%= @display_name %>,</h1>
+
+<p>An account has been created for you on Facet. Use the link below to choose your password and sign in:</p>
+
+<p><a href="<%= @invite_link %>"><%= @invite_link %></a></p>
+
+<p style="color: #6b7280; font-size: 13px;">This link can be used once and expires in <%= @validity %>. If you were not expecting this invitation, you can safely ignore this email — no password will be set.</p>
+
+<p style="color: #6b7280; font-size: 13px;">— Facet</p>

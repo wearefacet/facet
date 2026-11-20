@@ -1,0 +1,439 @@
+# Facet feature inventory: 138 features in 10 areas.
+# Pinned to envelope@c2f1427e (features/road-to-beta, 2026-11-03).
+# Source export: doc/plans/documentation/feature-list.md (decision D9, option A).
+# Consumed by site-docs/scripts/check-coverage.mjs. Do not rename or reuse IDs.
+# Re-derive this file when the platform moves; record the new commit here.
+
+# area: AI (assistants, agent tools, MCP) — 9 features
+- id: AI-01
+  name: Workspace assistant
+  area: AI
+- id: AI-02
+  name: Domain-builder assistant
+  area: AI
+- id: AI-03
+  name: Per-app assistant
+  area: AI
+- id: AI-04
+  name: Agent tool catalogue
+  area: AI
+- id: AI-05
+  name: MCP resource server
+  area: AI
+- id: AI-06
+  name: Skill corpus
+  area: AI
+- id: AI-07
+  name: Usage ledger and limits
+  area: AI
+- id: AI-08
+  name: Assistant configuration
+  area: AI
+- id: AI-09
+  name: Stale-turn sweep
+  area: AI
+
+# area: APP (registered apps, OAuth, hosting, SDKs) — 11 features
+- id: APP-01
+  name: App registry
+  area: APP
+- id: APP-02
+  name: OAuth 2.1 authorization server
+  area: APP
+- id: APP-03
+  name: DPoP proof binding
+  area: APP
+- id: APP-04
+  name: Dynamic client registration
+  area: APP
+- id: APP-05
+  name: Consent screen
+  area: APP
+- id: APP-06
+  name: App hosting
+  area: APP
+- id: APP-07
+  name: App API keys and service accounts
+  area: APP
+- id: APP-08
+  name: CORS for registered origins
+  area: APP
+- id: APP-09
+  name: Developer CLI
+  area: APP
+- id: APP-10
+  name: TypeScript SDK
+  area: APP
+- id: APP-11
+  name: Chat embed
+  area: APP
+
+# area: AUD (mutation log, audit, rollback) — 8 features
+- id: AUD-01
+  name: Append-only mutation log
+  area: AUD
+- id: AUD-02
+  name: Audit reading
+  area: AUD
+- id: AUD-03
+  name: Audit redaction
+  area: AUD
+- id: AUD-04
+  name: Rollback
+  area: AUD
+- id: AUD-05
+  name: Write-time coalescing
+  area: AUD
+- id: AUD-06
+  name: Retention compaction
+  area: AUD
+- id: AUD-07
+  name: Tombstone retention
+  area: AUD
+- id: AUD-08
+  name: Provenance and cause metadata
+  area: AUD
+
+# area: AUT (events, hooks, webhooks, jobs, notifications, mail) — 8 features
+- id: AUT-01
+  name: Event bus
+  area: AUT
+- id: AUT-02
+  name: Domain event hooks
+  area: AUT
+- id: AUT-03
+  name: Outbound webhooks
+  area: AUT
+- id: AUT-04
+  name: Background jobs
+  area: AUT
+- id: AUT-05
+  name: Cron scheduler and maintenance
+  area: AUT
+- id: AUT-06
+  name: In-app notifications
+  area: AUT
+- id: AUT-07
+  name: Outbound email
+  area: AUT
+- id: AUT-08
+  name: Lua scripting engine
+  area: AUT
+
+# area: DOC (document data plane) — 13 features
+- id: DOC-01
+  name: Document CRUD
+  area: DOC
+- id: DOC-02
+  name: List and filter grammar
+  area: DOC
+- id: DOC-03
+  name: Aggregates
+  area: DOC
+- id: DOC-04
+  name: ETag caching
+  area: DOC
+- id: DOC-05
+  name: Links and backrefs
+  area: DOC
+- id: DOC-06
+  name: Cross-doctype search
+  area: DOC
+- id: DOC-07
+  name: Atomic parent and children create
+  area: DOC
+- id: DOC-08
+  name: Document copy
+  area: DOC
+- id: DOC-09
+  name: Write-only and secret fields
+  area: DOC
+- id: DOC-10
+  name: Reference validation
+  area: DOC
+- id: DOC-11
+  name: Document import and export
+  area: DOC
+- id: DOC-12
+  name: Realtime updates
+  area: DOC
+- id: DOC-13
+  name: Field defaults and normalization
+  area: DOC
+
+# area: DOM (domains, doctypes, schema authoring) — 25 features
+- id: DOM-01
+  name: Domains
+  area: DOM
+- id: DOM-02
+  name: Draft and publish lifecycle
+  area: DOM
+- id: DOM-03
+  name: Doctypes
+  area: DOM
+- id: DOM-04
+  name: Field type system
+  area: DOM
+- id: DOM-05
+  name: Composition (parent and children)
+  area: DOM
+- id: DOM-06
+  name: Sidecars
+  area: DOM
+- id: DOM-07
+  name: Named actions
+  area: DOM
+- id: DOM-08
+  name: Lifecycle scripts
+  area: DOM
+- id: DOM-09
+  name: Computed fields
+  area: DOM
+- id: DOM-10
+  name: Sequential identifiers
+  area: DOM
+- id: DOM-11
+  name: Unique constraints
+  area: DOM
+- id: DOM-12
+  name: Named scopes
+  area: DOM
+- id: DOM-13
+  name: Domain editors
+  area: DOM
+- id: DOM-14
+  name: Domain grants
+  area: DOM
+- id: DOM-15
+  name: Portable domain bundles
+  area: DOM
+- id: DOM-16
+  name: Definition diagnostics
+  area: DOM
+- id: DOM-17
+  name: Lazy document migration
+  area: DOM
+- id: DOM-18
+  name: Re-projection CLI
+  area: DOM
+- id: DOM-19
+  name: Dev domain watcher
+  area: DOM
+- id: DOM-20
+  name: Domain schematic
+  area: DOM
+- id: DOM-21
+  name: CollectionView
+  area: DOM
+- id: DOM-22
+  name: DocumentView templates
+  area: DOM
+- id: DOM-23
+  name: Jinja2 templating for derived columns
+  area: DOM
+- id: DOM-24
+  name: Core seeding
+  area: DOM
+- id: DOM-25
+  name: Cross-domain field replication
+  area: DOM
+
+# area: FE (workspace SPA surfaces) — 22 features
+- id: FE-01
+  name: Auth screens
+  area: FE
+- id: FE-02
+  name: Dashboard
+  area: FE
+- id: FE-03
+  name: List surfaces
+  area: FE
+- id: FE-04
+  name: Document show page
+  area: FE
+- id: FE-05
+  name: Document form
+  area: FE
+- id: FE-06
+  name: History and rollback
+  area: FE
+- id: FE-07
+  name: Command palette
+  area: FE
+- id: FE-08
+  name: Keyboard shortcuts
+  area: FE
+- id: FE-09
+  name: Notifications UI
+  area: FE
+- id: FE-10
+  name: Builder
+  area: FE
+- id: FE-11
+  name: Configure access
+  area: FE
+- id: FE-12
+  name: Configure apps
+  area: FE
+- id: FE-13
+  name: Configure domains
+  area: FE
+- id: FE-14
+  name: Configure platform
+  area: FE
+- id: FE-15
+  name: Configure currencies
+  area: FE
+- id: FE-16
+  name: Configure audit
+  area: FE
+- id: FE-17
+  name: Settings
+  area: FE
+- id: FE-18
+  name: Import and export UI
+  area: FE
+- id: FE-19
+  name: Welcome tour
+  area: FE
+- id: FE-20
+  name: Internationalization
+  area: FE
+- id: FE-21
+  name: OAuth consent page
+  area: FE
+- id: FE-22
+  name: Assistant chat UI
+  area: FE
+
+# area: IAM (identity and authentication) — 14 features
+- id: IAM-01
+  name: Password login and sessions
+  area: IAM
+- id: IAM-02
+  name: Refresh rotation and reuse detection
+  area: IAM
+- id: IAM-03
+  name: MFA with TOTP and backup codes
+  area: IAM
+- id: IAM-04
+  name: Forced password change
+  area: IAM
+- id: IAM-05
+  name: Self-service password reset
+  area: IAM
+- id: IAM-06
+  name: Invites and temporary passwords
+  area: IAM
+- id: IAM-07
+  name: Account lifecycle
+  area: IAM
+- id: IAM-08
+  name: Inbound OIDC SSO
+  area: IAM
+- id: IAM-09
+  name: Static API keys
+  area: IAM
+- id: IAM-10
+  name: Login throttle and lockout
+  area: IAM
+- id: IAM-11
+  name: Session management
+  area: IAM
+- id: IAM-12
+  name: Bootstrap CLI
+  area: IAM
+- id: IAM-13
+  name: Login event log
+  area: IAM
+- id: IAM-14
+  name: Caller identity endpoint
+  area: IAM
+
+# area: PLT (platform, operations, observability) — 17 features
+- id: PLT-01
+  name: YAML config
+  area: PLT
+- id: PLT-02
+  name: System settings
+  area: PLT
+- id: PLT-03
+  name: Secret store
+  area: PLT
+- id: PLT-04
+  name: Artifact store
+  area: PLT
+- id: PLT-05
+  name: Managed indexes
+  area: PLT
+- id: PLT-06
+  name: Health probes
+  area: PLT
+- id: PLT-07
+  name: Metrics
+  area: PLT
+- id: PLT-08
+  name: OpenTelemetry tracing
+  area: PLT
+- id: PLT-09
+  name: Structured logging
+  area: PLT
+- id: PLT-10
+  name: Database topology
+  area: PLT
+- id: PLT-11
+  name: Migrations
+  area: PLT
+- id: PLT-12
+  name: OpenAPI specification
+  area: PLT
+- id: PLT-13
+  name: HTTP admission gates
+  area: PLT
+- id: PLT-14
+  name: Currency registry and money math
+  area: PLT
+- id: PLT-15
+  name: Graceful shutdown
+  area: PLT
+- id: PLT-16
+  name: Container images
+  area: PLT
+- id: PLT-17
+  name: Account settings store
+  area: PLT
+
+# area: RBC (authorization and governance) — 11 features
+- id: RBC-01
+  name: Roles
+  area: RBC
+- id: RBC-02
+  name: Role assignment and election
+  area: RBC
+- id: RBC-03
+  name: Read enforcement
+  area: RBC
+- id: RBC-04
+  name: Field visibility tags
+  area: RBC
+- id: RBC-05
+  name: Row scopes
+  area: RBC
+- id: RBC-06
+  name: Write enforcement
+  area: RBC
+- id: RBC-07
+  name: Role authority guard
+  area: RBC
+- id: RBC-08
+  name: App grants
+  area: RBC
+- id: RBC-09
+  name: Metadata gate
+  area: RBC
+- id: RBC-10
+  name: Auth contexts
+  area: RBC
+- id: RBC-11
+  name: Permission manifest
+  area: RBC

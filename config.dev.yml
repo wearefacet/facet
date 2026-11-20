@@ -1,0 +1,338 @@
+# External-facing host. May carry a scheme; when it does, discovery
+# documents and the MCP resource identifier use it verbatim. With the local
+# Caddy proxy (caddy/Caddyfile) terminating TLS on 3443, the scheme is set
+# so https URLs match what clients actually use. Dev routing is vhost-based:
+# Facet answers on the facet.localhost origin; every hosted app answers at
+# its own `*.apps.localhost` hostname (the host field on an app.App
+# document). The apps.localhost suffix keeps app hosts three labels deep —
+# a two-label wildcard (*.localhost) cannot carry valid certificates
+# (verifiers refuse the match) and would shadow facet.localhost's exact
+# certificate.
+# Note: because Facet no longer answers at bare `localhost`, BACKEND_URL and
+# every direct backend address must use the loopback literal form
+# (http://127.0.0.1:3000) — the App::Hosting dispatcher reserves 127.0.0.1
+# and ::1, but not the name `localhost`.
+host: "https://facet.localhost:3443"
+
+# API origin. Falls back to `host` when absent. Used where the canonical
+# public-facing URL is needed (e.g. links in outbound email). In dev the
+# Caddy proxy is the single browser-facing entrypoint, so all three origins
+# collapse to the facet.localhost vhost.
+base_url: "https://facet.localhost:3443"
+
+# Addresses of the reverse proxies that face this server. A request whose
+# socket peer is on this list may carry a trusted X-Forwarded-For chain;
+# the client-IP resolver (`Util::ClientIp`) walks that chain and keys the
+# login throttle, the OAuth rate limits, and telemetry on the client
+# address it names. Every other request keeps its socket host, and the
+# header is ignored — a client can set the header to any value. Entries
+# are bare hosts: no port, no brackets. Keep the list exact: every entry
+# here can choose the client IP the server sees.
+#
+# Dev runs behind the local Caddy proxy (caddy/Caddyfile), which dials
+# the backend at the loopback literals.
+trusted_proxies:
+  - "127.0.0.1"
+  - "::1"
+
+# Artifact origin — a *separate* origin from `base_url` in production.
+# Browsers receive signed capability URLs and cannot send a DPoP proof, so
+# byte streaming is isolated to this origin (no cookies, CORS blocked).
+# Must be set; `Facet::Config` fails loud when absent.
+#
+# In dev there is no separate artifact origin — the facet.localhost vhost is
+# the only byte-streaming entrypoint, so both origins collapse to
+# `https://facet.localhost:3443`. Production deployments should set this to
+# a dedicated CDN-style origin (e.g. `https://cdn.example.com`).
+artifact_base_url: "https://facet.localhost:3443"
+
+# HMAC secret for artifact grant signed URLs. Production deployments should
+# supply the secret via the `ARTIFACT_GRANT_SECRET` env var instead of the
+# checked-in YAML. The optional `artifact_grant_secret_previous` (or
+# `ARTIFACT_GRANT_SECRET_PREVIOUS` env var) enables two-key rotation.
+artifact_grant_secret: "dev-grant-secret-do-not-use-in-production"
+
+# Tunable knobs for the artifact subsystem. The section is required —
+# `artifact.storage` fails loud at config load when absent or malformed.
+# Optional knobs keep safe defaults. Documented in `doc/backend/artifact.md`.
+artifact:
+  prune_after_days: 30
+  # Ephemeral grant TTL. A freshly-minted download link is valid for this
+  # many seconds — long enough to outlive a normal "render page → click
+  # link" round-trip (the prior 60s value expired between mint and click
+  # on human-paced browsing). Production may shorten this to align with
+  # a stricter threat model.
+  grant_ttl_seconds: 3600
+  grant_ttl_media_seconds: 21600
+  max_upload_bytes: 52428800
+  # One-time upload-capability TTL (`Artifact::UploadGrants`). An MCP agent
+  # mints the URL and POSTs its multipart body within this window; the URL
+  # burns on first use. Short by design — a mint-to-upload gap is seconds.
+  upload_grant_ttl_seconds: 300
+  # Object storage for artifact bytes. Required. `type` is "filesystem"
+  # or "s3"; the bucket/credential fields only apply to "s3". S3
+  # credentials may also come from the S3_ACCESS_KEY_ID /
+  # S3_SECRET_ACCESS_KEY / S3_ENDPOINT env vars. Documented in
+  # `doc/backend/artifact.md`.
+  storage:
+    type: filesystem
+    directory: tmp/uploads/dev/store
+
+event:
+  url: "redis://localhost:6379/0"
+  partitions: 16
+  maxlen: 1000000
+  stream:
+    max_block_time: 2.0
+    min_block_time: 0.1
+    block_time_delta: 0.7
+    max_messages_count: 10
+
+# PostgreSQL session tuning for the server process. `statement_timeout_ms`
+# is applied as the session `statement_timeout` on every pooled connection
+# at boot (`Database.init`). CLI entry points (migrate, db_reset, reproject,
+# export/import) keep no timeout so long DDL cannot be cancelled. Optional;
+# Optional; omit the section (or the key) for no timeout. See
+# `doc/backend/config.md` and `Facet::Config::DatabaseConfig`.
+database:
+  statement_timeout_ms: 5000
+
+# Read/write route table (`database.cluster`). Commented by default — dev
+# runs the back-compat single pool. Uncommenting it gives reads their own
+# pool at the same URL; the read-only enforcement hook (not the host)
+# refuses writes on it, so a mislabelled read path fails loud instead of
+# silently writing. Entries that share a URL keep separate pools. A
+# `replica:` sub-entry swaps the ro pool for a real replica host. See
+# `doc/backend/config.md` for the full grammar and validation rules.
+#
+# database:
+#   statement_timeout_ms: 5000
+#   cluster:
+#     databases:
+#       main:
+#         url: !env DATABASE_URL
+#         resources: ["*"]
+
+# Logging — drives the explicit log setup (`Facet::Logging.setup`), which
+# replaces the env-driven binding the shrine shard performs at require
+# time. The section is optional; defaults shown. `LOG_LEVEL` no longer
+# affects the app process. Documented in `doc/backend/logging.md`.
+#
+# logs:
+#   format: text   # "text" (stdlib short format) or "json" (one JSON object per line)
+#   level: info    # trace | debug | info | notice | warn | error | fatal
+
+# Domain filtering for horizontal scaling.
+# Uncomment to restrict which domains this server instance handles.
+# `included` and `excluded` are mutually exclusive — do not set both.
+#
+# Examples:
+#   domains:
+#     included: [hr, crm]     # only handle these domains
+#
+#   domains:
+#     excluded: [analytics]    # handle everything except analytics
+#
+domains:
+  included: []
+  excluded: []
+
+iam:
+  jwt:
+    access_token_ttl: 900
+    refresh_token_ttl: 1209600
+    refresh_grace_window: 10
+  mfa:
+    totp:
+      enabled: true
+      window: 1
+      issuer: "Facet"
+  # Authentication mode: 'hybrid' allows password + federated login;
+  # 'oidc_only' removes the password path (the login, password-reset, and
+  # first-credential routes refuse). The SystemSettings document can pin
+  # the same value at runtime — the file is the fallback tier.
+  auth:
+    mode: hybrid
+  # Time-to-live for password reset tokens (seconds). Default 24h.
+  change_password_expiration: 86400
+  # Set to false for plain-HTTP localhost dev. True in production (HTTPS only).
+  secure_cookies: false
+
+# Instance defaults for accounts that have not picked their own values.
+# Both keys are hot: the SystemSettings document can pin them at runtime;
+# the file value is the fallback tier.
+localization:
+  default_timezone: UTC
+  default_language: en
+
+# Outbound email transport. Used by the password-reset flow and any future
+# notification surface. Bound to Carbon's adapter lifecycle.
+mail:
+  # "dev" prints emails to stdout via Carbon::DevAdapter.
+  # "smtp" sends via a real SMTP server (see smtp.* below).
+  # Production refuses to boot with "dev" unless
+  # allow_dev_adapter_in_production is true (air-gapped installs only).
+  adapter: dev
+  from_address: "no-reply@facet.local"
+  from_name: "Facet"
+  smtp:
+    host: "localhost"
+    port: 587
+    username: null
+    password: null
+    use_tls: true
+
+# Lua sandbox limits for doctype scripts.
+# - instruction_limit: max Lua VM instructions per script execution (default: 10M)
+# - memory_limit_mb: max memory the Lua state may allocate (default: 100 MB)
+# - time_limit_s: max wall-clock execution time per script (default: 5.0 seconds)
+lua:
+  instruction_limit: 10000000
+  memory_limit_mb: 100
+  time_limit_s: 5.0
+
+# Hooks (domain event/schedule hooks) scheduler tuning — `Hooks::Scheduler`
+# poll interval and Redis lease TTL. The lease TTL outlives `lua.time_limit_s`
+# so a slow script can never cause a duplicate fire once the TTL expires.
+# The section is optional; `Hooks::Config` returns these defaults when absent.
+hooks:
+  scheduler_poll_interval_s: 5.0
+  lease_ttl_s: 600
+
+# Background jobs (PostgreSQL-only job queue). Tuning for the poll-loop
+# worker that claims due rows from `background_jobs` and runs their
+# handlers. The section is optional; `JobsConfig` returns these defaults
+# when absent. With `enabled: false` the worker never starts and the
+# manager stays in enqueue-only mode (rows are inserted, nothing claims
+# them).
+jobs:
+  poll_interval_s: 5.0
+  lease_ttl_s: 60
+  batch: 32
+  sweep_interval_s: 30.0
+  retention_days: 30
+  enabled: true
+
+# Document import/export wait mode. A `wait=true` enqueue request polls
+# the job row every `wait_poll_ms` and falls back to the `202` enqueue
+# body after `wait_timeout_s` — the job keeps running either way.
+# Optional; defaults shown.
+import_export:
+  wait_poll_ms: 500
+  wait_timeout_s: 30
+  # Row cap of one import file. The whole file applies as one transaction,
+  # so the cap bounds the write volume one API call can pin; an import
+  # above the cap fails in the job with the limit named, before any row
+  # is written.
+  max_import_rows: 100000
+
+# Sidecar subsystem (cross-doctype nested records). The `reconcile_cron`
+# schedules the orphan-reconciliation cron task (`Cron::SidecarReconcile`).
+# The event-driven `SidecarSweep` subscriber handles the common path (host
+# soft-delete tombstones attached sidecars immediately); this cron is the
+# backstop for orphans the sweep missed. Optional; defaults to hourly.
+sidecar:
+  reconcile_cron: "0 */1 * * *"
+
+# Tombstone content retention. A delete tombstone keeps its
+# content/links/search payload so per-emit RBAC checks (e.g. WebSocket
+# collection subscriptions) can scope-evaluate `deleted` events. The
+# prune cron clears that payload after the retention window — storage
+# cleanup only, no feature value. Optional; defaults shown.
+tombstone:
+  content_retention_days: 30
+  prune_cron: "15 4 * * *"
+
+# Mutations retention and coalescing. Bounds the append-only `mutations`
+# table: the compaction cron replaces mutations older than the retention
+# window with one synthetic snapshot row; write-time coalescing folds
+# same-actor update bursts into one row. Rollback depth equals the
+# retention window. Optional; defaults shown.
+mutations:
+  retention_days: 180
+  retention_overrides:
+    # Drag saves on core.SchematicLayout are high-churn, low-value history:
+    # fold anything older than a week into one snapshot.
+    "core.SchematicLayout": 7
+  compaction_cron: "45 3 * * *"
+  coalesce_window_minutes: 3
+
+# Generalized secret store. Required — the store fails closed at config
+# load when master_key is missing or decodes to fewer than 32 bytes.
+# The dev value below is a literal (not a production secret); production
+# must supply it via `!env SECRETS_MASTER_KEY`.
+secrets:
+  master_key: "COhYY5IYgy9+8n9VNCtMzAwmxkiiFW6KV+YdovaUBas="
+  bcrypt_cost: 12
+  staging_ttl_seconds: 900
+  prune_after_days: 30
+  prune_cron: "45 4 * * *"
+
+# WebSocket bridge tuning. The collection cap bounds the per-emit RBAC
+# cost of collection subscriptions (fanout:domain.Doctype channels).
+# Optional; defaults shown.
+websocket:
+  collection:
+    max_subscribers_per_doctype: 32
+
+# Process-cache staleness bound. The cache-invalidation Pub/Sub fanout is
+# the fast path; `staleness_ttl_s` is the safety net that caps how long a
+# process cache (doctype definitions, OAuth origins, app hosts, the
+# replication/hooks/webhook registries, the currency registry) may serve
+# data when a fanout is lost — for example a mutation published while
+# Redis was down. `0` disables the bound. Optional; defaults shown.
+# See `doc/backend/config.md` and `Util::CacheFreshness`.
+cache:
+  staleness_ttl_s: 300
+
+# AI Assistant. The api_key is a secret; for dev it can live in the checked-in
+# YAML, but for production it should be supplied via an env-only override or a
+# config file that is git-ignored. `!env?` is the optional tier: a missing
+# variable collapses the key to null, and the assistant ships disabled — no
+# crash at boot. Export FACET_AI_API_ENDPOINT / FACET_AI_API_KEY /
+# FACET_AI_MODEL (or pin assistant.api_key in system settings) to enable it.
+# The cancel_ttl_seconds governs the Redis Pub/Sub cancel key lifetime for
+# SSE streaming turns.
+assistant:
+  api_endpoint: !env? FACET_AI_API_ENDPOINT
+  api_key: !env? FACET_AI_API_KEY
+  model: !env? FACET_AI_MODEL
+  cancel_ttl_seconds: 15
+  # Turn storage lifecycle. A turn row opens as `running` when the stream
+  # starts and flips to its terminal status at the exit path. The sweep
+  # marks running rows older than `turn_timeout_seconds` as `interrupted`
+  # — the backstop for turns whose process died mid-stream.
+  turn_timeout_seconds: 900
+  turn_sweep_cron: "*/5 * * * *"
+  # Usage-ledger retention. The daily prune deletes `assistant_usage` rows
+  # older than `usage_retention_days` whose conversation has not been
+  # updated within the window (or is gone). 0 — the default — keeps every
+  # row forever. When set, keep the window at or above the budget's
+  # rolling 30-day query window: 31 or more is always safe; a window of
+  # 1–30 under-counts every live budget and makes the daily pass log a
+  # warning (it never clamps — this config stays the source of truth).
+  usage_retention_days: 0
+  usage_prune_cron: "30 4 * * *"
+
+# Dev domain watcher — folder-authored doctypes. Uncomment to enable: the
+# server then polls `path` and applies every bundle it finds there into the
+# running system (one managed domain per child directory with a bundle.yml;
+# the bundle's source_domain names the target domain).
+#
+# - `path` is the **watch root** — a parent directory of bundles. It must be
+#   a readable directory at boot; a missing path fails loud.
+# - `poll_ms` is the poll interval (lower bound 100 ms).
+# - `documents` is the retention mode: `preserve` (default) keeps documents
+#   created through the app across sync cycles; `discard` reseeds every
+#   cycle from the bundles' `documents/` trees.
+#
+# The config line is the teardown consent: every sync replaces the managed
+# domains' definition surface (and, in discard mode, their data). Never
+# enable this in production — the boot code refuses the watcher there even
+# when the section is present. See `Facet::Dev::DomainWatcher`.
+#
+# dev:
+#   domain_watch:
+#     path: ./dev
+#     poll_ms: 500
+#     documents: preserve

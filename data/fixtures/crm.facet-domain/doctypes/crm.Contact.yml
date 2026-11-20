@@ -1,0 +1,100 @@
+---
+content:
+  icon: contact
+  domain: crm
+  fields:
+    role:
+      type: enum
+      title: Role
+      values:
+      - key: decision_maker
+        color: "#0089a7"
+        label: Decision Maker
+      - key: influencer
+        color: "#aa5d83"
+        label: Influencer
+      - key: champion
+        color: "#97751a"
+        label: Champion
+      - key: end_user
+        color: "#0089a7"
+        label: End User
+      - key: other
+        color: "#b25e5e"
+        label: Other
+      default: other
+      filters:
+        - equality
+      description: The contact's role in the sales process.
+    email:
+      type: string
+      title: Email
+      unique: true
+      required: true
+      filters:
+        - equality
+        - text_search
+      description: The contact's email address.
+    phone:
+      type: phone
+      title: Phone
+      description: The contact's phone number.
+    owner_id:
+      type: reference
+      title: Owner
+      doctype: iam.Account
+      description: The sales representative who manages this contact.
+    full_name:
+      type: data
+      title: Full Name
+      compute: contact_full_name
+      description: Computed full name from first_name and last_name.
+      compute_when:
+      - first_name
+      - last_name
+    job_title:
+      type: string
+      title: Job Title
+      description: The contact's position at a company (informational; the authoritative
+        per-company role lives on CompanyMembership).
+    last_name:
+      type: string
+      title: Last Name
+      required: true
+      filters:
+        - equality
+        - text_search
+      description: The contact's surname.
+    department:
+      type: string
+      title: Department
+      description: The department the contact works in.
+    first_name:
+      type: string
+      title: First Name
+      required: true
+      filters:
+        - equality
+        - text_search
+      description: The contact's given name.
+    is_primary:
+      type: boolean
+      title: Is Primary Contact
+      default: false
+      filters:
+        - equality
+      description: Whether this is the primary contact for a deal.
+  script: !read_file crm.Contact.lua
+  doctype: Contact
+  sidecars:
+    comments:
+      doctype: core.Comment
+      column: target
+  description: A person. Participates in companies through crm.CompanyMembership rows
+    (a contact can belong to many companies).
+  display_name: "{{ first_name }} {{ last_name }}"
+  search: "{{ first_name }} {{ last_name }} {{ email }} {{ job_title }}"
+  aggregate_root: true
+  schema_version: 1
+meta:
+  parent_id: crm

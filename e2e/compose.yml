@@ -1,0 +1,176 @@
+# One e2e stack (harness §3): PostgreSQL, Redis, backend, frontend, Caddy
+# and the Playwright runner. One scenario file = one stack = one database
+# lifetime; `run-suite.sh` boots one compose project per scenario, runs its
+# Playwright project inside, then tears the stack down.
+#
+# All ports stay fixed and internal — nothing is published to the host. The
+# stacks differ only by `COMPOSE_PROJECT_NAME` (set per scenario) and the
+# artifacts bind mount target. Origins are the dev vhosts
+# (facet.localhost, app.apps.localhost) resolved to the stack's Caddy through
+# network aliases; the browser sets the Host header.
+#
+# The Caddyfile is the unchanged dev file: `{$…}` placeholders resolve from
+# the environment below at Caddy startup. The stack's secret keys are fixed
+# literals in `stack/config.e2e.yml.tmpl` (throwaway data — see the file's
+# comments); no secret env plumbing exists anywhere in this harness.
+
+name: facet-e2e
+
+services:
+  postgres:
+    # Postgres 16 + the pgvector extension. The schema does not require
+    # pgvector (0001 enables the optional `vector` extension only when the
+    # server has it) — this image keeps the E2E stack RAG-ready for
+    # assistant retrieval embeddings.
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: facet
+      POSTGRES_PASSWORD: facet
+      POSTGRES_DB: facet
+    # Ephemeral by design — the database dies with the scenario stack.
+    volumes:
+      - type: tmpfs
+        target: /var/lib/postgresql/data
+        tmpfs:
+          size: 1gb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U facet"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+
+  redis:
+    image: redis:7
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 3s
+
+  backend:
+    build:
+      context: ..
+      dockerfile: e2e/docker/backend.Dockerfile
+      # Feeds the OCI version/revision labels (throwaway defaults).
+      args:
+        VERSION: ${VERSION:-dev}
+        REVISION: ${REVISION:-unknown}
+    image: facet-e2e-backend
+    environment:
+      APP_ENV: e2e
+      DATABASE_URL: postgres://facet:facet@postgres:5432/facet
+    tmpfs:
+      - /data:size=1g
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/Healthcheck >/dev/null"]
+      interval: 3s
+      timeout: 3s
+      retries: 60
+      start_period: 15s
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: e2e/docker/frontend.Dockerfile
+      # Feeds the OCI version/revision labels (throwaway defaults).
+      args:
+        VERSION: ${VERSION:-dev}
+        REVISION: ${REVISION:-unknown}
+    image: facet-e2e-frontend
+    environment:
+      # Production SvelteKit derives the SSR fetch origin from these
+      # headers (set by Caddy), so `event.fetch('/Api/…')` rides Caddy to
+      # the backend — no direct backend address anywhere (harness §3).
+      PROTOCOL_HEADER: x-forwarded-proto
+      HOST_HEADER: host
+      # The SSR rewrite in hooks.server.ts applies whenever BACKEND_URL is
+      # set: SvelteKit's event.fetch never reaches Caddy for non-route
+      # paths (it re-enters its own pipeline), so /Api/* and /OAuth/* load
+      # fetches must go to the backend directly.
+      BACKEND_URL: http://backend:3000
+      # Caddy's internal CA root, for the SSR fetches to
+      # https://facet.localhost:3443 from inside this container. Caddy
+      # provisions the root at startup, before the runner (the only page
+      # visitor) can trigger an SSR fetch — hence no start dependency on
+      # Caddy here (it would close a cycle: caddy waits on this service).
+      NODE_EXTRA_CA_CERTS: /caddy-data/caddy/pki/authorities/local/root.crt
+    volumes:
+      - caddy_data:/caddy-data:ro
+    healthcheck:
+      # TCP probe only — every page hits the auth hook, so no HTTP probe
+      # path is meaningful before a session exists (harness §3).
+      test: ["CMD", "node", "-e", "require('net').connect({host:'127.0.0.1',port:4173},function(){process.exit(0)}).on('error',function(){process.exit(1)})"]
+      interval: 2s
+      timeout: 3s
+      retries: 45
+      start_period: 10s
+
+  caddy:
+    image: caddy:2
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    environment:
+      BACKEND_URL: http://backend:3000
+      FRONTEND_URL: frontend:4173
+      HTTPS_PORT: "3443"
+    volumes:
+      - ../caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      default:
+        aliases:
+          - facet.localhost
+          - app.apps.localhost
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 3443"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+
+  runner:
+    # Root context: the runner image also builds the facet CLI (packages/cli)
+    # so the app-head-to-toe scenario can deploy through the real binary
+    # (hermetic — invoked as the local dist build, no pnpx fetch).
+    build:
+      context: ..
+      dockerfile: e2e/docker/runner.Dockerfile
+      # Feeds the OCI version/revision labels (throwaway defaults).
+      args:
+        VERSION: ${VERSION:-dev}
+        REVISION: ${REVISION:-unknown}
+    image: facet-e2e-runner
+    profiles: ["run"]
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+      caddy:
+        condition: service_healthy
+    working_dir: /e2e
+    environment:
+      # Node clients (Playwright requests, the CLI later) get the CA file
+      # once the runner entrypoint confirmed it exists.
+      NODE_EXTRA_CA_CERTS: /caddy-data/caddy/pki/authorities/local/root.crt
+    volumes:
+      - caddy_data:/caddy-data:ro
+      - ./artifacts/${E2E_SCENARIO:-run}:/e2e/artifacts
+
+networks:
+  default: {}
+
+volumes:
+  caddy_data:
+  caddy_config:

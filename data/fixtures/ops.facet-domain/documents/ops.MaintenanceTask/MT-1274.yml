@@ -1,0 +1,15 @@
+---
+content:
+  name: Calibrate D
+  status: blocked
+  ends_at: "2026-02-27T14:00:00Z"
+  subject: Sensor D
+  starts_at: "2026-02-27T13:00:00Z"
+  scheduled_on: "2026-02-27"
+  scheduled_days:
+    end: "2026-02-27"
+    start: "2026-02-27"
+  scheduled_window:
+    end: "2026-02-27T14:00:00Z"
+    start: "2026-02-27T13:00:00Z"
+meta: {}

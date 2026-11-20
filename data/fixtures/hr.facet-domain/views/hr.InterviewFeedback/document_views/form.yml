@@ -1,0 +1,33 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+    - type: section
+      label: Interview
+      children:
+      - type: row
+        layout: 1fr 240px
+        children:
+        - type: input
+          field: round
+        - type: input
+          field: by
+      - type: input
+        field: date
+    - type: section
+      label: Assessment
+      children:
+      - type: row
+        layout: minmax(200px, 1fr) minmax(280px, 2fr)
+        children:
+        - type: input
+          field: score
+        - type: input
+          field: rec
+      - type: input
+        field: notes
+  parent_doctype: hr.InterviewFeedback
+meta:
+  parent_id: hr.InterviewFeedback

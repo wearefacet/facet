@@ -1,0 +1,87 @@
+doctype: Account
+domain: iam
+schema_version: 1
+aggregate_root: true
+display_name: "{{ name }}"
+search: "{{ email }} {{ name }}"
+description: "A user account in the identity and access management domain. Each Account represents an authenticated actor with assigned roles."
+icon: user-cog
+fields:
+  email:
+    type: string
+    required: true
+    unique: true
+    title: Email
+    description: "The account's email address, used for authentication and identification."
+    pattern: "^[^@]+@[^@]+\\.[^@]+$"
+    pattern_flags: ""
+    filters: [equality, text_search]
+  name:
+    type: string
+    required: true
+    title: "Display Name"
+    description: "A human-readable display name for the account."
+  status:
+    type: enum
+    values:
+    - { key: pending, color: "#a9692d" }
+    - { key: active, color: "#008f79" }
+    - { key: suspended, color: "#c05f2a" }
+    - { key: disabled, color: "#d84c50" }
+    default: active
+    title: Status
+    description: "The current status of the account. `pending` marks an invited account that has not completed its bootstrap yet; it may log in with its temporary password but is otherwise inactive until first use."
+    filters: [equality]
+  roles:
+    type: array
+    title: Roles
+    description: "The list of role documents assigned to this account, stored as qualified reference ids ({domain}.{Doctype}.{id})."
+    items:
+      type: reference
+      doctype: "iam.Roles"
+  default_role:
+    type: reference
+    doctype: "iam.Roles"
+    title: "Default Role"
+    description: "The role used by default when no explicit role is requested during login, stored as a qualified reference id ({domain}.{Doctype}.{id}). Falls back to the first assigned role if not set."
+  mfa_enabled:
+    type: boolean
+    default: false
+    title: "MFA Enabled"
+    description: "Whether the account has multi-factor authentication enabled."
+    filters: [equality]
+  must_change_pw:
+    type: boolean
+    default: false
+    title: "Must Change Password"
+    description: "When true, the next login short-circuits into the password-change bootstrap before any session is issued. Cleared by the change-password and password-reset flows."
+    filters: [equality]
+  service_account:
+    type: boolean
+    default: false
+    title: "Service Account"
+    description: "A machine identity. A service account cannot log in with email and password and cannot receive password-reset emails; it authenticates through API keys instead. It still holds roles and organizational_unit scopes like any other account."
+    filters: [equality]
+  organizational_unit:
+    type: string
+    default: "/"
+    title: "Organizational Unit"
+    description: "A folder-like path that identifies the account's organizational unit. Always begins and ends with '/' (e.g. '/', '/engineering/', '/engineering/backend/'). A null value falls back to the '/' root at creation. Used by RBAC scope predicates via the $organizational_unit token."
+    filters: [equality, text_search]
+  federated_identities:
+    type: array
+    title: "Federated Identities"
+    description: "OIDC identities linked to this account. Each entry binds an external provider's durable subject (`sub`). The join key is (provider, subject) — never email."
+    filters: [membership]
+    items:
+      type: object
+      properties:
+        provider:
+          type: string
+          required: true
+        subject:
+          type: string
+          required: true
+        linked_at:
+          type: datetime
+          required: true

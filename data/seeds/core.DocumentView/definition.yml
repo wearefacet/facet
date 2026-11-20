@@ -1,0 +1,28 @@
+doctype: DocumentView
+domain: core
+schema_version: 1
+aggregate_root: false
+member_of: DocType
+description: "A view definition for a document type. Each view specifies a presentation mode (kind) and optional template configuration."
+fields:
+  parent_doctype:
+    type: string
+    required: true
+    title: "Parent DocType"
+    description: "The qualified doctype ID this view belongs to (e.g. 'hr.Employee'). Must match the parent core.DocType document ID."
+    filters: [equality]
+  kind:
+    type: enum
+    required: true
+    title: "View Kind"
+    description: "The presentation layout type for this view. One of: view, form, inline, card, quickView."
+    values: [view, form, inline, card, quickView]
+    filters: [equality]
+  template:
+    type: object
+    title: Template
+    description: "Free-form template configuration for the view."
+scopes:
+  domain_editor:
+    description: "Views whose parent doctype belongs to a domain the actioner is a domain editor of"
+    where: { parent_doctype: "$editor_doctypes" }

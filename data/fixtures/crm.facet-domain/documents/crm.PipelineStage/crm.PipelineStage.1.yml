@@ -1,0 +1,8 @@
+---
+content:
+  name: Prospecting
+  color: "#9E9E9E"
+  order: 1
+  is_closing_stage: false
+  probability_default: 10
+meta: {}

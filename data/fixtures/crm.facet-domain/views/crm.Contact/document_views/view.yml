@@ -1,0 +1,56 @@
+---
+content:
+  kind: view
+  template:
+    type: col
+    children:
+    - type: header
+      chips:
+      - role
+      subtitle: $job_title
+      title: $full_name
+    - type: grid
+      layout: 3 1
+      children:
+      - type: col
+        children:
+        - type: section
+          label: Contact
+          children:
+          - type: field
+            label: Email
+            value: $email
+            children:
+            - href: $email
+              type: email
+              label: $email
+          - type: field
+            label: Phone
+            value: $phone
+          - type: field
+            label: Department
+            value: $department
+          - type: field
+            label: Is Primary Contact
+            value: $is_primary
+        - type: section
+          label: Identity
+          children:
+          - type: field
+            label: First Name
+            value: $first_name
+          - type: field
+            label: Last Name
+            value: $last_name
+      - type: sidebar
+        children:
+        - type: section
+          label: Owner
+          children:
+          - type: field
+            value: $owner_id
+        - type: record-meta
+          history: true
+  parent_doctype: crm.Contact
+meta:
+  parent_id: crm.Contact

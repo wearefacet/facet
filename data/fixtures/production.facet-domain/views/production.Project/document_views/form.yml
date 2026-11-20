@@ -1,0 +1,42 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+    - type: section
+      label: Identity
+      children:
+      - type: row
+        layout: 1fr 240px
+        children:
+        - type: input
+          field: name
+        - type: input
+          field: status
+    - type: section
+      label: Details
+      children:
+      - type: row
+        layout: minmax(220px, 1fr) minmax(280px, 2fr)
+        children:
+        - type: input
+          field: team
+        - type: input
+          field: owner_id
+    - type: section
+      label: Description
+      children:
+      - type: input
+        field: description
+    - type: relation
+      label: Tasks
+      source:
+        rel: tasks
+        kind: children
+      doctype: production.Task
+      editable: true
+      limit: 25
+  parent_doctype: production.Project
+meta:
+  parent_id: production.Project

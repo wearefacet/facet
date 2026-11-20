@@ -1,0 +1,69 @@
+#!/bin/sh
+# Bootstrap the dev database with fixture data from portable-domain bundles.
+#
+# Each `data/fixtures/{domain}.facet-domain/` bundle is one fixture domain.
+# Every bundle is imported with `--merge`: the import creates the domain
+# when it does not exist yet (fresh after `db_reset`) and merges when it
+# does (the `iam` domain is pre-created by `IAM::Seed`), so re-running the
+# script is always safe.
+#
+# Intended to run after `scripts/facet db_reset seed:dev`:
+#
+#   scripts/facet db_reset seed:dev
+#   scripts/import-fixtures
+#
+# Uses `scripts/facet` (the `crystal run` wrapper) so no build step is needed.
+
+set -eu
+
+# Resolve the repo root whether the script is invoked by absolute path or
+# from within `scripts/`. The bundles live at `<root>/data/fixtures/`.
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+root=$(CDPATH= cd -- "$script_dir/.." && pwd)
+fixtures_dir="$root/data/fixtures"
+facet="$script_dir/facet"
+
+if [ ! -d "$fixtures_dir" ]; then
+  echo "import-fixtures: $fixtures_dir does not exist" >&2
+  exit 1
+fi
+
+# Discover bundles in dependency order. The directory name is
+# `{domain}.facet-domain`. The order matters: the import authoring gate
+# (B-277) validates iam.Roles permission scopes against registered
+# doctypes, so the `production` bundle must import before `iam`.
+# List bundles in dependency order; a bundle directory missing from the
+# list is an error, not a silent skip.
+ordered="crm hr identity ops production iam"
+
+bundles=""
+for name in $ordered; do
+  bundle_dir="$fixtures_dir/$name.facet-domain"
+  if [ -d "$bundle_dir" ]; then
+    if [ -z "$bundles" ]; then
+      bundles="$bundle_dir"
+    else
+      bundles="$bundles,$bundle_dir"
+    fi
+  fi
+done
+
+for bundle_dir in "$fixtures_dir"/*.facet-domain; do
+  [ -d "$bundle_dir" ] || continue
+  name=$(basename "$bundle_dir" .facet-domain)
+  case " $ordered " in
+    *" $name "*) ;;
+    *)
+      echo "import-fixtures: bundle '$name' is not in the import-order list; add it to \$ordered in $0" >&2
+      exit 1
+      ;;
+  esac
+done
+
+if [ -z "$bundles" ]; then
+  echo "import-fixtures: no fixture bundles found in $fixtures_dir" >&2
+  exit 1
+fi
+
+echo "== importing fixture domains (--merge creates missing domains) =="
+"$facet" domain:import "$bundles" --merge "$@"

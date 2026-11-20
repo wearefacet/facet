@@ -1,0 +1,23 @@
+doctype: DomainEditor
+domain: core
+schema_version: 1
+aggregate_root: true
+display_name: "{{ account }} on {{ domain }}"
+description: "One row per (account, domain) pair listing who may edit a domain's definition (its domain document, doctypes, and document views). The list itself is admin-only: a domain editor cannot add co-editors, which keeps the grant chain rooted at the wildcard role. Managed through the generic document API."
+color: "#607D8B"
+fields:
+  account:
+    type: reference
+    doctype: iam.Account
+    required: true
+    title: Account
+    description: "The account that may edit the domain. Stored in the qualified reference form, so RBAC $self predicates and context-set resolution match it directly."
+    filters: [equality]
+  domain:
+    type: string
+    required: true
+    title: Domain
+    description: "The id of the core.Domain document this account may edit — the live slug (crm) or the draft id (_abc123). The domain name of a core.Domain row lives in the row id, not in content, which is why this field stores the row id."
+    pattern: "^(_[0-9a-z]+|[a-z][a-z0-9\\-]*)$"
+    pattern_flags: ""
+    filters: [equality]

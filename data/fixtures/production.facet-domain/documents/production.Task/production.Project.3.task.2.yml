@@ -1,0 +1,8 @@
+---
+content:
+  title: Ship new welcome screen
+  status: in_progress
+  assignee: iam.Account.account_growth_sam
+  estimate_hours: 12
+meta:
+  parent_id: production.Project.3

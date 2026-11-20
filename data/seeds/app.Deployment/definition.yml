@@ -1,0 +1,48 @@
+doctype: Deployment
+domain: app
+schema_version: 1
+aggregate_root: true
+display_name: "{{ note }}"
+description: "One uploaded build of an app. Created only by the deploy route (POST /Api/app/:id/deploy), which uploads the file parts into the artifact store, computes the next revision, and substitutes the artifact ids — all inside the create transaction, so a failed file rolls the whole deploy back. Serving resolves app → active_deployment → the files map."
+fields:
+  app_id:
+    type: reference
+    doctype: app.App
+    required: true
+    title: App
+    description: "The app this build belongs to. Injected by the deploy route from the URL; the route is the authority, a caller-supplied value is overwritten."
+    filters: [equality]
+  revision:
+    type: integer
+    required: true
+    read_only: true
+    title: Revision
+    description: "Monotonically increasing per app (max + 1), computed by the deploy route. Read-only: callers cannot set it. Gives the CLI and the UI a stable, sortable label without relying on ULID order."
+  note:
+    type: string
+    title: Note
+    description: "Human label for the build, e.g. 'fix login bug'."
+  spa:
+    type: boolean
+    default: true
+    title: SPA
+    description: "When true (the default), a request path that matches no files entry falls back to index.html — single-page-app history routing. When false, only exact file paths are served."
+    filters: [equality]
+  files:
+    type: array
+    title: Files
+    description: "The build's file map. One entry per uploaded file; the pair (path, file artifact id) is what serving walks. Entries whose file was not part of the request are rejected by the deploy route."
+    items:
+      type: object
+      title: "File Entry"
+      description: "A single file of the build: its URL path and the artifact id holding the bytes."
+      properties:
+        path:
+          type: string
+          required: true
+          title: Path
+          description: "URL path relative to the app root — no leading slash, no '..' segments, no empty segments (e.g. 'index.html', 'assets/app-a1b2.js'). Validated by the deploy route against a safe-path rule; serving maps request URLs through these values."
+        file:
+          type: file
+          title: File
+          description: "The uploaded artifact id. Substituted by the deploy route's multipart intake from the request's file parts; never accepted from the caller's JSON."

@@ -1,0 +1,62 @@
+---
+content:
+  icon: check-square
+  domain: production
+  fields:
+    title:
+      type: string
+      title: Title
+      required: true
+      filters:
+        - equality
+        - text_search
+      description: A short summary of the work.
+    status:
+      type: enum
+      title: Status
+      values:
+      - key: todo
+        color: "#a9692d"
+        label: Todo
+      - key: in_progress
+        color: "#a56c26"
+        label: In Progress
+      - key: blocked
+        color: "#8b68ad"
+        label: Blocked
+      - key: done
+        color: "#008f79"
+        label: Done
+      default: todo
+      filters:
+        - equality
+      description: The current workflow state of the task.
+    assignee:
+      type: reference
+      title: Assignee
+      doctype: iam.Account
+      description: The account responsible for completing the task.
+    estimate_hours:
+      min: 0
+      type: integer
+      title: Estimate (hours)
+      description: The estimated effort to complete the task, in hours.
+  scopes:
+    mine:
+      where:
+        assignee: $self
+      description: Tasks assigned to the actioner
+    active:
+      where:
+        status: in_progress
+      description: Tasks not yet done or blocked
+  doctype: Task
+  member_of: Project
+  description: A unit of work inside a project. Child of Project; covered by `production.Project`
+    permissions via prefix matching.
+  display_name: "{{ title }}"
+  search: "{{ title }}"
+  aggregate_root: false
+  schema_version: 1
+meta:
+  parent_id: production

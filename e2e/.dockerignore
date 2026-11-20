@@ -1,0 +1,7 @@
+# Runner image build context (e2e/).
+
+node_modules
+.auth
+artifacts
+test-results
+pnpm-store

@@ -1,0 +1,21 @@
+{
+  "description": "La surface Lua d’un script : globales, namespaces et signatures.",
+  "generated_note": "> Généré depuis `src/lua` par `make gen-docs-lua`. Ne modifiez pas ce fichier à la main.",
+  "intro": "Les scripts Lua s’exécutent dans un bac à sable avec un ensemble fixe de globales. Les hooks de cycle de vie, les actions nommées et les hooks de domaine reçoivent la surface complète : `document`, `notification`, `util`, `date` et `math.clamp`. Les champs calculés reçoivent `util` et `date`, plus une table `document` en lecture seule. Ils n’ont ni `notification` ni les fonctions `util` adossées à une requête. Les scripts reçoivent aussi l’objet `ctx` et un collecteur `error(msg)` ; voir les scripts de cycle de vie et les garde-fous.",
+  "doc_heading": "## document",
+  "doc_intro": "Les lectures acceptent un `domain.Doctype` qualifié en premier argument. Une lecture hors domaine demande une attribution de domaine active ; le contenu renvoyé se réduit aux champs couverts.",
+  "note_fence_open": ":::note",
+  "note_text": "Chaque fonction `document.*` lève une erreur Lua rattrapable en cas d’échec. Traitez-la avec `pcall`.",
+  "note_fence_close": ":::",
+  "notification_heading": "## notification",
+  "util_heading": "## util",
+  "date_heading": "## date",
+  "math_heading": "## math",
+  "col_function": "Fonction",
+  "col_signature": "Signature",
+  "col_purpose": "Rôle",
+  "related_heading": "Voir aussi",
+  "related_lifecycle": "- [Scripts de cycle de vie et garde-fous](/fr/build/lifecycle-scripts-guards/) — où s’exécutent create, update, delete et les actions.",
+  "related_event_hooks": "- [Hooks d’événements](/fr/build/event-hooks/) — les hooks de domaine qui partagent cette surface.",
+  "related_sidecars": "- [Sidecars](/fr/build/sidecars/) — doctypes de pièces jointes gérés par le système, avec leurs propres hooks."
+}

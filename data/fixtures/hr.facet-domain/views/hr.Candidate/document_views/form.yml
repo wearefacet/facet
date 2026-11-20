@@ -1,0 +1,185 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+    - type: section
+      label: Identity
+      children:
+      - type: row
+        layout: 1fr 240px
+        children:
+        - type: input
+          field: full_name
+        - type: input
+          field: headline
+      - type: row
+        layout: minmax(200px, 1fr) minmax(280px, 2fr)
+        children:
+        - type: input-text
+          field: email
+          label: Email
+          required: true
+          inputType: email
+        - type: input
+          field: phone
+      - type: input
+        field: photo
+      - type: input
+        field: resume
+        placeholder: Drop a file or click to attach
+    - type: section
+      label: Pipeline
+      children:
+      - type: row
+        layout: repeat(3, minmax(160px, 1fr))
+        children:
+        - type: input
+          field: status
+        - type: input
+          field: source
+        - type: input
+          field: remote_pref
+    - type: section
+      label: Application
+      children:
+      - type: row
+        layout: minmax(200px, 1fr) minmax(280px, 2fr)
+        children:
+        - type: input
+          field: applied_date
+        - type: input
+          field: available_from
+      - type: row
+        layout: minmax(200px, 1fr) minmax(280px, 2fr)
+        children:
+        - type: input
+          field: notice_days
+        - type: input
+          field: willing_reloc
+      - type: input
+        field: salary_exp
+      - type: input
+        field: owner
+    - type: section
+      label: Background
+      children:
+      - type: row
+        layout: repeat(3, minmax(160px, 1fr))
+        children:
+        - type: input
+          field: total_exp
+        - type: input
+          field: avg_score
+        - type: input
+          field: rating
+      - type: row
+        layout: minmax(200px, 1fr) minmax(280px, 2fr)
+        children:
+        - type: input
+          field: birth_date
+        - type: input
+          field: gender
+      - type: input
+        field: nationality
+    - type: section
+      label: Address
+      children:
+      - type: object
+        field: address
+        children:
+        - type: row
+          layout: minmax(260px, 2fr) minmax(140px, 1fr) minmax(90px, 0.6fr) minmax(140px,
+            1fr)
+          children:
+          - type: input
+            field: street
+            label: Street
+          - type: input
+            field: city
+            label: City
+          - type: input
+            field: region
+            label: Region
+          - type: input
+            field: postal_code
+            label: Postal Code
+          - type: input
+            field: country
+            label: Country
+    - type: section
+      label: Social
+      children:
+      - type: object
+        field: social
+        children:
+        - type: row
+          layout: repeat(3, minmax(160px, 1fr))
+          children:
+          - type: input
+            field: github
+            label: GitHub
+          - type: input
+            field: linkedin
+            label: LinkedIn
+          - type: input
+            field: portfolio
+            label: Portfolio
+    - type: section
+      label: Emergency Contact
+      children:
+      - type: object
+        field: emergency
+        children:
+        - type: row
+          layout: minmax(200px, 1fr) minmax(280px, 2fr)
+          children:
+          - type: input
+            field: name
+            label: Name
+          - type: input
+            field: relationship
+            label: Relationship
+        - type: input
+          field: phone
+    - type: section
+      label: Summary
+      children:
+      - type: input
+        field: summary
+    - type: relation
+      label: Work Experience
+      limit: 25
+      source:
+        rel: experiences
+        kind: children
+      doctype: hr.CandidateExperience
+      editable: true
+    - type: relation
+      label: Education
+      limit: 25
+      source:
+        rel: education
+        kind: children
+      doctype: hr.CandidateEducation
+      editable: true
+    - type: relation
+      label: Skills
+      limit: 25
+      source:
+        rel: skills
+        kind: children
+      doctype: hr.CandidateSkill
+      editable: true
+    - type: relation
+      label: Interviews
+      limit: 25
+      source:
+        rel: interviews
+        kind: children
+      doctype: hr.InterviewFeedback
+      editable: true
+  parent_doctype: hr.Candidate
+meta:
+  parent_id: hr.Candidate

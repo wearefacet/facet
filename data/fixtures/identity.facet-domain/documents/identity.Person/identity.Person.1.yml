@@ -1,0 +1,10 @@
+---
+content:
+  kind: internal
+  email: jane.doe@company.com
+  contact:
+    phone: +1-555-0123
+    address: 456 Oak Ave, San Francisco, CA 94102
+  full_name: Jane Doe
+  date_of_birth: "1990-06-15"
+meta: {}

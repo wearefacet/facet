@@ -1,0 +1,233 @@
+# Facet production config — the template the backend image ships.
+#
+# The image entrypoint copies this file to /app/config.{APP_ENV}.yml (default
+# APP_ENV=production) when that file is absent — so an image boots with
+# environment supplies alone. Every `!env NAME` below must be set in the
+# environment (docker compose reads them from the git-ignored `.env` next to
+# `docker/compose.prod.yml`; see `docker/.env.example`). A missing variable
+# fails the boot loud at config load — that is the contract, never a silent
+# default.
+#
+# This file is the quick-start surface, not the interface. Operators replace
+# it wholesale — three overwrite paths, each winning over the auto-render:
+#
+#   1. mount over the default name:  -v ./facet.yml:/app/config.production.yml
+#   2. custom environment:           -e APP_ENV=staging -v ./config.staging.yml:/app/config.staging.yml
+#   3. any path, image tree untouched:
+#                                    -e FACET_CONFIG_FILE=/etc/facet/facet.yml -v ./facet.yml:/etc/facet/facet.yml:ro
+#
+# A mounted file may use `!env` references itself — the same expansion runs
+# on every config file, so secrets stay out of mounted files exactly as out
+# of this example. `DATABASE_URL` and `APP_ENV` stay env-only; the backend
+# reads them outside YAML by design.
+#
+# Secrets: generate each one with `openssl rand -base64 32`. Never reuse a
+# value across environments.
+
+# ── Public origins ────────────────────────────────────────────────────────
+#
+# FACET_HOST is the external-facing host (may carry a scheme; when it does,
+# discovery documents and the MCP resource identifier use it verbatim).
+# FACET_BASE_URL is the API origin (links in outbound email). Both must name
+# the public main URL — discovery documents, OAuth redirects, and the
+# reserved app-host set derive from them, so they must agree with the edge.
+# FACET_ARTIFACT_BASE_URL is the artifact byte-streaming origin: browsers
+# receive signed capability URLs there, so in production it should be a
+# dedicated origin (e.g. https://cdn.example.tld), never the main host.
+host: !env FACET_HOST
+base_url: !env FACET_BASE_URL
+artifact_base_url: !env FACET_ARTIFACT_BASE_URL
+
+# HMAC secret for artifact grant signed URLs. Anyone holding it can mint
+# valid download links for every artifact.
+artifact_grant_secret: !env FACET_ARTIFACT_GRANT_SECRET
+
+# ── Artifact store ────────────────────────────────────────────────────────
+#
+# The artifact subsystem knobs. The section is required — `artifact.storage`
+# fails loud when absent or malformed. The filesystem store below writes to
+# the image's pre-created, volume-backed /data/store. For S3, swap the
+# storage block per doc/backend/artifact.md (credentials may come from the
+# S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY / S3_ENDPOINT env vars).
+artifact:
+  prune_after_days: 30
+  grant_ttl_seconds: 3600
+  grant_ttl_media_seconds: 21600
+  max_upload_bytes: 52428800
+  storage:
+    type: filesystem
+    directory: /data/store
+
+# ── Event bus (Redis) ─────────────────────────────────────────────────────
+#
+# Redis is a required dependency. The URL names the Redis the event bus
+# publishes to and consumes from — the compose stack's `redis` service.
+event:
+  url: !env FACET_REDIS_URL
+
+# ── Identity and sessions ─────────────────────────────────────────────────
+iam:
+  jwt:
+    access_token_ttl: 900
+    refresh_token_ttl: 1209600
+    refresh_grace_window: 10
+  mfa:
+    totp:
+      enabled: true
+      window: 1
+      issuer: "Facet"
+  # Authentication mode: 'hybrid' allows password + federated login;
+  # 'oidc_only' removes the password path. The SystemSettings document can
+  # pin the same value at runtime — the file is the fallback tier.
+  auth:
+    mode: hybrid
+  # Time-to-live for password reset tokens (seconds). Default 24h.
+  change_password_expiration: 86400
+  # Secure cookies ride HTTPS-only connections. The stack terminates TLS at
+  # the Caddy edge and speaks plain HTTP internally, and the browser hop is
+  # HTTPS — keep true. Only a plain-HTTP private deployment may set false.
+  secure_cookies: true
+
+# Instance defaults for accounts that have not picked their own values.
+# Both keys are hot: the SystemSettings document can pin them at runtime;
+# the file value is the fallback tier.
+localization:
+  default_timezone: UTC
+  default_language: en
+
+# ── Outbound email (SMTP) ─────────────────────────────────────────────────
+#
+# Production refuses the dev adapter: password-reset, invite, and MFA links
+# would print to stdout and never reach users. Air-gapped installs that must
+# keep stdout delivery set `mail.allow_dev_adapter_in_production: true` in a
+# mounted config file (never here — the release template always names real
+# delivery).
+mail:
+  adapter: smtp
+  from_address: !env FACET_MAIL_FROM_ADDRESS
+  from_name: !env FACET_MAIL_FROM_NAME
+  smtp:
+    host: !env FACET_SMTP_HOST
+    port: 587
+    username: !env FACET_SMTP_USERNAME
+    password: !env FACET_SMTP_PASSWORD
+    use_tls: true
+
+# ── PostgreSQL session tuning ─────────────────────────────────────────────
+#
+# Applied as the session statement_timeout on every pooled connection of the
+# server process. CLI entry points (migrate, seed:core, reproject,
+# export/import) keep no timeout so long DDL cannot be cancelled.
+database:
+  statement_timeout_ms: 5000
+
+# Domain filtering for horizontal scaling. `included` and `excluded` are
+# mutually exclusive — do not set both. Empty arrays handle every domain.
+domains:
+  included: []
+  excluded: []
+
+# ── Lua sandbox limits (doctype scripts) ──────────────────────────────────
+lua:
+  instruction_limit: 10000000
+  memory_limit_mb: 100
+  time_limit_s: 5.0
+
+# Hooks (domain event/schedule hooks) scheduler tuning. The lease TTL
+# outlives lua.time_limit_s so a slow script can never cause a duplicate
+# fire once the TTL expires. Optional; defaults shown.
+hooks:
+  scheduler_poll_interval_s: 5.0
+  lease_ttl_s: 600
+
+# ── Background jobs (PostgreSQL-only queue) ───────────────────────────────
+jobs:
+  poll_interval_s: 5.0
+  lease_ttl_s: 60
+  batch: 32
+  sweep_interval_s: 30.0
+  retention_days: 30
+  enabled: true
+
+# Document import/export wait mode. A wait=true enqueue request polls the
+# job row every wait_poll_ms and falls back to the 202 enqueue body after
+# wait_timeout_s. Optional; defaults shown.
+import_export:
+  wait_poll_ms: 500
+  wait_timeout_s: 30
+
+# Sidecar subsystem (cross-doctype nested records). The cron is the
+# backstop for orphans the event-driven sweep missed. Optional; hourly.
+sidecar:
+  reconcile_cron: "0 */1 * * *"
+
+# ── Retention windows ─────────────────────────────────────────────────────
+#
+# Tombstone payloads: a delete tombstone keeps content/links/search so
+# per-emit RBAC checks can scope-evaluate deleted events; the cron clears
+# the payload after the window (storage cleanup only).
+tombstone:
+  content_retention_days: 30
+  prune_cron: "15 4 * * *"
+
+# Mutations history: the compaction cron replaces pre-retention mutations
+# with one synthetic snapshot row (rollback depth equals the window);
+# coalescing folds same-actor update bursts into one row. 0 retention_days
+# keeps history forever.
+mutations:
+  retention_days: 180
+  retention_overrides:
+    # Drag saves on core.SchematicLayout are high-churn, low-value history:
+    # fold anything older than a week into one snapshot.
+    "core.SchematicLayout": 7
+  compaction_cron: "45 3 * * *"
+  coalesce_window_minutes: 3
+
+# ── Secret store ──────────────────────────────────────────────────────────
+#
+# FACET_SECRETS_MASTER_KEY protects every stored secret (password hashes,
+# API credentials, TOTP seeds) — generate it with `openssl rand -base64 32`
+# and never reuse it across environments. The store fails closed when the
+# key decodes to fewer than 32 bytes.
+secrets:
+  master_key: !env FACET_SECRETS_MASTER_KEY
+  bcrypt_cost: 12
+  staging_ttl_seconds: 900
+  prune_after_days: 30
+  prune_cron: "45 4 * * *"
+
+# WebSocket bridge tuning: bounds the per-emit RBAC cost of collection
+# subscriptions. Optional; default shown.
+websocket:
+  collection:
+    max_subscribers_per_doctype: 32
+
+# Process-cache staleness bound. The cache-invalidation Pub/Sub fanout is
+# the fast path; this bound caps how long a process cache may serve data
+# when a fanout is lost (e.g. a mutation published while Redis was down).
+# 0 disables the bound. Optional; default shown.
+cache:
+  staleness_ttl_s: 300
+
+# ── AI Assistant (optional) ───────────────────────────────────────
+#
+# `!env?` is the optional tier: a missing variable collapses the key to
+# null, and the assistant ships disabled — the app runs without it, the
+# dock stays visible, and conversation creation explains the posture
+# instead of crashing at boot. Export FACET_AI_API_ENDPOINT /
+# FACET_AI_API_KEY / FACET_AI_MODEL to enable the provider, or pin the
+# values (including the key secret) in system settings at runtime.
+assistant:
+  api_endpoint: !env? FACET_AI_API_ENDPOINT
+  api_key: !env? FACET_AI_API_KEY
+  model: !env? FACET_AI_MODEL
+  cancel_ttl_seconds: 15
+  turn_timeout_seconds: 900
+  turn_sweep_cron: "*/5 * * * *"
+  usage_retention_days: 0
+  usage_prune_cron: "30 4 * * *"
+
+# ── OIDC providers ────────────────────────────────────────────────────────
+#
+# Identity providers are NOT config — they are `iam.OIDCProvider` documents
+# managed in the app (see doc/backend/oidc.md). No config section exists.

@@ -1,0 +1,162 @@
+---
+title: Clés du fichier de configuration
+description: Chaque clé de configuration, avec sa section, son type et sa valeur par défaut.
+audience: [operator]
+features: [PLT-01]
+sidebar:
+  order: 15
+verified_at: 7af699f3
+---
+
+> Généré depuis `src/config.cr` et les chargeurs de section qu’il appelle par `make gen-docs-config-keys`. Ne modifiez pas ce fichier à la main.
+
+Cette page sert à consulter une clé de configuration : sa section, son type et sa valeur par défaut.
+
+Le fichier de configuration YAML (`config.{env}.yml`) est la source unique de vérité de la configuration à l’exécution. `APP_ENV` choisit le fichier ; `FACET_CONFIG_FILE` nomme un chemin explicite. Une balise `!env NAME` développe une variable d’environnement n’importe où dans le fichier.
+
+Les chargeurs lisent les clés ci-dessous :
+- Une clé absente garde sa valeur par défaut intégrée.
+- Une clé obligatoire fait échouer le démarrage quand elle manque.
+
+| Section | Clé | Type | Défaut | Rôle |
+|---|---|---|---|---|
+| (root) | `artifact_base_url` | string | required | Origin that serves artifact bytes. |
+| (root) | `artifact_grant_secret` | string | required | Signing key for artifact upload and download grants; may come from the ARTIFACT_GRANT_SECRET env var. |
+| (root) | `artifact_grant_secret_previous` | string | — | Previous grant secret, still accepted during rotation; may come from the ARTIFACT_GRANT_SECRET_PREVIOUS env var. |
+| (root) | `base_url` | string | defaults to host | Public base URL used to build absolute links. |
+| (root) | `host` | string | "localhost:3000" | Host and port the server binds to; may carry a scheme when a reverse proxy terminates TLS. |
+| (root) | `snapshot_every` | integer | 25 | Mutations between automatic projection snapshots. |
+| (root) | `trusted_proxies` | string list | [] | Reverse-proxy addresses whose X-Forwarded-For chains the server trusts. |
+| artifact | `grant_ttl_media_seconds` | integer | 21600 | Signed download-link TTL for audio and video, in seconds. |
+| artifact | `grant_ttl_seconds` | integer | 3600 | Signed download-link TTL for documents and images, in seconds. |
+| artifact | `max_upload_bytes` | integer | 52428800 | Hard cap on one upload body, in bytes. |
+| artifact | `prune_after_days` | integer | 30 | Days an unreferenced artifact stays eligible before the prune deletes it. |
+| artifact | `upload_grant_ttl_seconds` | integer | 300 | TTL of a signed upload URL, in seconds. |
+| artifact.storage | `access_key_id` | string | — | S3 access key; may come from the S3_ACCESS_KEY_ID env var. |
+| artifact.storage | `bucket` | string | — | S3 bucket; required for s3. |
+| artifact.storage | `directory` | string | "tmp/uploads/dev" | Filesystem store directory. |
+| artifact.storage | `endpoint` | string | — | S3-compatible endpoint; may come from the S3_ENDPOINT env var. |
+| artifact.storage | `public` | boolean | false | Serve artifact bytes from a public origin when true. |
+| artifact.storage | `region` | string | — | S3 region; required for s3. |
+| artifact.storage | `secret_access_key` | string | — | S3 secret key; may come from the S3_SECRET_ACCESS_KEY env var. |
+| artifact.storage | `type` | string | "filesystem" | Object storage backend: filesystem or s3; the storage entry itself is required. |
+| assistant | `api_endpoint` | string | "https://api.openai.com/v1" | OpenAI-compatible API endpoint. |
+| assistant | `api_key` | string | — | API key for the assistant provider. |
+| assistant | `auto_execute_tools` | boolean | true | Run registered tools without a confirmation round-trip. |
+| assistant | `cancel_ttl_seconds` | integer | 15 | TTL of the Redis cancel key for a streaming turn. |
+| assistant | `max_history` | integer | — | Conversation turns kept in history; empty means unlimited. |
+| assistant | `max_tokens` | integer | — | Completion token cap; empty means no cap. |
+| assistant | `model` | string | "gpt-4o" | Model identifier. |
+| assistant | `name` | string | "Assistant" | Display name shown on every assistant surface. |
+| assistant | `system_prompt` | string | — | Default persona prompt. |
+| assistant | `temperature` | number | — | Sampling temperature, 0.0 to 2.0. |
+| assistant | `turn_sweep_cron` | string | "*/5 * * * *" | Schedule of the stale-turn sweep. |
+| assistant | `turn_timeout_seconds` | integer | 900 | Seconds a running agent turn may stay un-flipped before the sweep marks it failed. |
+| assistant | `usage_prune_cron` | string | "30 4 * * *" | Schedule of the usage-ledger prune. |
+| assistant | `usage_retention_days` | integer | 0 | Days to keep the assistant usage ledger; 0 keeps it forever. |
+| cache | `staleness_ttl_s` | integer | 300 | Seconds a process cache may serve data after a lost invalidation fanout; 0 disables the bound. |
+| database | `statement_timeout_ms` | integer | — | PostgreSQL statement_timeout on every pooled connection of the server process; absent leaves the PG default. |
+| database.cluster.databases | `<name>.checkout_timeout_s` | number | — | Seconds a checkout waits for a free connection; absent leaves the driver default. |
+| database.cluster.databases | `<name>.initial_pool_size` | integer | — | Initial pool size; absent leaves the driver default. |
+| database.cluster.databases | `<name>.max_pool_size` | integer | — | Maximum pool size; absent leaves the driver default. |
+| database.cluster.databases | `<name>.replica.checkout_timeout_s` | number | — | Seconds a replica checkout waits. |
+| database.cluster.databases | `<name>.replica.initial_pool_size` | integer | — | Initial replica pool size. |
+| database.cluster.databases | `<name>.replica.max_pool_size` | integer | — | Maximum replica pool size. |
+| database.cluster.databases | `<name>.replica.url` | string | required when replica is set | Read-only replica URL for the entry. |
+| database.cluster.databases | `<name>.resources` | string list | required | Resources the entry serves: domain ids, $-prefixed subsystem tags, or *. |
+| database.cluster.databases | `<name>.url` | string | required | Connection URL of one physical database. |
+| dev.domain_watch | `documents` | string | "preserve" | Retention mode across sync cycles: preserve keeps app-created documents, discard reseeds from the bundle. |
+| dev.domain_watch | `path` | string | required when domain_watch is set | Watch root: a parent directory whose children are managed bundles. |
+| dev.domain_watch | `poll_ms` | integer | 500 | Poll interval, in milliseconds; minimum 100. |
+| domains | `excluded` | string list | [] | Serve every domain except these when set. Mutually exclusive with included. |
+| domains | `included` | string list | [] | Serve only these domains when set. |
+| event | `lag_check_cron` | string | "*/10 * * * *" | Schedule of the consumer-lag check. |
+| event | `lag_warn_entries` | integer | 100000 | Consumer-group lag that logs a trim-loss warning. |
+| event | `maxlen` | integer | 1000000 | Approximate stream length cap; older entries are trimmed. |
+| event | `partitions` | integer | 16 | Stream partitions (shards) per stream. |
+| event | `url` | string | required | Redis connection URL for the event bus; the section itself is required. |
+| event.stream | `block_time_delta` | number | 0.7 | Factor the block time adapts by. |
+| event.stream | `max_block_time` | number | 2.0 | Longest XREADGROUP block, in seconds. |
+| event.stream | `max_messages_count` | integer | 10 | Messages read per XREADGROUP call. |
+| event.stream | `min_block_time` | number | 0.1 | Shortest XREADGROUP block, in seconds. |
+| hooks | `lease_ttl_s` | integer | 600 | Hook scheduler lease lifetime, in seconds. |
+| hooks | `scheduler_poll_interval_s` | number | 5.0 | Seconds between hook scheduler polls. |
+| iam | `change_password_expiration` | integer | 86400 | Lifetime of credential links (reset, invite, first credential), in seconds. |
+| iam | `secure_cookies` | boolean | true | Set the Secure flag on auth cookies; disable only for plain-HTTP dev. |
+| iam.auth | `mode` | string | "hybrid" | Login modes: hybrid keeps passwords, oidc_only removes them. |
+| iam.jwt | `access_token_ttl` | integer | 900 | Access-token lifetime, in seconds. |
+| iam.jwt | `dpop_iat_future_tolerance` | integer | 10 | Accepted DPoP proof iat skew into the future, in seconds. |
+| iam.jwt | `dpop_iat_past_tolerance` | integer | 30 | Accepted DPoP proof iat skew into the past, in seconds. |
+| iam.jwt | `refresh_grace_window` | integer | 10 | Seconds in which a rotated refresh token still passes. |
+| iam.jwt | `refresh_token_ttl` | integer | 1209600 | Refresh-token lifetime, in seconds. |
+| iam.mfa | `enforcement` | string | "preferred" | MFA enforcement: preferred asks, always blocks un-enrolled logins. |
+| iam.mfa.totp | `enabled` | boolean | true | Offer TOTP multi-factor login. |
+| iam.mfa.totp | `issuer` | string | "Facet" | Issuer name in the otpauth URI. |
+| iam.mfa.totp | `window` | integer | 1 | Accepted TOTP time steps around the current one. |
+| import_export | `max_import_rows` | integer | 100000 | Row cap of one import file; the job refuses a larger file with the limit named, before any row is written. |
+| import_export | `wait_poll_ms` | integer | 500 | Poll interval of a wait=true import or export request, in milliseconds. |
+| import_export | `wait_timeout_s` | integer | 30 | Seconds a wait=true request waits before falling back to the enqueue response. |
+| jobs | `batch` | integer | 32 | Rows claimed per pass. |
+| jobs | `enabled` | boolean | true | Start the background-job worker. |
+| jobs | `lease_ttl_s` | integer | 60 | Seconds a claimed job stays running before the lease sweep requeues it. |
+| jobs | `long_lease_ttl_s` | integer | 3600 | Lease horizon for long job kinds such as import and export, in seconds. |
+| jobs | `poll_interval_s` | number | 5.0 | Seconds the worker waits between claim passes. |
+| jobs | `retention_days` | integer | 30 | Days terminal job rows are kept. |
+| jobs | `sweep_interval_s` | number | 30.0 | Seconds between expired-lease sweeps. |
+| localization | `default_language` | string | "en" | Language accounts follow until they pick their own; must be in the platform allowlist. |
+| localization | `default_timezone` | string | "UTC" | Timezone accounts follow until they pick their own; must be a loadable IANA name. |
+| logs | `format` | string | "text" | Log output format: text or json. |
+| logs | `level` | string | "info" | Minimum severity bound to every source. |
+| lua | `instruction_limit` | integer | 10000000 | Lua VM instruction budget per script run. |
+| lua | `memory_limit_mb` | integer | 100 | Lua VM memory cap, in MB. |
+| lua | `time_limit_s` | number | 5.0 | Lua VM wall-clock cap, in seconds. |
+| mail | `adapter` | string | "dev" | Delivery adapter: dev prints to stdout, smtp delivers through the smtp sub-object; production refuses dev. |
+| mail | `allow_dev_adapter_in_production` | boolean | false | Escape hatch that lets the stdout adapter boot in production. |
+| mail | `from_address` | string | "no-reply@facet.local" | Sender address for outbound email. |
+| mail | `from_name` | string | "Facet" | Display name on the From header. |
+| mail.smtp | `host` | string | "localhost" | SMTP server hostname; required when the adapter is smtp. |
+| mail.smtp | `password` | string | — | SMTP auth password. |
+| mail.smtp | `port` | integer | 587 | SMTP server port. |
+| mail.smtp | `use_tls` | boolean | true | Upgrade the connection with STARTTLS. |
+| mail.smtp | `username` | string | — | SMTP auth username; empty for open relays. |
+| mcp | `max_batch_ops` | integer | 25 | Op cap of the batch tool's ops array. |
+| mcp | `max_concurrency_per_sid` | integer | 4 | In-flight MCP dispatches allowed per session id. |
+| mcp | `max_response_bytes` | integer | 1048576 | Byte cap applied to serialized tool results. |
+| mcp | `max_result_rows` | integer | 200 | Row cap applied to tool queries. |
+| mutations | `coalesce_window_minutes` | integer | 3 | Window in which same-actor, same-channel updates fold into one mutation; 0 disables. |
+| mutations | `compaction_cron` | string | "45 3 * * *" | Schedule of the mutation compaction pass. |
+| mutations | `retention_days` | integer | 180 | Days of mutation history before compaction folds them into a snapshot; 0 keeps history forever. |
+| mutations | `retention_overrides` | map | {} | Per-doctype retention window in days, keyed by domain.Doctype. |
+| secrets | `bcrypt_cost` | integer | 12 | Cost parameter for hash-mode payloads. |
+| secrets | `master_key` | string | required | Base64 AES-256 key for the secret store; production supplies it via !env SECRETS_MASTER_KEY. |
+| secrets | `prune_after_days` | integer | 30 | Days sealed rows are kept before the prune task deletes them. |
+| secrets | `prune_cron` | string | "45 4 * * *" | Schedule of the secret-store prune. |
+| secrets | `staging_ttl_seconds` | integer | 900 | TTL of staged secret handles, in seconds. |
+| sidecar | `reconcile_cron` | string | "0 */1 * * *" | Schedule of the sidecar orphan-reconciliation task. |
+| tombstone | `content_retention_days` | integer | 30 | Days a deleted document keeps its payload; 0 keeps it forever. |
+| tombstone | `prune_cron` | string | "15 4 * * *" | Schedule of the tombstone content prune. |
+| webhook | `allow_insecure_urls` | boolean | false | Allow non-https webhook targets when true. |
+| webhook | `allowed_hosts` | string list | [] | Target hosts the private-network gate passes even when they resolve private. |
+| webhook | `backoff_seconds` | integer list | [10, 60, 300, 1800, 7200] | Retry delays, in seconds. |
+| webhook | `max_attempts` | integer | 5 | Delivery attempts before a delivery ends failed. |
+| webhook | `reconcile_cron` | string | "7 */1 * * *" | Schedule of the webhook enqueue reconciler. |
+| webhook | `reconcile_window_hours` | integer | 24 | How far back the reconciler looks; must stay below jobs.retention_days. |
+| webhook | `timeout_s` | integer | 10 | Connect and read timeout for one outbound POST, in seconds. |
+| websocket.collection | `max_subscribers_per_doctype` | integer | 32 | Cap on collection subscribers per doctype fanout channel. |
+
+Certaines valeurs peuvent venir de l’environnement plutôt que du fichier :
+
+- `DATABASE_URL` — le pool de connexions unique rétrocompatible, utilisé quand la section `database.cluster` est absente.
+- `ARTIFACT_GRANT_SECRET` et `ARTIFACT_GRANT_SECRET_PREVIOUS` — lus quand les clés YAML correspondantes sont absentes.
+- `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_ENDPOINT` — lus quand les clés `artifact.storage` correspondantes sont absentes.
+
+Plusieurs clés se valident au chargement et font échouer le démarrage en cas de valeur incorrecte. Exemples :
+
+- `logs.level` et `logs.format`
+- `iam.mfa.enforcement` et `iam.auth.mode`
+- `webhook.reconcile_window_hours` par rapport à `jobs.retention_days`
+- la longueur de `secrets.master_key`
+
+## Voir aussi
+
+- [/fr/operate/configuration-files/](/fr/operate/configuration-files/)

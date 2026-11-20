@@ -1,0 +1,31 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+    - type: section
+      label: Identity
+      children:
+      - type: row
+        layout: 1fr 240px
+        children:
+        - type: input
+          field: name
+        - type: input
+          field: order
+    - type: section
+      label: Behavior
+      children:
+      - type: row
+        layout: minmax(200px, 1fr) minmax(280px, 2fr)
+        children:
+        - type: input
+          field: probability_default
+        - type: input
+          field: color
+      - type: input
+        field: is_closing_stage
+  parent_doctype: crm.PipelineStage
+meta:
+  parent_id: crm.PipelineStage

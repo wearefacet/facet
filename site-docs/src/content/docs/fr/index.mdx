@@ -1,0 +1,37 @@
+---
+title: Bienvenue sur Facet
+description: Facet est la plateforme applicative gouvernée pour les organisations de petite et moyenne taille.
+template: splash
+hero:
+  tagline: Données, droits et historique pour les applications que vos équipes construisent.
+  actions:
+    - text: Évaluer
+      link: /fr/start/
+      icon: right-arrow
+    - text: Construire
+      link: /fr/tutorials/
+      icon: right-arrow
+    - text: Opérer
+      link: /fr/operate/
+      icon: right-arrow
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Facet est une plateforme applicative gouvernée pour les organisations de
+petite et moyenne taille. Vous modélisez vos données métier dans des domaines.
+Chaque application — écrite par votre équipe ou par un agent IA — lit et écrit
+ces données sous les mêmes droits contrôlés, avec la trace complète de chaque
+modification.
+
+<CardGrid stagger>
+	<LinkCard title="Évaluer" href="/fr/start/">
+		Ce qu’est Facet, comment il protège les données, et s’il convient à votre organisation.
+	</LinkCard>
+	<LinkCard title="Construire" href="/fr/tutorials/">
+		Apprendre en faisantà : lancer Facet, construire un domaine, donner accès à votre équipe, livrer une application.
+	</LinkCard>
+	<LinkCard title="Opérer" href="/fr/operate/">
+		Déployer avec des conteneurs, configurer la pile, et garder le service en bonne santé en production.
+	</LinkCard>
+</CardGrid>

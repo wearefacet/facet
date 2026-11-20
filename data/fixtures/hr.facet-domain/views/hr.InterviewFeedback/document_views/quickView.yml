@@ -1,0 +1,36 @@
+---
+content:
+  kind: quickView
+  template:
+    type: col
+    children:
+    - type: row
+      layout: "auto auto 1fr"
+      children:
+      - type: capsule
+        value: $round
+      - type: capsule
+        value: $rec
+    - type: hr
+    - type: section
+      label: Interview
+      children:
+      - type: field
+        label: Interviewer
+        value: $by
+      - type: field
+        label: Interview Date
+        value: $date
+    - type: section
+      label: Assessment
+      children:
+      - type: field
+        label: Score
+        value: $score
+      - type: field
+        label: Recommendation
+        value: $rec
+    - type: record-meta
+  parent_doctype: hr.InterviewFeedback
+meta:
+  parent_id: hr.InterviewFeedback

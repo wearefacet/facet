@@ -1,0 +1,18 @@
+---
+content:
+  kind: card
+  template:
+    type: col
+    children:
+    - type: field
+      label: Status
+      value: $status
+    - type: field
+      label: Job Title
+      value: $job_title
+    - type: field
+      label: Department
+      value: $department
+  parent_doctype: hr.Employee
+meta:
+  parent_id: hr.Employee

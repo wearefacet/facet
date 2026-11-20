@@ -1,0 +1,37 @@
+---
+content:
+  level: 30
+  name: production_editor
+  description: Edit access to projects the actioner owns and tasks they are assigned.
+    Demonstrates named-scope restrictions on production doctypes.
+  permissions:
+  - "on": production.Project
+    action: read
+  - "on": production.Project
+    scope:
+    - $mine
+    action: update
+  - "on": production.Project
+    scope:
+    - $mine
+    action: delete
+  - "on": production.Task
+    scope:
+    - $mine
+    action: read
+  - "on": production.Task
+    scope:
+    - $mine
+    action: update
+  - "on": production.Task
+    scope:
+    - $mine
+    action: delete
+  visible_tags:
+  - default
+  connectivity:
+  - mcp
+  - webhook
+  - api
+  - assistant
+meta: {}

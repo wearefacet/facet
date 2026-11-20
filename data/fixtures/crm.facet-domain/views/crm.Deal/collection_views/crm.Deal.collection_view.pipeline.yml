@@ -1,0 +1,11 @@
+---
+content:
+  name: Pipeline
+  config:
+    kanban:
+      mode: values
+      group_by: status
+      page_size: 25
+  surface: kanban
+meta:
+  parent_id: crm.Deal

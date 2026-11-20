@@ -1,0 +1,92 @@
+# iam.OIDCProvider — one identity provider per document.
+#
+# Inbound OIDC configuration moved from the `iam.oidc` config section into
+# the doctype system: create, edit, enable, and disable providers as
+# documents, so every change is event-sourced, audited, and
+# rollback-able. The login flow itself is unchanged (`src/iam/oidc/` —
+# authorization code + PKCE, id_token verification, linking, JIT
+# provisioning); only the configuration surface moved. See
+# `doc/backend/oidc.md`.
+#
+# The registry (`OIDC::ProviderStore`) serves **enabled** providers only
+# and excludes tombstones; a fresh install seeds no documents, so SSO
+# stays off until an admin configures a provider.
+#
+# `client_secret` is a top-level `secret` field (mode `sealed`): staged
+# through `POST /api/secrets/stage`, adopted inside the mutation, and the
+# content carries only the `{mode, version, set_at}` marker. The token
+# exchange reveals it at use time (`Secrets.reveal`) — never in a
+# response, a list, or `search`. It does not appear in `search` (omitted)
+# or `display_name` (static).
+#
+# RBAC: the editor and viewer role seeds carve this doctype out of their
+# wildcard grants (an editor must not create a provider pointed at their
+# own IdP — self-escalation). Admin keeps everything through the
+# wildcard.
+doctype: OIDCProvider
+domain: iam
+schema_version: 1
+aggregate_root: true
+display_name: "OIDC providers"
+description: "Inbound identity providers for federated login (Keycloak, Okta, ...). One document per provider: the discovery issuer, the client pair, the email-domain allowlist, and the JIT-provisioning role. The `name` is the URL segment of /auth/oidc/{name} and is immutable after create. The client secret is sealed in the secret store — staged out-of-band, revealed only for the token exchange. Enabled providers appear on the login page; disabled ones deny like unknown names."
+fields:
+  name:
+    type: string
+    required: true
+    unique: true
+    title: Name
+    description: "URL-safe identifier used in /auth/oidc/{name}. Immutable after creation. Lowercase alphanumeric with hyphens."
+    pattern: "^[a-z0-9-]+$"
+    pattern_flags: ""
+    min: 1
+    max: 64
+    filters: [equality]
+  label:
+    type: string
+    title: Label
+    description: "Display name on the login page's SSO button. The create hook defaults it to the name."
+  issuer:
+    type: string
+    required: true
+    title: Issuer
+    description: "IdP issuer URL — the base of the discovery fetch. Must be an absolute https URL; plain http is accepted only on a loopback host (localhost, *.localhost, 127.0.0.1, ::1) for dev/e2e mock IdPs (validated by the create/update hook)."
+  client_id:
+    type: string
+    required: true
+    title: Client ID
+    description: "OIDC client id registered at the identity provider."
+  client_secret:
+    type: secret
+    mode: sealed
+    required: true
+    title: Client Secret
+    description: "Confidential-client secret. Staged through the stage/adopt flow; shows as set/not-set, never as a value. Revealed only for the token exchange — never displayed, listed, or logged."
+  domains:
+    type: array
+    title: Email domains
+    description: "Email-domain allowlist for email-match linking and JIT provisioning. Lowercased and must be non-empty entries. Empty allows link-based login only."
+    items:
+      type: string
+  default_role:
+    type: reference
+    doctype: iam.Roles
+    title: Default role
+    description: "Role assigned to JIT-provisioned accounts of this provider, overriding the instance-wide provisioning roles (core.SystemSettings, iam.oidc.provision_roles). Applies at creation only. When empty, provisioned accounts receive the instance baseline — with neither, provisioning denies."
+  auto_provision:
+    type: boolean
+    default: false
+    title: Auto-provision
+    description: "When true, an unknown verified identity with an allowlisted email gets an account provisioned with this provider's default_role, or the instance-wide provisioning roles when the provider sets none."
+    filters: [equality]
+  scopes:
+    type: array
+    title: Scopes
+    description: "OIDC scopes requested at the authorization endpoint. The create hook defaults to [openid, email, profile] when absent."
+    items:
+      type: string
+  enabled:
+    type: boolean
+    default: true
+    title: Enabled
+    description: "Per-provider switch. The registry and the login-page listing serve enabled providers only; a disabled provider denies exactly like an unknown name."
+    filters: [equality]

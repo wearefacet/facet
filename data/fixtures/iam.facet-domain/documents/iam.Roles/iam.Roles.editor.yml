@@ -1,0 +1,22 @@
+---
+content:
+  level: 30
+  name: editor
+  description: Can create, update, delete, and read documents across all domains.
+  permissions:
+  - "on": "*.*"
+    action: create
+  - "on": "*.*"
+    action: update
+  - "on": "*.*"
+    action: delete
+  - "on": "*.*"
+    action: read
+  visible_tags:
+  - default
+  connectivity:
+  - mcp
+  - webhook
+  - api
+  - assistant
+meta: {}

@@ -1,0 +1,8 @@
+---
+content:
+  name: Closed Lost
+  color: "#607D8B"
+  order: 6
+  is_closing_stage: true
+  probability_default: 0
+meta: {}

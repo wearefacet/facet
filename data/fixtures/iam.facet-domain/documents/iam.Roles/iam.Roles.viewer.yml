@@ -1,0 +1,16 @@
+---
+content:
+  level: 20
+  name: viewer
+  description: Read-only access to all resources.
+  permissions:
+  - "on": "*.*"
+    action: read
+  visible_tags:
+  - default
+  connectivity:
+  - mcp
+  - webhook
+  - api
+  - assistant
+meta: {}

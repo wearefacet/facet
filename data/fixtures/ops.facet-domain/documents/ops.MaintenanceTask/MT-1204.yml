@@ -1,0 +1,15 @@
+---
+content:
+  name: Belt check
+  status: in_progress
+  ends_at: "2026-03-03T10:30:00Z"
+  subject: Conveyor A
+  starts_at: "2026-03-03T09:00:00Z"
+  scheduled_on: "2026-03-03"
+  scheduled_days:
+    end: "2026-03-03"
+    start: "2026-03-03"
+  scheduled_window:
+    end: "2026-03-03T10:30:00Z"
+    start: "2026-03-03T09:00:00Z"
+meta: {}

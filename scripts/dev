@@ -1,0 +1,225 @@
+#!/usr/bin/env bash
+#
+# Dev launcher: starts Caddy (vhost routing), backend (migrate + server) and
+# frontend (vite dev) in parallel. All three processes share one terminal —
+# output is prefixed. Ctrl+C shuts down everything cleanly.
+#
+# The browser talks to Caddy on https://facet.localhost:3443 (the Facet
+# product; backend namespaces /Api, /OAuth, /.well-known, /A, /Ws go to Kemal on
+# :3000, everything else to Vite on :5173 — one origin, no Vite proxy).
+# Hosted apps answer at their own hosts under https://*.apps.localhost:3443;
+# the backend's App::Hosting pre-router serves them from app.App documents.
+#
+# Usage:
+#   ./scripts/dev               # start all (migrate + caddy + server + frontend)
+#   ./scripts/dev --no-migrate  # skip the migration step
+#   ./scripts/dev --no-caddy    # skip Caddy (backend-only; the app needs Caddy)
+#
+# Assumes: crystal, pnpm, caddy on PATH. APP_ENV defaults to "dev".
+
+set -euo pipefail
+
+# ── Config ────────────────────────────────────────────────────────────────
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+APP_ENV="${APP_ENV:-dev}"
+SKIP_MIGRATE=0
+SKIP_CADDY=0
+
+for arg in "$@"; do
+	case "$arg" in
+		--no-migrate) SKIP_MIGRATE=1 ;;
+		--no-caddy) SKIP_CADDY=1 ;;
+		-h|--help)
+			echo "Usage: $0 [--no-migrate] [--no-caddy]"
+			echo "  --no-migrate  Skip the database migration step"
+			echo "  --no-caddy    Skip the Caddy proxy (backend-only; the app needs Caddy)"
+			exit 0
+			;;
+		*)
+			echo "Unknown option: $arg" >&2
+			exit 1
+			;;
+	esac
+done
+
+# ── Load root .env files into the environment ────────────────────────────
+# Mirror the backend's `load_dotenv` precedence exactly (see
+# `doc/backend/cli.md` → Dotenv loader):
+#
+#   1. The shell environment wins — no dotenv file overrides it.
+#   2. `.env` loads first.
+#   3. `.env.$APP_ENV` loads on top; it may override `.env` keys.
+#
+# Every entry point (`scripts/dev`, `scripts/init`, the `facet` binary)
+# then resolves the same values — notably `DATABASE_URL`. Caddy's
+# `{$BACKEND_URL:...}` placeholders and the frontend's
+# `$env/dynamic/private` read this environment too.
+
+# Names the shell exported before any file loaded. A single padded string
+# keeps the membership check simple.
+_ENV_SHELL_KEYS=" "
+for _env_key in $(compgen -e); do
+	_ENV_SHELL_KEYS="$_ENV_SHELL_KEYS$_env_key "
+done
+unset _env_key
+
+# Exports the KEY=VALUE pairs of one dotenv file. Skips blank lines,
+# comments, lines without '=', and keys bash cannot export. A shell key is
+# never overridden; each later file overrides the ones before it.
+load_env_file() {
+	local file="$1" line key value
+	[ -f "$file" ] || return 0
+	while IFS= read -r line || [ -n "$line" ]; do
+		line="${line%%\r}"
+		[ -z "$line" ] && continue
+		case "$line" in
+			\#*) continue ;;
+			*=*) ;;
+			*) continue ;;
+		esac
+		key="${line%%=*}"
+		value="${line#*=}"
+		case "$key" in
+			'' | *[!A-Za-z0-9_]*) continue ;;
+		esac
+		case "$_ENV_SHELL_KEYS" in
+			*" $key "*) continue ;;
+		esac
+		export "$key=$value"
+	done < "$file"
+}
+
+load_env_file "$ROOT_DIR/.env"
+load_env_file "$ROOT_DIR/.env.$APP_ENV"
+
+# ── Helpers ───────────────────────────────────────────────────────────────
+cleanup() {
+	local pids="$1"
+	for pid in $pids; do
+		if kill -0 "$pid" 2>/dev/null; then
+			kill "$pid" 2>/dev/null || true
+		fi
+	done
+	# Give them a moment, then force-kill if still alive.
+	sleep 0.5
+	for pid in $pids; do
+		if kill -0 "$pid" 2>/dev/null; then
+			kill -9 "$pid" 2>/dev/null || true
+		fi
+	done
+}
+trap 'echo -e "\n[dev] Shutting down…"; cleanup "$ACTIVE_PIDS"; exit 0' \
+	INT TERM EXIT
+
+ACTIVE_PIDS=""
+
+# Prefix every line with [backend] / [frontend]. Piped from a child process's
+# stdout — the pipe, not a pid, is how we receive lines.
+prefix_stream() {
+	local label="$1"
+	while IFS= read -r line; do
+		printf '\033[36m[%s]\033[0m %s\n' "$label" "$line"
+	done
+}
+
+# ── Pre-flight ────────────────────────────────────────────────────────────
+echo "[dev] APP_ENV=$APP_ENV"
+echo "[dev] Root: $ROOT_DIR"
+echo "[dev] Checking dependencies…"
+
+command -v pnpm >/dev/null 2>&1 || { echo "[dev] Error: pnpm not on PATH" >&2; exit 1; }
+if [ "$SKIP_CADDY" -eq 0 ]; then
+	command -v caddy >/dev/null 2>&1 || {
+		echo "[dev] Error: caddy not on PATH (install it or pass --no-caddy)" >&2
+		exit 1
+	}
+fi
+
+# ── Migrate ─────────────────────────────────────────────────────────────────
+if [ "$SKIP_MIGRATE" -eq 0 ]; then
+	echo "[dev] Running database migrations…"
+	(
+		cd "$ROOT_DIR"
+		export APP_ENV
+		scripts/facet migrate
+	)
+	echo "[dev] Migrations complete."
+else
+	echo "[dev] Skipping migrations (--no-migrate)."
+fi
+
+# ── Start caddy, backend & frontend in parallel ────────────────────────────
+echo "[dev] Starting backend (scripts/facet -- server)…"
+echo "[dev] Starting frontend (pnpm dev)…"
+
+if [ "$SKIP_CADDY" -eq 0 ]; then
+	# Stop any Caddy from a previous run so the config reload takes effect.
+	caddy stop >/dev/null 2>&1 || true
+	echo "[dev] Starting Caddy (vhost routing on https://facet.localhost:3443)…"
+	(
+		cd "$ROOT_DIR"
+		exec caddy run --config caddy/Caddyfile
+	) 2>&1 | prefix_stream "caddy" &
+	CADDY_PID=$!
+fi
+
+# Launch backend in background
+(
+	cd "$ROOT_DIR"
+	export APP_ENV
+	scripts/facet server
+) 2>&1 | prefix_stream "backend" &
+BACKEND_PID=$!
+
+# Launch frontend in background immediately (no wait for backend)
+(
+	cd "$ROOT_DIR/frontend"
+	# FACET_HIDE_DEV_URLS: vite.config.ts then drops Vite's Local/Network URL
+	# lines. The raw :5173 origin shows the wrong-origin page, and the [dev]
+	# summary below already shows the real entry point.
+	export FACET_HIDE_DEV_URLS=1
+	exec pnpm dev
+) 2>&1 | prefix_stream "frontend" &
+FRONTEND_PID=$!
+
+ACTIVE_PIDS="$BACKEND_PID $FRONTEND_PID"
+[ -n "${CADDY_PID:-}" ] && ACTIVE_PIDS="$CADDY_PID $ACTIVE_PIDS"
+
+# Wait for the backend to be ready. The frontend (Vite) starts fast and is
+# not probed here — probing it via `curl http://localhost:5173/` would trigger
+# SvelteKit's `handleAuth` hook on every poll, calling `/Api/iam/me` and
+# redirecting to `/Login` (the exact startup noise this script avoids).
+echo "[dev] Waiting for backend to be ready…"
+for i in $(seq 1 60); do
+	if curl -sf -o /dev/null "http://127.0.0.1:3000/Healthcheck" 2>/dev/null; then
+		BACKEND_READY=1
+		echo "[dev] Backend is ready."
+	fi
+
+	# Exit loop once the backend is ready
+	if [ -n "${BACKEND_READY:-}" ]; then
+		break
+	fi
+
+	sleep 1
+	if [ "$i" -eq 60 ]; then
+		[ -z "${BACKEND_READY:-}" ] && echo "[dev] Warning: backend not responding after 60s — continuing anyway."
+	fi
+done
+
+echo
+echo "[dev] ──────────────────────────────────────────────────────"
+if [ "$SKIP_CADDY" -eq 0 ]; then
+	echo "[dev] Facet (via Caddy)  → https://facet.localhost:3443"
+	echo "[dev] Hosted apps        → https://*.apps.localhost:3443"
+else
+	echo "[dev] Backend  → http://127.0.0.1:3000"
+	echo "[dev] Frontend is dev-server-only: /Api works through Caddy only."
+	echo "[dev] Rerun without --no-caddy and open https://facet.localhost:3443"
+fi
+echo "[dev] Press Ctrl+C to stop."
+echo "[dev] ──────────────────────────────────────────────────────"
+echo
+
+# Keep the script alive until either child exits.
+wait

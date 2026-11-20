@@ -1,0 +1,59 @@
+doctype: LoginEvent
+domain: iam
+schema_version: 1
+aggregate_root: true
+display_name: "{{ event }}"
+search: "{{ event }} {{ account_id }} {{ details }}"
+description: "Append-only audit log for authentication and authorization events. Written for successful logins, logouts, token refreshes, and security-significant events like lockouts and MFA changes. Phase 6 adds app attribution (`app`) and app-session events (`consent_granted`, `layer1_denied`, `refresh_failed`)."
+icon: shield
+fields:
+  account_id:
+    type: string
+    required: true
+    title: "Account ID"
+    description: "The ULID of the account this event relates to."
+  event:
+    type: enum
+    required: true
+    filters: [equality, text_search]
+    values:
+      [
+        login,
+        logout,
+        refresh,
+        refresh_reuse,
+        refresh_failed,
+        app_refresh,
+        mcp_refresh,
+        lockout,
+        password_reset_requested,
+        password_reset_used,
+        password_change,
+        password_login_denied,
+        invite_sent,
+        invite_accepted,
+        temp_password_generated,
+        mfa_enrolled,
+        mfa_enabled,
+        mfa_disabled,
+        consent_granted,
+        layer1_denied,
+        api_key_created,
+        api_key_revoked,
+        session_revoked,
+        app_sessions_revoked,
+        oidc_login,
+        oidc_provisioned,
+        oidc_denied,
+      ]
+    title: "Event Type"
+    description: "The type of authentication event. `password_login_denied` records a password login refused under the 'oidc_only' authentication mode; the audit subject is the synthetic `system:password` principal and the details carry the submitted email."
+  details:
+    type: longtext
+    title: Details
+    description: "Optional additional details about the event (e.g. IP, user agent, or reason)."
+  app:
+    type: string
+    filters: [equality]
+    title: "App"
+    description: "The `app.App` projection id when this event concerns an app session (Phase 6). Empty for ordinary browser-session events. Filterable to answer: what has this app done, on whose behalf, under which role."

@@ -1,0 +1,20 @@
+{
+  "description": "Chaque clé de réglage de compte, avec son type et sa valeur par défaut.",
+  "generated_note": "> Généré depuis `src/settings/keys.cr` par `make gen-docs-account-settings`. Ne modifiez pas ce fichier à la main.",
+  "intro": "Cette page sert à trouver une clé, son type et sa valeur par défaut. Les réglages de compte sont des préférences propres à chaque compte. Le service les stocke sous forme de paires `(app, key)` et refuse toute paire que ce registre ne liste pas.",
+  "table_intro": "Le tableau liste chaque clé enregistrée, avec son type et sa valeur par défaut.",
+  "tier_note": "Deux clés portent un palier serveur avant leur défaut de registre. Un compte sans valeur propre suit les réglages système de l'instance\u00a0:",
+  "purpose_core_language": "Code de langue pour l'interface du compte.",
+  "purpose_core_pinned_doctypes": "Noms de doctypes qualifiés que le compte épingle en haut de la barre latérale.",
+  "purpose_core_pinned_collection_views": "Vues de collection que le compte épingle dans les listes de doctypes.",
+  "purpose_core_show_welcome": "Rejoue la visite de bienvenue au premier lancement quand vrai ; la visite écrit faux quand on la ferme.",
+  "purpose_core_timezone": "Fuseau horaire IANA dans lequel s'affichent les dates et heures du compte.",
+  "purpose_notifications_in_app": "Commande la diffusion des notifications côté client : cloche, badge et abonnement en direct.",
+  "col_key": "Clé",
+  "col_type": "Type",
+  "col_default": "Défaut",
+  "col_purpose": "Rôle",
+  "related_heading": "Voir aussi",
+  "related_workspace": "- [/fr/workspace/settings-sessions-api-keys/](/fr/workspace/settings-sessions-api-keys/)",
+  "related_system_settings": "- [/fr/operate/system-settings/](/fr/operate/system-settings/)"
+}

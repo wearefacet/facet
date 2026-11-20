@@ -1,0 +1,13 @@
+{
+  "description": "Chaque commande du CLI facet, avec son rôle et sa gestion des options.",
+  "generated_note": "> Généré depuis `src/cli/commands.cr` par `make gen-docs-cli`. Ne modifiez pas ce fichier à la main.",
+  "intro": "Cette page sert à trouver une commande `facet` et à vérifier comment elle gère ses options.",
+  "chain_intro": "Un seul appel `facet` peut enchaîner plusieurs commandes\u00a0: `facet db_reset --yes seed:dev`.\nUne commande qui consomme ses propres options lit tous les jetons suivants comme ses options.\nUne telle commande doit donc être la dernière de la chaîne.\nChaque autre commande ne prend que ses options préfixées d’un tiret, et la chaîne continue après elles.\n`server` est la commande par défaut et démarre le serveur HTTP.",
+  "col_command": "Commande",
+  "col_purpose": "Rôle",
+  "col_options": "Options",
+  "col_consumes_own": "consomme ses propres options",
+  "related_heading": "Voir aussi",
+  "related_bootstrap": "- [Amorçage et tâches CLI](/fr/operate/bootstrap-cli/)",
+  "related_quickstart": "- [Premiers pas avec le CLI dev](/fr/apps/quickstart-dev-cli/)"
+}

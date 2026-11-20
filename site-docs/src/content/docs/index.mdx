@@ -1,0 +1,38 @@
+---
+title: Welcome to Facet
+description: Facet is a governed application platform for small and mid-sized organizations.
+template: splash
+hero:
+  tagline: Data, permissions, and history for the apps your teams build.
+  actions:
+    - text: Evaluate
+      link: /start/
+      icon: right-arrow
+    - text: Build
+      link: /tutorials/
+      icon: right-arrow
+    - text: Operate
+      link: /operate/
+      icon: right-arrow
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Facet is a governed application platform for small and mid-sized
+organizations. You model your business data in domains. Every app — built by
+your team or by an AI agent — reads and writes that data under the same
+enforced permissions, with a full audit trail of every change.
+
+<CardGrid stagger>
+	<LinkCard title="Evaluate" href="/start/">
+		What Facet is, how it protects data, and whether it fits your organization.
+	</LinkCard>
+	<LinkCard title="Build" href="/tutorials/">
+		Learn by doing: run Facet, build a domain, give your team access, ship an
+		app.
+	</LinkCard>
+	<LinkCard title="Operate" href="/operate/">
+		Deploy with containers, configure the stack, and keep it healthy in
+		production.
+	</LinkCard>
+</CardGrid>

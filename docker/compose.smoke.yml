@@ -1,0 +1,75 @@
+# Facet smoke stack — the minimum that proves the container images work.
+# postgres + redis + backend + frontend, no Caddy: the smoke exercises the
+# images directly on their published loopback ports.
+# doc/plans/container-release.md §5.8.
+#
+# The image refs are parameters: CI passes digest refs, developers use the
+# `make docker_images` local tags (the defaults here).
+#
+# The backend boots through the entrypoint render path — the shipped config
+# example plus these env values alone. Every `!env` name of that example is
+# defined here as a throwaway test key (the same convention as the e2e
+# configs); the structural values (DATABASE_URL, BACKEND_URL) name the stack
+# services.
+
+name: facet-smoke
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.0-pg17
+    environment:
+      POSTGRES_DB: facet_smoke
+      POSTGRES_USER: facet
+      POSTGRES_PASSWORD: facet-smoke
+    # Throwaway by design — the data dies with the container.
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
+  redis:
+    image: redis:7
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  backend:
+    image: ${BACKEND_IMAGE:-facet}
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgres://facet:facet-smoke@postgres:5432/facet_smoke
+      FACET_HOST: http://facet.localhost:3443
+      FACET_BASE_URL: http://facet.localhost:3443
+      FACET_ARTIFACT_BASE_URL: http://facet.localhost:3443
+      FACET_ARTIFACT_GRANT_SECRET: smoke-artifact-grant-secret-0123456789abcdef
+      FACET_REDIS_URL: redis://redis:6379/0
+      FACET_MAIL_FROM_ADDRESS: no-reply@facet.localhost
+      FACET_MAIL_FROM_NAME: Facet
+      FACET_SMTP_HOST: localhost
+      FACET_SMTP_USERNAME: smoke
+      FACET_SMTP_PASSWORD: smoke
+      # Throwaway test key (base64 of 32 bytes) — never a real secret.
+      FACET_SECRETS_MASTER_KEY: COhYY5IYgy9+8n9VNCtMzAwmxkiiFW6KV+YdovaUBas=
+    ports:
+      - "${SMOKE_BACKEND_PORT:-18081}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-facet-frontend}
+    environment:
+      BACKEND_URL: http://backend:3000
+    ports:
+      - "${SMOKE_FRONTEND_PORT:-18082}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy

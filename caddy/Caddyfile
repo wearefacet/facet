@@ -1,0 +1,138 @@
+# Local HTTPS termination for the Facet dev stack — vhost routing.
+#
+#   https://facet.localhost:3443  ─┬─ /Healthcheck      → Kemal backend  (readiness)
+#                                  ├─ /Api/*            → Kemal backend  (127.0.0.1:3000)
+#                                  ├─ /OAuth/*          → Kemal backend
+#                                  ├─ /auth/*           → Kemal backend (OIDC sign-in)
+#                                  ├─ /.well-known/*    → Kemal backend
+#                                  ├─ /A/*              → Kemal backend (artifact streaming)
+#                                  ├─ /Ws               → Kemal backend (WebSocket)
+#                                  └─ everything else   → SvelteKit dev server ([::1]:5173)
+#
+#   https://*.apps.localhost:3443  ─── everything       → Kemal backend
+#       (hosted apps: the App::Hosting pre-router resolves the Host header
+#        against live app.App documents, so a new app goes live with no
+#        Caddy change and no restart)
+#
+#   https://localhost:3443         ─── 421 (stale pre-vhost origin)
+#
+# One TLS port, one origin per surface: the Facet product on facet.localhost,
+# every hosted app under its own host on the apps.localhost suffix. Hosted
+# apps live three labels deep (<app>.apps.localhost) on purpose: verifiers
+# (Chromium, NSS, OpenSSL) refuse to match a wildcard against a subdomain of
+# a single-label parent, so a `*.localhost` certificate is rejected for
+# `facet.localhost` — and the wildcard cert would also shadow the exact
+# cert Caddy would otherwise issue. A three-label wildcard carries none of
+# those problems. Session cookies are host-only (no Domain attribute), so
+# Facet and a hosted app never share a cookie surface. Caddy issues internal
+# certificates for facet.localhost, for the *.apps.localhost wildcard, and
+# for localhost on first run — no cert management. Browsers show the
+# private-CA warning until you run `caddy trust` once (or accept the
+# warning).
+#
+# DNS: Chromium resolves *.localhost (any label depth) to loopback by
+# itself. Every other client (Firefox, curl, the facet CLI, Node) needs
+# hosts entries:
+#
+#   127.0.0.1 facet.localhost app.apps.localhost
+#
+# (one line addition per hosted-app host the tests or you create)
+#
+# Run from the repo root (no sudo needed — unprivileged port):
+#   caddy start --config caddy/Caddyfile
+# Stop with:
+#   caddy stop
+#
+# The MCP resource identifier and the OAuth issuer follow the `host` in
+# config.dev.yml. With vhost routing, dev sets:
+#   host: https://facet.localhost:3443
+# so discovery documents and token minting agree with the URL clients use.
+{
+	auto_https disable_redirects
+}
+
+# `BACKEND_URL` (root .env) is the single source for the backend address. It
+# feeds the backend upstreams here and `handleFetch` in
+# frontend/src/hooks.server.ts (which forwards `/Api/*` SSR requests straight
+# to the backend). It must use the IPv4 loopback literal form
+# (http://127.0.0.1:3000): the App::Hosting dispatch reserves the loopback
+# literals (127.0.0.1, ::1) — a request with Host `localhost` would fall
+# through to the app-host lookup and answer 404. Caddy resolves the
+# placeholders at startup; the `:default` forms keep a bare
+# `caddy run --config caddy/Caddyfile` working when the vars are not
+# exported. `FRONTEND_URL` points at the SvelteKit dev server: Vite binds
+# [::1] only, so its upstream is the IPv6 loopback literal. Override
+# `FRONTEND_URL` to point Caddy at another frontend listener (e.g. a
+# production-build `vite preview`) without editing this file.
+# `HTTPS_PORT` is the single TLS port every site block binds; the `:default`
+# form keeps 3443 when the var is not exported.
+
+# The Facet product. Backend namespaces (keep in sync with the Kemal route
+# namespaces: /Healthcheck readiness, /Api REST + MCP, /OAuth authorization,
+# /auth OIDC sign-in, /.well-known discovery, /A artifact streaming, /Ws
+# WebSocket, /Edge on-demand TLS ask — an uppercase first segment is always an
+# application/infrastructure route; a lowercase first segment is a domain id,
+# with `/auth` the one reserved lowercase exception: it names the OIDC
+# sign-in routes (`src/iam/oidc/routes.cr`) and sits in the backend route
+# label set (`src/http/metrics_handler.cr`), while its uppercase twin
+# `Auth` stays a legal domain id), everything
+# else the SvelteKit dev server (SSR + HMR + static assets). A request
+# with a method other than GET, HEAD, or OPTIONS to a lowercase twin of
+# one of these namespaces gets a 404 from the edge, with a JSON message
+# that names the case rule. An API-only client that calls /oauth/token
+# gets an honest answer, not the frontend CSRF 403 or a login redirect.
+https://facet.localhost:{$HTTPS_PORT:3443} {
+	# Backend namespaces, matched with path_regexp, not path. Caddy path
+	# matching is case-insensitive, and the lowercase twin of every
+	# namespace here is a legal domain id (`/api/Deal` is domain `api`'s
+	# list page) — a case-insensitive matcher would shadow it at the edge.
+	# RE2 is case-sensitive, so only the exact uppercase names reach the
+	# backend and every lowercase first segment falls to the frontend.
+	@backend path_regexp ^/(Api|OAuth|A|Ws|Edge|Healthcheck|auth)(/|$)
+	handle @backend {
+		reverse_proxy {$BACKEND_URL:http://127.0.0.1:3000}
+	}
+
+	# A lowercase twin of a backend namespace is a domain id, not a backend
+	# route (/api, /oauth, /a, /ws, /edge, /healthcheck — not /auth, the
+	# reserved lowercase exception). An API-only client that sends a method
+	# other than GET, HEAD, or OPTIONS to one gets a clear 404 from the
+	# edge; the frontend would answer with a CSRF 403 or a login redirect.
+	# GET and HEAD fall through: a browser GET to /{domain}/{doctype} is a
+	# legal page. OPTIONS falls through too, so CORS preflights do not
+	# change.
+	@lowercase_namespace_twin {
+		path_regexp ^/(api|oauth|a|ws|edge|healthcheck)(/|$)
+		not method GET HEAD OPTIONS
+	}
+	handle @lowercase_namespace_twin {
+		header Content-Type application/json
+		respond `{"error":"Unknown route. Backend namespaces are case-sensitive: /Api, /OAuth, /A, /Ws, /Edge, /Healthcheck. A lowercase first segment is a domain id."}` 404
+	}
+	handle /.well-known/* {
+		reverse_proxy {$BACKEND_URL:http://127.0.0.1:3000}
+	}
+
+	# Everything else: the SvelteKit dev server (SSR + HMR + static assets).
+	# Vite listens on the IPv6 loopback only.
+	handle {
+		reverse_proxy {$FRONTEND_URL:[::1]:5173}
+	}
+}
+
+# Hosted apps. Everything routes to the backend, and the App::Hosting
+# pre-router owns the request: Facet's own hosts fall through to the main
+# router, a live app host serves the app's active deployment, everything
+# else answers a bare 404. An app cannot reach the Facet API through its own
+# host — unmatched paths are resolved against the deployment's own files
+# (with the SPA fallback), never the main router.
+https://*.apps.localhost:{$HTTPS_PORT:3443} {
+	reverse_proxy {$BACKEND_URL:http://127.0.0.1:3000}
+}
+
+# Stale or unknown hosts. The pre-vhost single origin
+# (https://localhost:3443) answers 421 so a stale bookmark fails with a
+# message instead of an empty response or a TLS handshake error.
+https://localhost:{$HTTPS_PORT:3443} {
+	respond "Unknown host. Facet lives at https://facet.localhost:3443" 421
+}

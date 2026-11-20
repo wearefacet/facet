@@ -1,0 +1,15 @@
+---
+content:
+  title: Acme Corp — Platform License
+  value:
+    value: "120000"
+    currency: USD
+  status: open
+  owner_id: iam.Account.account_recruiter_kim
+  stage_id: crm.PipelineStage.3
+  company_id: crm.Company.1
+  probability: 60
+  actual_close_date:
+  primary_contact_id: crm.Contact.1
+  expected_close_date: "2026-09-30"
+meta: {}

@@ -1,0 +1,109 @@
+# Release edge for Facet — vhost routing + On-Demand TLS for app hosts.
+# The caddy service of docker/compose.prod.yml runs this file. Every address
+# is an env placeholder, so one file serves the localhost topology and a real
+# domain (doc/plans/container-release.md §5.7).
+#
+#   https://facet.localhost:3443  ─┬─ /Healthcheck      → backend (edge probes)
+#                                  ├─ /Api/*            → backend (REST + MCP)
+#                                  ├─ /OAuth/*          → backend (authorization)
+#                                  ├─ /auth/*           → backend (OIDC sign-in)
+#                                  ├─ /.well-known/*    → backend (discovery)
+#                                  ├─ /A/*              → backend (artifacts)
+#                                  ├─ /Ws               → backend (WebSocket)
+#                                  └─ everything else   → frontend (SSR + assets)
+#
+#   https://:3443 (catch-all)     ─── everything       → backend
+#       Hosted app hosts. The App::Hosting pre-router resolves the Host
+#       header against live app.App documents; Facet's own hosts fall
+#       through to the main router, everything else answers a bare 404.
+#       TLS is on-demand: the ask endpoint gates every first handshake, so
+#       an unclaimed name never gets a certificate.
+#
+#   http://:80                    ─── HTTP→HTTPS redirect
+#       Inert in the localhost topology (the port stays unpublished). A
+#       real-domain .env publishes it for the ACME HTTP-01 challenge and
+#       the redirect.
+#
+# TLS: Caddy issues internal-CA certificates for local names and ACME
+# certificates for public ones — automatic on both paths. App hosts are a
+# naming convention on the app.App host field, not a Caddy construct: the
+# catch-all carries no host matcher by design. One block serves every depth
+# on every base domain; the ask endpoint is the gate.
+
+{
+	auto_https disable_redirects
+	on_demand_tls {
+		ask http://backend:3000/Edge/HostAsk
+	}
+}
+
+# The Facet product. Backend namespaces (keep in sync with the Kemal route
+# namespaces: /Api REST + MCP, /OAuth authorization, /auth OIDC sign-in,
+# /.well-known discovery, /A artifact streaming, /Ws WebSocket, /Healthcheck
+# for edge probes — an uppercase first segment is always an
+# application/infrastructure route; a lowercase first segment is a domain id,
+# with `/auth` the one reserved lowercase exception: it names the OIDC
+# sign-in routes (`src/iam/oidc/routes.cr`) and sits in the backend route
+# label set (`src/http/metrics_handler.cr`), while its uppercase twin
+# `Auth` stays a legal domain id),
+# everything else the SvelteKit node server (SSR + static assets). A
+# request with a method other than GET, HEAD, or OPTIONS to a lowercase
+# twin of one of these namespaces gets a 404 from the edge, with a JSON
+# message that names the case rule.
+https://{$FACET_HOSTNAME:facet.localhost}:{$HTTPS_PORT:3443} {
+	# Backend namespaces, matched with path_regexp, not path. Caddy path
+	# matching is case-insensitive, and the lowercase twin of every
+	# namespace here is a legal domain id (`/api/Deal` is domain `api`'s
+	# list page) — a case-insensitive matcher would shadow it at the edge.
+	# RE2 is case-sensitive, so only the exact uppercase names reach the
+	# backend and every lowercase first segment falls to the frontend.
+	@backend path_regexp ^/(Api|OAuth|A|Ws|Healthcheck|auth)(/|$)
+	handle @backend {
+		reverse_proxy {$BACKEND_URL:http://backend:3000}
+	}
+
+	# A lowercase twin of a backend namespace is a domain id, not a backend
+	# route (/api, /oauth, /a, /ws, /healthcheck — not /auth, the reserved
+	# lowercase exception). An API-only client that sends a method other
+	# than GET, HEAD, or OPTIONS to one gets a clear 404 from the edge; the
+	# frontend CSRF check would answer 403. GET and HEAD fall through: a
+	# browser GET to /{domain}/{doctype} is a legal page. OPTIONS falls
+	# through too, so CORS preflights do not change.
+	@lowercase_namespace_twin {
+		path_regexp ^/(api|oauth|a|ws|healthcheck)(/|$)
+		not method GET HEAD OPTIONS
+	}
+	handle @lowercase_namespace_twin {
+		header Content-Type application/json
+		respond `{"error":"Unknown route. Backend namespaces are case-sensitive: /Api, /OAuth, /A, /Ws, /Healthcheck. A lowercase first segment is a domain id."}` 404
+	}
+	handle /.well-known/* {
+		reverse_proxy {$BACKEND_URL:http://backend:3000}
+	}
+
+	handle {
+		reverse_proxy {$FRONTEND_URL:http://frontend:3000}
+	}
+}
+
+# Hosted apps. Everything routes to the backend; the App::Hosting pre-router
+# owns the request. On-demand TLS: before Caddy issues or renews a
+# certificate for a name, it asks the backend — the ask endpoint approves a
+# registered active app host with 200 and denies everything else with 404.
+https://:{$HTTPS_PORT:3443} {
+	tls {
+		on_demand
+		# A site with no hostnames gets only public issuers by default, so
+		# local names would never obtain. Explicit chain: public names get
+		# ACME, local names fall through to the internal CA — certmagic
+		# tries the issuers in order.
+		issuer acme
+		issuer internal
+	}
+	reverse_proxy {$BACKEND_URL:http://backend:3000}
+}
+
+# HTTP→HTTPS redirect, and the listener the ACME HTTP-01 challenge rides on.
+http://:80 {
+	redir https://{host}{uri} 308
+}

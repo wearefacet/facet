@@ -1,0 +1,6 @@
+---
+content:
+  role: admin
+  account: iam.Account.account_pm_alex
+meta:
+  parent_id: production.Team.team_platform

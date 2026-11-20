@@ -1,0 +1,168 @@
+- id: "iam.Roles.admin"
+  content:
+    level: 100
+    name: admin
+    description: "Full administrative access to all resources."
+    visible_tags: ["*"]
+    connectivity: [mcp, webhook, api, assistant]
+    permissions:
+      - action: "*"
+        "on": "*.*"
+      # The producer's acceptance right on domain grants (D5) — held
+      # doctype-global; the wildcard line above already covers it, spelled
+      # out so the right survives a narrowing of the wildcard.
+      - action: activate
+        "on": core.DomainGrant
+      - action: deactivate
+        "on": core.DomainGrant
+- id: "iam.Roles.editor"
+  content:
+    level: 30
+    name: editor
+    description: >-
+      Reads and edits documents in every domain. Edits a domain's
+      definition (domain document, doctypes, views) only for domains the
+      account is a domain editor of, and may discard the drafts it edits.
+      Any editor can draft a new domain; the creator becomes its editor.
+    visible_tags: [default]
+    connectivity: [mcp, webhook, api, assistant]
+    permissions:
+      # Content plane — everything except the definition surfaces and the
+      # provider registry (a rogue provider pointed at the editor's own IdP
+      # would be a self-escalation path: provider management is admin-only,
+      # mirroring core.SystemSettings). core.Webhook is carved out of the
+      # management actions only — webhooks are ownership-scoped (see the
+      # webhook block below); create rides this blanket unrestricted.
+      # core.SchematicLayout is carved out of the writes for the same
+      # reason as the other definition surfaces — writes are domain-scoped
+      # (the schematic-layout block below); its read is one of the
+      # Builder reads spelled out under the read blanket.
+      - action: create
+        "on": "*.*"
+        except: [core.DocType, core.DocumentView, core.DomainEditor, core.SchematicLayout, core.SystemSettings, iam.OIDCProvider]
+      - action: update
+        "on": "*.*"
+        except: [core.Domain, core.DocType, core.DocumentView, core.DomainEditor, core.SchematicLayout, core.SystemSettings, iam.OIDCProvider, core.Webhook]
+      - action: delete
+        "on": "*.*"
+        except: [core.Domain, core.DocType, core.DocumentView, core.DomainEditor, core.SchematicLayout, core.SystemSettings, iam.OIDCProvider, core.Webhook]
+      - action: read
+        "on": "*.*"
+        except: [core.SystemSettings, iam.OIDCProvider, core.Webhook]
+      # Builder reads — the Builder surface lists core.DomainEditor, reads
+      # core.DomainGrant, and loads core.SchematicLayout. The lines are
+      # explicit so a scoped role without the read blanket keeps them; the
+      # Builder is not usable for domain editing without them.
+      - action: read
+        "on": core.DomainEditor
+      - action: read
+        "on": core.DomainGrant
+      - action: read
+        "on": core.SchematicLayout
+      # Webhooks — authoring open, management ownership-scoped (B-76
+      # arbitration): any editor can mint a webhook, and the binding stamps
+      # the creator, but only the creator (or an admin) can see, edit, or
+      # delete one afterwards. The SSRF surface is bounded by the target
+      # host gate (Webhook::TargetCheck), not by the role.
+      # Domain plane — scoped to domains the account edits.
+      - action: update
+        "on": core.Domain
+        scope: ["$domain_editor"]
+      - action: delete
+        "on": core.Domain
+        scope: ["$domain_editor_draft"]
+      - action: create
+        "on": core.DocType
+        scope: ["$domain_editor"]
+      - action: update
+        "on": core.DocType
+        scope: ["$domain_editor"]
+      - action: delete
+        "on": core.DocType
+        scope: ["$domain_editor"]
+      - action: create
+        "on": core.DocumentView
+        scope: ["$domain_editor"]
+      - action: update
+        "on": core.DocumentView
+        scope: ["$domain_editor"]
+      - action: delete
+        "on": core.DocumentView
+        scope: ["$domain_editor"]
+      # Schematic layouts — domain-scoped like the definition surfaces. The
+      # create/update hooks enforce the membership the scopes cannot check
+      # at create time; delete stays admin-only (a stale layout just gets
+      # overwritten, and the row self-heals on the next save).
+      - action: create
+        "on": core.SchematicLayout
+        scope: ["$domain_editor"]
+      - action: update
+        "on": core.SchematicLayout
+        scope: ["$domain_editor"]
+      - action: read
+        "on": core.Webhook
+        scope: ["$mine"]
+      - action: update
+        "on": core.Webhook
+        scope: ["$mine"]
+      - action: delete
+        "on": core.Webhook
+        scope: ["$mine"]
+- id: "iam.Roles.viewer"
+  content:
+    level: 20
+    name: viewer
+    description: "Read-only access to all resources. Webhook reads are ownership-scoped: a viewer sees only webhooks their own account created (B-76 arbitration)."
+    visible_tags: [default]
+    connectivity: [mcp, webhook, api, assistant]
+    permissions:
+      - action: read
+        "on": "*.*"
+        except: [core.SystemSettings, iam.OIDCProvider, core.Webhook]
+      - action: read
+        "on": core.Webhook
+        scope: ["$mine"]
+- id: "iam.Roles.comment_author"
+  content:
+    level: 20
+    name: comment_author
+    connectivity: [mcp, webhook, api, assistant]
+    description: "Author-scoped read/update/delete on core.Comment via the $mine named scope, through the flat /api/core/Comment endpoint. Flat create is blocked for sidecar doctypes; commenting on a host document requires a nested grant on the host-scoped path (e.g. create crm.Task.Comment), which host create grants imply by prefix matching."
+    visible_tags: [default]
+    permissions:
+      - action: read
+        "on": core.Comment
+        scope: ["$mine"]
+      - action: update
+        "on": core.Comment
+        scope: ["$mine"]
+      - action: delete
+        "on": core.Comment
+        scope: ["$mine"]
+- id: "iam.Roles.attachment_owner"
+  content:
+    level: 20
+    name: attachment_owner
+    connectivity: [mcp, webhook, api, assistant]
+    description: "Uploader-scoped read/update/delete on core.Attachment via the $mine named scope, through the flat /api/core/Attachment endpoint. Flat create is blocked for sidecar doctypes; attaching a file to a host document requires a nested grant on the host-scoped path (e.g. create hr.Employee.Attachment), which host create grants imply by prefix matching."
+    visible_tags: [default]
+    permissions:
+      - action: read
+        "on": core.Attachment
+        scope: ["$mine"]
+      - action: update
+        "on": core.Attachment
+        scope: ["$mine"]
+      - action: delete
+        "on": core.Attachment
+        scope: ["$mine"]
+- id: "iam.Roles.anonymous"
+  content:
+    level: 0
+    name: anonymous
+    description: "Unauthenticated API callers. A request that carries no credential runs under this role, so its read grants are the public API surface. Edit the grants like any other role; deleting the role re-disables unauthenticated access (401)."
+    visible_tags: [default]
+    connectivity: []
+    permissions:
+      - action: read
+        "on": core.Currency

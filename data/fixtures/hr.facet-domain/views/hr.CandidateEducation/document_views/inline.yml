@@ -1,0 +1,18 @@
+---
+content:
+  kind: inline
+  template:
+    type: row
+    layout: auto auto auto 1fr
+    children:
+    - type: label
+      value: $school
+    - type: capsule
+      value: $degree
+    - type: capsule
+      value: $field
+    - type: label
+      value: $start — $end
+  parent_doctype: hr.CandidateEducation
+meta:
+  parent_id: hr.CandidateEducation

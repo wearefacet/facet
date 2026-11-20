@@ -1,0 +1,19 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+    - type: section
+      label: Membership
+      children:
+      - type: row
+        layout: minmax(220px, 1fr) minmax(280px, 2fr)
+        children:
+        - type: input
+          field: account
+        - type: input
+          field: role
+  parent_doctype: production.TeamMember
+meta:
+  parent_id: production.TeamMember

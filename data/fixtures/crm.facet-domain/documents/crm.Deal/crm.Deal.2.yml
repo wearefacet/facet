@@ -1,0 +1,15 @@
+---
+content:
+  title: Globex Inc — Consultancy
+  value:
+    value: "45000"
+    currency: USD
+  status: open
+  owner_id: iam.Account.account_eng_dao
+  stage_id: crm.PipelineStage.2
+  company_id: crm.Company.2
+  probability: 30
+  actual_close_date:
+  primary_contact_id: crm.Contact.3
+  expected_close_date: "2026-12-31"
+meta: {}

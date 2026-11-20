@@ -1,0 +1,22 @@
+---
+content:
+  name: All Deals
+  config:
+    columns:
+    - key: title
+      label: Deal
+    - key: value
+      label: Value
+      width: 120px
+    - key: status
+      label: Status
+      width: 110px
+    - key: probability
+      label: Prob.
+      width: 90px
+    - key: expected_close_date
+      label: Expected Close
+      width: 150px
+  surface: table
+meta:
+  parent_id: crm.Deal

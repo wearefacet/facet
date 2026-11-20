@@ -1,0 +1,18 @@
+---
+content:
+  kind: inline
+  template:
+    type: row
+    layout: auto auto auto auto
+    children:
+    - type: label
+      value: $name
+    - type: capsule
+      value: $category
+    - type: label
+      value: Level $level
+    - type: label
+      value: $years yrs
+  parent_doctype: hr.CandidateSkill
+meta:
+  parent_id: hr.CandidateSkill

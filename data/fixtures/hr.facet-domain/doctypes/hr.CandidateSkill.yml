@@ -1,0 +1,55 @@
+---
+content:
+  icon: sparkles
+  domain: hr
+  fields:
+    name:
+      type: string
+      title: Skill Name
+      required: true
+      filters:
+        - equality
+        - text_search
+      description: Name of the skill.
+    level:
+      max: 10
+      min: 1
+      type: integer
+      title: Proficiency Level
+      required: true
+      description: Self-rated proficiency (1-10).
+    years:
+      type: integer
+      title: Years of Experience
+      description: Years of experience with this skill.
+    category:
+      type: enum
+      title: Category
+      values:
+      - key: language
+        color: "#3681b6"
+        label: Language
+      - key: framework
+        color: "#827e23"
+        label: Framework
+      - key: tool
+        color: "#7d8027"
+        label: Tool
+      - key: soft
+        color: "#807f25"
+        label: Soft
+      - key: other
+        color: "#b25e5e"
+        label: Other
+      filters:
+        - equality
+      description: Category of the skill.
+  doctype: CandidateSkill
+  member_of: Candidate
+  description: A skill entry for a candidate.
+  display_name: "{{ name }}"
+  search: "{{ name }} {{ category }}"
+  aggregate_root: false
+  schema_version: 1
+meta:
+  parent_id: hr

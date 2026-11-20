@@ -1,0 +1,14 @@
+---
+content:
+  person: identity.Person.1
+  remote: true
+  salary:
+    value: "150000"
+    currency: USD
+  status: active
+  manager: hr.Employee.2
+  hire_date: "2022-03-15"
+  job_title: Senior Software Engineer
+  department: Engineering
+  termination_date:
+meta: {}

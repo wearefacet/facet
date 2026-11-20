@@ -1,0 +1,15 @@
+---
+content:
+  kind: card
+  template:
+    type: col
+    children:
+    - type: field
+      label: Sort Order
+      value: $order
+    - type: field
+      label: Default Probability
+      value: $probability_default
+  parent_doctype: crm.PipelineStage
+meta:
+  parent_id: crm.PipelineStage

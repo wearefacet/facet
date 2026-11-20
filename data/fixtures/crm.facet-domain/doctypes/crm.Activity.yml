@@ -1,0 +1,108 @@
+---
+content:
+  icon: activity
+  domain: crm
+  fields:
+    body:
+      type: longtext
+      title: Body
+      description: The full content or notes of the activity.
+    type:
+      type: enum
+      title: Activity Type
+      values:
+      - key: meeting
+        color: "#a85e88"
+        label: Meeting
+      - key: call
+        color: "#3282b5"
+        label: Call
+      - key: email
+        color: "#4b7cba"
+        label: Email
+      - key: note
+        color: "#76822d"
+        label: Note
+      - key: task
+        color: "#558a49"
+        label: Task
+      required: true
+      filters:
+        - equality
+      description: The kind of activity.
+    deal_id:
+      type: reference
+      title: Deal
+      doctype: crm.Deal
+      filters:
+        - equality
+      description: The deal this activity relates to.
+    subject:
+      type: string
+      title: Subject
+      required: true
+      filters:
+        - equality
+        - text_search
+      description: A short description of the activity.
+    datetime:
+      type: datetime
+      title: Date/Time
+      required: true
+      filters:
+        - comparison
+      description: When the activity occurred.
+    owner_id:
+      type: reference
+      title: Owner
+      doctype: iam.Account
+      filters:
+        - equality
+      description: Who performed the activity.
+    completed:
+      type: boolean
+      title: Completed
+      default: false
+      filters:
+        - equality
+      description: Whether a task has been completed.
+    company_id:
+      type: reference
+      title: Company
+      doctype: crm.Company
+      filters:
+        - equality
+      description: The company this activity relates to.
+    contact_id:
+      type: reference
+      title: Contact
+      doctype: crm.Contact
+      filters:
+        - equality
+      description: The specific contact involved.
+    activity_preview:
+      type: data
+      title: Activity Preview
+      compute: activity_preview
+      description: First 200 characters of the body.
+      compute_when:
+      - body
+    duration_minutes:
+      type: integer
+      title: Duration (minutes)
+      filters:
+        - comparison
+      description: How long the activity lasted, in minutes.
+  script: !read_file crm.Activity.lua
+  actions:
+    complete:
+      args: {}
+  doctype: Activity
+  description: A recorded interaction (meeting, call, email, note, task) linked to
+    a Company, Contact, or Deal.
+  display_name: "{{ subject }}"
+  search: "{{ subject }} {{ type }} {{ activity_preview }}"
+  aggregate_root: true
+  schema_version: 1
+meta:
+  parent_id: crm

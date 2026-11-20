@@ -1,0 +1,24 @@
+# Package Managers
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+bun.lock
+bun.lockb
+
+# Inlang project folder. The compile step regenerates every file here
+# except settings.json, with SDK formatting. Mirror project.inlang/.gitignore
+# so Prettier checks only the file git tracks.
+project.inlang/*
+!project.inlang/settings.json
+
+# Miscellaneous
+/static/
+
+# Scratch folder for throwaway scripts and repro files (AGENTS.md →
+# Quick tests). Git ignores it too (root .gitignore); ESLint ignores
+# it via eslint.config.js.
+/tmp/
+
+# Design reference mockups (see AGENTS.md). Static HTML, not application
+# source. ESLint ignores them too (eslint.config.js).
+/example/

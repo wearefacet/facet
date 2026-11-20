@@ -1,0 +1,43 @@
+doctype: Comment
+domain: core
+schema_version: 1
+aggregate_root: true
+sidecar: true
+surface: comment
+display_name: "{{ body }}"
+search: "{{ body }}"
+description: "Sidecar doctype for comments attached to any document."
+fields:
+  target:
+    type: reference
+    required: true
+    read_only: true
+    dangling: true
+    title: "Target"
+    description: "The document this comment is attached to. Set by the nested-create route; cannot be supplied or changed by the user. Polymorphic, so the data layer never existence-checks it — the host is verified at the write door (`SidecarHandler` locks the host row for every principal); the import door accepts the field verbatim, matching the create path."
+  author:
+    type: reference
+    doctype: "iam.Account"
+    read_only: true
+    title: "Author"
+    description: "The account that wrote the comment. Forced by the Lua create hook from the caller's identity; read-only so callers cannot spoof it. Null for system-created comments."
+    filters: [equality]
+  body:
+    type: longtext
+    required: true
+    title: "Body"
+    description: "The comment text."
+  reply_to:
+    type: reference
+    doctype: "core.Comment"
+    title: "Reply to"
+    description: "The comment this one replies to. Optional; settable only at create time. Must reference a live comment attached to the same target document — threads nest to any depth. Enforced by the Lua create/update hooks."
+  edited_at:
+    type: datetime
+    read_only: true
+    title: "Edited at"
+    description: "UTC timestamp stamped by the Lua update hook when the body changes. Never supplied by callers."
+scopes:
+  mine:
+    description: "Comments written by the actioner"
+    where: { author: '$self' }

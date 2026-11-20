@@ -1,0 +1,18 @@
+---
+content:
+  kind: card
+  template:
+    type: col
+    children:
+    - type: field
+      label: Status
+      value: $status
+    - type: field
+      label: Industry
+      value: $industry
+    - type: field
+      label: Phone Number
+      value: $phone
+  parent_doctype: crm.Company
+meta:
+  parent_id: crm.Company

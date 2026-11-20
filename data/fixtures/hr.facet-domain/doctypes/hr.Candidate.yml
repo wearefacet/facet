@@ -1,0 +1,264 @@
+---
+content:
+  icon: user-round
+  color: "#7C4DFF"
+  domain: hr
+  fields:
+    tags:
+      type: array
+      items:
+        type: string
+      title: Tags
+      description: Tags for categorisation and search.
+    email:
+      type: string
+      title: Email
+      unique: true
+      required: true
+      filters:
+        - equality
+        - text_search
+      description: Email address for contact.
+    owner:
+      type: reference
+      title: Owner
+      doctype: iam.Account
+      description: The recruiter or hiring manager responsible.
+    phone:
+      type: phone
+      title: Phone
+      description: Phone number.
+    photo:
+      type: string
+      title: Photo
+      description: URL to the candidate's profile photo.
+    resume:
+      type: file
+      title: Resume
+      description: Uploaded resume artifact. The value is the artifact id; bytes live in object storage and are linked via the re-attach owner-row flow on save.
+    gender:
+      type: enum
+      title: Gender
+      values:
+      - key: male
+        color: "#0087aa"
+        label: Male
+      - key: female
+        color: "#ab5d80"
+        label: Female
+      - key: other
+        color: "#b25e5e"
+        label: Other
+      description: Gender identity.
+    rating:
+      max: 5
+      min: 1
+      type: integer
+      title: Rating
+      description: Overall candidate rating (1-5).
+    social:
+      type: object
+      title: Social Links
+      properties:
+        github:
+          type: url
+        linkedin:
+          type: url
+        portfolio:
+          type: url
+      description: Social media and portfolio URLs.
+    source:
+      type: enum
+      title: Source
+      values:
+      - key: referral
+        color: "#008e8b"
+        label: Referral
+      - key: linkedin
+        color: "#008e8a"
+        label: LinkedIn
+      - key: indeed
+        color: "#857d20"
+        label: Indeed
+      - key: company_site
+        color: "#7a6eb7"
+        label: Company Site
+      - key: agency
+        color: "#588947"
+        label: Agency
+      - key: other
+        color: "#b25e5e"
+        label: Other
+      filters:
+        - equality
+      description: How the candidate was sourced.
+    status:
+      type: enum
+      title: Status
+      values:
+      - key: new
+        color: "#0087ab"
+        label: New
+      - key: reviewing
+        color: "#698639"
+        label: Reviewing
+      - key: interviewing
+        color: "#a9692e"
+        label: Interviewing
+      - key: offered
+        color: "#a95e86"
+        label: Offered
+      - key: hired
+        color: "#3f8d5a"
+        label: Hired
+      - key: rejected
+        color: "#5779bb"
+        label: Rejected
+      - key: withdrawn
+        color: "#7b6eb6"
+        label: Withdrawn
+      default: new
+      filters:
+        - equality
+      description: Current stage in the hiring pipeline.
+    address:
+      type: object
+      title: Address
+      properties:
+        city:
+          type: string
+        region:
+          type: string
+        street:
+          type: string
+        country:
+          type: string
+        postal_code:
+          type: string
+      description: Current residential address.
+    summary:
+      type: longtext
+      title: Summary
+      description: Long-form professional summary.
+    headline:
+      type: string
+      title: Headline
+      filters:
+        - equality
+        - text_search
+      description: Professional headline or tagline.
+    avg_score:
+      type: integer
+      title: Average Interview Score
+      description: Average score across all interview rounds.
+    documents:
+      type: array
+      items:
+        type: string
+      title: Documents
+      description: Uploaded document references.
+    emergency:
+      type: object
+      title: Emergency Contact
+      properties:
+        name:
+          type: string
+        phone:
+          type: phone
+        relationship:
+          type: string
+      description: Emergency contact information.
+    full_name:
+      type: string
+      title: Full Name
+      required: true
+      filters:
+        - equality
+        - text_search
+      description: The candidate's full name.
+    total_exp:
+      type: integer
+      title: Total Experience (years)
+      description: Total professional experience in years.
+    birth_date:
+      type: date
+      title: Date of Birth
+      description: The candidate's date of birth.
+    salary_exp:
+      type: money
+      title: Salary Expectation
+      currency: USD
+      filters:
+        - comparison
+        - currency
+      description: Expected yearly salary, normalized to an annual figure by HR.
+    nationality:
+      type: string
+      title: Nationality
+      description: Nationality or nationalities.
+    notice_days:
+      type: string
+      title: Notice Period
+      description: Days of notice required before starting.
+    remote_pref:
+      type: enum
+      title: Remote Preference
+      values:
+      - key: remote
+        color: "#517abb"
+        label: Remote
+      - key: hybrid
+        color: "#578a48"
+        label: Hybrid
+      - key: onsite
+        color: "#9f6198"
+        label: Onsite
+      filters:
+        - equality
+      description: Work location preference.
+    applied_date:
+      type: date
+      title: Applied Date
+      filters:
+        - comparison
+      description: Date the candidate applied.
+    willing_reloc:
+      type: boolean
+      title: Willing to Relocate
+      filters:
+        - equality
+      description: Whether the candidate is willing to relocate.
+    available_from:
+      type: date
+      title: Available From
+      description: Earliest date the candidate can start.
+  doctype: Candidate
+  children:
+    skills:
+      doctype: CandidateSkill
+      collection: true
+      description: Skill entries for the candidate.
+    education:
+      doctype: CandidateEducation
+      collection: true
+      description: Education entries for the candidate.
+    interviews:
+      doctype: InterviewFeedback
+      collection: true
+      description: Interview feedback records for the candidate.
+    experiences:
+      doctype: CandidateExperience
+      collection: true
+      description: Work experience entries for the candidate.
+  sidecars:
+    comments:
+      doctype: core.Comment
+      column: target
+  description: A job candidate in the recruitment pipeline. Tracks personal info,
+    skills, experience, education, interviews, and hiring status.
+  display_name: "{{ full_name }}"
+  search: "{{ full_name }} {{ email }} {{ headline }} {{ tags | join(' ') }}"
+  aggregate_root: true
+  schema_version: 1
+meta:
+  parent_id: hr

@@ -1,0 +1,322 @@
+# Seed currencies — the ISO-4217 list-one (SIX Group) circulating set.
+# Excluded by the behaviour contract: precious metals (XAU XAG XPT XPD), the
+# SDR (XDR), bond units (XBA XBB XBC XBD), fund / unit-of-account codes
+# (XAD XSU XUA BOV CLF COU MXV CHE CHW USN UYI UYW), the test code (XTS) and
+# no-currency (XXX).
+#
+# Symbols (the ISO list carries none) come from currency-symbol-map, curated
+# where the source is wrong or absent (KGS, UZS, BOB, XCG, SLE, VED, ZWG).
+# Names and digits are the ISO list's own.
+#
+# Document ids equal the tickers (readable URLs). The registry keys on
+# content.ticker, so generic-UI rows with ULID ids stay valid.
+#
+# Defaults from the doctype: favorite false, grouping standard — only
+# overrides are explicit here. `active` is stated on every row: the basic
+# setup enables CHF, CNY, EUR, GBP, JPY, USD. Every other row ships inactive;
+# an admin enables more from the Configure Currency page. A currency created
+# by hand still starts active (the doctype default).
+- id: AED
+  content: { ticker: AED, name: "UAE Dirham", symbol: "د.إ", digits: 2, active: false }
+- id: AFN
+  content: { ticker: AFN, name: "Afghani", symbol: "؋", digits: 2, active: false }
+- id: ALL
+  content: { ticker: ALL, name: "Lek", symbol: "L", digits: 2, active: false }
+- id: AMD
+  content: { ticker: AMD, name: "Armenian Dram", symbol: "֏", digits: 2, active: false }
+- id: AOA
+  content: { ticker: AOA, name: "Kwanza", symbol: "Kz", digits: 2, active: false }
+- id: ARS
+  content: { ticker: ARS, name: "Argentine Peso", symbol: "$", digits: 2, active: false }
+- id: AUD
+  content: { ticker: AUD, name: "Australian Dollar", symbol: "$", digits: 2, active: false }
+- id: AWG
+  content: { ticker: AWG, name: "Aruban Florin", symbol: "ƒ", digits: 2, active: false }
+- id: AZN
+  content: { ticker: AZN, name: "Azerbaijan Manat", symbol: "₼", digits: 2, active: false }
+- id: BAM
+  content: { ticker: BAM, name: "Convertible Mark", symbol: "KM", digits: 2, active: false }
+- id: BBD
+  content: { ticker: BBD, name: "Barbados Dollar", symbol: "$", digits: 2, active: false }
+- id: BDT
+  content: { ticker: BDT, name: "Taka", symbol: "৳", digits: 2, active: false }
+- id: BHD
+  content: { ticker: BHD, name: "Bahraini Dinar", symbol: ".د.ب", digits: 3, active: false }
+- id: BIF
+  content: { ticker: BIF, name: "Burundi Franc", symbol: "FBu", digits: 0, active: false }
+- id: BMD
+  content: { ticker: BMD, name: "Bermudian Dollar", symbol: "$", digits: 2, active: false }
+- id: BND
+  content: { ticker: BND, name: "Brunei Dollar", symbol: "$", digits: 2, active: false }
+- id: BOB
+  content: { ticker: BOB, name: "Boliviano", symbol: "Bs", digits: 2, active: false }
+- id: BWP
+  content: { ticker: BWP, name: "Pula", symbol: "P", digits: 2, active: false }
+- id: BYN
+  content: { ticker: BYN, name: "Belarusian Ruble", symbol: "Br", digits: 2, active: false }
+- id: BZD
+  content: { ticker: BZD, name: "Belize Dollar", symbol: "BZ$", digits: 2, active: false }
+- id: CAD
+  content: { ticker: CAD, name: "Canadian Dollar", symbol: "$", digits: 2, active: false }
+- id: CDF
+  content: { ticker: CDF, name: "Congolese Franc", symbol: "FC", digits: 2, active: false }
+- id: CHF
+  content: { ticker: CHF, name: "Swiss Franc", symbol: "CHF", digits: 2, active: true }
+- id: CLP
+  content: { ticker: CLP, name: "Chilean Peso", symbol: "$", digits: 0, active: false }
+- id: CNY
+  content: { ticker: CNY, name: "Yuan Renminbi", symbol: "¥", digits: 2, active: true }
+- id: COP
+  content: { ticker: COP, name: "Colombian Peso", symbol: "$", digits: 2, active: false }
+- id: CRC
+  content: { ticker: CRC, name: "Costa Rican Colon", symbol: "₡", digits: 2, active: false }
+- id: CUP
+  content: { ticker: CUP, name: "Cuban Peso", symbol: "₱", digits: 2, active: false }
+- id: CVE
+  content: { ticker: CVE, name: "Cabo Verde Escudo", symbol: "$", digits: 2, active: false }
+- id: CZK
+  content: { ticker: CZK, name: "Czech Koruna", symbol: "Kč", digits: 2, active: false }
+- id: DJF
+  content: { ticker: DJF, name: "Djibouti Franc", symbol: "Fdj", digits: 0, active: false }
+- id: DKK
+  content: { ticker: DKK, name: "Danish Krone", symbol: "kr", digits: 2, active: false }
+- id: DOP
+  content: { ticker: DOP, name: "Dominican Peso", symbol: "RD$", digits: 2, active: false }
+- id: DZD
+  content: { ticker: DZD, name: "Algerian Dinar", symbol: "دج", digits: 2, active: false }
+- id: EGP
+  content: { ticker: EGP, name: "Egyptian Pound", symbol: "£", digits: 2, active: false }
+- id: ERN
+  content: { ticker: ERN, name: "Nakfa", symbol: "Nfk", digits: 2, active: false }
+- id: ETB
+  content: { ticker: ETB, name: "Ethiopian Birr", symbol: "Br", digits: 2, active: false }
+- id: EUR
+  content: { ticker: EUR, name: "Euro", symbol: "€", digits: 2, favorite: true, active: true }
+- id: FJD
+  content: { ticker: FJD, name: "Fiji Dollar", symbol: "$", digits: 2, active: false }
+- id: FKP
+  content: { ticker: FKP, name: "Falkland Islands Pound", symbol: "£", digits: 2, active: false }
+- id: GBP
+  content: { ticker: GBP, name: "Pound Sterling", symbol: "£", digits: 2, active: true }
+- id: GEL
+  content: { ticker: GEL, name: "Lari", symbol: "₾", digits: 2, active: false }
+- id: GHS
+  content: { ticker: GHS, name: "Ghana Cedi", symbol: "GH₵", digits: 2, active: false }
+- id: GIP
+  content: { ticker: GIP, name: "Gibraltar Pound", symbol: "£", digits: 2, active: false }
+- id: GMD
+  content: { ticker: GMD, name: "Dalasi", symbol: "D", digits: 2, active: false }
+- id: GNF
+  content: { ticker: GNF, name: "Guinean Franc", symbol: "FG", digits: 0, active: false }
+- id: GTQ
+  content: { ticker: GTQ, name: "Quetzal", symbol: "Q", digits: 2, active: false }
+- id: GYD
+  content: { ticker: GYD, name: "Guyana Dollar", symbol: "$", digits: 2, active: false }
+- id: HKD
+  content: { ticker: HKD, name: "Hong Kong Dollar", symbol: "$", digits: 2, active: false }
+- id: HNL
+  content: { ticker: HNL, name: "Lempira", symbol: "L", digits: 2, active: false }
+- id: HTG
+  content: { ticker: HTG, name: "Gourde", symbol: "G", digits: 2, active: false }
+- id: HUF
+  content: { ticker: HUF, name: "Forint", symbol: "Ft", digits: 2, active: false }
+- id: IDR
+  content: { ticker: IDR, name: "Rupiah", symbol: "Rp", digits: 2, grouping: lakhs, active: false }
+- id: ILS
+  content: { ticker: ILS, name: "New Israeli Sheqel", symbol: "₪", digits: 2, active: false }
+- id: INR
+  content: { ticker: INR, name: "Indian Rupee", symbol: "₹", digits: 2, active: false }
+- id: IQD
+  content: { ticker: IQD, name: "Iraqi Dinar", symbol: "ع.د", digits: 3, active: false }
+- id: IRR
+  content: { ticker: IRR, name: "Iranian Rial", symbol: "﷼", digits: 2, active: false }
+- id: ISK
+  content: { ticker: ISK, name: "Iceland Krona", symbol: "kr", digits: 0, active: false }
+- id: JMD
+  content: { ticker: JMD, name: "Jamaican Dollar", symbol: "J$", digits: 2, active: false }
+- id: JOD
+  content: { ticker: JOD, name: "Jordanian Dinar", symbol: "JD", digits: 3, active: false }
+- id: JPY
+  content: { ticker: JPY, name: "Yen", symbol: "¥", digits: 0, active: true }
+- id: KES
+  content: { ticker: KES, name: "Kenyan Shilling", symbol: "KSh", digits: 2, active: false }
+- id: KGS
+  content: { ticker: KGS, name: "Som", symbol: "с", digits: 2, active: false }
+- id: KHR
+  content: { ticker: KHR, name: "Riel", symbol: "៛", digits: 2, active: false }
+- id: KMF
+  content: { ticker: KMF, name: "Comorian Franc", symbol: "CF", digits: 0, active: false }
+- id: KPW
+  content: { ticker: KPW, name: "North Korean Won", symbol: "₩", digits: 2, active: false }
+- id: KRW
+  content: { ticker: KRW, name: "Won", symbol: "₩", digits: 0, active: false }
+- id: KWD
+  content: { ticker: KWD, name: "Kuwaiti Dinar", symbol: "KD", digits: 3, active: false }
+- id: KYD
+  content: { ticker: KYD, name: "Cayman Islands Dollar", symbol: "$", digits: 2, active: false }
+- id: KZT
+  content: { ticker: KZT, name: "Tenge", symbol: "₸", digits: 2, active: false }
+- id: LAK
+  content: { ticker: LAK, name: "Lao Kip", symbol: "₭", digits: 2, active: false }
+- id: LBP
+  content: { ticker: LBP, name: "Lebanese Pound", symbol: "£", digits: 2, active: false }
+- id: LKR
+  content: { ticker: LKR, name: "Sri Lanka Rupee", symbol: "₨", digits: 2, active: false }
+- id: LRD
+  content: { ticker: LRD, name: "Liberian Dollar", symbol: "$", digits: 2, active: false }
+- id: LSL
+  content: { ticker: LSL, name: "Loti", symbol: "M", digits: 2, active: false }
+- id: LYD
+  content: { ticker: LYD, name: "Libyan Dinar", symbol: "LD", digits: 3, active: false }
+- id: MAD
+  content: { ticker: MAD, name: "Moroccan Dirham", symbol: "MAD", digits: 2, active: false }
+- id: MDL
+  content: { ticker: MDL, name: "Moldovan Leu", symbol: "lei", digits: 2, active: false }
+- id: MGA
+  content: { ticker: MGA, name: "Malagasy Ariary", symbol: "Ar", digits: 2, active: false }
+- id: MKD
+  content: { ticker: MKD, name: "Denar", symbol: "ден", digits: 2, active: false }
+- id: MMK
+  content: { ticker: MMK, name: "Kyat", symbol: "K", digits: 2, active: false }
+- id: MNT
+  content: { ticker: MNT, name: "Tugrik", symbol: "₮", digits: 2, active: false }
+- id: MOP
+  content: { ticker: MOP, name: "Pataca", symbol: "MOP$", digits: 2, active: false }
+- id: MRU
+  content: { ticker: MRU, name: "Ouguiya", symbol: "UM", digits: 2, active: false }
+- id: MUR
+  content: { ticker: MUR, name: "Mauritius Rupee", symbol: "₨", digits: 2, active: false }
+- id: MVR
+  content: { ticker: MVR, name: "Rufiyaa", symbol: "Rf", digits: 2, active: false }
+- id: MWK
+  content: { ticker: MWK, name: "Malawi Kwacha", symbol: "MK", digits: 2, active: false }
+- id: MXN
+  content: { ticker: MXN, name: "Mexican Peso", symbol: "$", digits: 2, active: false }
+- id: MYR
+  content: { ticker: MYR, name: "Malaysian Ringgit", symbol: "RM", digits: 2, active: false }
+- id: MZN
+  content: { ticker: MZN, name: "Mozambique Metical", symbol: "MT", digits: 2, active: false }
+- id: NAD
+  content: { ticker: NAD, name: "Namibia Dollar", symbol: "$", digits: 2, active: false }
+- id: NGN
+  content: { ticker: NGN, name: "Naira", symbol: "₦", digits: 2, active: false }
+- id: NIO
+  content: { ticker: NIO, name: "Cordoba Oro", symbol: "C$", digits: 2, active: false }
+- id: NOK
+  content: { ticker: NOK, name: "Norwegian Krone", symbol: "kr", digits: 2, active: false }
+- id: NPR
+  content: { ticker: NPR, name: "Nepalese Rupee", symbol: "₨", digits: 2, active: false }
+- id: NZD
+  content: { ticker: NZD, name: "New Zealand Dollar", symbol: "$", digits: 2, active: false }
+- id: OMR
+  content: { ticker: OMR, name: "Rial Omani", symbol: "﷼", digits: 3, active: false }
+- id: PAB
+  content: { ticker: PAB, name: "Balboa", symbol: "B/.", digits: 2, active: false }
+- id: PEN
+  content: { ticker: PEN, name: "Sol", symbol: "S/.", digits: 2, active: false }
+- id: PGK
+  content: { ticker: PGK, name: "Kina", symbol: "K", digits: 2, active: false }
+- id: PHP
+  content: { ticker: PHP, name: "Philippine Peso", symbol: "₱", digits: 2, active: false }
+- id: PKR
+  content: { ticker: PKR, name: "Pakistan Rupee", symbol: "₨", digits: 2, active: false }
+- id: PLN
+  content: { ticker: PLN, name: "Zloty", symbol: "zł", digits: 2, active: false }
+- id: PYG
+  content: { ticker: PYG, name: "Guarani", symbol: "Gs", digits: 0, active: false }
+- id: QAR
+  content: { ticker: QAR, name: "Qatari Rial", symbol: "﷼", digits: 2, active: false }
+- id: RON
+  content: { ticker: RON, name: "Romanian Leu", symbol: "lei", digits: 2, active: false }
+- id: RSD
+  content: { ticker: RSD, name: "Serbian Dinar", symbol: "Дин.", digits: 2, active: false }
+- id: RUB
+  content: { ticker: RUB, name: "Russian Ruble", symbol: "₽", digits: 2, active: false }
+- id: RWF
+  content: { ticker: RWF, name: "Rwanda Franc", symbol: "R₣", digits: 0, active: false }
+- id: SAR
+  content: { ticker: SAR, name: "Saudi Riyal", symbol: "﷼", digits: 2, active: false }
+- id: SBD
+  content: { ticker: SBD, name: "Solomon Islands Dollar", symbol: "$", digits: 2, active: false }
+- id: SCR
+  content: { ticker: SCR, name: "Seychelles Rupee", symbol: "₨", digits: 2, active: false }
+- id: SDG
+  content: { ticker: SDG, name: "Sudanese Pound", symbol: "ج.س.", digits: 2, active: false }
+- id: SEK
+  content: { ticker: SEK, name: "Swedish Krona", symbol: "kr", digits: 2, active: false }
+- id: SGD
+  content: { ticker: SGD, name: "Singapore Dollar", symbol: "S$", digits: 2, active: false }
+- id: SHP
+  content: { ticker: SHP, name: "Saint Helena Pound", symbol: "£", digits: 2, active: false }
+- id: SLE
+  content: { ticker: SLE, name: "Leone", symbol: "Le", digits: 2, active: false }
+- id: SOS
+  content: { ticker: SOS, name: "Somali Shilling", symbol: "S", digits: 2, active: false }
+- id: SRD
+  content: { ticker: SRD, name: "Surinam Dollar", symbol: "$", digits: 2, active: false }
+- id: SSP
+  content: { ticker: SSP, name: "South Sudanese Pound", symbol: "£", digits: 2, active: false }
+- id: STN
+  content: { ticker: STN, name: "Dobra", symbol: "Db", digits: 2, active: false }
+- id: SVC
+  content: { ticker: SVC, name: "El Salvador Colon", symbol: "$", digits: 2, active: false }
+- id: SYP
+  content: { ticker: SYP, name: "Syrian Pound", symbol: "£", digits: 2, active: false }
+- id: SZL
+  content: { ticker: SZL, name: "Lilangeni", symbol: "E", digits: 2, active: false }
+- id: THB
+  content: { ticker: THB, name: "Baht", symbol: "฿", digits: 2, active: false }
+- id: TJS
+  content: { ticker: TJS, name: "Somoni", symbol: "SM", digits: 2, active: false }
+- id: TMT
+  content: { ticker: TMT, name: "Turkmenistan New Manat", symbol: "T", digits: 2, active: false }
+- id: TND
+  content: { ticker: TND, name: "Tunisian Dinar", symbol: "د.ت", digits: 3, active: false }
+- id: TOP
+  content: { ticker: TOP, name: "Pa'anga", symbol: "T$", digits: 2, active: false }
+- id: TRY
+  content: { ticker: TRY, name: "Turkish Lira", symbol: "₺", digits: 2, active: false }
+- id: TTD
+  content: { ticker: TTD, name: "Trinidad and Tobago Dollar", symbol: "TT$", digits: 2, active: false }
+- id: TWD
+  content: { ticker: TWD, name: "New Taiwan Dollar", symbol: "NT$", digits: 2, active: false }
+- id: TZS
+  content: { ticker: TZS, name: "Tanzanian Shilling", symbol: "TSh", digits: 2, active: false }
+- id: UAH
+  content: { ticker: UAH, name: "Hryvnia", symbol: "₴", digits: 2, active: false }
+- id: UGX
+  content: { ticker: UGX, name: "Uganda Shilling", symbol: "USh", digits: 0, active: false }
+- id: USD
+  content: { ticker: USD, name: "US Dollar", symbol: "$", digits: 2, favorite: true, active: true }
+- id: UYU
+  content: { ticker: UYU, name: "Peso Uruguayo", symbol: "$U", digits: 2, active: false }
+- id: UZS
+  content: { ticker: UZS, name: "Uzbekistan Sum", symbol: "soʻm", digits: 2, active: false }
+- id: VED
+  content: { ticker: VED, name: "Bolívar Soberano", symbol: "Bs.D", digits: 2, active: false }
+- id: VES
+  content: { ticker: VES, name: "Bolívar Soberano", symbol: "Bs.S", digits: 2, active: false }
+- id: VND
+  content: { ticker: VND, name: "Dong", symbol: "₫", digits: 0, active: false }
+- id: VUV
+  content: { ticker: VUV, name: "Vatu", symbol: "VT", digits: 0, active: false }
+- id: WST
+  content: { ticker: WST, name: "Tala", symbol: "WS$", digits: 2, active: false }
+- id: XAF
+  content: { ticker: XAF, name: "CFA Franc BEAC", symbol: "FCFA", digits: 0, active: false }
+- id: XCD
+  content: { ticker: XCD, name: "East Caribbean Dollar", symbol: "$", digits: 2, active: false }
+- id: XCG
+  content: { ticker: XCG, name: "Caribbean Guilder", symbol: "Cg", digits: 2, active: false }
+- id: XOF
+  content: { ticker: XOF, name: "CFA Franc BCEAO", symbol: "CFA", digits: 0, active: false }
+- id: XPF
+  content: { ticker: XPF, name: "CFP Franc", symbol: "₣", digits: 0, active: false }
+- id: YER
+  content: { ticker: YER, name: "Yemeni Rial", symbol: "﷼", digits: 2, active: false }
+- id: ZAR
+  content: { ticker: ZAR, name: "Rand", symbol: "R", digits: 2, active: false }
+- id: ZMW
+  content: { ticker: ZMW, name: "Zambian Kwacha", symbol: "ZK", digits: 2, active: false }
+- id: ZWG
+  content: { ticker: ZWG, name: "Zimbabwe Gold", symbol: "ZiG", digits: 2, active: false }

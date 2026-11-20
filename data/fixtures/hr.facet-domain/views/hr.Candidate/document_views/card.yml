@@ -1,0 +1,18 @@
+---
+content:
+  kind: card
+  template:
+    type: col
+    children:
+    - type: field
+      label: Status
+      value: $status
+    - type: field
+      label: Email
+      value: $email
+    - type: field
+      label: Phone
+      value: $phone
+  parent_doctype: hr.Candidate
+meta:
+  parent_id: hr.Candidate

@@ -1,0 +1,17 @@
+---
+content:
+  name: Initech
+  status: lead
+  address:
+    zip: "73301"
+    city: Austin
+    street: 300 Tech Park
+    country: USA
+  industry: technology
+  owner_id: iam.Account.account_recruiter_kim
+  domain_name: initech.com
+  company_size: 11-50
+  annual_revenue:
+    value: "2000000"
+    currency: USD
+meta: {}

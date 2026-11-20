@@ -1,0 +1,18 @@
+---
+content:
+  kind: card
+  template:
+    type: col
+    children:
+    - type: field
+      label: Deal Value
+      value: $value
+    - type: field
+      label: Status
+      value: $status
+    - type: field
+      label: Probability
+      value: $probability
+  parent_doctype: crm.Deal
+meta:
+  parent_id: crm.Deal

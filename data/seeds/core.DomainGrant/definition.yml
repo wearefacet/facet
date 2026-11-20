@@ -1,0 +1,50 @@
+doctype: DomainGrant
+domain: core
+schema_version: 1
+aggregate_root: false
+member_of: Domain
+display_name: "for {{ consumer_domain }}"
+description: "One cross-domain data-sharing contract. A grant lives under the producer domain — the domain that gives the data and owns the consent — and names one consumer domain plus the resources (producer doctypes and field tags) the consumer may read. Grants confer read access only. A grant is a ticket: filed inactive, accepted (activated) by the producer. See doc/backend/domain-grants.md."
+color: "#00695C"
+fields:
+  consumer_domain:
+    type: reference
+    doctype: core.Domain
+    required: true
+    title: "Consumer Domain"
+    description: "The domain this grant admits. The consumer reads the producer's covered fields through replication, hooks, and Lua reads — never writes. Self-grants (the parent domain) are invalid: same-domain edges need no grant."
+    filters: [equality]
+  resources:
+    type: array
+    required: true
+    title: "Resources"
+    description: "One entry per producer doctype the consumer may read. The list is the field mask, at tag grain: a source field is readable when the grant is active, the doctype has a resource entry, and the field's tags share at least one name with the entry's tags. Untagged producer fields carry the 'default' tag — an entry naming 'default' reaches every untagged field."
+    items:
+      type: object
+      title: "Resource Entry"
+      description: "The granted doctype with its tag mask."
+      properties:
+        doctype:
+          type: string
+          required: true
+          title: "Producer Doctype"
+          description: "Bare doctype name inside the producer domain (CamelCase, e.g. 'Person')."
+        tags:
+          type: array
+          required: true
+          title: "Granted Tags"
+          description: "Non-empty tag names the consumer may read on that doctype. Matched exactly against producer field tags; 'default' admits the producer's untagged fields."
+          items:
+            type: string
+            title: "Tag"
+  active:
+    type: boolean
+    default: false
+    read_only: true
+    title: "Active"
+    description: "Acceptance state of the contract. false — filed ticket awaiting acceptance, or paused after deactivation or a widening publish merge; no gate admits data. true — accepted contract; every gate honours it. Document callers can never write this field: only the activate/deactivate routes (and the publish flow's D11 filing) set it."
+actions:
+  activate:
+    description: "Accept the contract: set active to true. The producer's acceptance right, held doctype-global by the platform admin."
+  deactivate:
+    description: "Pause the contract: set active to false. Not retrospective — already-copied replica values stay in consumer documents."

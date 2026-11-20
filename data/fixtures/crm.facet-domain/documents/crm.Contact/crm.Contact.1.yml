@@ -1,0 +1,12 @@
+---
+content:
+  role: decision_maker
+  email: alice.johnson@acme.com
+  phone: +1-555-0101
+  owner_id: iam.Account.account_recruiter_kim
+  job_title: CTO
+  last_name: Johnson
+  department: Executive
+  first_name: Alice
+  is_primary: true
+meta: {}

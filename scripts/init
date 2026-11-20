@@ -1,0 +1,3 @@
+#!/bin/sh
+
+scripts/facet db_reset seed:dev

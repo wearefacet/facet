@@ -1,0 +1,15 @@
+---
+content:
+  kind: card
+  template:
+    type: col
+    children:
+    - type: field
+      label: Membership Role
+      value: $role
+    - type: field
+      label: Since
+      value: $start_date
+  parent_doctype: crm.CompanyMembership
+meta:
+  parent_id: crm.CompanyMembership

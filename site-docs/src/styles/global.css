@@ -1,0 +1,229 @@
+/* Tailwind CSS for Starlight — layer order and compatibility CSS follow the
+ * official Starlight guide: https://starlight.astro.build/guides/css-and-tailwind/ */
+@layer base, starlight, theme, components, utilities;
+@import '@astrojs/starlight-tailwind';
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+:root {
+	--sl-content-width: 50rem;
+}
+
+/*
+ * App design tokens — copied from frontend/src/lib/styles/tokens.css, the
+ * source of truth the Svelte app renders (the example/design-guideline.html
+ * page is out of date and must not be used as a colour reference). The brand
+ * accent is GOLD: fill (--accent) and readable ink (--accent-ink) are distinct
+ * on purpose — text, links and focus use the ink, never the raw fill.
+ *
+ * Starlight and the app both key the theme off `data-theme` on <html>, so
+ * the dark block mirrors the app's dark block one-to-one.
+ */
+:root {
+	/* neutrals */
+	--ground: #f4f6f8;
+	--surface: #ffffff;
+	--surface-2: #fafbfc;
+	--sunken: #eef1f4;
+	--border: #e4e7ec;
+	--border-strong: #d2d7df;
+
+	/* ink */
+	--text: #1a1d24;
+	--text-2: #5a6473;
+	--text-3: #646b78;
+
+	/* brand — GOLD */
+	--accent: #e4b61a;
+	--accent-press: #c8a312;
+	--accent-ink: #8c6410;
+	--accent-weak: rgba(228, 182, 26, 0.15);
+	--on-accent: #20180a;
+
+	/* semantic */
+	--ok: #1a6b3c;
+	--ok-weak: rgba(31, 122, 69, 0.12);
+	--warn: #9a5414;
+	--warn-weak: rgba(154, 84, 20, 0.14);
+	--danger: #b8333d;
+	--danger-weak: rgba(184, 51, 61, 0.11);
+	--info: #2f5fb0;
+	--info-weak: rgba(47, 95, 176, 0.12);
+
+	/* type */
+	--font-display: 'Space Grotesk', system-ui, sans-serif;
+	--font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+	--font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+[data-theme='dark'] {
+	--ground: #0b0e13;
+	--surface: #11151c;
+	--surface-2: #151a22;
+	--sunken: #0e1218;
+	--border: #222a35;
+	--border-strong: #2f3845;
+
+	--text: #e9edf3;
+	--text-2: #97a1b0;
+	--text-3: #828d9b;
+
+	--accent: #f0cc4d;
+	--accent-press: #f5d866;
+	--accent-ink: #f0cc4d;
+	--accent-weak: rgba(240, 204, 77, 0.18);
+	--on-accent: #1a1405;
+
+	--ok: #46b07a;
+	--ok-weak: rgba(70, 176, 122, 0.16);
+	--warn: #d97e2e;
+	--warn-weak: rgba(217, 126, 46, 0.16);
+	--danger: #e26464;
+	--danger-weak: rgba(226, 100, 100, 0.16);
+	--info: #6e93e0;
+	--info-weak: rgba(110, 147, 224, 0.16);
+}
+
+/*
+ * Map the app tokens onto Starlight's theme variables. Starlight derives the
+ * whole UI from this palette: page, nav and sidebar backgrounds, text, links,
+ * the active sidebar item, tables, inline code, asides, the search modal and
+ * the Expressive Code block chrome. Unlayered rules here win over Starlight's
+ * layered defaults in both modes.
+ */
+:root {
+	--sl-font: var(--font-sans);
+	--sl-font-mono: var(--font-mono);
+
+	--sl-color-white: var(--text);
+	--sl-color-gray-1: var(--text);
+	--sl-color-gray-2: var(--text);
+	--sl-color-gray-3: var(--text-2);
+	--sl-color-gray-4: var(--text-3);
+	--sl-color-gray-5: var(--border-strong);
+	--sl-color-gray-6: var(--border);
+	--sl-color-gray-7: var(--sunken); /* code-block background (light) */
+	--sl-color-black: var(--surface);
+
+	--sl-color-text: var(--text);
+	/* Links AND the active sidebar item background. The ink gold keeps links
+	 * AA-readable on light; the inverse text below sits on that background. */
+	--sl-color-text-accent: var(--accent-ink);
+	--sl-color-text-invert: var(--surface);
+	--sl-color-bg: var(--surface);
+	--sl-color-bg-nav: var(--ground);
+	--sl-color-bg-sidebar: var(--ground);
+	--sl-color-bg-inline-code: var(--sunken);
+	--sl-color-bg-accent: var(--accent-ink);
+
+	--sl-color-accent-low: var(--accent-weak);
+	--sl-color-accent: var(--accent-ink);
+	--sl-color-accent-high: var(--accent-ink);
+
+	--sl-color-hairline: var(--border);
+	--sl-color-hairline-light: var(--border);
+	--sl-color-hairline-shade: var(--border);
+
+	--sl-color-backdrop-overlay: rgba(26, 29, 36, 0.66);
+
+	--sl-shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 1px rgba(16, 24, 40, 0.04);
+	--sl-shadow-md: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 1px rgba(16, 24, 40, 0.04);
+	--sl-shadow-lg: 0 8px 24px -8px rgba(16, 24, 40, 0.16);
+
+	/* Asides — note carries information, tip is a positive shortcut, caution
+	 * and danger are the app's warn and danger. Title text uses the -high
+	 * colour, the border the base, the wash the *-weak token. */
+	--sl-color-blue-high: var(--info);
+	--sl-color-blue: var(--info);
+	--sl-color-blue-low: var(--info-weak);
+	--sl-color-purple-high: var(--ok);
+	--sl-color-purple: var(--ok);
+	--sl-color-purple-low: var(--ok-weak);
+	--sl-color-orange-high: var(--warn);
+	--sl-color-orange: var(--warn);
+	--sl-color-orange-low: var(--warn-weak);
+	--sl-color-red-high: var(--danger);
+	--sl-color-red: var(--danger);
+	--sl-color-red-low: var(--danger-weak);
+}
+
+[data-theme='dark'] {
+	--sl-color-gray-7: var(--surface-2);
+
+	/* Links use the bright dark-mode gold ink; the inverse text is the app's
+	 * dark ink that sits ON a gold fill. */
+	--sl-color-text-invert: var(--on-accent);
+	--sl-color-bg-inline-code: var(--border-strong);
+
+	--sl-color-hairline-light: var(--border-strong);
+	--sl-color-hairline-shade: var(--surface);
+
+	--sl-color-backdrop-overlay: rgba(11, 14, 19, 0.66);
+
+	--sl-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+	--sl-shadow-md: 0 1px 2px rgba(0, 0, 0, 0.4);
+	--sl-shadow-lg: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+}
+
+/* Headings and the site title use the app display font. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.site-title {
+	font-family: var(--font-display);
+}
+
+/* Header logo: one third smaller than Starlight's default size (the nav
+ * height minus its padding). Unlayered, so it wins over the layered
+ * SiteTitle rule. */
+.site-title img {
+	height: calc((var(--sl-nav-height) - 2 * var(--sl-nav-pad-y)) * 0.67);
+}
+
+::selection {
+	background: var(--accent-weak);
+}
+
+/* Scrollbars follow the theme tokens, as in the app. */
+html {
+	scrollbar-width: thin;
+	scrollbar-color: var(--border-strong) transparent;
+}
+
+/* Diagrams — build-diagrams.mjs renders each ```d2 fence to two SVGs under
+ * public/diagrams/ and replaces the fence with a pair of <img> elements. CSS
+ * shows the light or the dark file, so a theme switch needs no script.
+ *
+ * The diagram keeps its natural size and scrolls sideways when it is wider
+ * than the column. Shrinking it to fit would scale the text and the arrowheads
+ * down with it, which is exactly what makes a diagram unreadable. */
+.d2-diagram {
+	margin-block: 1.5rem;
+	overflow-x: auto;
+	/* Keeps a vertical scrollbar off a tall diagram; the page scrolls. */
+	overflow-y: hidden;
+}
+
+.d2-diagram__img {
+	display: block;
+	margin-inline: auto;
+	/* The SVG carries its own pixel size; this stops a wide one from being
+	 * squashed by the flex/grid parent. */
+	max-width: none;
+	height: auto;
+}
+
+.d2-diagram__dark {
+	display: none;
+}
+
+[data-theme='dark'] .d2-diagram__light {
+	display: none;
+}
+
+[data-theme='dark'] .d2-diagram__dark {
+	display: block;
+}

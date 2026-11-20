@@ -1,0 +1,56 @@
+---
+content:
+  icon: user-check
+  color: "#4CAF50"
+  domain: crm
+  fields:
+    name:
+      type: string
+      title: Company Name
+      filters:
+      - equality
+      - text_search
+      replicate:
+        via: company_id
+        field: name
+      description: The name of the customer company, replicated from the referenced Company.
+    status:
+      type: enum
+      title: Status
+      values:
+      - key: active
+        color: "#b16147"
+        label: Active
+      - key: churned
+        color: "#7c6db6"
+        label: Churned
+      default: active
+      filters:
+        - equality
+      description: The relationship status.
+    industry:
+      type: string
+      title: Industry
+      description: The industry of the customer.
+    owner_id:
+      type: reference
+      title: Owner
+      doctype: iam.Account
+      description: The account owner.
+    company_id:
+      type: reference
+      title: Company
+      doctype: crm.Company
+      description: The company this customer refers to.
+  doctype: Customer
+  sidecars:
+    comments:
+      doctype: core.Comment
+      column: target
+  description: An active customer record. Created when a Prospect is converted.
+  display_name: "{{ name }}"
+  search: "{{ name }} {{ industry }}"
+  aggregate_root: true
+  schema_version: 1
+meta:
+  parent_id: crm
