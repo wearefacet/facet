@@ -14,22 +14,22 @@
  * reference/color stay strings and money stays the composite
  * `{value: string, currency: string}` object.
  *
-	 * The patch is a plain object mirroring the document content shape — only the
-	 * fields present in the form are included, so untouched fields are not
-	 * clobbered by the deep-merge. A blank form value (`''`, the cleared sentinel
-	 * the form seeds) becomes `null` on update — for scalars and for structured
-	 * object fields — because a `null` key is the merge-patch signal to clear a
-	 * field. Nested objects (edited through `DvtObject`) that hold a real object
-	 * are sent as the full sub-object so the merge replaces the branch cleanly.
-	 *
-	 * When the persisted content is passed, the patch is minimal: a key whose
-	 * coerced value equals the persisted value is omitted. The edit form seeds
-	 * its values bag from the persisted content, so an untouched save emits an
-	 * empty patch — required because some doctypes carry Lua-guarded immutable
-	 * fields (`iam.Roles.name`, `app.App.slug`, …) whose `update` hook rejects
-	 * any patch that carries the key, changed or not. Same-value keys that do
-	 * slip through cost nothing: the backend's own JsonDiff folds them into a
-	 * no-op mutation.
+ * The patch is a plain object mirroring the document content shape — only the
+ * fields present in the form are included, so untouched fields are not
+ * clobbered by the deep-merge. A blank form value (`''`, the cleared sentinel
+ * the form seeds) becomes `null` on update — for scalars and for structured
+ * object fields — because a `null` key is the merge-patch signal to clear a
+ * field. Nested objects (edited through `DvtObject`) that hold a real object
+ * are sent as the full sub-object so the merge replaces the branch cleanly.
+ *
+ * When the persisted content is passed, the patch is minimal: a key whose
+ * coerced value equals the persisted value is omitted. The edit form seeds
+ * its values bag from the persisted content, so an untouched save emits an
+ * empty patch — required because some doctypes carry Lua-guarded immutable
+ * fields (`iam.Roles.name`, `app.App.slug`, …) whose `update` hook rejects
+ * any patch that carries the key, changed or not. Same-value keys that do
+ * slip through cost nothing: the backend's own JsonDiff folds them into a
+ * no-op mutation.
  */
 
 import type { DoctypeDef, FieldDef } from './types.js';

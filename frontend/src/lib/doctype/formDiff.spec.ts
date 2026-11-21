@@ -165,7 +165,9 @@ describe('buildFormPatch with a persisted baseline (minimal patch)', () => {
 
 	it('compares the coerced money composite against the persisted value', () => {
 		const persisted = { price: { value: '9.99', currency: 'EUR' } };
-		expect(buildFormPatch({ price: { value: '9.99', currency: 'EUR' } }, taskDef, persisted)).toEqual({});
+		expect(
+			buildFormPatch({ price: { value: '9.99', currency: 'EUR' } }, taskDef, persisted)
+		).toEqual({});
 		const changed = { price: { value: '19.99', currency: 'EUR' } };
 		expect(buildFormPatch(changed, taskDef, persisted)).toEqual({
 			price: { value: '19.99', currency: 'EUR' }
