@@ -53,31 +53,34 @@ votre métier, et Facet les tient ensemble.
 Les licences par siège et les logiciels gratuits se comparent mal dans
 l’abstrait, voici donc un point d’ancrage concret. Les chiffres utilisent les
 prix publics de chaque éditeur, vérifiés sur sa propre page tarifaire le
-2026-11-13, et montrent un coût mensuel sans remise, sans taxe et sans
-dépassement d’usage.
+2026-11-13 (celui d’Odoo le 2026-11-20), et montrent un coût mensuel sans
+remise, sans taxe et sans dépassement d’usage.
 
 | Option | Modèle de tarification | 50 utilisateurs (USD / mois) | Non inclus à ce palier |
 | --- | --- | --- | --- |
 | Airtable, offre Business | Par siège éditeur | $2,250 : 50 éditeurs à $45, facturés annuellement | Journal d’audit, permissions par champ, résidence des données dans l’UEà: tout est sur Enterprise Scale |
 | Notion, offre Business | Par membre | $1,000 : 50 membres à $20, facturés annuellement | Journal d’audit et résidence des donnéesà : les deux sur Enterprise |
 | Retool, offre Business | Par builder + par utilisateur interne | $925 : 5 builders à $50 plus 45 utilisateurs internes à $15, facturés annuellement | Auto-hébergement et SSOà: les deux sur Enterprise |
-| Odoo, offre Standard (US) | Par utilisateur | $1,055 : 50 utilisateurs à $21.10 après la première année ($16.90 la première année) | Studio, API externe, modules personnalisés, multi-sociétésà : tout est sur l’offre Custom |
+| Odoo, offre Standard (US) | Par utilisateur | $1,555 : 50 utilisateurs à $31.10 après la première année ($24.90 la première année) | Studio, API externe, modules personnalisés, multi-sociétés : tout est sur l’offre Custom |
 | Supabase, offre Pro | Forfait de base + usage | $25, plus calcul, stockage, egress et dépassements d’utilisateurs actifs | Modèle de rôles, piste d’audit, interface d’administration, hébergement d’appà : tout est à construire |
 | Firebase, offre Blaze | Par opération | Varie avec l’usageà ; les alertes de budget vous préviennent mais ne bloquent pas l’usage | Pas d’option d’auto-hébergement |
-| **Facet, auto-hébergé** | **Pas de licence** | **$0 de licence**, à 50 utilisateurs comme à 500. Vous payez un petit serveur (2 vCPU et 2–4 Go de RAM suffisent pour un petit déploiement), le stockage de fichiers, et votre usage IA | Graphiques intégrés, moteur de workflow inter-domaines et modules préconstruits ne sont pas encore là. Facet est en bêta |
+| **Facet, auto-hébergé** | **Pas de licence** | **$0 de licence**, à 50 utilisateurs comme à 500. Vous payez le serveur (environ $20 à $60 par mois pour une petite équipe), le stockage de fichiers, et votre usage IA. Un petit serveur (2 vCPU et 2–4 Go de RAM) suffit pour un petit déploiement ; quelques centaines d’utilisateurs demandent un serveur plus grand ou des workers séparés | Graphiques intégrés, moteur de workflow inter-domaines et modules préconstruits ne sont pas encore là ; chaque domaine demande du temps de modélisation. Facet est en bêta |
 
 Sur la ligne de Facet, rien n’est réservé à un palier supérieur. Le journal
 d’audit, les permissions par ligne et par champ, le choix de l’emplacement des
 données, le portail et l’hébergement d’applications arrivent avec le logiciel,
 pour chaque utilisateur.
 
-Les prix changentà : revérifiez-les avant de budgéter. Le *modèle*
-tarifaire survit aux chiffresà : le coût par siège grandit à chaque
+Les prix changent : revérifiez-les avant de budgéter. Odoo fixe ses prix
+d’après le pays depuis lequel on navigue, pas d’après l’adresse de
+facturation : vérifiez depuis le pays où vous facturez. Le *modèle*
+tarifaire survit aux chiffres : le coût par siège grandit à chaque
 embauche, celui de Facet non.
 
 - Chaque page de comparaison se termine par une liste de sources, pour
   vérifier vous-même chaque affirmation.
-- Le côté Facet de la balanceà : un logiciel à source disponible
+- Le côté Facet de la balance : un logiciel à source disponible
   (BSL 1.1), gratuit à utiliser et à auto-héberger. Si vous préférez ne pas le
-  faire tourner vous-même, nous proposons un hébergement géré en France, et
-  des services de conception et de migration de domaines.
+  faire tourner vous-même, nous proposons un hébergement géré, à
+  l’emplacement de votre choix, et des services de conception et de migration
+  de domaines.

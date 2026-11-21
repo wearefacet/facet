@@ -96,6 +96,19 @@ module Facet
           validation_error, definition = validate_update(db, domain, doctype_id, current_def, definition, current_version, force)
           return validation_error if validation_error
 
+          # 6.5. Duplicate scan for fields that gain `unique: true`. The
+          #      managed unique index the flag produces cannot build over
+          #      existing duplicates — reject the update with the values
+          #      named, before any mutation is written. Draft domains skip
+          #      the scan: publish copies structure only, so the definition
+          #      meets fresh data on the live domain.
+          unless draft_domain?(db, domain)
+            unique_errors = UniquePrecheck.validate_added_unique(db, current_def, definition)
+            unless unique_errors.empty?
+              return Facet::ServiceError.new(422, "Doctype validation failed", details: unique_errors)
+            end
+          end
+
           # 7. Compute diff and persist
           diff = compute_diff(current_content, definition)
 

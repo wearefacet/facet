@@ -71,7 +71,7 @@ enforce -> records
 | Primary purpose | Whatever the prompt asked for | The same app, standing on governed data |
 | Who builds what | You and the AI, at every layer: data, permissions, screens, hosting | The AI writes the screens; Facet already provides data, rights, history and hosting |
 | Data ownership & portability | Wherever the AI put it: a generated database, a spreadsheet, files on a laptop | Your own PostgreSQL; domain export/import, API, webhooks |
-| Hosting & data residency | You host it, or it sits on a free tier somewhere | Self-hosted (a small deployment runs on 2 vCPU and 2–4 GB RAM), or managed hosting in France |
+| Hosting & data residency | You host it, or it sits on a free tier somewhere | Self-hosted (a small deployment runs on 2 vCPU and 2–4 GB RAM), or managed hosting with your choice of location |
 | Deploying the app | A server, a pipeline, a domain, a certificate, and someone who knows how they fit together | Upload the built files to Facet. No server, no pipeline; any earlier version can be restored |
 | Permissions | Whatever was generated, if anything, and rarely reviewed | Roles with row and field grants, enforced in the data layer on every access path |
 | Audit & history | Only if someone asked for it, and then different in every app | Every change recorded by default: who, what, when; roll any document back |
@@ -79,7 +79,7 @@ enforce -> records
 | Custom apps | It is the app | Your vibe-coded app on the SDK, signed in over OAuth; Facet hosts its files |
 | AI | One builder; AI inside the app is your problem | The same builder, plus an in-app assistant, an embeddable assistant for your apps, and MCP for coding agents, all bound by the user's role |
 | Logic & automation | Whatever was generated, per app | Lua scripts inside a domain; real-time updates; webhooks |
-| Reporting & analytics | Only if it was built in | No built-in dashboards; your data sits in standard PostgreSQL, reachable from any BI tool through export or the API |
+| Reporting & analytics | Only if it was built in | No built-in dashboards; BI reads data through export or the API, so the role rules still apply. Direct database access is an admin privilege, outside the role model |
 | Ready-made business modules | No | None prebuilt; the in-app assistant models your domain with you, or our team designs it |
 | Cost | Model tokens, then hosting, TLS, maintenance and your time, per app | Free to use and self-host (source-available, BSL 1.1); you bring your own AI key; paid services only if you want them |
 | Maturity | Each app starts at day zero | Beta product on proven foundations: PostgreSQL, Redis, an event log |

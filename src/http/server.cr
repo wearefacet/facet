@@ -9,6 +9,7 @@ require "./helpers"
 require "./responders"
 require "./gates"
 require "./caching"
+require "./csrf_handler"
 require "./auth_handler"
 require "./metrics_handler"
 require "./metrics_route"
@@ -79,6 +80,11 @@ module Facet
         Kemal.config.add_handler JsonErrorHandler.new
         Kemal.config.add_handler DomainGate.new
         Kemal.config.add_handler Facet::OAuth::Cors.new
+        # Global CSRF gate. Pure request inspection (method, cookie presence,
+        # headers), so it sits directly in front of `AuthHandler` and never
+        # depends on auth state. The per-route `require_csrf` calls stay as
+        # defense in depth (see `CsrfHandler`).
+        Kemal.config.add_handler CsrfHandler.new
         Kemal.config.add_handler AuthHandler.new
         Kemal.config.max_request_body_size = 200 * 1024 * 1024
 

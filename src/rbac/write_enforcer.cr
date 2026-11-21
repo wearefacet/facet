@@ -16,7 +16,9 @@ module Facet
     # Permission scopes reference named scopes declared on the target
     # doctype. At enforcement time, the alias is expanded against the
     # doctype definition into a `field -> ScopeValue` `where` map, then
-    # evaluated against the target document's content.
+    # compiled to SQL and evaluated against the target row by the shared
+    # single-row gate (`EnforcerSupport.row_authorized?`) — the same
+    # compiler the list path uses.
     #
     # - Create: the row does not exist yet, so name-scope predicates cannot
     #   apply. `create` permissions only assert "this role may create rows of
@@ -235,8 +237,10 @@ module Facet
 
       # ── Private ────────────────────────────────────────────────────────
 
-      # Shared dispatch for operations on an existing document
-      # (update/delete/action — each checked against its own action name).
+      # Authorizes an operation on an existing document through the shared
+      # single-row gate: the row must exist, be live, and satisfy the
+      # matched permissions' scope clauses — compiled by
+      # `RBAC::ScopePredicateSql`, the same engine the list path uses.
       # `authorize_path` overrides the doctype path the gate checks — see
       # `authorize_create` for the nested-route contract.
       private def self.authorize_existing(
@@ -251,17 +255,7 @@ module Facet
         return true if auth_context.system?
         return PreviewEnforcer.authorizes?(db, action, domain, doc_type, doc_id, auth_context) if auth_context.preview?
 
-        gate = EnforcerSupport.dispatch_action(action, domain, doc_type, auth_context, authorize_path)
-        return false if gate.denied?
-        return true if gate.allowed?
-
-        content = Mutation::Client.fetch_content(db, domain, doc_type, doc_id)
-        scope_context, context_results, definition =
-          EnforcerSupport.load_scope_inputs(db, domain, doc_type, auth_context)
-
-        gate.permissions.any? do |perm|
-          ScopeExpander.match?(perm, content, scope_context, context_results, definition, doc_id: doc_id)
-        end
+        EnforcerSupport.row_authorized?(db, action, domain, doc_type, doc_id, auth_context, authorize_path)
       end
     end
   end

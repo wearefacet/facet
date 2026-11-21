@@ -11,8 +11,8 @@ require "../support/rbac_helper"
 
 # The `$doc_id` reserved field token: a named-scope `where` field (and a
 # context-set `select`/`where` field) that reads the row's own
-# `projections.id`. Covers the SQL compilation, the in-process matcher, the
-# list path, and the fail-closed nil-id contract.
+# `projections.id`. Covers the SQL compilation, the single-row gate, the
+# list path, and the context-set select projection.
 #
 # The fixture mirrors the seeded domain-editor scopes: a `core.Domain`-like
 # row whose identity lives in the row id, not in content.
@@ -76,7 +76,7 @@ module Facet::RBAC
     end
   end
 
-  describe "$doc_id in named scopes (in-process match)" do
+  describe "$doc_id in named scopes (single-row gate)" do
     before_each do
       with_db do |db|
         create_doc_id_fixture(db)
@@ -115,34 +115,6 @@ module Facet::RBAC
         ctx = AuthContext.authenticated("acc_1", role)
         WriteEnforcer.authorize_delete(db, "core", "Domain", "_draft1", ctx).should be_true
         WriteEnforcer.authorize_delete(db, "core", "Domain", "live1", ctx).should be_false
-      end
-    end
-
-    it "fails closed when the caller supplies no id" do
-      with_db do |db|
-        content = Mutation::Client.fetch_content(db, "core", "Domain", "live1")
-        scope_context = ScopeContext.load(db, "acc_1")
-        context_results = ContextResolver.resolve_for_domain(db, "core", scope_context)
-        definition = Doctype::DefinitionStore.fetch(db, "core.Domain")
-
-        perm = Permission.new(action: "update", domain: "core", path: ["Domain"], scope: ["$domain_editor"])
-        ScopeExpander.match?(perm, content, scope_context, context_results, definition)
-          .should be_false
-      end
-    end
-
-    it "matches against the caller-supplied id" do
-      with_db do |db|
-        content = Mutation::Client.fetch_content(db, "core", "Domain", "live1")
-        scope_context = ScopeContext.load(db, "acc_1")
-        context_results = ContextResolver.resolve_for_domain(db, "core", scope_context)
-        definition = Doctype::DefinitionStore.fetch(db, "core.Domain")
-
-        perm = Permission.new(action: "update", domain: "core", path: ["Domain"], scope: ["$domain_editor"])
-        ScopeExpander.match?(perm, content, scope_context, context_results, definition, doc_id: "live1")
-          .should be_true
-        ScopeExpander.match?(perm, content, scope_context, context_results, definition, doc_id: "other")
-          .should be_false
       end
     end
   end

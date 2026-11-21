@@ -86,8 +86,8 @@ module Facet
     # (named scopes, context sets) is **not** intersected with the grant.
     # A role whose permission carries `scope: ["$mine"]` passes that
     # scope alias unchanged into the app token. The enforcer runs
-    # the existing scope predicates (`ScopeExpander`, `ScopeMatcher`)
-    # exactly as today — the grant narrows the set of `(domain, path,
+    # the existing scope predicates (`ScopeExpander`, `ScopePredicateSql`)
+    # exactly as today — the grant narrows the set of `(domain, path,`
     # action)` the token may attempt at all, never widening or relaxing a
     # row-level filter.
     #

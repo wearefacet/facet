@@ -13,8 +13,8 @@ module Facet
 
     # A shared helper that qualifies a bare account id into the storage form
     # used by reference fields targeting `iam.Account`. Used by RBAC scope
-    # evaluation (ScopeMatcher) and context set resolution (ContextResolver)
-    # as one of the two accepted `$self` forms.
+    # evaluation (ScopePredicateSql `$self` clauses) and context set
+    # resolution (ContextResolver) as one of the two accepted `$self` forms.
     def self.qualify_principal(account_id : String) : String
       "#{PRINCIPAL_QUALIFIED_DOCTYPE}.#{account_id}"
     end

@@ -958,8 +958,9 @@ module Facet
 
       it "treats an empty lua: section like an absent one" do
         cfg = Config.from_yaml_node(build_yaml_config("lua:"))
-        cfg.lua.instruction_limit.should eq(10_000_000)
-        cfg.lua.memory_limit_mb.should eq(100)
+        cfg.lua.instruction_limit.should eq(1_000_000)
+        cfg.lua.memory_limit_mb.should eq(32)
+        cfg.lua.time_limit_s.should eq(0.5)
       end
 
       it "treats an empty hooks: section like an absent one" do

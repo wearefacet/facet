@@ -29,7 +29,7 @@ The loaders read the keys below:
 | (root) | `artifact_grant_secret_previous` | string | — | Previous grant secret, still accepted during rotation; may come from the ARTIFACT_GRANT_SECRET_PREVIOUS env var. |
 | (root) | `base_url` | string | defaults to host | Public base URL used to build absolute links. |
 | (root) | `host` | string | "localhost:3000" | Host and port the server binds to; may carry a scheme when a reverse proxy terminates TLS. |
-| (root) | `snapshot_every` | integer | 25 | Mutations between automatic projection snapshots. |
+| (root) | `snapshot_every` | integer | 10 | Mutations between automatic projection snapshots. |
 | (root) | `trusted_proxies` | string list | [] | Reverse-proxy addresses whose X-Forwarded-For chains the server trusts. |
 | artifact | `grant_ttl_media_seconds` | integer | 21600 | Signed download-link TTL for audio and video, in seconds. |
 | artifact | `grant_ttl_seconds` | integer | 3600 | Signed download-link TTL for documents and images, in seconds. |
@@ -111,9 +111,9 @@ The loaders read the keys below:
 | localization | `default_timezone` | string | "UTC" | Timezone accounts follow until they pick their own; must be a loadable IANA name. |
 | logs | `format` | string | "text" | Log output format: text or json. |
 | logs | `level` | string | "info" | Minimum severity bound to every source. |
-| lua | `instruction_limit` | integer | 10000000 | Lua VM instruction budget per script run. |
-| lua | `memory_limit_mb` | integer | 100 | Lua VM memory cap, in MB. |
-| lua | `time_limit_s` | number | 5.0 | Lua VM wall-clock cap, in seconds. |
+| lua | `instruction_limit` | integer | 1000000 | Lua VM instruction budget per script run. |
+| lua | `memory_limit_mb` | integer | 32 | Lua VM memory cap, in MB. |
+| lua | `time_limit_s` | number | 0.5 | Lua VM wall-clock cap, in seconds. |
 | mail | `adapter` | string | "dev" | Delivery adapter: dev prints to stdout, smtp delivers through the smtp sub-object; production refuses dev. |
 | mail | `allow_dev_adapter_in_production` | boolean | false | Escape hatch that lets the stdout adapter boot in production. |
 | mail | `from_address` | string | "no-reply@facet.local" | Sender address for outbound email. |
