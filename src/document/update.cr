@@ -202,8 +202,17 @@ module Facet
             #    The mutation ULID is minted first so the hook's Lua
             #    `document.*` writes can stamp it as their `cause.parent`.
             mut_id = Util::ScriptHelpers.ulid
+            # A hook refusal must leave through the block's value, never a
+            # non-local `return`: `with_transaction` rolls back only on an
+            # error value (or a raised exception), not on a `return` that
+            # unwinds the block — a `return` here would leak the open
+            # transaction and its projection row lock past the method.
+            hook_error : Facet::ServiceError? = nil
             merged, pending = run_script_update(span, txn, defn, merged, current, actioner_id, domain, doc_type, doc_id, patch, cause: cause.try(&.child_of(mut_id)), provenance: provenance, auth_context: auth_context, authorize_path: authorize_path) do |err_merged|
-              return err_merged
+              hook_error = err_merged
+            end
+            if err = hook_error
+              next err
             end
 
             result = finalize_and_persist(span, txn, defn, domain, doc_type, doc_id, actioner_id, auth_context, cause, provenance, mut_id, reentrant, current, merged, projection)

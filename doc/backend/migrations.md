@@ -30,6 +30,10 @@ facet migrate:down --yes      # skip the confirmation prompt
 
 After the first release tag, `db/migrations/` is append-only. Never edit, renumber, or merge a migration that any installed database has applied — `_migrations` holds the applied filenames, and editing applied files desynchronizes every deployed database from the repository history. The append-only rule also protects the embedding: a binary built from a tree whose migration was edited carries SQL that disagrees with its own `_migrations` history.
 
+A migration that no release tag contains is not yet part of any `_migrations` history. Fold it into its own table or function definition instead of leaving a follow-up `ALTER` or `CREATE OR REPLACE` behind: a fresh database then gets the final shape in one file, and the schema keeps one definition per object.
+
+A `-- DOWN` marker must be a comment line of its own. The runner matches `-- DOWN` only when the rest of the line is empty; prose such as `-- DOWN restores …` in a file header is not a marker.
+
 ## Deployment constraints
 
 Every timestamp column in the schema is tz-naive and stores UTC. Two layers give every client a UTC session:
@@ -51,7 +55,7 @@ Each file maps to one concern, so objects never get patched later via `ALTER TAB
 | `db/migrations/0002_indexing.sql` | Managed doctype indexes: `doctype_indexes` tracking table (CHECK constraint covers all index types including `gist_tstzrange` / `gist_daterange`); IMMUTABLE wrappers `facet_tstzrange(start_text, end_text)` and `facet_daterange(start_text, end_text)` for GiST range expression indexes (PostgreSQL marks `text::timestamptz` / `text::date` as STABLE not IMMUTABLE, so a raw range expression cannot be used in `CREATE INDEX`; the doctype validation layer guarantees well-formed ISO-8601 UTC inputs, so the IMMUTABLE marking truthfully reflects the runtime guarantee); type-extracting helpers `jsonb_as_numeric`, `jsonb_as_boolean`, `facet_money_value_as_numeric` for typed filter / sort / index |
 | `db/migrations/0003_artifacts.sql` | `artifacts` table (file/large-field storage, nullable `content` + `location` for S3) + `artifact_owners`, `artifact_grants`, `artifact_references` |
 | `db/migrations/0004_replication.sql` | `replication_subscriptions` table + indexes for cross-domain field replication |
-| `db/migrations/0005_assistant.sql` | Assistant storage side tables: `agent_conversations` + `agent_turns` (LLM agent session/turn persistence; turns cascade with their conversation) + `assistant_usage` (per-account token usage ledger; no FK, outlives conversations — windowed by `(account_id, recorded_at)`) |
+| `db/migrations/0005_assistant.sql` | Assistant storage side tables: `agent_conversations` (identity + `system_prompt`/`context`/`enabled_tools` + the `archived_at` list-organisation flag) + `agent_turns` (LLM turn persistence, cascade-deleted with its conversation; `turn_token` carries the streaming cancel token) + `assistant_usage` (per-account token usage ledger; no FK, outlives conversations — windowed by `(account_id, recorded_at)`) |
 | `db/migrations/0006_sequence_identifiers.sql` | `sequence_identifiers` table (last generated sequential identifier per doctype) |
 | `db/migrations/0007_account_settings.sql` | `account_settings` table (per-account, per-app preference store; not event-sourced) |
 | `db/migrations/0008_jobs.sql` | `background_jobs` queue (one row = one unit of work) + `webhook_calls` (outbound webhook HTTP attempt log) |

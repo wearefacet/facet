@@ -992,8 +992,8 @@ facet/
 │   │   ├── preview_enforcer_spec.cr                  # PreviewEnforcer
 │   │   ├── principal_spec.cr                         # Principal
 │   │   ├── read_enforcer_spec.cr                     # ReadEnforcer
+│   │   ├── parent_id_scope_spec.cr                   # $parent_id row gate + list parity
 │   │   ├── scope_context_spec.cr                     # ScopeContext
-│   │   ├── scope_matcher_spec.cr                     # ScopeMatcher
 │   │   ├── scope_predicate_spec.cr                   # ScopePredicateParser
 │   │   ├── scope_predicate_sql_semantics_spec.cr     # ScopePredicateSql semantics
 │   │   ├── scope_value_spec.cr                       # ScopeValue

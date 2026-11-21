@@ -8,9 +8,15 @@
 -- db/migrations/0009_notifications.sql):
 --
 --   1. `agent_conversations` — one row per Agent session. Holds the stable
---      identity (session_id, cache_key) and a snapshot of the config that
---      produced the conversation, so that a session can be reconstructed
---      byte-for-byte for replay (and KV cache hits).
+--      identity (session_id, cache_key) and the conversation's own data
+--      (`system_prompt`, `context`, `enabled_tools`). The connection —
+--      endpoint, key, model, and the sampling knobs — resolves at every
+--      turn start from `core.SystemSettings`, so it is not pinned on the
+--      row; the per-turn model history lives in `assistant_usage.model`.
+--      `archived_at` is list-organisation state only: an archived
+--      conversation stays readable and streamable, a new turn unarchives
+--      it, and the conversation list hides it unless the caller filters
+--      `archived__eq=true`.
 --   2. `agent_turns` — one row per Agent#ask invocation.
 --   3. `assistant_usage` — per-account token usage ledger, one row per
 --      billed turn, written by Stream::Session at every terminal path. It
@@ -36,11 +42,10 @@ CREATE TABLE agent_conversations (
     id              text        PRIMARY KEY DEFAULT ulid(),
     session_id      text        NOT NULL,
     cache_key       text        NOT NULL,
-    model           text        NOT NULL,
     system_prompt   text,
-    config          jsonb       NOT NULL DEFAULT '{}'::jsonb,
     context         jsonb       NOT NULL DEFAULT '{}'::jsonb,
     enabled_tools   jsonb       NOT NULL DEFAULT '[]'::jsonb,
+    archived_at     timestamp,
     created_at      timestamp   NOT NULL DEFAULT now(),
     updated_at      timestamp   NOT NULL DEFAULT now()
 );
@@ -68,6 +73,13 @@ CREATE INDEX idx_agent_conversations_session ON agent_conversations (session_id)
 -- — `Cron::AssistantTurnSweep` marks it `error` with message `interrupted`.
 -- The partial unique index enforces at most one running turn per
 -- conversation, so the read-then-open race is decided by the database.
+--
+-- `turn_token` is the streaming cancel token: the Redis Pub/Sub key
+-- `assistant:cancel:<turn_token>` published by
+-- `POST /Api/assistant/cancel/:turn_token`. Persisting it on the row lets a
+-- client that missed the SSE `meta` event (page reload mid-turn) read the
+-- token back from the turns API and still cancel. NULL for turns that never
+-- stream (manual `POST /:id/turns` rows).
 -- ---------------------------------------------------------------------------
 CREATE TABLE agent_turns (
     id                text        PRIMARY KEY DEFAULT ulid(),
@@ -79,6 +91,7 @@ CREATE TABLE agent_turns (
     usage             jsonb       NOT NULL DEFAULT '{}'::jsonb,
     finish_reason     text,
     error             text,
+    turn_token        text,
     created_at        timestamp   NOT NULL DEFAULT now(),
     UNIQUE (conversation_id, idx)
 );

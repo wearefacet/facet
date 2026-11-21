@@ -57,10 +57,7 @@ module Facet
           return MetadataGate.row_readable?(doc_type, doc_id, auth_context)
         end
 
-        result = with_scoped(db, "read", domain, doc_type, auth_context, authorize_path) do |perms, scope_context, context_results, definition|
-          content = Mutation::Client.fetch_content(db, domain, doc_type, doc_id)
-          ScopeExpander.any_match?(perms, content, scope_context, context_results, definition, doc_id: doc_id)
-        end
+        result = EnforcerSupport.row_authorized?(db, "read", domain, doc_type, doc_id, auth_context, authorize_path)
 
         # Monotonic union (B-123): a scoped read line whose row scope fails
         # still serves the row when the metadata gate reaches it.
@@ -93,7 +90,7 @@ module Facet
           # and a denied read both surface as a non-disclosing 404 (matching
           # the role-based path's contract).
           return false unless PreviewEnforcer.authorizes?(db, "read", domain, doc_type, doc_id, auth_context)
-          return exists_undeleted?(db, domain, doc_type, doc_id)
+          return EnforcerSupport.exists_undeleted?(db, domain, doc_type, doc_id)
         end
 
         gate = EnforcerSupport.dispatch_action("read", domain, doc_type, auth_context, authorize_path)
@@ -103,19 +100,19 @@ module Facet
           # (flat gate only) — existence is still verified below.
           if authorize_path.nil? && MetadataGate.metadata_doctype?(domain, doc_type) &&
              MetadataGate.row_readable?(doc_type, doc_id, auth_context)
-            exists_undeleted?(db, domain, doc_type, doc_id)
+            EnforcerSupport.exists_undeleted?(db, domain, doc_type, doc_id)
           else
             false
           end
         elsif gate.allowed?
-          exists_undeleted?(db, domain, doc_type, doc_id)
+          EnforcerSupport.exists_undeleted?(db, domain, doc_type, doc_id)
         else
           scope_context, context_results, definition =
             EnforcerSupport.load_scope_inputs(db, domain, doc_type, auth_context)
 
           base_params = [domain, doc_type, doc_id] of ::DB::Any
           scope_clauses, scope_params =
-            build_permission_scope_clauses(gate.permissions, scope_context, context_results, definition, start_idx: base_params.size + 1)
+            EnforcerSupport.build_permission_scope_clauses(gate.permissions, scope_context, context_results, definition, start_idx: base_params.size + 1)
 
           # Monotonic union (B-123): a scoped read line on the metadata
           # doctype must never remove a row the metadata gate reaches.
@@ -294,7 +291,7 @@ module Facet
         # every scope failed to expand (unknown alias or doctype defn
         # missing) — fail closed.
         clauses, params =
-          build_permission_scope_clauses(gate.permissions, scope_context, context_results, definition, start_idx: start_idx)
+          EnforcerSupport.build_permission_scope_clauses(gate.permissions, scope_context, context_results, definition, start_idx: start_idx)
 
         # Monotonic union (B-123): a scoped read line on the metadata
         # doctype must never remove a row the metadata gate reaches. OR the
@@ -476,144 +473,6 @@ module Facet
         return false if path.nil? || root_id.nil?
 
         MetadataGate.definition_child_readable?(path, root_id, auth_context)
-      end
-
-      # Shared dispatch: system bypass, denied, all, or scoped payload.
-      # Delegates to `EnforcerSupport.dispatch_action` and yields the
-      # matched scope permissions (matching permissions + context set
-      # results + doctype definition) to the block on `Scoped`. The block
-      # returns a `Bool` from the actual scope evaluation. `authorize_path`
-      # overrides the gate path — see `list_where_clauses`.
-      private def self.with_scoped(
-        db : DB::Connection,
-        action : String,
-        domain : String,
-        doc_type : String,
-        auth_context : AuthContext,
-        authorize_path : Array(String)? = nil,
-        &
-      ) : Bool
-        return true if auth_context.system?
-
-        gate = EnforcerSupport.dispatch_action(action, domain, doc_type, auth_context, authorize_path)
-        return false if gate.denied?
-        return true if gate.allowed?
-
-        scope_context, context_results, definition =
-          EnforcerSupport.load_scope_inputs(db, domain, doc_type, auth_context)
-        yield gate.permissions, scope_context, context_results, definition
-      end
-
-      # Builds OR-ed scope clauses for a set of matching permissions.
-      #
-      # For each permission, expands every alias on the permission to a
-      # predicate map. Aliases on the same permission are OR-ed within a
-      # parenthesised group; permissions themselves are then OR-ed by the
-      # caller's `clauses.join(" OR ")`.
-      #
-      # `start_idx` is the placeholder index for the FIRST bound parameter;
-      # this lets callers compose the scope clauses with other WHERE fragments
-      # (e.g. `domain = $1 AND ... AND (<scopes>)` for `parent_authorized?`).
-      #
-      # Returns `{clauses, params}`. Empty `clauses` means no scope predicate
-      # applied (every matching permission is unrestricted OR every scope
-      # failed to expand — caller disambiguates).
-      private def self.build_permission_scope_clauses(
-        perms : Array(Permission),
-        scope_context : ScopeContext,
-        context_results : Hash(String, Array(String)),
-        definition : Doctype::DoctypeDefinition?,
-        start_idx : Int32,
-      ) : {Array(String), Array(::DB::Any)}
-        clauses = [] of String
-        params = [] of ::DB::Any
-        idx = start_idx
-
-        perms.each do |perm|
-          # Unrestricted permission: matches everything, no clause needed.
-          # Caller relies on the empty-clauses case to mean "no restriction".
-          next if perm.unrestricted?
-
-          predicates_list = ScopeExpander.expand_all(perm, definition)
-          # Unknown alias: fail closed — emit an unsatisfiable clause.
-          if predicates_list.nil?
-            clauses << "1=0"
-            next
-          end
-
-          # Build one AND-clause per alias on this permission, then OR them
-          # together inside a parenthesised group so the outer join (which
-          # OR-s across permissions) preserves the per-permission grouping.
-          perm_clauses = [] of String
-          predicates_list.each do |predicates|
-            clause_sql, clause_params, next_idx =
-              build_scope_sql(predicates, scope_context, context_results, idx, definition)
-            if clause_sql
-              perm_clauses << clause_sql
-              params.concat(clause_params)
-              idx = next_idx
-            else
-              # Empty predicate map (named scope with empty `where`) means
-              # this alias matches every row — the entire OR-group therefore
-              # matches every row. Emit nothing for this permission.
-              perm_clauses.clear
-              break
-            end
-          end
-
-          next if perm_clauses.empty?
-          if perm_clauses.size == 1
-            clauses << perm_clauses[0]
-          else
-            clauses << "(#{perm_clauses.join(" OR ")})"
-          end
-        end
-
-        {clauses, params}
-      end
-
-      # Builds a SQL WHERE fragment from an expanded named scope's parsed
-      # predicates. Delegates to the shared `RBAC::ScopePredicateSql`
-      # compiler (the same semantics `ContextResolver` uses), so the
-      # single-doc and list surfaces agree on operator behaviour.
-      #
-      # Returns `{clause, params, next_idx}` where `next_idx` is the placeholder
-      # index after the last parameter this clause bound. A `nil` clause means
-      # the predicate list is empty (matches every row).
-      private def self.build_scope_sql(
-        predicates : Array(ScopePredicate),
-        scope_context : ScopeContext,
-        context_results : Hash(String, Array(String)),
-        start_idx : Int32,
-        definition : Doctype::DoctypeDefinition?,
-      ) : {String?, Array(::DB::Any), Int32}
-        ScopePredicateSql.build_clauses(
-          predicates, scope_context, context_results, start_idx, definition
-        )
-      end
-
-      # Returns true if a projection row exists and is not soft-deleted.
-      private def self.exists_undeleted?(
-        db : DB::Connection,
-        domain : String,
-        doc_type : String,
-        doc_id : String,
-      ) : Bool
-        exists = db.query_one?(
-          "SELECT 1 FROM projections WHERE domain = $1 AND doc_type = $2 AND id = $3 AND deleted_at IS NULL LIMIT 1",
-          domain, doc_type, doc_id,
-          as: Int32
-        )
-        !exists.nil?
-      end
-
-      # Returns true if a field is visible given the active tags.
-      private def self.field_visible?(
-        field_def : Doctype::FieldDefinition,
-        active_tags : Set(String),
-      ) : Bool
-        field_tags = field_def.tags || ["default"]
-        field_tags.all? { |t| active_tags.includes?(t) }
       end
     end
   end
