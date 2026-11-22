@@ -31,7 +31,15 @@ COPY src ./src
 # next to `src/` for the `read_file` macros to resolve.
 COPY db ./db
 COPY data ./data
-RUN crystal build src/main.cr -o /app/facet
+# `--link-flags=-Wl,--no-export-dynamic`: the debug (non-release) build is
+# multi-module, so Crystal links it with `-rdynamic` and GNU ld turns every
+# `@` in a mangled name into an ELF symbol version. Past ~32767 versions the
+# 15-bit `.gnu.version` index overflows and the loader resolves libc symbols
+# (environ, __libc_start_main) against bogus method names — the same class of
+# failure as the spec binary (`make test`), which also links with this flag.
+# See crystal-lang/crystal#13193. A release build is single-module and immune;
+# this image deliberately builds unoptimized (see the runtime stage note).
+RUN crystal build src/main.cr --link-flags=-Wl,--no-export-dynamic -o /app/facet
 
 FROM crystallang/crystal:1.21.0
 ARG VERSION=dev
