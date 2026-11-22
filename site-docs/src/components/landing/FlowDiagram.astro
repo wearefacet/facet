@@ -1,0 +1,318 @@
+---
+// Animated "how it fits" diagram for the landing page: every app (team-built,
+// AI agent, the workspace) reaches the domains only through Facet's
+// governance layers. Labels are props so each locale passes its own words.
+// Packets travel with SMIL <animateMotion>; they are hidden under
+// prefers-reduced-motion.
+interface Props {
+	headings: [string, string, string];
+	apps: [string, string, string];
+	layers: [string, string, string];
+	domains: [string, string, string];
+	caption?: string;
+}
+const { headings, apps, layers, domains, caption } = Astro.props;
+
+const rowY = [70, 160, 250];
+const appIcons = ['app', 'ai', 'grid'] as const;
+const domainColors = ['#d9822b', '#f2c14e', '#e8a33d'];
+
+// Left wires: app box right edge → Facet panel left edge (fanning into the middle).
+const inWires = rowY.map((y, i) => `M214 ${y} C 262 ${y}, 262 ${150 + i * 20}, 306 ${150 + i * 20}`);
+// Right wires: Facet panel right edge → domain box left edge.
+const outWires = rowY.map((y, i) => `M494 ${150 + i * 20} C 538 ${150 + i * 20}, 538 ${y}, 586 ${y}`);
+---
+
+<figure class="flow not-content">
+	<div class="flow__scroll">
+		<svg viewBox="0 0 800 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="flow-title flow-desc">
+			<title id="flow-title">{headings.join(' → ')}</title>
+			<desc id="flow-desc">{`${apps.join(', ')} → ${layers.join(', ')} → ${domains.join(', ')}`}</desc>
+			<defs>
+				{inWires.map((d, i) => <path id={`flow-in-${i}`} d={d} />)}
+				{outWires.map((d, i) => <path id={`flow-out-${i}`} d={d} />)}
+				<linearGradient id="flow-panel" x1="0" y1="0" x2="0" y2="1">
+					<stop offset="0" stop-color="var(--accent)" stop-opacity="0.16" />
+					<stop offset="1" stop-color="var(--accent)" stop-opacity="0.04" />
+				</linearGradient>
+				<linearGradient id="flow-scan" x1="0" y1="0" x2="0" y2="1">
+					<stop offset="0" stop-color="var(--accent)" stop-opacity="0" />
+					<stop offset="0.5" stop-color="var(--accent)" stop-opacity="0.35" />
+					<stop offset="1" stop-color="var(--accent)" stop-opacity="0" />
+				</linearGradient>
+				<clipPath id="flow-panel-clip"><rect x="306" y="26" width="188" height="290" rx="18" /></clipPath>
+			</defs>
+
+			<!-- column headings -->
+			<g class="flow-heading">
+				<text x="117" y="16" text-anchor="middle">{headings[0]}</text>
+				<text x="400" y="16" text-anchor="middle">{headings[1]}</text>
+				<text x="683" y="16" text-anchor="middle">{headings[2]}</text>
+			</g>
+
+			<!-- wires -->
+			<g fill="none" stroke-linecap="round">
+				{
+					[...inWires, ...outWires].map((d, i) => (
+						<>
+							<path d={d} class="flow-wire" />
+							<path d={d} class="flow-wire-flow" style={`animation-delay:${-i * 0.3}s`} />
+						</>
+					))
+				}
+			</g>
+
+			<!-- apps -->
+			{
+				apps.map((label, i) => (
+					<g class="flow-node" transform={`translate(20 ${rowY[i] - 30})`}>
+						<rect width="194" height="60" rx="14" class="flow-box" />
+						<g transform="translate(16 16)" class="flow-icon">
+							<rect width="28" height="28" rx="8" class="flow-icon-bg" />
+							{appIcons[i] === 'app' && (
+								<g>
+									<rect x="7" y="8" width="14" height="3" rx="1.5" />
+									<rect x="7" y="13" width="14" height="2.5" rx="1.25" opacity="0.6" />
+									<rect x="7" y="17.5" width="9" height="2.5" rx="1.25" opacity="0.6" />
+								</g>
+							)}
+							{appIcons[i] === 'ai' && <path d="M14 5 l2.6 6.4 6.4 2.6 -6.4 2.6 -2.6 6.4 -2.6 -6.4 -6.4 -2.6 6.4 -2.6z" />}
+							{appIcons[i] === 'grid' && (
+								<g>
+									<rect x="7" y="7" width="6" height="6" rx="1.5" />
+									<rect x="15" y="7" width="6" height="6" rx="1.5" opacity="0.6" />
+									<rect x="7" y="15" width="6" height="6" rx="1.5" opacity="0.6" />
+									<rect x="15" y="15" width="6" height="6" rx="1.5" />
+								</g>
+							)}
+						</g>
+						<text x="56" y="35" class="flow-label">{label}</text>
+					</g>
+				))
+			}
+
+			<!-- Facet panel -->
+			<g>
+				<rect x="306" y="26" width="188" height="290" rx="18" fill="url(#flow-panel)" class="flow-panel" />
+				<g clip-path="url(#flow-panel-clip)">
+					<rect x="306" y="26" width="188" height="60" fill="url(#flow-scan)" class="flow-scan" />
+				</g>
+				<g transform="translate(372 36) scale(0.56)">
+					<polygon points="50,60 12,60 19.26,37.66" fill="#d9822b" />
+					<polygon points="50,60 19.26,37.66 38.26,23.86" fill="#e8a33d" />
+					<polygon points="50,60 38.26,23.86 61.74,23.86" fill="#f8dc94" />
+					<polygon points="50,60 61.74,23.86 80.74,37.66" fill="#f2c14e" />
+					<polygon points="50,60 80.74,37.66 88,60" fill="#b8621b" />
+					<polygon points="13,67 87,67 77,77 23,77" class="flow-gem-base" />
+				</g>
+				{
+					layers.map((label, i) => (
+						<g transform={`translate(322 ${104 + i * 66})`}>
+							<rect width="156" height="52" rx="12" class="flow-layer" style={`--k:${i}`} />
+							<text x="78" y="31" text-anchor="middle" class="flow-label">{label}</text>
+						</g>
+					))
+				}
+			</g>
+
+			<!-- domains -->
+			{
+				domains.map((label, i) => (
+					<g class="flow-node" transform={`translate(586 ${rowY[i] - 30})`}>
+						<rect width="194" height="60" rx="14" class="flow-box" />
+						<rect x="0" y="0" width="8" height="60" rx="4" fill={domainColors[i]} />
+						<g transform="translate(22 17)" class="flow-db">
+							<ellipse cx="12" cy="4" rx="12" ry="4" />
+							<path d="M0 4 v18 a12 4 0 0 0 24 0 v-18" fill="none" />
+							<path d="M0 13 a12 4 0 0 0 24 0" fill="none" />
+						</g>
+						<text x="60" y="35" class="flow-label">{label}</text>
+					</g>
+				))
+			}
+
+			<!-- packets -->
+			<g class="flow-packets">
+				{
+					[0, 1, 2].map((i) => (
+						<circle r="4.5" fill="var(--accent)">
+							<animateMotion dur="3.6s" begin={`${-i * 1.2}s`} repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;0.45;1" calcMode="linear">
+								<mpath href={`#flow-in-${i}`} />
+							</animateMotion>
+							<animate attributeName="opacity" dur="3.6s" begin={`${-i * 1.2}s`} repeatCount="indefinite" values="1;1;0;0" keyTimes="0;0.44;0.46;1" />
+						</circle>
+					))
+				}
+				{
+					[0, 1, 2].map((i) => (
+						<circle r="4.5" fill="var(--accent)">
+							<animateMotion dur="3.6s" begin={`${-((i + 1) % 3) * 1.2}s`} repeatCount="indefinite" keyPoints="0;0;1" keyTimes="0;0.55;1" calcMode="linear">
+								<mpath href={`#flow-out-${i}`} />
+							</animateMotion>
+							<animate attributeName="opacity" dur="3.6s" begin={`${-((i + 1) % 3) * 1.2}s`} repeatCount="indefinite" values="0;0;1;1" keyTimes="0;0.54;0.56;1" />
+						</circle>
+					))
+				}
+			</g>
+		</svg>
+	</div>
+	{caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+	.flow {
+		margin-block: 1.5rem 0;
+		padding: 1.5rem 1.25rem 1rem;
+		border: 1px solid var(--border);
+		border-radius: 1.25rem;
+		background:
+			radial-gradient(30rem 14rem at 50% 50%, var(--accent-weak), transparent 70%),
+			var(--surface-2);
+	}
+
+	.flow__scroll {
+		overflow-x: auto;
+	}
+
+	.flow svg {
+		display: block;
+		width: 100%;
+		min-width: 620px;
+		height: auto;
+		font-family: var(--font-display);
+	}
+
+	figcaption {
+		margin-top: 0.75rem;
+		text-align: center;
+		color: var(--text-3);
+		font-size: var(--sl-text-sm);
+	}
+
+	.flow-heading text {
+		fill: var(--text-3);
+		font-size: 12px;
+		font-weight: 600;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+	}
+
+	.flow-box {
+		fill: var(--surface);
+		stroke: var(--border-strong);
+	}
+
+	.flow-label {
+		fill: var(--text);
+		font-size: 15px;
+		font-weight: 500;
+	}
+
+	.flow-icon-bg {
+		fill: var(--accent-weak);
+	}
+
+	.flow-icon path,
+	.flow-icon g rect {
+		fill: var(--accent-ink);
+	}
+
+	.flow-panel {
+		stroke: var(--accent);
+		stroke-opacity: 0.6;
+		stroke-width: 1.5;
+	}
+
+	.flow-gem-base {
+		fill: var(--text);
+	}
+
+	.flow-layer {
+		fill: var(--surface);
+		stroke: var(--border-strong);
+	}
+
+	.flow-db ellipse,
+	.flow-db path {
+		stroke: var(--text-2);
+		stroke-width: 1.6;
+	}
+
+	.flow-db ellipse {
+		fill: var(--sunken);
+	}
+
+	.flow-wire {
+		stroke: var(--border-strong);
+		stroke-width: 1.5;
+	}
+
+	.flow-wire-flow {
+		stroke: var(--accent);
+		stroke-width: 1.5;
+		stroke-dasharray: 2 10;
+		opacity: 0.7;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.flow-packets,
+		.flow-scan {
+			display: none;
+		}
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.flow-wire-flow {
+			animation: flow-dash 1.4s linear infinite;
+		}
+
+		.flow-scan {
+			animation: flow-scan 3.6s ease-in-out infinite;
+		}
+
+		.flow-layer {
+			animation: flow-layer 3.6s ease-in-out infinite;
+			animation-delay: calc(1.5s + var(--k) * 0.22s);
+		}
+	}
+
+	@keyframes flow-dash {
+		to {
+			stroke-dashoffset: -12;
+		}
+	}
+
+	@keyframes flow-scan {
+		0% {
+			transform: translateY(40px);
+			opacity: 0;
+		}
+		40% {
+			transform: translateY(40px);
+			opacity: 0;
+		}
+		45% {
+			opacity: 1;
+		}
+		58% {
+			transform: translateY(240px);
+			opacity: 1;
+		}
+		62%,
+		100% {
+			transform: translateY(240px);
+			opacity: 0;
+		}
+	}
+
+	@keyframes flow-layer {
+		0%,
+		12%,
+		100% {
+			stroke: var(--border-strong);
+		}
+		5% {
+			stroke: var(--accent);
+		}
+	}
+</style>

@@ -1,0 +1,129 @@
+---
+// Closing call-to-action band at the bottom of the landing page: a big line,
+// a short paragraph and links (the slot), over a slowly drifting facet pattern.
+interface Props {
+	title: string;
+}
+const { title } = Astro.props;
+---
+
+<section class="closing not-content">
+	<svg class="closing__pattern" viewBox="0 0 600 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+		<g class="closing__drift">
+			{
+				Array.from({ length: 14 }, (_, i) => {
+					const x = (i % 7) * 100 - 20;
+					const y = Math.floor(i / 7) * 110 + (i % 2) * 40 - 20;
+					return (
+						<polygon
+							points={`${x},${y + 60} ${x + 22},${y + 22} ${x + 50},${y} ${x + 78},${y + 22} ${x + 100},${y + 60}`}
+							class="closing__gem"
+							style={`--k:${i}`}
+						/>
+					);
+				})
+			}
+		</g>
+	</svg>
+	<div class="closing__inner">
+		<h2>{title}</h2>
+		<div class="closing__body"><slot /></div>
+	</div>
+</section>
+
+<style>
+	.closing {
+		position: relative;
+		margin-top: clamp(3.5rem, 8vw, 6rem);
+		padding: clamp(2rem, 5vw, 3.5rem);
+		overflow: hidden;
+		border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+		border-radius: 1.5rem;
+		background:
+			radial-gradient(40rem 20rem at 0% 0%, var(--accent-weak), transparent 70%),
+			var(--surface-2);
+		isolation: isolate;
+	}
+
+	.closing__pattern {
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		width: 100%;
+		height: 100%;
+		mask-image: linear-gradient(90deg, transparent 30%, #000 100%);
+	}
+
+	.closing__gem {
+		fill: none;
+		stroke: var(--accent);
+		stroke-opacity: 0.22;
+		stroke-width: 1;
+	}
+
+	.closing__inner {
+		max-width: 36rem;
+	}
+
+	h2 {
+		margin: 0;
+		font-size: clamp(var(--sl-text-2xl), calc(1rem + 2.4vw), var(--sl-text-5xl));
+		line-height: 1.08;
+		letter-spacing: -0.03em;
+		font-weight: 700;
+		color: var(--text);
+		text-wrap: balance;
+	}
+
+	.closing__body {
+		margin-top: 1rem;
+		color: var(--text-2);
+		font-size: var(--sl-text-lg);
+		line-height: 1.6;
+	}
+
+	.closing__body :global(p) {
+		margin: 0 0 1.25rem;
+	}
+
+	.closing__body :global(.sl-link-button) {
+		margin: 0.25rem 0.75rem 0 0;
+	}
+
+	.closing__body :global(.sl-link-button.primary) {
+		background: var(--accent);
+		border-color: var(--accent);
+		color: var(--on-accent);
+	}
+
+	.closing__body :global(.sl-link-button.secondary) {
+		border-color: var(--border-strong);
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.closing__drift {
+			animation: closing-drift 40s linear infinite alternate;
+		}
+
+		.closing__gem {
+			animation: closing-pulse 6s ease-in-out infinite;
+			animation-delay: calc(var(--k) * -0.7s);
+		}
+	}
+
+	@keyframes closing-drift {
+		to {
+			transform: translateX(-60px);
+		}
+	}
+
+	@keyframes closing-pulse {
+		0%,
+		100% {
+			stroke-opacity: 0.12;
+		}
+		50% {
+			stroke-opacity: 0.4;
+		}
+	}
+</style>

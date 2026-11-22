@@ -3,6 +3,7 @@ title: Welcome to Facet
 description: Facet is a governed application platform for small and mid-sized organizations.
 template: splash
 hero:
+  title: Welcome to <span class="hero-accent">Facet</span>
   tagline: Data, permissions, and history for the apps your teams build.
   actions:
     - text: Evaluate
@@ -11,28 +12,83 @@ hero:
     - text: Build
       link: /tutorials/
       icon: right-arrow
+      variant: secondary
     - text: Operate
       link: /operate/
       icon: right-arrow
+      variant: secondary
 ---
 
-import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { LinkButton } from '@astrojs/starlight/components';
+import Closing from '../../components/landing/Closing.astro';
+import Door from '../../components/landing/Door.astro';
+import FlowDiagram from '../../components/landing/FlowDiagram.astro';
+import LandingGrid from '../../components/landing/LandingGrid.astro';
+import Pillar from '../../components/landing/Pillar.astro';
+import SectionHead from '../../components/landing/SectionHead.astro';
+
+<SectionHead eyebrow="What Facet holds" title="One governed home for your business data">
 
 Facet is a governed application platform for small and mid-sized
 organizations. You model your business data in domains. Every app — built by
 your team or by an AI agent — reads and writes that data under the same
 enforced permissions, with a full audit trail of every change.
 
-<CardGrid stagger>
-	<LinkCard title="Evaluate" href="/start/">
+</SectionHead>
+
+<LandingGrid>
+	<Pillar kind="data" title="Data">
+		Model the business in domains — clients, equipment, hiring — one slice at
+		a time. Documents and files live in Facet, not in each app.
+	</Pillar>
+	<Pillar kind="permissions" title="Permissions">
+		Roles decide who reads and writes, down to single fields and rows. The
+		data layer enforces it, so no app can skip the rules.
+	</Pillar>
+	<Pillar kind="history" title="History">
+		Every change lands in an append-only log: who changed what, when, and
+		why. Roll any document back to a prior state.
+	</Pillar>
+</LandingGrid>
+
+<SectionHead eyebrow="How it fits" title="Every app goes through the same gate">
+
+An app never touches the database. It signs in over OAuth and calls the API
+under the rights you gave it. Delete the app, and the data, the rules, and the
+history remain.
+
+</SectionHead>
+
+<FlowDiagram
+	headings={['Apps', 'Facet', 'Domains']}
+	apps={["Your team's app", 'AI agent', 'Workspace']}
+	layers={['Accounts & roles', 'Permissions', 'Audit log']}
+	domains={['Clients', 'Equipment', 'Hiring']}
+	caption="Same roles, same rules, same audit trail — whoever built the app."
+/>
+
+<SectionHead eyebrow="Start here" title="Pick your path" />
+
+<LandingGrid min="14rem">
+	<Door href="/start/" title="Evaluate" step="01" icon="evaluate">
 		What Facet is, how it protects data, and whether it fits your organization.
-	</LinkCard>
-	<LinkCard title="Build" href="/tutorials/">
+	</Door>
+	<Door href="/tutorials/" title="Build" step="02" icon="build">
 		Learn by doing: run Facet, build a domain, give your team access, ship an
 		app.
-	</LinkCard>
-	<LinkCard title="Operate" href="/operate/">
+	</Door>
+	<Door href="/operate/" title="Operate" step="03" icon="operate">
 		Deploy with containers, configure the stack, and keep it healthy in
 		production.
-	</LinkCard>
-</CardGrid>
+	</Door>
+</LandingGrid>
+
+<Closing title="Apps are disposable now. Your data isn't.">
+
+Weighing Facet against Airtable, Retool, Odoo, Supabase, or an app your AI
+agent wrote? Each comparison says where the alternative wins, too.
+
+<LinkButton href="/compare/" icon="right-arrow">Compare Facet</LinkButton>
+<LinkButton href="https://github.com/wearefacet/facet" variant="secondary" icon="github" iconPlacement="start">View on GitHub</LinkButton>
+
+</Closing>
