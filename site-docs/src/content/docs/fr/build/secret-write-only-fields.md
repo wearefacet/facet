@@ -10,13 +10,13 @@ verified_at: fd345fe3
 
 Deux réglages de champ gardent les valeurs sensibles à l’abri des regards, et
 ils résolvent deux problèmes différents. Un champ `secret` range une
-information d’authentification dans un magasin chiffré à côté du documentà ; le
+information d’authentification dans un magasin chiffré à côté du document ; le
 document ne porte qu’un marqueur. Un champ `write_only` accepte une valeur, la
 remet au script, puis la jette.
 
 ## Quand l’utiliser
 
-Utilisez un champ `secret` pour une valeur que le système doit conserverà : une
+Utilisez un champ `secret` pour une valeur que le système doit conserver : une
 clé d’API, un haché de mot de passe, un token à usage unique. Utilisez un champ
 `write_only` pour une valeur dont le script a besoin une seule fois et que
 personne ne doit conserver, comme un mot de passe en clair que le script hache.
@@ -52,21 +52,21 @@ personne ne doit conserver, comme un mot de passe en clair que le script hache.
 }
 ```
 
-Règles par modeà :
+Règles par mode :
 
 | Mode | Usage | Clé supplémentaire |
 | --- | --- | --- |
 | `hash` | Vérifie un candidat contre la valeur enregistrée, sans jamais la relire. | — |
 | `sealed` | Le système relit la valeur pour ses propres fonctions. | — |
-| `token` | Facet génère la valeurà ; un appelant la consomme une fois. | `ttl_seconds` (obligatoire) |
+| `token` | Facet génère la valeur ; un appelant la consomme une fois. | `ttl_seconds` (obligatoire) |
 
-`min`, `max` et `pattern` sont admis sur un champ secretà ; ils portent sur le
+`min`, `max` et `pattern` sont admis sur un champ secret ; ils portent sur le
 texte en clair au moment où il est défini, pas sur le marqueur.
 
 ### 2. Définissez la valeur dans l’application
 
 La page détail affiche un marqueur avec **Modifier** et **Effacer**. Une
-modification dépose la nouvelle valeurà : Facet la stocke et augmente la version
+modification dépose la nouvelle valeur : Facet la stocke et augmente la version
 du marqueur. Un mode `token` affiche **Générer un nouveau jeton** et montre le
 token une seule fois.
 
@@ -82,7 +82,7 @@ token une seule fois.
 
 Le script du doctype lit la valeur pendant l’écriture, fait son travail, puis
 Facet retire le champ avant que le document ne soit stocké. Le duo habituel est
-un champ `read_only` qui porte le hachéà : le script hache l’entrée en écriture
+un champ `read_only` qui porte le haché : le script hache l’entrée en écriture
 seule et y range le résultat, car un champ `secret` n’accepte que des valeurs
 déposées.
 
@@ -103,7 +103,7 @@ déposées.
 }
 ```
 
-Un document stocké porte des marqueurs au lieu des valeursà :
+Un document stocké porte des marqueurs au lieu des valeurs :
 
 ```json
 {
@@ -119,25 +119,25 @@ contenu stocké.
 
 ### L’écriture répond `422` sur le champ secret
 
-Seules trois formes sont validesà : un identifiant de dépôt, un marqueur, et
+Seules trois formes sont valides : un identifiant de dépôt, un marqueur, et
 `null` pour effacer. Une chaîne en clair dans un corps de document est toujours
 refusée.
 
 ### Le token a été affiché une fois et il est perdu
 
-Les tokens s’affichent une seule fois, à la génération. Générez-en un nouveauà ;
+Les tokens s’affichent une seule fois, à la génération. Générez-en un nouveau ;
 l’ancien cesse de fonctionner.
 
 ### Un administrateur ne peut pas relire la valeur
 
 C’est voulu. Aucune route ne renvoie une valeur `sealed` ou hachée. Seules les
 fonctions du système qui possèdent le champ la relisent, et une valeur hachée
-n’est jamais lisible. Pour la renouveler, définissez une nouvelle valeurà ; la
+n’est jamais lisible. Pour la renouveler, définissez une nouvelle valeur ; la
 version du marqueur augmente.
 
 Les valeurs résident dans le magasin chiffré, indexées par document et par nom
 de champ, en dehors des tables de documents. Quand un document est supprimé, le
-magasin garde ses emplacements jusqu’à ce que la fenêtre de rétention passeà ;
+magasin garde ses emplacements jusqu’à ce que la fenêtre de rétention passe ;
 une tâche de maintenance les retire ensuite.
 
 ### On a de nouveau besoin de la valeur en écriture seule

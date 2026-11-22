@@ -57,8 +57,8 @@ call. No CORS checks run on this surface — MCP clients are server-to-server.
 
 ## Endpoint directory (Settings page)
 
-`GET /Api/_mcp/endpoints` returns one endpoint per held role, sorted by
-role id:
+`GET /Api/_mcp/endpoints` returns one endpoint per held role whose
+connectivity carries the `mcp` channel, sorted by role id:
 
 ```json
 {
@@ -67,6 +67,13 @@ role id:
   ]
 }
 ```
+
+A held role whose `connectivity` list excludes `mcp` cannot open an MCP
+endpoint — the consent gate refuses it with `access_denied` later — so the
+listing omits it instead of offering a URL that cannot work (F08-03). The
+listing runs the same derivation as the consent gate,
+`IAM::Helpers.mcp_channel?`, so the directory and the gate can never
+disagree.
 
 `AuthHandler` skips the `/Api/_mcp/` prefix (the resource server verifies
 MCP tokens itself on POST), so the route builds its context through

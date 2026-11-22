@@ -536,6 +536,52 @@ module Facet::Lua
       engine.close
     end
 
+    # ── Sandboxing: limits are per engine ─────────────────────────
+
+    # A script that pauses inside a helper (a db call) lets other fibers
+    # run. The other engine must not reset this script's counter or its
+    # limits, so the paused script still trips its own budget.
+    it "keeps instruction budgets separate when runs overlap" do
+      start_gate = Channel(Nil).new
+      resume_gate = Channel(Nil).new
+      done = Channel(Nil).new
+      failure : Exception? = nil
+
+      engine = Engine.new(
+        instruction_limit: 100_000_i64,
+        memory_limit_mb: 100_i64,
+        time_limit_s: 0.0,
+      )
+      engine.raw_function "facet_gate" do |_state|
+        start_gate.send(nil)
+        resume_gate.receive
+        0
+      end
+
+      spawn do
+        begin
+          engine.run("facet_gate() for i = 1, 1e9 do end")
+        rescue ex
+          failure = ex
+        ensure
+          done.send(nil)
+        end
+      end
+
+      start_gate.receive # the script is now paused inside facet_gate
+      Engine.open do |other|
+        other.run("return 1 + 1").should eq 2.0
+      end
+      resume_gate.send(nil)
+      done.receive
+
+      failure.should be_a(Engine::Error)
+      # The message names the budget: 100000 here, not the other engine's
+      # default of 1000000.
+      failure.as(Engine::Error).message.to_s.should contain "(100000)"
+      engine.close
+    end
+
     # ── Multiple returns ──────────────────────────────────────────
 
     it "returns the first value on multiple returns" do

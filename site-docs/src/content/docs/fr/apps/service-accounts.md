@@ -11,20 +11,20 @@ verified_at: a77c6171
 Une app backend a besoin d’une identité de machine. Facet provisionne un
 compte de service pour une app `confidential` et lui émet une clé d’API. La
 clé appelle la même surface REST que tout autre appelant, sous les mêmes
-bornesà : attribution ∩ rôle épinglé, recalculés à chaque requête.
+bornes : attribution ∩ rôle épinglé, recalculés à chaque requête.
 
-> **Pour les agentsà :** épinglez un rôle de service qui liste le canal de
+> **Pour les agents :** épinglez un rôle de service qui liste le canal de
 > connectivité `api`, puis émettez avec `POST /Api/app/{id}/api-key` (cookie
 > de session opérateur plus `X-Requested-With: XMLHttpRequest`). Stockez la
 > valeur brute de `key` — elle ne s’affiche qu’une fois. Appelez
 > `GET /Api/{domain}/{doctype}` avec `Authorization: Bearer fct_…` ; sans
-> en-tête CSRF ni cookie. Pour faire tourner, ré-émettezà ; révoquez avec
+> en-tête CSRF ni cookie. Pour faire tourner, ré-émettez ; révoquez avec
 > `DELETE /Api/app/{id}/api-key`. Chaque échec de clé répond un simple `401` ;
 > le log du serveur nomme les actions d’attribution manquantes.
 
 ## Quand l’utiliser
 
-Utilisez un compte de service et sa clé quandà :
+Utilisez un compte de service et sa clé quand :
 
 - une intégration serveur à serveur lit ou écrit des données Facet,
 - un job d’intégration continue (CI) ou un job planifié a besoin d’accès,
@@ -39,7 +39,7 @@ quand personne n’est au clavier.
 - Un enregistrement d’app `confidential` existe — voir
   [Enregistrer une app](/fr/apps/registering-app/).
 - Vous avez besoin du droit `update` sur `app.App` pour les routes de clé.
-- Vous détenez une session navigateur opérateurà ; les routes de clé refusent
+- Vous détenez une session navigateur opérateur ; les routes de clé refusent
   un appelant avec clé.
 - Le rôle de service liste `api` dans ses canaux de connectivité. Sinon,
   l’émission répond `422`.
@@ -50,7 +50,7 @@ quand personne n’est au clavier.
 
 Choisissez l’unique rôle à l’étape Autorisations de l’assistant, ou dans
 l’onglet Paramètres de l’app. Le rôle décide de ce qu’il est possible
-d’attribuerà ; les attributions de l’app décident de ce qui peut être tenté. À chaque
+d’attribuer ; les attributions de l’app décident de ce qui peut être tenté. À chaque
 requête, Facet ne garde que les actions que le rôle accorde aussi. Les
 périmètres de lignes du rôle s’appliquent toujours.
 
@@ -67,7 +67,7 @@ curl -s -b cookies.txt -X POST \
   -H "X-Requested-With: XMLHttpRequest"
 ```
 
-La réponse porte la clé bruteà :
+La réponse porte la clé brute :
 
 ```json
 {
@@ -101,7 +101,7 @@ peut jamais s’émettre ni se révoquer elle-même.
 ### 3. Appeler l’API
 
 Envoyez la clé comme token bearer. Aucun en-tête CSRF n’est nécessaire, car la
-requête ne porte aucun cookie ambiantà :
+requête ne porte aucun cookie ambiant :
 
 ```sh
 curl -s -H "Authorization: Bearer fct_7QW2N8XC4M5T3WY9PB6K1RD4EN" \
@@ -114,9 +114,9 @@ mutation enregistre l’id de l’app et l’id de la clé.
 
 ### 4. Faire tourner et révoquer
 
-Émettez une nouvelle clé pour faire tournerà : la route révoque l’ancienne clé
+Émettez une nouvelle clé pour faire tourner : la route révoque l’ancienne clé
 dans la même transaction. Révoquez avec la route delete quand la clé n’est
-plus nécessaireà :
+plus nécessaire :
 
 ```sh
 curl -s -b cookies.txt -X DELETE \
@@ -128,7 +128,7 @@ curl -s -b cookies.txt -X DELETE \
 
 ### Ce que le serveur vérifie à chaque requête
 
-Les vérifications tournent à chaque requêteà :
+Les vérifications tournent à chaque requête :
 
 - la clé n’est ni révoquée ni expirée,
 - le compte de service est vivant et `active`,
@@ -186,7 +186,7 @@ curl -s -b cookies.txt -X DELETE \
 
 Le rôle épinglé ne couvre plus chaque action d’attribution requise. Une
 attribution `write` exige des lignes de rôle `create` et `update`. Le corps
-reste silencieux par conceptionà ; le log du serveur porte une ligne WARN qui
+reste silencieux par conception ; le log du serveur porte une ligne WARN qui
 nomme les actions manquantes, par exemple `update on fin.Invoice`. Élargissez
 le rôle ou restreignez les attributions.
 
@@ -212,9 +212,9 @@ requête répond `401`, et le log du serveur porte la raison.
 - [Enregistrer une app](/fr/apps/registering-app/) — créez l’enregistrement
   confidentiel.
 - [Utiliser l’API REST](/fr/apps/rest-api/) — la surface que la clé appelle.
-- [Accès machineà : clés d’API](/fr/govern/api-keys/) — des clés en
+- [Accès machine : clés d’API](/fr/govern/api-keys/) — des clés en
   libre-service pour les personnes.
 - [La portée des apps (attributions)](/fr/govern/app-grants/) — le plafond de
   l’attribution.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [app-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/app-system.md).

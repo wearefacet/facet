@@ -83,12 +83,18 @@ end
 # `iam.Account.roles` stores and what `IAM::Helpers.find_role_content`
 # resolves by `projections.id`.
 def create_test_role(db, name : String, perms : Array, level : Int32 = 20) : String
+  create_test_role(db, name, perms, level, connectivity: ["mcp", "webhook", "api", "assistant"])
+end
+
+# Same as the three-argument form, with an explicit `connectivity` list —
+# for specs that need a role whose channels exclude `mcp` (or any other).
+def create_test_role(db, name : String, perms : Array, level : Int32, connectivity : Array(String)) : String
   content = {
     name:         name,
     level:        level,
     description:  "Test role #{name}",
     visible_tags: ["*"],
-    connectivity: ["mcp", "webhook", "api", "assistant"],
+    connectivity: connectivity,
     permissions:  perms,
   }.to_json
   Facet::Mutation::Client.create(

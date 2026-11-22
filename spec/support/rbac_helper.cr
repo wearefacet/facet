@@ -166,13 +166,12 @@ def rbac_scope_diagnostics(
     expanded.each_with_index do |predicates, ai|
       lines << "perm[#{i}] alias[#{ai}] predicates=#{predicates.inspect}"
     end
-
-    matched = false
-    if content = doc_content
-      matched = Facet::RBAC::ScopeExpander.match?(perm, content, scope_context, context_results, definition, doc_id: doc_id)
-    end
-    lines << "perm[#{i}] match=#{matched}"
   end
+
+  # Layer 4 — the shared single-row gate: the row satisfies the compiled
+  # scope clauses (same `ScopePredicateSql` engine as the list path).
+  matched = Facet::RBAC::EnforcerSupport.row_authorized?(db, action, domain, doc_type, doc_id, auth_context)
+  lines << "row_gate=#{matched}"
 
   lines.join("\n")
 end

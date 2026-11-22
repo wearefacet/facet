@@ -8,7 +8,7 @@ sidebar:
 verified_at: f1409cdc
 ---
 
-Chaque document porte la version de schéma avec laquelle il a été écrit. Quand vous modifiez un doctype, les documents plus anciens se mettent à niveau à la lectureà : Facet exécute une petite fonction Lua par étape de version et stocke le résultat. Vous écrivez les étapesà ; Facet les applique, sans tâche de rattrapage.
+Chaque document porte la version de schéma avec laquelle il a été écrit. Quand vous modifiez un doctype, les documents plus anciens se mettent à niveau à la lecture : Facet exécute une petite fonction Lua par étape de version et stocke le résultat. Vous écrivez les étapes ; Facet les applique, sans tâche de rattrapage.
 
 ## Quand l’utiliser
 
@@ -20,13 +20,13 @@ Chaque document porte la version de schéma avec laquelle il a été écrit. Qua
 
 - **Le droit de mise à jour** sur la définition du doctype.
 - **La valeur actuelle de `schema_version`** pour le doctype.
-- **Un brouillon fait l’impasse sur tout celaà :** modifiez librement, publiez, puis reprenez ici.
+- **Un brouillon fait l’impasse sur tout cela :** modifiez librement, publiez, puis reprenez ici.
 
 ## Étapes
 
 ### 1. Déterminez le type de changement
 
-À version inchangée, une modification ne peut qu’ajouter des éléments nouveauxà : un nouveau champ, une nouvelle clé d’énumération, une nouvelle propriété imbriquée ou une nouvelle entrée enfant. Tout le reste change la forme des données et exige un changement de version accompagné d’une migration :
+À version inchangée, une modification ne peut qu’ajouter des éléments nouveaux : un nouveau champ, une nouvelle clé d’énumération, une nouvelle propriété imbriquée ou une nouvelle entrée enfant. Tout le reste change la forme des données et exige un changement de version accompagné d’une migration :
 
 | Changement | Méthode |
 | --- | --- |
@@ -46,17 +46,17 @@ Augmentez `schema_version` d’exactement une unité. Ajoutez une entrée `migra
 }
 ```
 
-Le corps de la fonction vit dans le script du doctypeà ; l’exemple plus bas montre une fonction complète.
+Le corps de la fonction vit dans le script du doctype ; l’exemple plus bas montre une fonction complète.
 
 :::caution
-Une migration réécrit des documents. Une migration qui perd des données n’a pas de retour arrièreà : `ctx.root.full_name = nil` supprime la valeur. Testez d’abord la fonction sur un brouillon ou sur une copie.
+Une migration réécrit des documents. Une migration qui perd des données n’a pas de retour arrière : `ctx.root.full_name = nil` supprime la valeur. Testez d’abord la fonction sur un brouillon ou sur une copie.
 :::
 
 ### 3. Laissez les documents se mettre à niveau
 
-Vous ne faites rien. C’est vouluà : aucune tâche de rattrapage n’est à lancer. La prochaine lecture ou liste d’un document ancien exécute la chaîne d’étapes dans l’ordre et stocke le résultat. Un document dont l’étape échoue garde son ancien contenu et porte un marqueur d’erreurà ; il reste visible.
+Vous ne faites rien. C’est voulu : aucune tâche de rattrapage n’est à lancer. La prochaine lecture ou liste d’un document ancien exécute la chaîne d’étapes dans l’ordre et stocke le résultat. Un document dont l’étape échoue garde son ancien contenu et porte un marqueur d’erreur ; il reste visible.
 
-Un document que personne ne lit garde son ancienne formeà ; un corpus se met donc à niveau lentement. Pour porter tous les documents à la version courante d’un coup, ouvrez la page de maintenance du doctype (`/Configure/platform/maintenance`), ou appelez `POST /Api/core/DocType/:id/migrate_ahead`. Les deux sont facultatifs. L’exécution enregistre une mutation `snapshot` (instantané) par document migré — la même trace d’audit que le chemin paresseux laisse document par document, payée ici d’avance.
+Un document que personne ne lit garde son ancienne forme ; un corpus se met donc à niveau lentement. Pour porter tous les documents à la version courante d’un coup, ouvrez la page de maintenance du doctype (`/Configure/platform/maintenance`), ou appelez `POST /Api/core/DocType/:id/migrate_ahead`. Les deux sont facultatifs. L’exécution enregistre une mutation `snapshot` (instantané) par document migré — la même trace d’audit que le chemin paresseux laisse document par document, payée ici d’avance.
 
 :::caution
 Une migration cassée arrête la mise à niveau, pas le système. Les documents situés avant l’étape cassée gardent leur ancienne forme jusqu’à ce que vous corrigiez la fonction et lanciez `facet doctype:migrate-retry <domain.Doctype>`.
@@ -64,17 +64,17 @@ Une migration cassée arrête la mise à niveau, pas le système. Les documents 
 
 ### 4. Reconstruisez les colonnes dérivées avec reproject
 
-Le libellé et le texte de recherche des documents anciens ne suivent pas un changement de modèle. Reconstruisez-les pour tout un doctypeà :
+Le libellé et le texte de recherche des documents anciens ne suivent pas un changement de modèle. Reconstruisez-les pour tout un doctype :
 
 ```sh
 facet doctype:reproject crm.Company
 ```
 
-Options utilesà : `--limit 10` pour un essai rapide, `--workers 8` pour accélérer un doctype volumineux. La commande affiche les compteurs `processed`, `superseded`, `skipped` et `failed`.
+Options utiles : `--limit 10` pour un essai rapide, `--workers 8` pour accélérer un doctype volumineux. La commande affiche les compteurs `processed`, `superseded`, `skipped` et `failed`.
 
 ## Exemple
 
-Le doctype `hr.Employee` passe de la version 2 à la version 3 : `full_name` devient `first_name` et `last_name`. La mise à jour porte l’entrée `"2": "migrate_from_2"`, et le script définità :
+Le doctype `hr.Employee` passe de la version 2 à la version 3 : `full_name` devient `first_name` et `last_name`. La mise à jour porte l’entrée `"2": "migrate_from_2"`, et le script définit :
 
 ```lua
 local export = {}
@@ -94,15 +94,15 @@ end
 return export
 ```
 
-Un document stocké avec `{"full_name": "Ada Lovelace"}` et `meta.schema_version: 2` est lu, migré, puis stocké sous `{"first_name": "Ada", "last_name": "Lovelace"}` avec `meta.schema_version: 3`. L’historique garde l’instantanéà ; le changement reste auditable.
+Un document stocké avec `{"full_name": "Ada Lovelace"}` et `meta.schema_version: 2` est lu, migré, puis stocké sous `{"first_name": "Ada", "last_name": "Lovelace"}` avec `meta.schema_version: 3`. L’historique garde l’instantané ; le changement reste auditable.
 
 ## Dépannage
 
-**La mise à jour répondà : schema_version must be exactly N+1.**
+**La mise à jour répond : schema_version must be exactly N+1.**
 
 La version a fait un bond. Augmentez d’un cran et publiez chaque étape dans l’ordre.
 
-**La mise à jour répondà : Migration from vN to vN+1 is missing.**
+**La mise à jour répond : Migration from vN to vN+1 is missing.**
 
 La correspondance n’a pas d’entrée pour l’étape que vous quittez. Ajoutez la clé et la fonction, puis enregistrez de nouveau.
 

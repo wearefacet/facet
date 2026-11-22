@@ -13,36 +13,36 @@ MCP et l’assistant embarqué montent les mêmes entrées. Quelle que soit la s
 appelle, les capacités, le RBAC, les limites et la correspondance des erreurs sont
 identiques.
 
-> **Pour les agentsà :** appelez les tools avec `tools/call` — connectez-vous via
-> [MCPà: connecter des agents](/fr/apps/mcp-agents/). Séquenceà : `tools/list` → `whoami` →
+> **Pour les agents :** appelez les tools avec `tools/call` — connectez-vous via
+> [MCP : connecter des agents](/fr/apps/mcp-agents/). Séquence : `tools/list` → `whoami` →
 > `get_schema` avant toute écriture → `list_documents` avec des filtres `field__op` →
-> `create_document` / `update_document` (JSON merge patchà ; `null` supprime une clé) →
+> `create_document` / `update_document` (JSON merge patch ; `null` supprime une clé) →
 > `batch` (25 opérations au plus). Une clé de filtre que le doctype ne déclare pas lève
 > `InvalidParams` — jamais un résultat vide en silence. Les erreurs portent `data.reason` ;
-> limitesà : 200 lignes, enveloppe de 1 Mio, 25 opérations par batch. Les fichiers passent
-> par HTTPà: `request_artifact_upload` fabrique une URL signée.
+> limites : 200 lignes, enveloppe de 1 Mio, 25 opérations par batch. Les fichiers passent
+> par HTTP : `request_artifact_upload` fabrique une URL signée.
 
 :::note[Uniquement des tools documentaires]
-Le catalogue ne couvre pas la conception de schémaà : ni création ni modification de
+Le catalogue ne couvre pas la conception de schéma : ni création ni modification de
 domaine ou de doctype, ni publication. `create_document` écrit dans un doctype déjà
-enregistréà ; il n’enregistre pas de doctype. La conception de schéma revient à REST et à
+enregistré ; il n’enregistre pas de doctype. La conception de schéma revient à REST et à
 
 l’assistant de construction de domaines.
 :::
 
 ## Quand l’utiliser
 
-Utilisez cette page quandà :
+Utilisez cette page quand :
 
-- vous construisez un agent sur la surface MCP, ou vous étendez l’assistantà ;
-- vous devez savoir quels tools existent, ce qu’ils exigent et ce qu’ils renvoientà ;
+- vous construisez un agent sur la surface MCP, ou vous étendez l’assistant ;
+- vous devez savoir quels tools existent, ce qu’ils exigent et ce qu’ils renvoient ;
 - un appel de tool échoue, et vous avez besoin du contrat d’erreurs.
 
 ## Avant de commencer
 
-- Connectez-vous d’abord — voir [MCPà: connecter des agents](/fr/apps/mcp-agents/). Cette
-  page parle MCPà; l’assistant monte les mêmes entrées.
-- Appelez `whoami` d’abordà : il renvoie le rôle, les lignes de permission, les périmètres
+- Connectez-vous d’abord — voir [MCP : connecter des agents](/fr/apps/mcp-agents/). Cette
+  page parle MCP ; l’assistant monte les mêmes entrées.
+- Appelez `whoami` d’abord : il renvoie le rôle, les lignes de permission, les périmètres
   et les étiquettes visibles. Un champ dont l’étiquette est hors de `visible_tags`
   n’apparaît dans aucun résultat.
 
@@ -54,14 +54,14 @@ dans `tools/list` :
 | Tool | `requires` | Fonction |
 | --- | --- | --- |
 | `ping` | none | Identité du serveur et rôle monté. |
-| `list_domains` | read | Domaines réelsà ; brouillons exclus. |
+| `list_domains` | read | Domaines réels ; brouillons exclus. |
 | `list_doctypes` | read | Les doctypes d’un domaine. |
-| `get_schema` | read | Définition complète du doctypeà : champs, actions, périmètres, `member_of`, sidecars. |
+| `get_schema` | read | Définition complète du doctype : champs, actions, périmètres, `member_of`, sidecars. |
 | `whoami` | none | Identité, permissions, périmètres, étiquettes visibles. |
 | `list_documents` | read | Liste filtrée, triée, paginée. |
 | `aggregate_documents` | read | `count`, ou `sum`/`avg`/`min`/`max` sur un champ entier, durée ou monétaire. |
-| `get_document` | read | Un document par idà ; `expand` et `fields` facultatifs. |
-| `create_document` | write | Création avec le contenu completà ; `parent_id` crée un enfant. |
+| `get_document` | read | Un document par id ; `expand` et `fields` facultatifs. |
+| `create_document` | write | Création avec le contenu complet ; `parent_id` crée un enfant. |
 | `update_document` | write | JSON merge patch (RFC 7386) ; `null` supprime une clé. |
 | `delete_document` | write | Suppression logique — un tombstone. |
 | `batch` | write | Opérations atomiques ordonnées en une transaction. |
@@ -72,12 +72,12 @@ dans `tools/list` :
 | `resolve_refs` | read | Un lot d’URN résolu en lignes de stub. |
 | `get_links` | read | Les liens sortants d’un document. |
 | `get_backrefs` | read | Les documents réels qui pointent vers un document. |
-| `search_documents` | read | Recherche sur plusieurs doctypesà ; 5 correspondances par doctype. |
+| `search_documents` | read | Recherche sur plusieurs doctypes ; 5 correspondances par doctype. |
 | `request_artifact_upload` | write | Une URL de téléversement signée, à usage unique, pour un fichier. |
 | `get_artifact` | read | Une URL de téléchargement signée, à courte durée de vie. |
 | `list_artifact_refs` | read | Les documents réels qui référencent un artefact. |
 
-`read_skill` ne fait pas partie du catalogue. Chaque surface monte son propre chargeurà ;
+`read_skill` ne fait pas partie du catalogue. Chaque surface monte son propre chargeur ;
 le montage MCP sert de courtes références markdown pour ces tools.
 
 ## Étapes
@@ -85,23 +85,23 @@ le montage MCP sert de courtes références markdown pour ces tools.
 ### 1. Lister les tools et lire le schéma
 
 `tools/list` renvoie la liste filtrée par rôle. La visibilité est un confort pour
-l’agent, jamais un garde-fouà : le contrôle s’exécute à l’appel, exactement comme en REST.
+l’agent, jamais un garde-fou : le contrôle s’exécute à l’appel, exactement comme en REST.
 Lisez `get_schema` avant toute écriture. Il porte les champs, les actions, les périmètres,
 le lien parent `member_of` et les segments de sidecars de l’hôte.
 
 ### 2. Lister et lire des documents
 
-`list_documents` prend `domain` et `doctype`, plusà :
+`list_documents` prend `domain` et `doctype`, plus :
 
 | Argument | Fonction |
 | --- | --- |
 | `filters` | Clés `field__op` — `status__eq`, `salary__gte`, `name__match` |
-| `sort` | Noms de champsà ; un préfixe `-` trie par ordre décroissant |
+| `sort` | Noms de champs ; un préfixe `-` trie par ordre décroissant |
 | `page`, `items` | pagination |
 | `fields` | Ne garde, pour chaque ligne, que les champs nommés |
 | `expand` | Résout les champs de référence dans une map `resolved` |
 | `scope` | Applique un périmètre de lignes nommé comme filtre au moment de la requête |
-| `parent_id` | Liste les enfants d’un parentà ; doctypes enfants seulement |
+| `parent_id` | Liste les enfants d’un parent ; doctypes enfants seulement |
 
 Les clés de filtre sont validées par rapport au doctype. Une clé inconnue, ou un opérateur
 que le champ ne gère pas, lève `InvalidParams` — jamais un résultat vide en silence.
@@ -113,24 +113,24 @@ REST imbriquée. Un résultat trop grand définit `meta.truncated: true` et port
 ### 3. Écrire des documents
 
 `create_document` prend le contenu complet. Un doctype enfant exige `parent_id` ; un
-enfant sans lui est refusé. `update_document` prend un JSON merge patchà : les nouvelles
+enfant sans lui est refusé. `update_document` prend un JSON merge patch : les nouvelles
 clés sont posées, et une valeur `null` supprime la clé. `delete_document` transforme le
 document en tombstone. `batch` exécute dans l’ordre des opérations `create`, `update`,
-`delete` et `action` en une transactionà ; un échec annule tout le batch et nomme l’index
+`delete` et `action` en une transaction ; un échec annule tout le batch et nomme l’index
 de l’opération.
 
 ### 4. Agir, étendre et inspecter
 
 `call_action` exécute une action nommée avec des arguments typés. `create_sidecar` et
 `list_sidecars` opèrent sur un segment d’un document hôte. `list_mutations` renvoie
-l’historique d’un documentà ; sans `doc_id`, il sert tout le journal à un appelant avec des
+l’historique d’un document ; sans `doc_id`, il sert tout le journal à un appelant avec des
 droits de lecture en joker. `resolve_refs`, `get_links` et `get_backrefs` parcourent le
 graphe de références. `search_documents` diffuse un terme de recherche sur tous les
 doctypes lisibles.
 
 ### 5. Faire passer les fichiers par HTTP
 
-Aucun octet de fichier ne circule dans le canal des toolsà :
+Aucun octet de fichier ne circule dans le canal des tools :
 
 1. Appelez `request_artifact_upload`. Il renvoie une URL de téléversement signée, à usage
    unique.
@@ -144,19 +144,19 @@ Aucun octet de fichier ne circule dans le canal des toolsà :
 ## Limites et erreurs
 
 Les limites viennent du bloc `mcp:` : 200 lignes, enveloppe de 1 Mio, 25 opérations par
-batch — voir [MCPà: connecter des agents](/fr/apps/mcp-agents/). Un résultat trop grand
-est coupé, pas rejetéà : il définit `meta.truncated` et `next_cursor`. Les échecs sont des
-erreurs JSON-RPCà:
+batch — voir [MCP : connecter des agents](/fr/apps/mcp-agents/). Un résultat trop grand
+est coupé, pas rejeté : il définit `meta.truncated` et `next_cursor`. Les échecs sont des
+erreurs JSON-RPC :
 
 | Classe d’erreur | Code JSON-RPC | Signification |
 | --- | --- | --- |
-| `InvalidParams` | `-32602` | Arguments invalidesà ; les clés d’argument inconnues sont rejetées par un contrôle central |
-| `RbacDenied` | `-32603` | Le rôle n’a pas la permissionà ; l’erreur ne nomme jamais la ligne fautive |
-| `NotFound` | `-32602` | Documents inconnus, en tombstone ou invisiblesà : une même réponse sans divulgation |
+| `InvalidParams` | `-32602` | Arguments invalides ; les clés d’argument inconnues sont rejetées par un contrôle central |
+| `RbacDenied` | `-32603` | Le rôle n’a pas la permission ; l’erreur ne nomme jamais la ligne fautive |
+| `NotFound` | `-32602` | Documents inconnus, en tombstone ou invisibles : une même réponse sans divulgation |
 | `Capped` | `-32603` | Le résultat dépasse une limite |
 | `ToolError` | `-32603` | Dernier recours |
 
-Chaque échec porte un `data.reason` lisible par la machineà :
+Chaque échec porte un `data.reason` lisible par la machine :
 
 | `data.reason` | Classe | Clés supplémentaires |
 | --- | --- | --- |
@@ -173,7 +173,7 @@ Un échec de validation à l’écriture porte les erreurs par champ dans `data.
 
 ## Exemple
 
-La requêteà :
+La requête :
 
 ```json
 {
@@ -251,7 +251,7 @@ Une clé qu’aucun gestionnaire ne lit — vérifiez l’`inputSchema` du tool 
 
 **Un tool listé répond `rbac_denied`.**
 
-Apparaître dans la liste n’est que de la visibilitéà ; le rôle contrôle toujours l’appel.
+Apparaître dans la liste n’est que de la visibilité ; le rôle contrôle toujours l’appel.
 Vérifiez les lignes de permission avec `whoami`.
 
 **Les résultats s’arrêtent sur `truncated: true`.**
@@ -265,8 +265,8 @@ tombstone et invisibles donnent la même réponse.
 
 ## Voir aussi
 
-- [MCPà: connecter des agents](/fr/apps/mcp-agents/) — la surface qui sert ce catalogue.
+- [MCP : connecter des agents](/fr/apps/mcp-agents/) — la surface qui sert ce catalogue.
 - [Utiliser l’API REST](/fr/apps/rest-api/) — les mêmes filtres et les mêmes erreurs sur HTTP.
 - [Recherche](/fr/apps/search/) — le corpus sur lequel `search_documents` diffuse.
 - [L’IA sous les droits de l’appelant](/fr/concepts/ai-under-callers-rights/) — le modèle de droits.
-- Internes sur GitHubà : [agent-tools.md](https://github.com/wearefacet/facet/blob/main/doc/backend/agent-tools.md).
+- Internes sur GitHub : [agent-tools.md](https://github.com/wearefacet/facet/blob/main/doc/backend/agent-tools.md).

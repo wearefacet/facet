@@ -9,13 +9,13 @@ verified_at: 008dd880
 ---
 
 Certains réglages de la plateforme changent sans redémarrage. Un seul document
-système les porteà : `core.SystemSettings`. Un administrateur l’édite
+système les porte : `core.SystemSettings`. Un administrateur l’édite
 depuis la page **Configurer → Plateforme → Paramètres**, le changement atteint
 tous les processus en cours, et le fichier de configuration reste le repli.
 
 ## Quand l’utiliser
 
-Éditez les paramètres système quandà :
+Éditez les paramètres système quand :
 
 - vous changez un réglage et ne pouvez pas redémarrer le serveur,
 - vous épinglez une valeur qui doit primer sur le fichier de configuration
@@ -26,7 +26,7 @@ tous les processus en cours, et le fichier de configuration reste le repli.
 
 - Vous portez un rôle autorisé à modifier `core.SystemSettings`. Par défaut,
   ce droit est réservé aux administrateurs.
-- La valeur effective d’un réglage se résout dans cet ordreà : le document
+- La valeur effective d’un réglage se résout dans cet ordre : le document
   des paramètres, puis `config.{env}.yml`, puis la valeur par défaut intégrée.
   Un champ effacé suit le fichier.
 
@@ -35,14 +35,14 @@ tous les processus en cours, et le fichier de configuration reste le repli.
 ### 1. Lisez les valeurs effectives
 
 Ouvrez **Configurer → Plateforme → Paramètres**, ou appelez la route de
-lectureà :
+lecture :
 
 ```sh
 curl -s -H "Authorization: Bearer $FACET_API_KEY" \
   "https://facet.localhost:3443/Api/SystemSettings"
 ```
 
-La réponse porte deux listesà :
+La réponse porte deux listes :
 
 - `values` — les valeurs effectives non secrètes, indexées par chemin en
   notation pointée.
@@ -55,7 +55,7 @@ un contrôle « Rétablir le fichier ». Le rétablissement envoie un
 ### 2. Épinglez une valeur
 
 Modifiez le champ dans la page des paramètres et enregistrez. La page envoie
-une mise à jour partielleà : seuls les champs que vous avez touchés partent.
+une mise à jour partielle : seuls les champs que vous avez touchés partent.
 Les épinglages que vous ne touchez pas restent en place.
 
 Le chemin d’écriture est la route de document standard, donc le même
@@ -92,7 +92,7 @@ valeur au fichier.
 
 Un enregistrement franchit trois barrières. La forme vient de la définition du
 doctype, une garde singleton protège l’unique document, et un contrôle
-sémantique à l’écriture vérifie chaque valeurà :
+sémantique à l’écriture vérifie chaque valeur :
 
 - `temperature` entre 0,0 et 2,0, `max_tokens` strictement positif,
   `max_history` à 0 ou plus, `port` entre 1 et 65535.
@@ -122,7 +122,7 @@ enregistrement des paramètres ne peut pas les changer.
 ## Exemple
 
 Épinglez une courte fenêtre de rétention du contenu supprimé, voyez-la
-appliquée à la prochaine passe quotidienne, puis rendez-la au fichierà :
+appliquée à la prochaine passe quotidienne, puis rendez-la au fichier :
 
 ```sh
 # Épingle la fenêtre à 7 jours.
@@ -184,4 +184,4 @@ jeunes que la fenêtre restent intactes.
 - [Appliquer le MFA](/fr/govern/enforcing-mfa/) — ce que pilotent les clés
   `iam.mfa.*`.
 - [SSO avec OIDC](/fr/govern/sso-oidc/) — ce que pilote `iam.auth.mode`.
-- Internes sur GitHubà : [system-settings.md](https://github.com/wearefacet/facet/blob/main/doc/backend/system-settings.md), [config.md](https://github.com/wearefacet/facet/blob/main/doc/backend/config.md).
+- Internes sur GitHub : [system-settings.md](https://github.com/wearefacet/facet/blob/main/doc/backend/system-settings.md), [config.md](https://github.com/wearefacet/facet/blob/main/doc/backend/config.md).

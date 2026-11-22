@@ -28,6 +28,7 @@ require "./file_mime_check"
 require "./money_currency_check"
 require "./unique_constraint"
 require "./view_template_gate"
+require "./collection_view_gate"
 require "../secrets/adoption"
 require "../grants/validator"
 require "../app/grants_validator"
@@ -43,7 +44,21 @@ module Facet
     # content with JSON Merge Patch semantics (RFC 7386 — a `null` patch
     # value removes the key), computes a JsonDiff, and persists it as an
     # `update` mutation.
+    #
+    # Two view fields opt out of merge semantics and replace on write: the
+    # `template` of a `core.DocumentView` and the `config` of a
+    # `core.CollectionView` (`REPLACE_ON_WRITE_FIELDS`). Both are trees
+    # whose whole content is the payload, so a merge would keep every key
+    # the patch omits as a leftover — the document could only grow. A patch
+    # that carries one of them replaces the stored value outright; every
+    # other field keeps RFC 7386 semantics.
     module Update
+      # The doctype-keyed fields that replace on write instead of merging
+      # (RFC 7386 deep-merge) — `{domain, doc_type} => [field names]`.
+      REPLACE_ON_WRITE_FIELDS = {
+        {"core", "DocumentView"}   => ["template"],
+        {"core", "CollectionView"} => ["config"],
+      }
       record Result,
         projection : Mutation::Client::Projection,
         mutation_id : String
@@ -96,116 +111,137 @@ module Facet
             return result
           end
 
-          # 0. Authorize the update. `skip_authorization` is set by callers
-          # that have ALREADY enforced an equivalent (or stronger) gate at a
-          # higher layer — today only the nested per-document sidecar route,
-          # which runs the host read gate plus the nested sidecar update grant.
-          if err = authorize_update(db, domain, doc_type, doc_id, auth_context, skip_authorization, authorize_path)
-            return Telemetry.record_error(span, err)
-          end
-
-          # 1-3. Fetch the definition, parse the patch, and validate it
-          #      against the doctype definition (partial update).
+          # 0-7. Lock the projection row first, then authorize, read, check,
+          #      and persist — all inside one transaction.
           #
-          #      Hydrate the currency registry first: the patch validation
-          #      (`MoneyType#validate`) and the lifecycle check below read
-          #      the in-process snapshot, which rebuilds here only after the
-          #      Pub/Sub subscriber marked it stale.
-          Currency::Registry.ensure_fresh(db)
-          parsed = parse_and_validate_patch(db, span, domain, doc_type, body, reentrant, auth_context, allow_computed_writes)
-          return Telemetry.record_error(span, parsed) if parsed.is_a?(Facet::ServiceError)
-          defn, patch = parsed
-
-          # 4. Fetch the current projection
-          projection = Mutation::Client.fetch_projection_or_404(db, domain, doc_type, doc_id, "Document #{domain}.#{doc_type}##{doc_id} not found")
-          if projection.is_a?(Facet::ServiceError)
-            Telemetry.record_error(span, projection)
-            return projection
-          end
-          projection = projection.as(Mutation::Client::Projection)
-
-          # 5. Check if document is deleted
-          return Telemetry.record_error(span, Facet::ServiceError.new(404, "Document #{doc_id} not found")) if projection.deleted_at
-
-          # 6. Deep-merge the patch over the current content
-          current = projection.content
-          merged = deep_merge(current, patch)
-
-          # 6a. Unique constraint check on the merged document. Only fields
-          # whose value changed in this update are queried; the target
-          # document's own row is excluded, so keeping an existing value is
-          # always a no-op for this check. Runs after the merge so it sees
-          # the exact state the mutation would land on.
-          if unique_error = check_unique_constraints(db, domain, doc_type, projection.id, current, merged, defn)
-            return Telemetry.record_error(span, unique_error)
-          end
-
-          # 6b. Currency lifecycle on the money paths this update touches.
-          # The check runs on the merged document against the stored
-          # content: a money path re-saved with the same ticker passes even
-          # when the currency row went inactive ("stays up and running");
-          # switching a path to a new ticker requires an active row.
-          # Unknown tickers already fail as `schema` errors in
-          # `MoneyType#validate` — the patch was validated before the merge,
-          # so `validate_patch` holds neither the old content nor the
-          # merged state; this seam holds both.
-          currency_errors = MoneyCurrencyCheck.check_update(defn, merged, current, currency_check_mode)
-          unless currency_errors.empty?
-            err = Facet::ServiceError.new(422, "Document validation failed", details: currency_errors)
-            return Telemetry.record_error(span, err)
-          end
-
-          # 6c. Authoring-time RBAC validation for role and domain documents.
-          # Re-checks the merged content so malformed or unknown-scope-alias
-          # permissions / context sets are rejected at PATCH time, not just at
-          # create time. Grant documents run the same dispatch (self-grant,
-          # resource shape, empty tags) against the producer parent.
-          if rbac_error = validate_rbac_definitions?(db, span, domain, doc_type, merged, projection, patch)
-            return rbac_error
-          end
-
-          # 6d–6e. Write-time semantic gates, one dispatch per doctype.
-          # The definition owns shape and the Lua script owns the singleton
-          # guards; these branches own every rule the definition cannot
-          # express (the settings singleton's smtp-host cross-field rule,
-          # the production dev-adapter gate with escape-hatch parity, the
-          # IAM policy enums, the `oidc_only` needs-a-provider rule, and
-          # the account email immutability). Bad values answer 422 at save
-          # time. One combined call keeps the complexity of `call` flat —
-          # each new gate joins the dispatch instead of the flow.
-          if gate_error = validate_semantic_gates?(db, span, domain, doc_type, current, merged)
-            return gate_error
-          end
-
-          # 6f. Role-authority boundary for the IAM doctypes. Runs on the
-          # merged content against the stored content, after normalization
-          # and structural validation, and before the lifecycle hook. The
-          # guard is independent of route-level `skip_authorization` — only
-          # the System principal bypasses it.
-          if auth_error = RBAC::RoleAuthority.authorize_transition(db, "update", domain, doc_type, current, merged, auth_context)
-            return Telemetry.record_error(span, auth_error)
-          end
-
-          # 7. Run the Lua update lifecycle hook (validate and/or mutate)
-          #    and re-run computed fields after mutation. The hook may write
-          #    unique fields, so the constraint check is deliberately not
-          #    repeated after it: the hook is trusted system code, and the
-          #    merged state below is what the mutation lands on.
+          #      The lock serialises every caller of `Update.call` per
+          #      document, not only the HTTP routes that pre-lock with
+          #      `lock_with_chain`. Internal writers (the Lua `document.update`
+          #      helper, IAM account patches, app deploy, parent recompute)
+          #      hold no such lock, so without this they read the projection
+          #      at step 4, run the merge, the unique and role-authority
+          #      checks, and the Lua hook against that read, and only meet
+          #      the row lock at the coalesce/persist step — where the
+          #      `state` read there is discarded, never compared. A write
+          #      that committed in between silently landed under them.
           #
-          #    The mutation ULID is minted first so the hook's Lua
-          #    `document.*` writes can stamp it as their `cause.parent`.
-          mut_id = Util::ScriptHelpers.ulid
-          merged, pending = run_script_update(span, db, defn, merged, current, actioner_id, domain, doc_type, doc_id, patch, cause: cause.try(&.child_of(mut_id)), provenance: provenance, auth_context: auth_context, authorize_path: authorize_path) do |err_merged|
-            return err_merged
+          #      Lock-then-read under READ COMMITTED: the `FOR UPDATE`
+          #      answers only after every competing writer committed, so
+          #      the fetch below sees the winning state and the derived
+          #      columns (search, display_name, links) staged from the
+          #      merged content can never drift from the content the
+          #      trigger lands.
+          result = Database.with_transaction(db, ignore_if_set: true) do |txn|
+            # The lock answers `false` for a missing row and for a
+            # tombstone — the same 404 the fetch used to answer at steps
+            # 4-5, now before any check runs.
+            unless RowAccess.lock_live_projection_for_update(txn, domain, doc_type, doc_id)
+              err = Facet::ServiceError.new(404, "Document #{domain}.#{doc_type}##{doc_id} not found")
+              next Telemetry.record_error(span, err)
+            end
+
+            # 0. Authorize the update. `skip_authorization` is set by callers
+            # that have ALREADY enforced an equivalent (or stronger) gate at a
+            # higher layer — today only the nested per-document sidecar route,
+            # which runs the host read gate plus the nested sidecar update grant.
+            if err = authorize_update(txn, domain, doc_type, doc_id, auth_context, skip_authorization, authorize_path)
+              next Telemetry.record_error(span, err)
+            end
+
+            # 1-3. Fetch the definition, parse the patch, and validate it
+            #      against the doctype definition (partial update).
+            #
+            #      Hydrate the currency registry first: the patch validation
+            #      (`MoneyType#validate`) and the lifecycle check below read
+            #      the in-process snapshot, which rebuilds here only after the
+            #      Pub/Sub subscriber marked it stale.
+            Currency::Registry.ensure_fresh(txn)
+            parsed = parse_and_validate_patch(txn, span, domain, doc_type, body, reentrant, auth_context, allow_computed_writes)
+            next Telemetry.record_error(span, parsed) if parsed.is_a?(Facet::ServiceError)
+            defn, patch = parsed
+
+            # 4. Fetch the current projection
+            projection = Mutation::Client.fetch_projection_or_404(txn, domain, doc_type, doc_id, "Document #{domain}.#{doc_type}##{doc_id} not found")
+            if projection.is_a?(Facet::ServiceError)
+              Telemetry.record_error(span, projection)
+              next projection
+            end
+            projection = projection.as(Mutation::Client::Projection)
+
+            # 5. Check if document is deleted. Unreachable through the lock
+            #    above (a tombstone answers `false` there); kept as the
+            #    cheap explicit guard it always was.
+            next Telemetry.record_error(span, Facet::ServiceError.new(404, "Document #{doc_id} not found")) if projection.deleted_at
+
+            # 6. Deep-merge the patch over the current content. The view
+            #    tree fields (`REPLACE_ON_WRITE_FIELDS`) replace instead of
+            #    merging, so a stale `children` / `columns` never survives.
+            current = projection.content
+            merged = deep_merge(current, patch, replace_keys: replace_on_write_fields(domain, doc_type))
+
+            # 6a. Unique constraint check on the merged document. Only fields
+            # whose value changed in this update are queried; the target
+            # document's own row is excluded, so keeping an existing value is
+            # always a no-op for this check. Runs after the merge so it sees
+            # the exact state the mutation would land on.
+            if unique_error = check_unique_constraints(txn, domain, doc_type, projection.id, current, merged, defn)
+              next Telemetry.record_error(span, unique_error)
+            end
+
+            # 6b. Currency lifecycle on the money paths this update touches.
+            # The check runs on the merged document against the stored
+            # content: a money path re-saved with the same ticker passes even
+            # when the currency row went inactive ("stays up and running");
+            # switching a path to a new ticker requires an active row.
+            # Unknown tickers already fail as `schema` errors in
+            # `MoneyType#validate` — the patch was validated before the merge,
+            # so `validate_patch` holds neither the old content nor the
+            # merged state; this seam holds both.
+            currency_errors = MoneyCurrencyCheck.check_update(defn, merged, current, currency_check_mode)
+            unless currency_errors.empty?
+              err = Facet::ServiceError.new(422, "Document validation failed", details: currency_errors)
+              next Telemetry.record_error(span, err)
+            end
+
+            # 6c–6f. Authoring-time RBAC validation, write-time semantic
+            #       gates, and the role-authority boundary — one dispatch
+            #       per doctype, in guard order. See `run_write_gates`.
+            if gate_error = run_write_gates(txn, span, domain, doc_type, current, merged, projection, patch, auth_context)
+              next gate_error
+            end
+
+            # 7. Run the Lua update lifecycle hook (validate and/or mutate)
+            #    and re-run computed fields after mutation. The hook may write
+            #    unique fields, so the constraint check is deliberately not
+            #    repeated after it: the hook is trusted system code, and the
+            #    merged state below is what the mutation lands on.
+            #
+            #    The mutation ULID is minted first so the hook's Lua
+            #    `document.*` writes can stamp it as their `cause.parent`.
+            mut_id = Util::ScriptHelpers.ulid
+            # A hook refusal must leave through the block's value, never a
+            # non-local `return`: `with_transaction` rolls back only on an
+            # error value (or a raised exception), not on a `return` that
+            # unwinds the block — a `return` here would leak the open
+            # transaction and its projection row lock past the method.
+            hook_error : Facet::ServiceError? = nil
+            merged, pending = run_script_update(span, txn, defn, merged, current, actioner_id, domain, doc_type, doc_id, patch, cause: cause.try(&.child_of(mut_id)), provenance: provenance, auth_context: auth_context, authorize_path: authorize_path) do |err_merged|
+              hook_error = err_merged
+            end
+            if err = hook_error
+              next err
+            end
+
+            result = finalize_and_persist(span, txn, defn, domain, doc_type, doc_id, actioner_id, auth_context, cause, provenance, mut_id, reentrant, current, merged, projection)
+
+            # Drain the update hook's notification queue now that the
+            # operation succeeded (a no-op update included — the hook ran
+            # and may have sent). `doc_ref = nil` entries resolve to the
+            # updated document.
+            Notification::Queue.drain(txn, pending, domain, doc_type, doc_id)
+
+            result
           end
-
-          result = finalize_and_persist(span, db, defn, domain, doc_type, doc_id, actioner_id, auth_context, cause, provenance, mut_id, reentrant, current, merged, projection)
-
-          # Drain the update hook's notification queue now that the
-          # operation succeeded (a no-op update included — the hook ran
-          # and may have sent). `doc_ref = nil` entries resolve to the
-          # updated document.
-          Notification::Queue.drain(db, pending, domain, doc_type, doc_id)
 
           result
         end
@@ -255,6 +291,40 @@ module Facet
         in Facet::ServiceError
           inner
         end
+      end
+
+      # Steps 6c-6f: the write-time gates that run on the merged content,
+      # in guard order — authoring-time RBAC validation for role, domain,
+      # and grant documents (6c), the per-doctype semantic gates the
+      # definition cannot express (6d-6e: the settings singleton's
+      # smtp-host cross-field rule, the production dev-adapter gate with
+      # escape-hatch parity, the IAM policy enums, the `oidc_only`
+      # needs-a-provider rule, and the account email immutability), and
+      # the role-authority boundary for the IAM doctypes (6f — the guard
+      # is independent of route-level `skip_authorization`; only the
+      # System principal bypasses it). One combined call keeps the
+      # complexity of `call` flat — each new gate joins the dispatch
+      # instead of the flow.
+      private def self.run_write_gates(
+        db : DB::Connection,
+        span,
+        domain : String,
+        doc_type : String,
+        current : JSON::Any,
+        merged : JSON::Any,
+        projection : Mutation::Client::Projection,
+        patch : JSON::Any,
+        auth_context : RBAC::AuthContext,
+      ) : Facet::ServiceError?
+        if rbac_error = validate_rbac_definitions?(db, span, domain, doc_type, merged, projection, patch)
+          return rbac_error
+        end
+
+        if gate_error = validate_semantic_gates?(db, span, domain, doc_type, current, merged)
+          return gate_error
+        end
+
+        RBAC::RoleAuthority.authorize_transition(db, "update", domain, doc_type, current, merged, auth_context)
       end
 
       # Finalizes the merged document (strip write-only fields, re-pull
@@ -483,7 +553,7 @@ module Facet
           allow_system_writes: reentrant,
         )
         unless errors.empty?
-          return Facet::ServiceError.new(422, "Document validation failed", details: errors)
+          return Facet::ServiceError.new(422, "Document validation failed", details: remap_unknown_fields(errors))
         end
 
         # Only the fields being changed in this patch are checked — existing
@@ -494,6 +564,23 @@ module Facet
         return nil if all_errors.empty?
 
         Facet::ServiceError.new(422, "Document validation failed", details: all_errors)
+      end
+
+      # Replaces a plain "is not a defined field" refusal with the write
+      # gate's own sentence when the field belongs to the settings
+      # singleton's deployment-material subtree (`artifact.storage`). That
+      # node is an intermediate schema node — the definition declares only
+      # its leaf (`artifact.storage.type`) — so schema validation answers
+      # before the semantic gate runs, and the operator gets "not a defined
+      # field" for a real deployment setting (F09-05). Every other error
+      # passes unchanged.
+      private def self.remap_unknown_fields(errors : Array(ValidationError)) : Array(ValidationError)
+        errors.map do |error|
+          next error unless error.code == "unknown_field"
+          field = error.field
+          next error if field.nil?
+          Facet::SystemSettings::WriteGate.refusal(field) || error
+        end
       end
 
       # Authoring-time RBAC validation for role and domain documents.
@@ -553,9 +640,9 @@ module Facet
         end
 
         # Authoring-time validation for the view children of `core.DocType`
-        # — the CollectionView calendar title and the DocumentView template
-        # tree. Both re-check the merged content against the parent doctype
-        # definition; see `validate_view_child_definitions?`.
+        # — the CollectionView config + calendar title and the DocumentView
+        # template tree. Both re-check the submitted field against the
+        # parent doctype definition; see `validate_view_child_definitions?`.
         if view_error = validate_view_child_definitions?(db, span, domain, doc_type, merged, projection, patch)
           return view_error
         end
@@ -565,9 +652,10 @@ module Facet
 
       # Authoring-time validation for the view children of `core.DocType`.
       # Dispatches on the doctype:
-      # - `core.CollectionView`: the calendar title template — runs only
-      #   when the patch touches `config`, so a rename of a view whose
-      #   template went stale after a parent-doctype field removal still
+      # - `core.CollectionView`: the `config` against the parent doctype
+      #   (`Document::CollectionViewGate`) plus the calendar title template —
+      #   runs only when the patch touches `config`, so a rename of a view
+      #   whose config went stale after a parent-doctype field removal still
       #   passes (the client renderer tolerates unknown fields, rendering
       #   them empty).
       # - `core.DocumentView`: the template tree — same touch-scoping on
@@ -595,7 +683,9 @@ module Facet
       # Write-time semantic gate for `core.CollectionView` — same shape as
       # `validate_system_settings?`. Runs only when the patch touches the
       # `config` field, so a rename of a view whose template went stale
-      # after a parent-doctype change still passes.
+      # after a parent-doctype change still passes. The gate validates the
+      # SUBMITTED config (replace-on-write, see `REPLACE_ON_WRITE_FIELDS`),
+      # never the merge product.
       private def self.validate_collection_view_config?(
         db : DB::Connection,
         span,
@@ -603,11 +693,15 @@ module Facet
         projection : Mutation::Client::Projection?,
         patch : JSON::Any?,
       ) : Facet::ServiceError?
-        config_touched = patch.try(&.as_h?).try(&.has_key?("config")) || false
-        return nil unless config_touched
+        submitted = patch.try(&.as_h?).try(&.["config"]?)
+        return nil unless submitted
 
         parent_id = projection.try(&.meta.as_h?).try(&.["parent_id"]?).try(&.as_s?)
-        errors = collection_view_title_template_errors(db, parent_id, merged)
+        # The surface may arrive in the same patch or come from the stored
+        # content; either way it is not part of the replaced tree.
+        surface = patch.try(&.as_h?).try(&.["surface"]?).try(&.as_s?) || merged["surface"]?.try(&.as_s?)
+        errors = CollectionViewGate.errors(db, parent_id, submitted, surface)
+        errors += collection_view_title_template_errors(db, parent_id, submitted)
         return nil if errors.empty?
 
         rbac_failure(span, "Collection view validation failed", errors)
@@ -617,8 +711,10 @@ module Facet
       # `validate_collection_view_config?`. Runs only when the patch touches
       # the `template` field, so a rename of a view whose template went stale
       # after a parent-doctype field removal still passes (the client
-      # renderer tolerates unknown bindings, rendering them empty). The
-      # `:error` issues answer 422; warnings stay report-only (see
+      # renderer tolerates unknown bindings, rendering them empty). The gate
+      # validates the SUBMITTED template (replace-on-write, see
+      # `REPLACE_ON_WRITE_FIELDS`), never the merge product. The `:error`
+      # issues answer 422; warnings stay report-only (see
       # `Document::ViewTemplateGate`).
       private def self.validate_document_view_template?(
         db : DB::Connection,
@@ -627,29 +723,29 @@ module Facet
         projection : Mutation::Client::Projection?,
         patch : JSON::Any?,
       ) : Facet::ServiceError?
-        template_touched = patch.try(&.as_h?).try(&.has_key?("template")) || false
-        return nil unless template_touched
+        submitted = patch.try(&.as_h?).try(&.["template"]?)
+        return nil unless submitted
 
         parent_id = projection.try(&.meta.as_h?).try(&.["parent_id"]?).try(&.as_s?)
-        errors = ViewTemplateGate.errors(db, parent_id, merged)
+        errors = ViewTemplateGate.template_errors(db, parent_id, submitted)
         return nil if errors.empty?
 
         rbac_failure(span, "Document view validation failed", errors)
       end
 
       # Extracts the calendar title template from a `core.CollectionView`
-      # document and validates it against the parent doctype's definition.
-      # Returns an empty array when there is nothing to check (no calendar
-      # config or no template) or when the parent definition cannot be
-      # resolved. Shared by the create and update dispatches.
+      # `config` value and validates it against the parent doctype's
+      # definition. Returns an empty array when there is nothing to check (no
+      # calendar config or no template) or when the parent definition cannot
+      # be resolved. Shared by the create and update dispatches.
       private def self.collection_view_title_template_errors(
         db : DB::Connection,
         parent_id : String?,
-        document : JSON::Any,
+        config : JSON::Any?,
       ) : Array(ValidationError)
         return [] of ValidationError unless parent_id
 
-        template = document.dig?("config", "calendar", "title_template").try(&.as_s?)
+        template = config.try(&.dig?("calendar", "title_template")).try(&.as_s?)
         return [] of ValidationError unless template
 
         case defn = Doctype::DefinitionStore.fetch!(db, parent_id)
@@ -883,14 +979,20 @@ module Facet
       # (RFC 7386): a `null` value in the patch REMOVES the key from the
       # merged document. Nested objects merge recursively (with the same
       # null-removal rule); arrays and primitives from the patch replace
-      # base values outright.
+      # base values outright. A key listed in `replace_keys` replaces the
+      # base value outright instead of merging (`null` still removes it) —
+      # the view tree fields of `REPLACE_ON_WRITE_FIELDS`.
       #
       # A removed key produces an `unset` entry in the JsonDiff (the key
       # disappears from the stored content), so a patch of `{"field": null}`
       # is the one way — and the standard way — to clear a field. A patch
       # nulling a required field never reaches the merge: patch validation
       # rejects it first (`required`).
-      private def self.deep_merge(base : JSON::Any, patch : JSON::Any) : JSON::Any
+      private def self.deep_merge(
+        base : JSON::Any,
+        patch : JSON::Any,
+        replace_keys : Array(String) = [] of String,
+      ) : JSON::Any
         base_h = base.as_h?
         patch_h = patch.as_h?
 
@@ -902,6 +1004,9 @@ module Facet
           # RFC 7386: a null patch value removes the member
           if value.raw.nil?
             merged.delete(key)
+          elsif replace_keys.includes?(key)
+            # Replace-on-write: the submitted value is the whole payload.
+            merged[key] = value
           elsif (existing = merged[key]?) && value.as_h?
             # Recursive merge for nested objects
             merged[key] = deep_merge(existing, value)
@@ -911,6 +1016,12 @@ module Facet
         end
 
         JSON::Any.new(merged)
+      end
+
+      # The replace-on-write field names of the target doctype, empty for
+      # every doctype that keeps merge semantics everywhere.
+      private def self.replace_on_write_fields(domain : String, doc_type : String) : Array(String)
+        REPLACE_ON_WRITE_FIELDS[{domain, doc_type}]? || [] of String
       end
 
       # State-machine guard for draft domains.

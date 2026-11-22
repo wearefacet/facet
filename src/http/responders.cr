@@ -46,6 +46,11 @@ module Facet
       # the concurrent-write race the index exists to catch.
       MUTATION_IDX_INDEX = "idx_mutations_doc_id_idx"
 
+      # Name prefix of every managed per-doctype index — see
+      # `Index::Naming::PREFIX`. The `unique_btree` members of that family
+      # enforce `unique: true` field constraints at the database level.
+      MANAGED_INDEX_PREFIX = "idx_env_"
+
       # True when the exception is the concurrent-write race on the mutation
       # log: the insert trigger assigns `idx = MAX(idx)+1` per document, and
       # the unique index `idx_mutations_doc_id_idx` is the guard when two
@@ -62,6 +67,38 @@ module Facet
           Util::PgError.constraint_name(ex) == MUTATION_IDX_INDEX
       end
 
+      # True when the exception is a `unique: true` field constraint
+      # enforced by a managed unique index on `projections` (an
+      # `idx_env_*` `unique_btree` member from `Index::Planner`). The
+      # Crystal pre-check (`Document::UniqueConstraint`) answers the
+      # common case with a clean 422; this classifier catches the race
+      # the pre-check cannot see — a competing write that committed
+      # between the check and the mutation insert. Surfaces as HTTP 422
+      # (see `JsonErrorHandler`), the same status the pre-check answers.
+      def projection_unique_conflict?(ex : Exception) : Bool
+        return false unless ex.is_a?(PQ::PQError)
+        return false unless Util::PgError.sqlstate(ex) == UNIQUE_VIOLATION_SQLSTATE
+        name = Util::PgError.constraint_name(ex)
+        !name.nil? && name.starts_with?(MANAGED_INDEX_PREFIX)
+      end
+
+      # Builds the 422 validation error for a lost unique-index race.
+      # The index name hashes the (domain, doctype, field, type) tuple, so
+      # the field name is not recoverable from it; the server's `Detail:`
+      # line names the conflicting key and value instead
+      # (`Key (content->>'email')=(a@b.c) already exists.`). The detail is
+      # stable server output quoted verbatim — no SQL, no backtrace — so
+      # carrying it in the response is safe. When the detail is absent the
+      # message stays generic.
+      def projection_unique_conflict_error(ex : PQ::PQError) : Facet::ValidationError
+        message = if detail = Util::PgError.detail(ex)
+                    "Value conflicts with a unique field constraint — #{detail}"
+                  else
+                    "Value conflicts with a unique field constraint"
+                  end
+        Facet::ValidationError.new(message: message, code: "unique")
+      end
+
       # True when the exception is a PG cancellation the caller can act on:
       # the statement exceeded the session's `statement_timeout` and should
       # surface as HTTP 503 (retry with a narrower filter) rather than a
@@ -70,6 +107,42 @@ module Facet
       def statement_timeout?(ex : Exception) : Bool
         return false unless ex.is_a?(PQ::PQError)
         Util::PgError.sqlstate(ex) == STATEMENT_TIMEOUT_SQLSTATE
+      end
+
+      # ── Dependency-unavailable classification ───────────────────────────
+
+      # The dependencies a request path can find down, keyed by the name the
+      # 503 body carries. The healthcheck reports the same names.
+      DEPENDENCIES = {"redis" => "redis", "postgresql" => "postgresql"}
+
+      # The dependency an exception says is down, or nil — the `503`
+      # classification. Only connection-level exception classes match, so a
+      # programming error never maps to a dependency status:
+      #
+      # - `Socket::ConnectError` — a refused connection (the Redis client
+      #   dials a `TCPSocket`, so an unreachable Redis surfaces here).
+      # - `Socket::Addrinfo::Error` — an unresolved host (a `redis://` URL
+      #   whose host does not resolve).
+      # - `DB::ConnectionRefused` — the PostgreSQL pool cannot reach its
+      #   server.
+      #
+      # `Redis::Error` is deliberately NOT matched: it is the base class of
+      # every Redis protocol and command error, so a malformed command would
+      # masquerade as an outage. The Redis paths here (sessions, login
+      # throttle, codes) build their commands from constants, so a
+      # connection-level failure is the only realistic failure they raise.
+      #
+      # The two socket classes are not Redis-specific, but the only outbound
+      # socket dials on a request path are Redis (the event publisher is
+      # fail-silent and the mailer is out of band), so naming `redis` is the
+      # correct attribution for them.
+      def dependency_unavailable?(ex : Exception) : String?
+        case ex
+        when ::Socket::ConnectError, ::Socket::Addrinfo::Error
+          DEPENDENCIES["redis"]
+        when ::DB::ConnectionRefused
+          DEPENDENCIES["postgresql"]
+        end
       end
 
       # ── JSON error responses ──────────────────────────────────────────────
@@ -369,8 +442,10 @@ module Facet
       private def resolve_updated_doctype_projection(env, mutation_id : String) : String
         # For Doctype::Update we don't have the projection at hand — we need
         # to fetch it from the mutation_id. But that's complex; instead we
-        # return a simpler response. The fresh mutation id is the projection's
+        # return a simpler response. The mutation id is the projection's
         # new `state`, so it doubles as the single-document ETag validator.
+        # An unchanged re-save carries the row's current `state` — the same
+        # validator the preceding GET served, so a client sees no change.
         Caching.set_etag_header(env, mutation_id)
         env.response.status_code = 200
         env.response.content_type = "application/json"

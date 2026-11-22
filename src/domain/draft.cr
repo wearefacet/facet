@@ -131,11 +131,12 @@ module Facet
       # structure (doctype definitions + `core.Domain` document) into a new
       # draft. No document data is copied — only the schema.
       #
-      # `auth_context` gates the fork: a caller whose `create core.Domain`
-      # grant is scoped (`$domain_editor`) must also be an editor of the
-      # source domain (`Domain::Editors.authorize_draft_from?`, 403
-      # otherwise). Wildcard roles and the system bypass pass. Internal
-      # callers default to the system bypass — the same convention
+      # `auth_context` gates the fork: the caller must be a domain editor of
+      # the source domain (`Domain::Editors.authorize_draft_from?`, 403
+      # otherwise). A blanket `create core.Domain` grant (the seeded
+      # `editor` role) does not relax this — a draft forks the source's
+      # definition surface. Only the system bypass passes. Internal callers
+      # default to the system bypass — the same convention
       # `Domain::Publish.call` uses; the HTTP route passes the caller's real
       # context.
       #
@@ -154,11 +155,10 @@ module Facet
         auth_context : RBAC::AuthContext = RBAC::AuthContext.system,
       ) : Result | Facet::ServiceError
         # 0. Domain-membership gate. The permission scopes are presence-only
-        #    at create time (no row exists), so a role whose only
-        #    `create core.Domain` grant is scoped to `$domain_editor` is
-        #    checked here: the source domain must be one the account edits.
-        #    Wildcard roles and the system bypass pass; a denied caller
-        #    already failed the route's enforcer.
+        #    at create time (no row exists), so membership of the source
+        #    domain is checked here — whatever the create verdict. The system
+        #    bypass passes; a preview principal and a denied caller fail
+        #    closed.
         unless Editors.authorize_draft_from?(db, source_id, auth_context)
           return Facet::ServiceError.new(403, "Forbidden")
         end

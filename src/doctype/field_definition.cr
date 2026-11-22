@@ -659,6 +659,13 @@ module Facet
 
       # ── Query helpers ──────────────────────────────────────────────────
 
+      # A field with no declared type. Used to mark a synthetic scope entry
+      # (`dict` `key` / `value`, a scalar-array `value`) whose existence is
+      # known but whose type is not.
+      def self.untyped : FieldDefinition
+        new
+      end
+
       # Returns `true` if this field is a reference (owned or unowned).
       def reference? : Bool
         @type.try(&.type_name) == "reference" || false
@@ -803,8 +810,14 @@ module Facet
       end
 
       private def write_nested_definitions(builder : JSON::Builder) : Nil
+        # `items` is a full nested definition: an array-of-reference carries
+        # its target on the item, not on the parent. Re-emitting the whole
+        # item keeps the GET → PUT round-trip lossless — the data-shape
+        # guard reads the item's `doctype` and refuses a dropped target.
         if items = @items
-          builder.field("items", items)
+          builder.field("items") do
+            items.to_json(builder)
+          end
         end
 
         if cw = @compute_when
@@ -843,14 +856,18 @@ module Facet
           builder.field("properties") do
             builder.object do
               props.each do |name, field|
-                builder.field(name, field)
+                builder.field(name) do
+                  field.to_json(builder)
+                end
               end
             end
           end
         end
 
         if dict_val = @dictionary_value
-          builder.field("values", dict_val)
+          builder.field("values") do
+            dict_val.to_json(builder)
+          end
         end
 
         if caps = @filters

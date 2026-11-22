@@ -1,0 +1,71 @@
+---
+// Section heading for the landing page: a small eyebrow, an h2 and an
+// optional lead paragraph (the slot).
+interface Props {
+	eyebrow?: string;
+	title: string;
+	id?: string;
+}
+const { eyebrow, title, id } = Astro.props;
+---
+
+<header class="section-head not-content">
+	{eyebrow && <p class="section-head__eyebrow">{eyebrow}</p>}
+	<h2 id={id}>{title}</h2>
+	<div class="section-head__lead"><slot /></div>
+</header>
+
+<style>
+	.section-head {
+		margin-top: clamp(3.5rem, 8vw, 6rem);
+		max-width: 46rem;
+	}
+
+	.section-head__eyebrow {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		margin: 0 0 0.75rem;
+		font-family: var(--font-mono);
+		font-size: var(--sl-text-xs);
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--accent-ink);
+	}
+
+	.section-head__eyebrow::before {
+		content: '';
+		width: 1.5rem;
+		height: 1px;
+		background: currentColor;
+	}
+
+	h2 {
+		margin: 0;
+		font-size: clamp(var(--sl-text-2xl), calc(1rem + 2vw), var(--sl-text-4xl));
+		line-height: 1.15;
+		letter-spacing: -0.02em;
+		font-weight: 700;
+		color: var(--text);
+		text-wrap: balance;
+	}
+
+	.section-head__lead {
+		margin-top: 0.9rem;
+		color: var(--text-2);
+		font-size: var(--sl-text-lg);
+		line-height: 1.6;
+	}
+
+	.section-head__lead:empty {
+		display: none;
+	}
+
+	.section-head__lead :global(p) {
+		margin: 0;
+	}
+
+	.section-head__lead :global(a) {
+		color: var(--accent-ink);
+	}
+</style>

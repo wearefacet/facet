@@ -47,3 +47,26 @@
 		await expect(canvas.getByText('0% of the 30-day budget used')).toBeVisible();
 	}}
 />
+
+<Story
+	name="MostlyEstimated"
+	args={{ used: 62000, estimated: 40000, budget: 100000, windowDays: 30 }}
+	play={async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await expect(canvas.getByText('62% of the 30-day budget used')).toBeVisible();
+		// 40000 / 62000 rounds to 65% — the hint names the estimate share.
+		await expect(
+			canvas.getByText('about 65% of that is an estimate, not a reported count')
+		).toBeVisible();
+	}}
+/>
+
+<Story
+	name="ReportedOnly"
+	args={{ used: 62000, estimated: 0, budget: 100000, windowDays: 30 }}
+	play={async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		// No estimate — the hint line stays absent.
+		await expect(canvas.queryByText(/estimate/)).toBeNull();
+	}}
+/>

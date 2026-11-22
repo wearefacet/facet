@@ -290,15 +290,10 @@
 										{cell.value === true ? '✓' : '✕'}
 									</button>
 								{:else}
-
 									<DvtValue
-
 										value={cell.value}
-
 										fieldType={cell.fieldType as never}
-
 										fieldDef={cell.fieldDef}
-
 										{driver}
 										{onreferenceclick}
 									/>

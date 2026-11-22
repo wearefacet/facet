@@ -51,6 +51,10 @@ module Facet
       #   Kemal already rejects a body with no `Content-Type` at all with
       #   `400` (RFC 10008), before this helper runs.
       # - The body must be a JSON object → `422` otherwise.
+      # - The body keys are admitted strictly (the B-169 remainder): a key
+      #   outside the list grammar answers `422` naming it, never a silent
+      #   drop. `admitted_keys` narrows the grammar to the keys the route
+      #   reads; the default is the whole grammar.
       #
       # Returns `nil` after writing the error response — use with
       # `|| return` in route handlers. The optional block receives the
@@ -58,10 +62,35 @@ module Facet
       # keys beyond the list-request contract (`include` on the history
       # routes, `status` on the webhook-calls route).
       def query_list_request(env) : ListRequest?
-        query_list_request(env) { |_body| nil }
+        query_list_request_with(env, ListRequest::ALL_BODY_KEYS, ->(_body : JSON::Any?) { nil })
       end
 
-      def query_list_request(env, &block : JSON::Any? -> Nil) : ListRequest?
+      # Body-only QUERY parse with a narrowed admitted set and no handler
+      # block — the shape the global audit list runs.
+      def query_list_request(env, admitted_keys : Set(String)) : ListRequest?
+        query_list_request_with(env, admitted_keys, ->(_body : JSON::Any?) { nil })
+      end
+
+      # `admitted_keys` narrows the body grammar to the keys the route
+      # reads (the global audit list drops `field`, `select`, and
+      # `aggregate`); the default is the whole grammar. `extra_body_keys`
+      # names the body keys a route reads beyond the grammar (`include` on
+      # the history routes, `status` on the webhook-calls route) — the same
+      # role `extra_query_keys` plays on the GET transport.
+      def query_list_request(
+        env,
+        admitted_keys : Set(String) = ListRequest::ALL_BODY_KEYS,
+        extra_body_keys : Set(String) = Set(String).new,
+        &block : JSON::Any? -> Nil
+      ) : ListRequest?
+        query_list_request_with(env, admitted_keys + extra_body_keys, block)
+      end
+
+      private def query_list_request_with(
+        env,
+        admitted_keys : Set(String),
+        block : Proc(JSON::Any?, Nil),
+      ) : ListRequest?
         if (raw_query = env.request.query) && !raw_query.empty?
           Responders.error_response(env, 422, "QUERY does not accept query parameters; put them in the request body")
           return nil
@@ -87,7 +116,7 @@ module Facet
         end
 
         block.call(parsed)
-        result = ListRequest.from_json(parsed)
+        result = ListRequest.from_json(parsed, strict: true, admitted_keys: admitted_keys)
         if result.is_a?(Facet::ServiceError)
           Responders.error_response(env, result.status, result.message)
           return nil
@@ -107,13 +136,21 @@ module Facet
       # a silent drop. `extra_query_keys` names the keys the handler reads
       # beyond the list-request grammar (`include` on the document history,
       # `status` on the webhook-calls route); the strict scan admits them.
-      # The scan runs only when `strict` is true, so the extra set is a
-      # no-op on the lenient default.
+      # `admitted_body_keys` / `admitted_query_keys` narrow the grammar to
+      # the keys the route reads on each transport (the global audit list
+      # drops `field`, `select`, and `aggregate`). The scans run only when
+      # `strict` is true, so the sets are a no-op on the lenient default.
       #
       # Returns `nil` after writing the error response — use with
       # `|| return` in route handlers, matching `query_list_request`.
-      def get_list_request(env, strict : Bool = false, extra_query_keys : Set(String) = Set(String).new) : ListRequest?
-        result = ListRequest.from_request(env, strict, extra_query_keys)
+      def get_list_request(
+        env,
+        strict : Bool = false,
+        extra_query_keys : Set(String) = Set(String).new,
+        admitted_body_keys : Set(String) = ListRequest::ALL_BODY_KEYS,
+        admitted_query_keys : Set(String) = ListRequest::ALL_QUERY_KEYS,
+      ) : ListRequest?
+        result = ListRequest.from_request(env, strict, extra_query_keys, admitted_body_keys, admitted_query_keys)
         if result.is_a?(Facet::ServiceError)
           Responders.error_response(env, result.status, result.message)
           return nil

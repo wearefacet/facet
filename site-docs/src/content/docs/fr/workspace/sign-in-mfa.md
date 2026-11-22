@@ -16,7 +16,7 @@ mots de passe, la MFA et la réinitialisation du mot de passe.
 
 ## Avant de commencer
 
-- **Le premier mot de passe.** Il vient de votre administrateurà : un mot
+- **Le premier mot de passe.** Il vient de votre administrateur : un mot
   de passe temporaire ou un lien d’invitation dans un e-mail.
 - **Une application d’authentification.** Pour la MFA, il vous faut une
   application. Facet fonctionne avec des applications comme 1Password, Authy
@@ -80,7 +80,7 @@ Facet peut vous demander de configurer la MFA pendant la connexion :
   la même configuration. Vous pouvez sélectionner « Passer pour l’instant ». Facet
   redemande à votre prochaine connexion.
 
-  Pour configurer la MFAà:
+  Pour configurer la MFA :
 
 1. Scannez le QR code avec votre application d’authentification. Si vous ne
    pouvez pas scanner, sélectionnez « Copier le secret dans le presse-papiers »
@@ -108,7 +108,7 @@ section MFA.
 Si votre organisation a configuré l’authentification unique (SSO), la page de
 connexion montre un bouton « Continuer avec » par fournisseur. Sélectionnez
 votre fournisseur et suivez ses étapes. Quand le serveur exige le SSO, les
-champs de mot de passe et le lien « Mot de passe oubliéà? »
+champs de mot de passe et le lien « Mot de passe oublié ? »
 n’apparaissent pas.
 
 Si la connexion avec le fournisseur ne se termine pas, Facet revient à la page
@@ -118,7 +118,7 @@ de connexion. Réessayez. Si l’échec se répète, contactez votre administrat
 
 Vous n’avez pas besoin d’être connecté pour réinitialiser un mot de passe.
 
-1. Ouvrez la page de connexion et sélectionnez « Mot de passe oubliéà? ».
+1. Ouvrez la page de connexion et sélectionnez « Mot de passe oublié ? ».
 2. Tapez votre adresse e-mail dans « Identifiant ».
 3. Sélectionnez « Envoyer le lien de réinitialisation ».
 4. Facet affiche « Vérifiez votre boîte de réception » et la durée de validité
@@ -154,7 +154,7 @@ pour relire vos sessions.
 
 ### Le code ne fonctionne pas
 
-Attendez un code frais et saisissez-le aussitôt. Un code déj à utilisé ne
+Attendez un code frais et saisissez-le aussitôt. Un code déjà utilisé ne
 fonctionne plus. Après 5 codes faux, la connexion se verrouille pendant
 environ 5 minutes.
 
@@ -177,7 +177,7 @@ au début et saisissez un code frais.
 
 Un lien fonctionne une seule fois et expire après 24 heures par défaut. Quand
 Facet affiche « Ce lien de réinitialisation est invalide ou a expiré. »,
-demandez un nouveau lien. Sélectionnez « Mot de passe oubliéà? » sur la
+demandez un nouveau lien. Sélectionnez « Mot de passe oublié ? » sur la
 page de connexion. Un nouveau lien remplace un lien plus ancien.
 
 ### Aucun e-mail de réinitialisation n’est arrivé

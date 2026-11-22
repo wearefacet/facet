@@ -18,7 +18,7 @@ nom définitif. Facet crée alors le domaine réel et supprime le brouillon.
 
 Ouvrez un brouillon quand vous concevez un nouveau domaine, ou quand vous
 modifiez un domaine réel et voulez d’abord tester. Le brouillon est aussi
-l’endroit où les co-éditeurs travaillent avec vousà : quiconque édite le
+l’endroit où les co-éditeurs travaillent avec vous : quiconque édite le
 brouillon garde le droit d’éditer le domaine publié.
 
 :::note
@@ -41,8 +41,8 @@ moment. La publication ne copie que la structure — jamais les documents.
 
 ### 1. Ouvrir un brouillon
 
-Dans le Builder, créez un nouveau brouillon. Facet génère le nomà ; il commence
-toujours par `_`. Renseignez les deux champs de nom en une foisà :
+Dans le Builder, créez un nouveau brouillon. Facet génère le nom ; il commence
+toujours par `_`. Renseignez les deux champs de nom en une fois :
 
 | Champ | Règle | Objectif |
 | --- | --- | --- |
@@ -71,7 +71,7 @@ juger.
 ### 3. Tester en aperçu
 
 Ouvrez une session d’aperçu depuis le brouillon. Facet montre alors le
-brouillon dans l’application réelleà : vous ouvrez des pages, lancez des
+brouillon dans l’application réelle : vous ouvrez des pages, lancez des
 actions et créez des documents, le tout dans le brouillon. Les références
 inter-domaines vers des domaines réels n’affichent aucune donnée pendant
 l’aperçu.
@@ -86,7 +86,7 @@ n’y a rien à publier. Corrigez les problèmes avant de publier (voir
 ### 5. Publier
 
 Ouvrez la confirmation de publication. Vous y choisissez le nom cible et le
-modeà :
+mode :
 
 - **Publication à neuf** — le nom cible doit être libre. Facet crée le domaine
   et copie vos doctypes.
@@ -97,7 +97,7 @@ modeà :
 
 Facet recopie les co-éditeurs vers le domaine publié, dépose les demandes
 d’attribution inter-domaines, puis supprime le brouillon. La publication
-revalide le modèleà : le graphe de composition doit être fermé, et le contrôle
+revalide le modèle : le graphe de composition doit être fermé, et le contrôle
 de version de la publication par-dessus doit passer.
 
 <!-- d2

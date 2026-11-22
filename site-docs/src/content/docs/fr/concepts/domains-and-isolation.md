@@ -1,6 +1,6 @@
 ---
 title: Domaines et isolement
-description: "Un domaine regroupe des doctypes et borne leurs donnéesà : aucune donnée ne franchit la limite d’un domaine sans consentement explicite."
+description: "Un domaine regroupe des doctypes et borne leurs données : aucune donnée ne franchit la limite d’un domaine sans consentement explicite."
 audience: [evaluator, author]
 features: [DOM-01, DOM-14]
 sidebar:
@@ -37,7 +37,7 @@ grant -> refused: "missing or inactive"
 **Ce que porte un domaine.** Un domaine est un document `core.Domain`, et
 son id est le nom du domaine. Tout id de doctype est donc qualifié, comme
 `hr.Employee`. Le domaine doit exister avant l’enregistrement de ses
-doctypesà ; sinon, l’enregistrement répond `422`.
+doctypes ; sinon, l’enregistrement répond `422`.
 
 Le domaine possède ses doctypes et leurs modèles de vue. Il possède aussi
 les hooks déclarés sur le document du domaine, et les attributions qu’il
@@ -52,7 +52,7 @@ définitions et ses données.
 
 **L’isolement est la règle par défaut.** Les données ne quittent pas un
 domaine de leur propre chef. Une lecture inter-domaines exige l’un de deux
-consentements explicitesà :
+consentements explicites :
 
 - **L’API de documents.** Les lectures suivent les permissions du rôle. Le
   rôle doit porter une ligne de permission qui nomme le doctype étranger.
@@ -66,7 +66,7 @@ consentements explicitesà :
 
   **Ce que partage une attribution.** Une attribution est un document sous
   le domaine producteur, et une attribution couvre un seul domaine
-  consommateur. Elle porte une liste de ressourcesà : une entrée par doctype
+  consommateur. Elle porte une liste de ressources : une entrée par doctype
   producteur, et chaque entrée nomme des étiquettes de champ. Les
   attributions donnent un accès en lecture seulement — aucun accès en
   écriture n’existe.
@@ -74,7 +74,7 @@ consentements explicitesà :
   **Un champ est partagé quand ses étiquettes correspondent.** Les champs
   sans étiquette comptent comme `default`, donc une entrée qui nomme
   `default` atteint chaque champ sans étiquette. Le consommateur reçoit
-  seulement les champs couvertsà ; le serveur retire les autres avant la
+  seulement les champs couverts ; le serveur retire les autres avant la
   livraison.
 
   **Le producteur décide de l’activation.** L’activation appartient au
@@ -83,7 +83,7 @@ consentements explicitesà :
   inactive. Le producteur doit l’accepter de nouveau.
 
   **Un seul saut.** La réplication fait un seul saut. Un champ de
-  réplication ne peut pas alimenter un autre champ de réplicationà ; le
+  réplication ne peut pas alimenter un autre champ de réplication ; le
   contrôle de création refuse la chaîne avec un `422`.
 
 :::caution
@@ -101,7 +101,7 @@ rôle.
 
 la source, donc il dépend du contrat du producteur. Désactivez
 l’attribution : les copies cessent de se mettre à jour. Réduisez les
-étiquettesà : les valeurs déj à copiées restent en place. Aucun traitement ne
+étiquettes : les valeurs déjà copiées restent en place. Aucun traitement ne
 les efface. Réactivez l’attribution : le prochain événement source renvoie
 la valeur.
 
@@ -119,6 +119,6 @@ dupliquez le champ et gardez les domaines totalement indépendants.
   mécanisme de copie qu’une attribution contrôle.
 - [Application des autorisations](/fr/concepts/authorization-enforcement/) —
   les vérifications de rôle derrière l’API de documents.
-- Internes sur GitHubà : [doctype-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/doctype-system.md),
+- Internes sur GitHub : [doctype-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/doctype-system.md),
   [domain-grants.md](https://github.com/wearefacet/facet/blob/main/doc/backend/domain-grants.md),
   [replication.md](https://github.com/wearefacet/facet/blob/main/doc/backend/replication.md).

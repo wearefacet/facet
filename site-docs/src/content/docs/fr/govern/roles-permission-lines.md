@@ -23,7 +23,7 @@ le garde-fou qui borne qui peut changer quoi.
 ## Avant de commencer
 
 - **La bonne page.** Ouvrez **Configurer → Accès → Rôles**. La page de liste
-  héberge l’éditeur d’attributionsà ; chaque rôle a aussi une page détail avec
+  héberge l’éditeur d’attributions ; chaque rôle a aussi une page détail avec
   les onglets Détails, Membres et Octrois.
 - **Le modèle.** Lisez
   [Rôles, niveaux et garde-fou d’autorité](/fr/concepts/roles-levels-authority/)
@@ -64,7 +64,7 @@ l’initialisation le portent.
 
 La forme tableau est obligatoire sur chaque chemin d’écriture. Chaque entrée
 nomme un périmètre déclaré sur le doctype cible. Les alias se combinent en
-OUà: la ligne atteint les lignes qui répondent à l’un des alias. Omettre
+OU : la ligne atteint les lignes qui répondent à l’un des alias. Omettre
 `scope` atteint toutes les lignes. Voir
 [Les périmètres de lignes](/fr/govern/row-scopes/) pour la déclaration et
 les alias.
@@ -72,10 +72,10 @@ les alias.
 ### `except`
 
 `except` resserre une seule ligne. Les entrées sont des chemins
-`domaine.Doctype` concretsà ; pas de jokers. Une entrée fait de la
+`domaine.Doctype` concrets ; pas de jokers. Une entrée fait de la
 correspondance par préfixe comme `on` : une entrée sur `core.DocType` exclut
 aussi `core.DocType.Comment`. C’est de l’arithmétique de chemins, pas un
-système de refusà : elle n’accorde rien, et elle ne touche que la ligne qui
+système de refus : elle n’accorde rien, et elle ne touche que la ligne qui
 la porte.
 
 ### Exemples
@@ -118,14 +118,14 @@ domaine. Cette ligne laisse un membre lire chaque doctype de `hr`.
 
 ## Les canaux de connectivité
 
-`connectivity` est un tableau tiré d’un vocabulaire ferméà : `mcp`, `webhook`,
+`connectivity` est un tableau tiré d’un vocabulaire fermé : `mcp`, `webhook`,
 `api` et `assistant`. Il décide quelles portes programmatiques le rôle peut
 ouvrir du tout. Une liste vide donne un rôle réservé au navigateur. Les
 sessions navigateur et les tokens d’application ne dépendent jamais du
 champ.
 
 - `api` — le rôle peut porter des clés d’API. Voir
-  [Accès machineà : clés d’API](/fr/govern/api-keys/).
+  [Accès machine : clés d’API](/fr/govern/api-keys/).
 - `mcp` — des agents peuvent se connecter par la surface MCP (Model Context
   Protocol) avec ce rôle.
 - `webhook` — le rôle peut créer et recevoir des webhooks. Voir
@@ -139,7 +139,7 @@ champ.
 ## Les actions nommées
 
 En plus des quatre actions CRUD, une ligne peut accorder une action nommée.
-Les noms d’actions qui barrent des routes fixes valent d’être connusà :
+Les noms d’actions qui barrent des routes fixes valent d’être connus :
 
 | Action                   | Sur               | Barre                                                       |
 | ------------------------ | ----------------- | ------------------------------------------------------------ |
@@ -172,7 +172,7 @@ rôle le plus élevé qu’il porte.
 | Protection de la cible | Aucune écriture sur un compte ou un rôle dont le niveau courant dépasse celui de l’appelant, pas même pour l’abaisser.                                                                                              |
 | Écriture du rôle       | Le niveau résultant ne doit pas dépasser celui de l’appelant. Chaque nouvelle ligne doit découler du rôle précédent ou du rôle de l’appelant. Les nouvelles étiquettes visibles doivent rester dans l’union des deux. Les canaux de connectivité et le budget de l’assistant suivent la même inclusion. |
 
-La règle d’inclusion borne un éditeur de rôlesà : un éditeur de niveau 30 ne
+La règle d’inclusion borne un éditeur de rôles : un éditeur de niveau 30 ne
 peut pas élargir un rôle de niveau 20 au-del à de ce que le contenu précédent
 ou son propre rôle implique. Voir
 [Affecter les rôles et l’élection](/fr/govern/assigning-roles-election/)
@@ -183,13 +183,13 @@ pour le flux d’affectation.
 | Id du rôle                    | Niveau | Portée                                                                                     |
 | ----------------------------- | ------ | ------------------------------------------------------------------------------------------- |
 | `iam.Roles.admin`             | 100    | `*` sur `*.*`, tous les canaux, toutes les étiquettes.                                      |
-| `iam.Roles.editor`            | 30     | Lit et modifie le contenu partoutà ; les surfaces de définition et `core.SystemSettings` sont retranchées avec `except`. |
+| `iam.Roles.editor`            | 30     | Lit et modifie le contenu partout ; les surfaces de définition et `core.SystemSettings` sont retranchées avec `except`. |
 | `iam.Roles.viewer`            | 20     | Lit partout, avec les mêmes retranchements.                                                 |
 | `iam.Roles.comment_author`    | 20     | Lecture, modification et suppression sur `core.Comment`, limitées à l’auteur par `$mine`.   |
 | `iam.Roles.attachment_owner`  | 20     | Lecture, modification et suppression sur `core.Attachment`, limitées à la personne qui a déposé le fichier par `$mine`. |
 | `iam.Roles.anonymous`         | 0      | Sert les requêtes sans identifiant. Ses attributions de lecture forment la surface publique de l’API. Supprimez-le, et ces requêtes répondent `401`. |
 
-Le retranchement de `core.SystemSettings` est le modèle à copierà : les rôles
+Le retranchement de `core.SystemSettings` est le modèle à copier : les rôles
 `editor` et `viewer` créés par l’initialisation soustraient le chemin de
 leurs lignes générales avec `except: ["core.SystemSettings"]`, et les
 réglages d’exécution restent réservés aux administrateurs. Un rôle sur
@@ -198,7 +198,7 @@ mesure peut toujours recevoir le chemin explicitement.
 ## Le nom du rôle est immuable
 
 L’id du document est `iam.Roles.<name>`, et les documents comptes
-référencent cet id. Un renommage désynchroniserait l’id du nomà ; le hook de
+référencent cet id. Un renommage désynchroniserait l’id du nom ; le hook de
 mise à jour refuse donc toute écriture qui porte `name`. Pour renommer,
 créez un nouveau rôle sous le nouveau nom, déplacez les affectations, puis
 supprimez l’ancien. Le hook de suppression refuse tant qu’un compte porte
@@ -260,5 +260,5 @@ Vérifiez `visible_tags` sur son rôle — voir
   la page de concept.
 - [La portée des apps (attributions)](/fr/govern/app-grants/) — la borne côté
   application.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md).

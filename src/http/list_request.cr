@@ -49,9 +49,18 @@ module Facet
       # stays lenient by default. A strict route that reads query keys
       # beyond the list contract names them as `extra_query_keys`
       # (`include` on the audit history route, `status` on the
-      # webhook-calls route); the body grammar has no extras.
+      # webhook-calls route); the body grammar has no extras. A strict
+      # route that reads only a subset of the grammar names it as
+      # `admitted_keys` (the global audit list reads no `field`,
+      # `select`, or `aggregate`): the parse then answers `422` for a
+      # grammar key the route would drop.
       KNOWN_BODY_KEYS  = Set{"page", "items", "sort", "filters", "select", "aggregate", "field", "scope", "deleted"}
       KNOWN_QUERY_KEYS = Set{"page", "items", "sort", "select", "aggregate", "field", "scope", "deleted"}
+
+      # The grammar keys a strict route admits when it reads the whole
+      # list contract — the default of `admitted_keys`.
+      ALL_BODY_KEYS  = KNOWN_BODY_KEYS
+      ALL_QUERY_KEYS = KNOWN_QUERY_KEYS
 
       # ── Accessors ──────────────────────────────────────────────────────
 
@@ -101,10 +110,15 @@ module Facet
       # body key outside the known set answers `422` as well (the B-169
       # remainder). Strict routes that read keys beyond the list contract
       # carry them on the query string and name them as `extra_query_keys`;
-      # the body grammar has no extras.
-      def self.from_json(json : JSON::Any, strict : Bool = false) : ListRequest | Facet::ServiceError
+      # the body grammar has no extras. A strict route that reads only a
+      # subset of the grammar names it as `admitted_keys`.
+      def self.from_json(
+        json : JSON::Any,
+        strict : Bool = false,
+        admitted_keys : Set(String) = ALL_BODY_KEYS,
+      ) : ListRequest | Facet::ServiceError
         if strict
-          err = strict_body_error(json)
+          err = strict_body_error(json, admitted_keys)
           return err if err
         end
 
@@ -146,10 +160,14 @@ module Facet
       # be a JSON object — anything else answers a `422` ServiceError the
       # route layer renders, never a 500 from `JSON.parse` (B-160: the
       # document read route parses its optional body here).
-      def self.from_json(body : String, strict : Bool = false) : ListRequest | Facet::ServiceError
+      def self.from_json(
+        body : String,
+        strict : Bool = false,
+        admitted_keys : Set(String) = ALL_BODY_KEYS,
+      ) : ListRequest | Facet::ServiceError
         parsed = parse_body_object(body)
         return parsed if parsed.is_a?(Facet::ServiceError)
-        from_json(parsed, strict)
+        from_json(parsed, strict, admitted_keys)
       end
 
       # ── HTTP request parsing (body + query merge) ───────────────────
@@ -195,19 +213,25 @@ module Facet
       # outside the field shape (B-158), or a non-integer `page` / `items`
       # value (B-169) — and `from_request` surfaces the first failure to
       # the route layer.
-      def self.from_request(env, strict : Bool = false, extra_query_keys : Set(String) = Set(String).new) : ListRequest | Facet::ServiceError
+      def self.from_request(
+        env,
+        strict : Bool = false,
+        extra_query_keys : Set(String) = Set(String).new,
+        admitted_body_keys : Set(String) = ALL_BODY_KEYS,
+        admitted_query_keys : Set(String) = ALL_QUERY_KEYS,
+      ) : ListRequest | Facet::ServiceError
         raw = env.request.body.try(&.gets_to_end)
         if raw.nil? || raw.empty?
-          return from_query(env.params.query, strict, extra_query_keys)
+          return from_query(env.params.query, strict, extra_query_keys, admitted_query_keys)
         end
 
         parsed = parse_body_object(raw)
         return parsed if parsed.is_a?(Facet::ServiceError)
 
-        body_req = from_json(parsed, strict)
+        body_req = from_json(parsed, strict, admitted_body_keys)
         return body_req if body_req.is_a?(Facet::ServiceError)
 
-        query_req = from_query(env.params.query, strict, extra_query_keys)
+        query_req = from_query(env.params.query, strict, extra_query_keys, admitted_query_keys)
         return query_req if query_req.is_a?(Facet::ServiceError)
         merge_requests(body_req, query_req)
       end
@@ -240,11 +264,18 @@ module Facet
       # rides the query string (the B-169 remainder): the caller propagates
       # all of them the same way the JSON-body path does. `extra_query_keys`
       # names the keys a strict route reads beyond the grammar; the strict
-      # scan admits them. The scan runs only when `strict` is true, so the
-      # extra set is a no-op on the lenient default.
-      def self.from_query(params : URI::Params, strict : Bool = false, extra_query_keys : Set(String) = Set(String).new) : ListRequest | Facet::ServiceError
+      # scan admits them. `admitted_keys` narrows the grammar to the keys
+      # the route reads; the default is the whole grammar. Both scans run
+      # only when `strict` is true, so the sets are no-ops on the lenient
+      # default.
+      def self.from_query(
+        params : URI::Params,
+        strict : Bool = false,
+        extra_query_keys : Set(String) = Set(String).new,
+        admitted_keys : Set(String) = ALL_QUERY_KEYS,
+      ) : ListRequest | Facet::ServiceError
         if strict
-          err = strict_query_error(params, extra_query_keys)
+          err = strict_query_error(params, extra_query_keys, admitted_keys)
           return err if err
         end
 
@@ -402,14 +433,14 @@ module Facet
         Facet::ServiceError.new(422, "Parameter '#{name}' must be at least 1 (got #{value})")
       end
 
-      # The `422` for the first body key outside the known set, or nil —
+      # The `422` for the first body key outside the admitted set, or nil —
       # the strict admission scan (the B-169 remainder). A body that never
       # reached the object gate (direct callers) skips the scan; the shape
       # gate downstream answers for it as before.
-      private def self.strict_body_error(json : JSON::Any) : Facet::ServiceError?
+      private def self.strict_body_error(json : JSON::Any, admitted_keys : Set(String)) : Facet::ServiceError?
         obj = json.as_h? || return nil
         obj.each_key do |key|
-          return unknown_key_error(key, KNOWN_BODY_KEYS) unless KNOWN_BODY_KEYS.includes?(key)
+          return unknown_key_error(key, admitted_keys) unless admitted_keys.includes?(key)
         end
         nil
       end
@@ -419,13 +450,18 @@ module Facet
       # `filters[field__op]=value` bracket form is part of the grammar, and
       # `extra_query_keys` names the handler-contract keys a strict route
       # reads outside it (`include` on the document history, `status` on
-      # the webhook-calls list). A malformed bracket key is neither and
+      # the webhook-calls list). `admitted_keys` narrows the grammar to the
+      # keys the route reads. A malformed bracket key is neither and
       # answers like any unknown parameter.
-      private def self.strict_query_error(params : URI::Params, extra_query_keys : Set(String)) : Facet::ServiceError?
+      private def self.strict_query_error(
+        params : URI::Params,
+        extra_query_keys : Set(String),
+        admitted_keys : Set(String),
+      ) : Facet::ServiceError?
         params.each do |key, _values|
           next if key.starts_with?("filters[") && key.ends_with?("]")
           next if extra_query_keys.includes?(key)
-          return unknown_key_error(key, KNOWN_QUERY_KEYS + extra_query_keys) unless KNOWN_QUERY_KEYS.includes?(key)
+          return unknown_key_error(key, admitted_keys + extra_query_keys) unless admitted_keys.includes?(key)
         end
         nil
       end

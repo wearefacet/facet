@@ -27,10 +27,10 @@ réglages.
 1. Sélectionnez votre nom de compte en bas de la barre latérale.
 2. Sélectionnez « Mes paramètres ».
 
-La page montre des chapitres à gaucheà : « Général », « Notifications »,
+La page montre des chapitres à gauche : « Général », « Notifications »,
 « Points de terminaison MCP » et « Sessions actives ». Les comptes avec le
 rôle administrateur intégré voient aussi « Visite de bienvenue ». Chaque
-changement s’enregistre aussitôtà ; le champ fait clignoter
+changement s’enregistre aussitôt ; le champ fait clignoter
 « Enregistré ».
 
 Le même menu ouvre « Clés API » (plus bas) et « Webhooks ». Il affiche
@@ -106,7 +106,7 @@ plus tard. Si vous la perdez, créez une nouvelle clé.
 **Utilisez une clé**
 
 Le client envoie la clé dans l’en-tête `Authorization: Bearer`. Une vraie clé
-commence par `fct_`. Cet exemple appelle l’API Facet avec une cléà :
+commence par `fct_`. Cet exemple appelle l’API Facet avec une clé :
 
 ```sh
 export FACET_API_KEY="fct_paste-the-key-you-copied"
@@ -125,7 +125,7 @@ vérification du certificat TLS de l’adresse de développement.
 Les clients qui utilisent la clé cessent de fonctionner aussitôt. La ligne
 reste dans la liste avec le badge « Révoquée ». La liste montre le nom, le
 préfixe, le rôle, l’heure de « Dernière utilisation », l’heure d’« Expire le »
-et le statut de chaque cléà : « Active », « Expirée » ou « Révoquée ». Une
+et le statut de chaque clé : « Active », « Expirée » ou « Révoquée ». Une
 clé sans date d’expiration affiche « Jamais ».
 
 :::note
@@ -157,7 +157,7 @@ Votre session courante reste connectée. Facet rapporte combien de sessions il
 a révoquées. Une liste vide affiche « Aucune session active. ».
 
 :::note
-Un token d’accès déj à émis continue de fonctionner jusqu’à son expiration,
+Un token d’accès déjà émis continue de fonctionner jusqu’à son expiration,
 pour quelques minutes par défaut. Après, l’appareil doit se reconnecter.
 :::
 
@@ -170,7 +170,7 @@ essayez « Changer de rôle », ou demandez à votre administrateur.
 
 ### Vous ne pouvez pas créer de clé
 
-Vérifiez ces champs et réessayezà :
+Vérifiez ces champs et réessayez :
 
 1. Le rôle doit être l’un de vos rôles attribués.
 2. Le rôle doit permettre l’accès d’API.
@@ -185,7 +185,7 @@ Vérifiez ces champs et réessayezà :
 
 ### Un appareil fonctionne encore un moment après votre révocation
 
-Un token d’accès déj à émis reste valable jusqu’à son expiration, pour
+Un token d’accès déjà émis reste valable jusqu’à son expiration, pour
 quelques minutes par défaut. Après, l’appareil doit se reconnecter.
 
 ## Voir aussi

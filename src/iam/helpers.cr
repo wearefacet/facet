@@ -128,6 +128,15 @@ module Facet
         RoleStore.fetch(db, role_name)
       end
 
+      # True when the role content's `connectivity` list carries the `mcp`
+      # channel — the MCP resource server's channel gate. A missing or
+      # malformed list reads as false (fail closed). The one derivation the
+      # consent screen, the code issuance, and the endpoint listing share.
+      def self.mcp_channel?(role_content : JSON::Any) : Bool
+        channels = role_content["connectivity"]?.try(&.as_a?) || return false
+        channels.any?(&.as_s?.try(&.==("mcp")))
+      end
+
       # The active role's `visible_tags` as a sorted wire array — the same
       # set the read mask and the write guards apply (`RBAC::FieldVisibility`).
       # Served by `GET /Api/iam/me` and the refresh/login emits so the SPA can

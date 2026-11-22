@@ -6,7 +6,7 @@ The machine-readable API surface: `GET /Api/openapi.json` serves an OpenAPI 3.0.
 
 ## What v1 covers — and what it does not
 
-The document is a **declarative slice**: paths, methods, summaries, and status codes are hand-maintained in `OpenAPI::DECLARATIONS` (`src/http/openapi.cr`); request and response **shapes stay in `doc/backend/*.md`** — the OpenAPI descriptions point at them rather than carrying full JSON Schemas. Coverage (26 path templates, 36 operations):
+The document is a **declarative slice**: paths, methods, summaries, and status codes are hand-maintained in `OpenAPI::DECLARATIONS` (`src/http/openapi.cr`); request and response **shapes stay in `doc/backend/*.md`** — the OpenAPI descriptions point at them rather than carrying full JSON Schemas. Coverage: **27 path templates carrying 30 standard operations**, plus **7 `x-query` twins** (the RFC 10008 QUERY method has no OpenAPI 3.0 operation key — see [below](#the-gate)), for **37 operation objects** in total. The counts are read from `doc/api/openapi.json` (the generated artifact), which is the source of truth; this prose restates them.
 
 | Family | Paths |
 | --- | --- |
@@ -15,7 +15,7 @@ The document is a **declarative slice**: paths, methods, summaries, and status c
 | IAM | `GET /Api/iam/me`, `GET /Api/iam/accounts/credential-states`, `POST /Api/iam/accounts/{id}/temporary-password`, `POST /Api/iam/accounts/{id}/invite` |
 | Secrets | `POST /Api/secrets/stage` |
 | Import/Export | `POST /Api/{domain}/{doctype}/export`, `POST /Api/{domain}/{doctype}/export_view`, `POST /Api/{domain}/{doctype}/import`, `GET /Api/{domain}/{doctype}/import_export/{job_id}`, `GET /Api/{domain}/{doctype}/import_export/{job_id}/download` |
-| Platform | `GET|QUERY /Api/Indexes`, `GET|QUERY /Api/Artifacts`, `DELETE /Api/Artifacts/{id}`, `GET /Api/Artifacts/{id}/grants`, `GET /Api/Artifacts/{id}/references`, `GET /Api/SystemSettings` |
+| Platform | `GET|QUERY /Api/Indexes`, `GET|QUERY /Api/Artifacts`, `DELETE /Api/Artifacts/{id}`, `GET /Api/Artifacts/{id}/grants`, `GET /Api/Artifacts/{id}/references`, `GET /Api/SystemSettings`, `POST /Api/SystemSettings/mail/test` |
 
 Roles are `iam.Roles` documents — they ride the document CRUD routes; there are no dedicated role-management paths, and the spec says so in `info.description`. Nested-children routes (the REST catch-all), actions, search, settings, notifications, webhooks, apps, and the portable-domain import/export are **out of scope**. Three surfaces stay out by decision, stated in the module header and in `info.description`:
 
@@ -24,6 +24,8 @@ Roles are `iam.Roles` documents — they ride the document CRUD routes; there ar
 - The **assistant** (`/Api/assistant/...`) is outside the declarative slice.
 
 Adding a route under one of those prefixes does not raise drift.
+
+**Named actions.** The action route `POST /Api/{domain}/{doctype}/{id}/{action_name}` is out of the slice by decision, and the live Kemal table registers it through the nested catch-all `POST /Api/:domain/:doctype/:id/*rest` — a wildcard shape that carries no stable path template, so the drift check never reads it as an in-scope miss. The action route is documented in [`http-layer.md`](http-layer.md) → Document routes; a builder that needs it reads that table, not `openapi.json`.
 
 Write-plane semantics documented on the relevant operations:
 

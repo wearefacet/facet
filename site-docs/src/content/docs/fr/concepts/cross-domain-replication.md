@@ -55,7 +55,7 @@ vous-même un champ répliqué. Le garde-fou d’écriture des documents refuse 
 clé, et le champ ne peut pas être `required` ni `unique`.
 
 **La copie prend du retard sur la source.** La livraison passe par le bus
-d’événements, donc la copie prend du retard sur la sourceà : la cohérence est
+d’événements, donc la copie prend du retard sur la source : la cohérence est
  à terme. La livraison est au plus une fois, par conception. Une mise à jour
 perdue attend le prochain changement du document source.
 
@@ -78,7 +78,7 @@ saute. La chaîne s’arrête toujours à un saut.
 Une arête entre domaines a besoin d’une attribution de domaine active, stockée
 sous le domaine producteur. L’attribution nomme le domaine consommateur et les
 ressources du producteur qu’il peut lire, à la granularité des étiquettes.
-Facet revérifie la couverture à deux momentsà :
+Facet revérifie la couverture à deux moments :
 
 | Contrôle | Quand il s’exécute | Sans couverture d’attribution |
 | --- | --- | --- |
@@ -90,7 +90,7 @@ se lit lui-même ne prend pas une décision de partage.
 
 **Révoquer une attribution arrête les mises à jour.** Quand l’attribution est
 révoquée, le registre abandonne la liaison à sa prochaine reconstruction. Les
-mises à jour s’arrêtent. Les valeurs déj à copiées restent en place — aucun
+mises à jour s’arrêtent. Les valeurs déjà copiées restent en place — aucun
 balayage ne les supprime. La réactivation ne rattrape pas les changements
 manqués. Le prochain changement d’un document source référencé pousse sa
 valeur courante dans la copie. Un domaine consommateur qui reçoit sa première
@@ -103,7 +103,7 @@ répliquées restent dans le domaine consommateur. Traitez les valeurs copiées
 comme des données qui survivent au contrat.
 :::
 
-**Les limites découlent de la conception.** Un seul saut arrête les chaînesà :
+**Les limites découlent de la conception.** Un seul saut arrête les chaînes :
 vous ne pouvez pas acheminer un champ de A vers B puis vers C, même via un
 champ calculé. Deux consommateurs de la même source déclarent chacun leur
 propre arête. Et une attribution révoquée laisse la dernière valeur copiée en
@@ -118,5 +118,5 @@ place, si bien que le consommateur sert des données figées.
 - [Partager des données entre domaines](/fr/build/sharing-across-domains/) —
   déclarer la configuration `replicate` sur un champ et accorder l’accès entre
   domaines.
-- Internes sur GitHubà : [replication.md](https://github.com/wearefacet/facet/blob/main/doc/backend/replication.md),
+- Internes sur GitHub : [replication.md](https://github.com/wearefacet/facet/blob/main/doc/backend/replication.md),
   [domain-grants.md](https://github.com/wearefacet/facet/blob/main/doc/backend/domain-grants.md).

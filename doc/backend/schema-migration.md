@@ -143,7 +143,7 @@ The portable domain import needs no carry: its merge branch rejects a bundle tha
 
 | Type | Fields | Description |
 |---|---|---|
-| `Update::Result` | `mutation_id : String` | Success — the ULID of the update mutation |
+| `Update::Result` | `mutation_id : String`, `unchanged : Bool` | Success — the ULID of the update mutation. An idempotent re-save (the body matches the stored definition) writes nothing and answers the row's current `state` with `unchanged: true` — the HTTP layer serves it as `200`. |
 | `Update::Error` | `status : Int32`, `message : String`, `details : Array(ValidationError)?` | Failure — see [`ValidationError`](../../../src/validation_error.cr) (`field`/`message`/`code`) |
 
 ```crystal

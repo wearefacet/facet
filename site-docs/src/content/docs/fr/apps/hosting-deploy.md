@@ -13,20 +13,20 @@ donnée, pas une configuration : un document `app.App` porte `host` et
 `active_deployment`. Un déploiement passe en ligne sans redémarrage ni
 changement de configuration. Une app sans valeur `host` n’est jamais servie.
 
-> **Pour les agentsà :** déployez avec `pnpx @facetapp/cli deploy --note "build"`,
+> **Pour les agents :** déployez avec `pnpx @facetapp/cli deploy --note "build"`,
 > ou envoyez un POST multipart sur `/Api/app/<app id>/deploy` : une partie JSON
 > `$content`
 > (`{"spa": true, "activate": true, "note": "build", "files": [{"path": "index.html"}]}`)
-> plus une partie `files[<i>].file` par fichier. Authà :
+> plus une partie `files[<i>].file` par fichier. Auth :
 > `Authorization: Bearer <token>` ; l’appelant a besoin de `deploy` sur
-> `app.App` dans attribution ∩ rôle. Listeà :
+> `app.App` dans attribution ∩ rôle. Liste :
 > `GET /Api/app/Deployment?filters[app_id__eq]=app.App.<id>&sort=-revision`.
-> Retour arrièreà : `PATCH /Api/app/App/<id>` avec
+> Retour arrière : `PATCH /Api/app/App/<id>` avec
 > `{"active_deployment": "app.Deployment.<id>"}`.
 
 ## Quand l’utiliser
 
-Utilisez cette page quandà :
+Utilisez cette page quand :
 
 - Vous mettez un nouveau build en ligne sur l’hôte de l’app.
 - Vous listez les releases et ramenez une révision défectueuse en arrière.
@@ -37,16 +37,16 @@ Utilisez cette page quandà :
 - Un document d’app au statut `active`. Une app en brouillon ou désactivée
   refuse les déploiements.
 - L’action `deploy` sur `app.App`. Le rôle `admin` créé par l’initialisation
-  la porteà ; le rôle `editor` pré-créé non. Sur l’API, l’attribution et le
+  la porte ; le rôle `editor` pré-créé non. Sur l’API, l’attribution et le
   rôle doivent la porter tous les deux.
-- Pour un domaine personnaliséà : le contrôle des enregistrements DNS
+- Pour un domaine personnalisé : le contrôle des enregistrements DNS
   (Domain Name System).
 
 ## Le modèle
 
 Chaque déploiement crée un document `app.Deployment`. La route calcule la
 `revision` : la plus haute révision de l’app plus un. L’étape d’activation
-pose `active_deployment` sur l’appà ; le dispatcher sert les fichiers de ce
+pose `active_deployment` sur l’app ; le dispatcher sert les fichiers de ce
 déploiement.
 
 Le drapeau `spa` vaut `true` par défaut. Un chargement de page qui ne
@@ -62,10 +62,10 @@ pnpx @facetapp/cli deploy --note "fix login bug"
 ```
 
 La commande parcourt le dossier de build, téléverse une requête multipart et
-active la nouvelle révisionà ; elle affiche la révision attribuée et l’URL de
+active la nouvelle révision ; elle affiche la révision attribuée et l’URL de
 l’app.
 
-Une requête vaut un déploiement atomiqueà : la création et l’activation
+Une requête vaut un déploiement atomique : la création et l’activation
 s’exécutent dans une seule transaction.
 
 ### 2. Ou appelez directement la route de déploiement
@@ -73,19 +73,19 @@ s’exécutent dans une seule transaction.
 Pour une intégration continue (CI) qui ne peut pas lancer la CLI, appelez
 vous-même `POST /Api/app/:id/deploy`. Le `:id` est l’id qualifié de l’app,
 `app.App.<id>`, tel que la liste des apps le renvoie. Le corps est un
-formulaire multipartà :
+formulaire multipart :
 
 | Partie | Contenu |
 | --- | --- |
-| `$content` | Le JSON de déploiementà : `spa`, `activate`, `note` et `files`, avec une entrée `{path}` par fichier. Le JSON ne porte aucune valeur `file` ; le serveur injecte les ids d’artifact. |
+| `$content` | Le JSON de déploiement : `spa`, `activate`, `note` et `files`, avec une entrée `{path}` par fichier. Le JSON ne porte aucune valeur `file` ; le serveur injecte les ids d’artifact. |
 | `files[0].file`, `files[1].file`, etc. | Une partie par fichier, dans le même ordre que les entrées `files`. |
 
-La route valide chaque `path` selon une règle de chemins sûrsà : pas de `/`
+La route valide chaque `path` selon une règle de chemins sûrs : pas de `/`
 initial, pas de `..`, pas de segment vide, UTF-8 valide, et 1024 caractères
 au plus. Un fichier en échec annule tout le déploiement.
 
 La route répond `{id, revision, activated, files}` — pas une enveloppe de
-documentà ; `files` compte les fichiers acceptés.
+document ; `files` compte les fichiers acceptés.
 
 L’appelant a besoin de `deploy` sur `app.App` dans attribution ∩ rôle. Un
 token d’app OAuth ou une clé d’API propre à l’app fonctionne avec un simple
@@ -95,7 +95,7 @@ forgery). [L’exemple](#exemple) montre l’appel complet.
 
 ### 3. Lister les releases
 
-Avec la CLIà:
+Avec la CLI :
 
 ```sh
 pnpx @facetapp/cli releases
@@ -104,7 +104,7 @@ pnpx @facetapp/cli releases
 La liste va de la révision la plus récente à la plus ancienne. La release
 active porte un `*`.
 
-Sur l’APIà:
+Sur l’API :
 
 ```http
 GET https://facet.example.tld/Api/app/Deployment?filters[app_id__eq]=app.App.01JEX4TA6G9K2MQ7V3BZ8PWRND&sort=-revision
@@ -116,7 +116,7 @@ référence stockent des tokens qualifiés.
 ### 4. Revenir en arrière
 
 Revenir en arrière pointe `active_deployment` vers un déploiement plus
-ancien. Avec la CLIà:
+ancien. Avec la CLI :
 
 ```sh
 pnpx @facetapp/cli rollback 2
@@ -124,7 +124,7 @@ pnpx @facetapp/cli rollback 2
 
 Une révision inconnue échoue avec la liste de celles qui existent.
 
-La forme API est une mise à jour de document ordinaireà ; la valeur de
+La forme API est une mise à jour de document ordinaire ; la valeur de
 référence est un token qualifié, `app.Deployment.<id>` :
 
 ```sh
@@ -137,7 +137,7 @@ curl -X PATCH "https://facet.example.tld/Api/app/App/app.App.01JEX4TA6G9K2MQ7V3B
 ## Domaines personnalisés
 
 Posez `host` sur le document de l’app. La valeur est un nom d’hôte nu en
-minusculesà : pas de schéma, pas de port, pas de chemin, pas de caractère
+minuscules : pas de schéma, pas de port, pas de chemin, pas de caractère
 joker, et 253 caractères au plus. La valeur est unique d’une app à l’autre,
 et Facet refuse un hôte auquel Facet lui-même répond. Pointez les
 enregistrements DNS de ce nom d’hôte vers Facet.
@@ -146,10 +146,10 @@ Le serveur émet les certificates TLS (Transport Layer Security) à la demande.
 Avant d’émettre, le serveur edge appelle le ask endpoint,
 `GET /Edge/HostAsk?domain=<name>`. Un nom non approuvé fait échouer le
 handshake TLS et ne produit jamais de requête HTTP. Un nom local obtient un
-certificate auprès de l’autorité de certificates interneà ; un nom public en
+certificate auprès de l’autorité de certificates interne ; un nom public en
 obtient un via ACME (Automatic Certificate Management Environment).
 
-Un hôte nouveau ou déplacé s’applique dès la requête suivanteà : le cache des
+Un hôte nouveau ou déplacé s’applique dès la requête suivante : le cache des
 hôtes s’invalide à chaque mutation de `app.App` et se reconstruit depuis la
 base de données. Aucun redémarrage n’est nécessaire.
 
@@ -160,11 +160,11 @@ d’hôte de la requête exactement, jamais comme suffixe.
 
 | Réponse | En-tête de cache | Effet |
 | --- | --- | --- |
-| Shell de l’appà : `index.html` et chaque repli de navigation | `public, no-cache` | Le navigateur revalide avant réutilisation. Un déploiement est visible à la navigation suivante. |
+| Shell de l’app : `index.html` et chaque repli de navigation | `public, no-cache` | Le navigateur revalide avant réutilisation. Un déploiement est visible à la navigation suivante. |
 | Chaque autre asset | `public, max-age=300` | Le navigateur réutilise l’asset pendant cinq minutes. |
 
 Chaque réponse porte `X-Content-Type-Options: nosniff`. Le type de contenu se
-décide au téléversementà : l’extension du nom de fichier d’abord, les magic
+décide au téléversement : l’extension du nom de fichier d’abord, les magic
 bytes en repli.
 
 Un build publié est public par conception : quiconque résout l’hôte obtient
@@ -178,14 +178,14 @@ session de Facet sont limités à leur hôte, et le garde-fou des hôtes réserv
 tient une app à l’écart de l’origine de Facet.
 
 La couche de distribution n’ajoute jamais de mur de connexion. Hébergez une
-app privée derrière votre propre filtre réseauà : un réseau privé virtuel
+app privée derrière votre propre filtre réseau : un réseau privé virtuel
 (VPN) ou un proxy qui vérifie l’accès.
 
 ## Exemple
 
 Cet appel déploie un build depuis une CI. Les parties `files` suivent l’ordre
 des entrées `files` de `$content` ; les noms de fichiers des parties portent
-les chemins relatifs au buildà :
+les chemins relatifs au build :
 
 ```sh
 curl -X POST "https://facet.example.tld/Api/app/app.App.01JEX4TA6G9K2MQ7V3BZ8PWRND/deploy" \
@@ -200,7 +200,7 @@ curl -X POST "https://facet.example.tld/Api/app/app.App.01JEX4TA6G9K2MQ7V3BZ8PWR
 **L’hôte de l’app répond un `404` nu.**
 
 Le dispatcher n’a fait correspondre aucune app. La valeur `host` doit égaler
-exactement le nom d’hôte de la requêteà ; une app sans valeur `host` n’est
+exactement le nom d’hôte de la requête ; une app sans valeur `host` n’est
 jamais servie.
 
 **Le déploiement répond `422`.**
@@ -245,5 +245,5 @@ employez un autre identifiant.
   accepte les appels de navigateur depuis l’hôte de l’app.
 - [Apps, attributions et rôles](/fr/concepts/apps-grants-roles/) — le modèle
   attribution ∩ rôle derrière la barrière de déploiement.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [app-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/app-system.md).

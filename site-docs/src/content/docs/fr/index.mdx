@@ -3,6 +3,7 @@ title: Bienvenue sur Facet
 description: Facet est la plateforme applicative gouvernée pour les organisations de petite et moyenne taille.
 template: splash
 hero:
+  title: Bienvenue sur <span class="hero-accent">Facet</span>
   tagline: Données, droits et historique pour les applications que vos équipes construisent.
   actions:
     - text: Évaluer
@@ -11,12 +12,22 @@ hero:
     - text: Construire
       link: /fr/tutorials/
       icon: right-arrow
+      variant: secondary
     - text: Opérer
       link: /fr/operate/
       icon: right-arrow
+      variant: secondary
 ---
 
-import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { LinkButton } from '@astrojs/starlight/components';
+import Closing from '../../../components/landing/Closing.astro';
+import Door from '../../../components/landing/Door.astro';
+import FlowDiagram from '../../../components/landing/FlowDiagram.astro';
+import LandingGrid from '../../../components/landing/LandingGrid.astro';
+import Pillar from '../../../components/landing/Pillar.astro';
+import SectionHead from '../../../components/landing/SectionHead.astro';
+
+<SectionHead eyebrow="Ce que Facet porte" title="Un seul foyer gouverné pour vos données métier">
 
 Facet est une plateforme applicative gouvernée pour les organisations de
 petite et moyenne taille. Vous modélisez vos données métier dans des domaines.
@@ -24,14 +35,64 @@ Chaque application — écrite par votre équipe ou par un agent IA — lit et �
 ces données sous les mêmes droits contrôlés, avec la trace complète de chaque
 modification.
 
-<CardGrid stagger>
-	<LinkCard title="Évaluer" href="/fr/start/">
-		Ce qu’est Facet, comment il protège les données, et s’il convient à votre organisation.
-	</LinkCard>
-	<LinkCard title="Construire" href="/fr/tutorials/">
-		Apprendre en faisantà : lancer Facet, construire un domaine, donner accès à votre équipe, livrer une application.
-	</LinkCard>
-	<LinkCard title="Opérer" href="/fr/operate/">
-		Déployer avec des conteneurs, configurer la pile, et garder le service en bonne santé en production.
-	</LinkCard>
-</CardGrid>
+</SectionHead>
+
+<LandingGrid>
+	<Pillar kind="data" title="Données">
+		Modélisez l’activité en domaines — clients, équipements, recrutement —
+		une tranche à la fois. Documents et fichiers vivent dans Facet, pas dans
+		chaque application.
+	</Pillar>
+	<Pillar kind="permissions" title="Droits">
+		Les rôles décident qui lit et qui écrit, jusqu’au champ et à la ligne. La
+		couche de données les applique : aucune application ne contourne les règles.
+	</Pillar>
+	<Pillar kind="history" title="Historique">
+		Chaque modification entre dans un journal en ajout seul : qui a changé
+		quoi, quand et pourquoi. Revenez sur n’importe quel document à un état
+		antérieur.
+	</Pillar>
+</LandingGrid>
+
+<SectionHead eyebrow="Comment ça s’articule" title="Toutes les applications passent par la même porte">
+
+Une application ne touche jamais la base de données. Elle se connecte en OAuth
+et appelle l’API avec les droits que vous lui avez donnés. Supprimez
+l’application : les données, les règles et l’historique restent.
+
+</SectionHead>
+
+<FlowDiagram
+	headings={['Applications', 'Facet', 'Domaines']}
+	apps={['Votre app', 'Agent IA', 'Espace de travail']}
+	layers={['Comptes et rôles', 'Droits', "Journal d'audit"]}
+	domains={['Clients', 'Équipements', 'Recrutement']}
+	caption="Mêmes rôles, mêmes règles, même piste d’audit — quel que soit l’auteur de l’application."
+/>
+
+<SectionHead eyebrow="Par où commencer" title="Choisissez votre parcours" />
+
+<LandingGrid min="14rem">
+	<Door href="/fr/start/" title="Évaluer" step="01" icon="evaluate">
+		Ce qu’est Facet, comment il protège les données, et s’il convient à votre
+		organisation.
+	</Door>
+	<Door href="/fr/tutorials/" title="Construire" step="02" icon="build">
+		Apprendre en faisant : lancer Facet, construire un domaine, donner accès à
+		votre équipe, livrer une application.
+	</Door>
+	<Door href="/fr/operate/" title="Opérer" step="03" icon="operate">
+		Déployer avec des conteneurs, configurer la pile, et garder le service en
+		bonne santé en production.
+	</Door>
+</LandingGrid>
+
+<Closing title="Les apps sont jetables désormais. Vos données, non.">
+
+Vous hésitez entre Facet et Airtable, Retool, Odoo, Supabase, ou une app écrite
+par votre agent IA ? Chaque comparatif dit aussi où l’alternative gagne.
+
+<LinkButton href="/fr/compare/" icon="right-arrow">Comparer Facet</LinkButton>
+<LinkButton href="https://github.com/wearefacet/facet" variant="secondary" icon="github" iconPlacement="start">Voir sur GitHub</LinkButton>
+
+</Closing>

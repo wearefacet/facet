@@ -25,7 +25,7 @@ l’activer.
 
 ### 1. Ouvrez le chat
 
-Utilisez l’un de ces cheminsà :
+Utilisez l’un de ces chemins :
 
 - Sélectionnez le bouton « Assistant » dans la barre supérieure.
 - Appuyez sur Ctrl+I, ou Cmd+I sur un Mac.
@@ -47,7 +47,7 @@ l’eau.
 Tapez dans la zone de message. Entrée ajoute une nouvelle ligne. Envoyez avec
 Ctrl+Entrée ou Cmd+Entrée, ou sélectionnez le bouton d’envoi.
 
-Exemplesà :
+Exemples :
 
 - « Trouve les sociétés avec le statut prospect. »
 - « Montre les tâches dues cette semaine sous forme de cartes. »
@@ -68,7 +68,7 @@ ou des tuiles de nombres. Quand l’assistant vous ouvre une page, l’espace de
 travail s’y rend aussitôt.
 
 Le bouton d’envoi devient « Arrêter » pendant que l’assistant travaille.
-Sélectionnez-le pour annuler la réponse en cours. Le texte déj à écrit reste,
+Sélectionnez-le pour annuler la réponse en cours. Le texte déjà écrit reste,
 marqué « Annulé. ».
 
 ### 4. Gardez vos conversations
@@ -80,7 +80,7 @@ réponse terminée porte un bouton de copie. Il copie le texte de la réponse.
 
 ## Ce que l’assistant peut faire
 
-L’assistant peutà :
+L’assistant peut :
 
 - trouver et lire des documents, y compris dans les listes
 - montrer des documents comme des cartes dans le chat
@@ -92,7 +92,7 @@ L’assistant peutà :
 - ouvrir des pages dans l’espace de travail
 - lire l’historique d’un document
 
-Tout cela tourne dans les droits de votre compteà :
+Tout cela tourne dans les droits de votre compte :
 
 - L’assistant ne voit que ce que votre compte peut voir. Un champ caché reste
   caché. Une ligne que vous ne pouvez pas lire reste dehors.
@@ -112,7 +112,7 @@ Quand votre compte a un budget, une barre au-dessus de la zone de message
 montre votre consommation : « 12 % du budget sur 30 jours utilisé ».
 Sans budget, vous ne voyez pas de barre.
 
-Quand le budget est dépensé, Facet arrête les nouveaux messagesà :
+Quand le budget est dépensé, Facet arrête les nouveaux messages :
 
 > Vous avez utilisé la totalité de votre budget de jetons d’assistant pour
 > cette fenêtre de 30 jours. Demandez à un administrateur d’augmenter le
@@ -134,7 +134,7 @@ administrateur, ou faites l’action vous-même si vous le pouvez.
 
 ### Le message dit que vous avez utilisé tout votre budget
 
-Par exempleà : « Vous avez utilisé la totalité de votre budget de jetons
+Par exemple : « Vous avez utilisé la totalité de votre budget de jetons
 d’assistant pour cette fenêtre de 30 jours. »
 
 Attendez que la vieille consommation sorte de la fenêtre, ou demandez à votre
@@ -150,7 +150,7 @@ La connexion s’est peut-être rompue. Le travail continue sur le serveur.
 
 ### Une ligne d’erreur apparaît
 
-Par exempleà : « Le tour a échoué. ».
+Par exemple : « Le tour a échoué. ».
 
 Lisez l’erreur. Envoyez la demande à nouveau. Si l’échec se répète à chaque
 fois, demandez à votre administrateur.

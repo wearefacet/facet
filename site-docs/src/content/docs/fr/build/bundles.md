@@ -8,7 +8,7 @@ sidebar:
 verified_at: fd345fe3
 ---
 
-Un bundle est un fichier qui porte la définition d’un domaineà : le domaine
+Un bundle est un fichier qui porte la définition d’un domaine : le domaine
 lui-même, ses doctypes, ses scripts et ses vues partagées. Vous l’exportez
 depuis une instance et l’importez sur une autre — de la préproduction vers
 la production, ou un domaine vendu à un client.
@@ -27,7 +27,7 @@ la production, ou un domaine vendu à un client.
 - **L’outil en ligne de commande `facet`** sur la machine cible, avec
   accès à sa base de données.
 - **Une décision sur les documents.** Les définitions sont toujours
-  emportéesà ; les données seulement avec `--with-documents`.
+  emportées ; les données seulement avec `--with-documents`.
 
 ## Étapes
 
@@ -38,9 +38,9 @@ facet domain:export crm --output crm.facet-domain
 ```
 
 La sortie est une arborescence de répertoires. Terminez le chemin par
-`.tgz` pour obtenir une seule archive tar à la place. Le bundle contientà :
+`.tgz` pour obtenir une seule archive tar à la place. Le bundle contient :
 
-| Contenu | Toujoursà? |
+| Contenu | Toujours ? |
 | --- | --- |
 | Le document du domaine, avec ses hooks en fichiers de script | Oui |
 | Chaque définition de doctype, avec son script Lua à côté | Oui |
@@ -48,7 +48,7 @@ La sortie est une arborescence de répertoires. Terminez le chemin par
 | Chaque vue de liste partagée (générale) | Oui |
 | Chaque document | Seulement avec `--with-documents` |
 
-Les vues de liste personnelles ne partent jamaisà ; elles appartiennent à
+Les vues de liste personnelles ne partent jamais ; elles appartiennent à
 
 leurs propriétaires.
 
@@ -66,7 +66,7 @@ facet domain:import crm.facet-domain
 
 Sans option, l’import crée un domaine neuf et refuse une cible existante.
 Passez `--merge` pour mettre à jour un domaine existant, ou `--into newname`
-pour l’installer sous un autre nom. Les deux se combinentà :
+pour l’installer sous un autre nom. Les deux se combinent :
 
 ```sh
 facet domain:import crm.facet-domain --into crm-prod --merge
@@ -77,7 +77,7 @@ cible exactement comme elle était.
 
 ### 3. Lire les règles de fusion
 
-`--merge` compare chaque doctype du bundle avec celui du domaine réelà :
+`--merge` compare chaque doctype du bundle avec celui du domaine réel :
 
 | Situation | Résultat |
 | --- | --- |
@@ -112,7 +112,7 @@ facet domain:import crm.facet-domain.tgz --merge
 Le résumé détaille ce qui s’est appliqué, par exemple
 `[crm] Imported domain 'crm'` avec
 `doctypes: 4 created, 1 updated, 0 unchanged`. Un doctype mis à jour a
-franchi la barrière de version en préproduction avant l’exportà ; la
+franchi la barrière de version en préproduction avant l’export ; la
 production l’accepte donc en une étape.
 
 :::caution
@@ -127,7 +127,7 @@ récupération.
 
 Publiez d’abord le brouillon. Les bundles ne portent jamais de brouillons.
 
-**L’import répondà : le domaine existe déjà.**
+**L’import répond : le domaine existe déjà.**
 
 La cible existe et vous n’avez pas passé `--merge`. Ajoutez l’option, ou
 renommez avec `--into`.
@@ -141,7 +141,7 @@ fusionnez de nouveau après avoir corrigé les versions sur la source.
 **Les références vers d’autres domaines semblent cassées.**
 
 Un bundle ne déplace pas les autres domaines. Importez aussi les domaines
-référencésà ; les références se résolvent quand leurs cibles existent.
+référencés ; les références se résolvent quand leurs cibles existent.
 
 ## Voir aussi
 

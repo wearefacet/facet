@@ -2,7 +2,7 @@
 <!-- Copyright (c) 2026 Amplitude Solutions Ltd -->
 
 <script lang="ts">
-	import type { ArtifactGrant } from '$lib/components/primitives/data/FileArtifact.svelte';
+	import type { ArtifactGrant } from '$lib/artifacts.js';
 
 	/**
 	 * Presentational cell that resolves a stored artifact id to a displayable

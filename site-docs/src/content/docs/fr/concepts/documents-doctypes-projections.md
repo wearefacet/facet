@@ -47,7 +47,7 @@ autre enregistrement.
 
 **Le document est la donnée.** Un document est une instance JSON de son
 doctype. PostgreSQL le stocke en JSONB. Les routes de documents couvrent le
-cycle completà : `POST` crée, `GET` lit, `PATCH` applique un patch par
+cycle complet : `POST` crée, `GET` lit, `PATCH` applique un patch par
 fusion profonde, `DELETE` passe le document en soft delete, et une route de
 restauration ramène un document supprimé. Une mise à jour ne stocke que le
 diff calculé, jamais le corps complet.
@@ -66,13 +66,13 @@ un marqueur de version pour la réponse. Renvoyez-le avec `If-None-Match` :
 un document inchangé répond `304 Not Modified`. Un ETag différent à une
 lecture ultérieure signifie qu’une autre écriture est passée entre-temps.
 Les écritures concurrentes sur un même document sont sérialisées par des
-verrous de ligneà ; s’il reste une situation de course, elle répond `409`,
+verrous de ligne ; s’il reste une situation de course, elle répond `409`,
 et le client rejoue la même requête.
 
 ### Colonnes dérivées
 
 Deux colonnes de la projection viennent de modèles Jinja2 définis sur le
-doctype. Jinja2 est un langage de modèles venu de l’écosystème Pythonà ;
+doctype. Jinja2 est un langage de modèles venu de l’écosystème Python ;
 Facet en fait le rendu en Crystal, au moment de la mutation.
 
 | Colonne | Exemple de modèle | Ce qu’elle porte |
@@ -84,7 +84,7 @@ Dans un modèle `display_name`, un champ référence est remplacé par le
 libellé stocké du document cible, et un champ monétaire est rendu sous la
 forme `USD 120000`. La troisième colonne dérivée, `links`, n’a pas de
 modèle. Le chemin d’écriture parcourt les champs référence et enregistre
-les liensà ; la page détail les liste comme liens entrants.
+les liens ; la page détail les liste comme liens entrants.
 
 **Les modèles sont rendus à chaque écriture.** Un document écrit avant un
 changement de modèle garde ses anciennes valeurs jusqu’à la prochaine
@@ -98,18 +98,18 @@ non supprimé du doctype.
 :::
 
 **Le compromis.** La projection copie le contenu pour la vitesse de
-lectureà : un accès à une ligne indexée par document. Chaque écriture en
+lecture : un accès à une ligne indexée par document. Chaque écriture en
 paie le prix — l’ajout au journal, la mise à jour de la projection et les
 colonnes dérivées.
 
 **Deux endroits pour une seule forme.** La logique dérivée se trouve dans
-les modèles, à l’écart des définitions de champsà : l’auteur d’un doctype
+les modèles, à l’écart des définitions de champs : l’auteur d’un doctype
 maintient donc deux endroits pour une seule forme.
 
 **Les tombstones gardent leur payload un temps.** Un soft delete garde le
 contenu, les liens et le texte de recherche sur la tombstone. La corbeille
 peut encore afficher la ligne. Un cron efface ce payload après la fenêtre
-de rétention configuréeà ; seul le libellé survit.
+de rétention configurée ; seul le libellé survit.
 
 ## Voir aussi
 
@@ -120,6 +120,6 @@ de rétention configuréeà ; seul le libellé survit.
   les documents stockés quand une définition change.
 - [Le journal des mutations](/fr/concepts/mutation-log/) — l’historique en
   ajout seul derrière chaque projection.
-- Internes sur GitHubà : [document.md](https://github.com/wearefacet/facet/blob/main/doc/backend/document.md),
+- Internes sur GitHub : [document.md](https://github.com/wearefacet/facet/blob/main/doc/backend/document.md),
   [doctype-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/doctype-system.md),
   [templating.md](https://github.com/wearefacet/facet/blob/main/doc/backend/templating.md).

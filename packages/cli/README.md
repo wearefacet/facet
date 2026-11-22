@@ -135,7 +135,7 @@ Points the app's `active_deployment` at the deployment with the given revision. 
 | `init needs answers` / `init needs an app slug`    | No terminal, no flags, and no piped stdin. Pass `--app`, pipe the answers, or run in a terminal. |
 | `The build folder "x" does not exist`              | `outDir` points at a missing folder. Check the config.                                           |
 | `holds no files to deploy`                         | The build folder is empty. Build first.                                                          |
-| `HTTP 422 from /Api/app/…/deploy: …`              | The server refused the upload — usually a draft/disabled app or a rejected file path.            |
+| `HTTP 422 from /Api/app/…/deploy: …`               | The server refused the upload — usually a draft/disabled app or a rejected file path.            |
 | `Cannot reach <instance>`                          | Network failure. Check the URL and connectivity.                                                 |
 
 ## Development

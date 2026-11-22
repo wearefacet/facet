@@ -350,7 +350,10 @@
 		await userEvent.click(selects[1]);
 		await sleep(60);
 		const body = within(document.body);
-		await userEvent.click(body.getByRole('option', { name: 'USD' }));
+		// The currency registry labels the option by its display name ('US
+		// Dollar'), not the bare ticker; picking it emits the ticker as the
+		// `value__currency` value.
+		await userEvent.click(body.getByRole('option', { name: 'US Dollar' }));
 		await sleep(40);
 		await waitFor(() => {
 			expect(currencyFilterCalls.at(-1)?.['value__currency']).toBe('USD');

@@ -418,7 +418,8 @@ Facet::Document::Update.call(
 | `Result` | `projection : Mutation::Client::Projection`, `mutation_id : String` | Success |
 | `Error` | `status : Int32`, `message : String`, `details : Array(ValidationError)?` | Failure — see [`ValidationError`](../../../src/validation_error.cr) (`field`/`message`/`code`) |
 
-1. Authorize via `RBAC::WriteEnforcer.authorize_update`
+1. Lock the projection row (`RowAccess.lock_live_projection_for_update`, `SELECT ... FOR UPDATE`) and answer `404` for a missing row or a tombstone. Every later step reads inside the same transaction, so an internal writer (the Lua `document.update` helper, an IAM account patch, app deploy, parent recompute) that holds no outer lock can no longer merge, check, and persist over a write that committed in between. Callers that already pre-lock with `lock_with_chain` re-enter the transaction without a second lock.
+2. Authorize via `RBAC::WriteEnforcer.authorize_update`
 2. Fetch the doctype definition, parse the patch, run the invisible-field write guard on the raw body (before any format validation — a caller who cannot see a field never learns its type contract from a 422), and validate the patch via `Document::Validation.validate_update`. `allow_computed_writes` (the recompute write) validates the patch without its computed entries — the compute pipeline owns those values, and `DataType#validate` exists to refuse user input only.
 3. Fetch the current projection (returns 404 if deleted/not found)
 4. Deep-merge the patch over the current content

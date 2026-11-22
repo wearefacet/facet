@@ -8,18 +8,18 @@ sidebar:
 verified_at: fd345fe3
 ---
 
-Un sidecar est un panneau affiché à côté d’un documentà : les commentaires
+Un sidecar est un panneau affiché à côté d’un document : les commentaires
 sur un onglet, les fichiers sur un autre. Les enregistrements sont stockés
 dans leurs propres doctypes du domaine `core`, et le doctype hôte déclare les
 panneaux qu’il porte. Une seule déclaration sert tous les doctypes qui
-veulent le panneauà : vous ne copiez jamais la logique de commentaires dans
+veulent le panneau : vous ne copiez jamais la logique de commentaires dans
 votre domaine.
 
 ## Quand l’utiliser
 
 Ajoutez le panneau `comments` quand un enregistrement fait l’objet de
 discussions. Ajoutez le panneau `attachments` quand des fichiers accompagnent
-un enregistrement. Les deux panneaux se déclarent sur le doctypeà : vous
+un enregistrement. Les deux panneaux se déclarent sur le doctype : vous
 pouvez donc les donner à n’importe quel doctype de votre domaine.
 
 ## Avant de commencer
@@ -27,7 +27,7 @@ pouvez donc les donner à n’importe quel doctype de votre domaine.
 - **Un domaine de brouillon.** Vous modifiez le doctype hôte dans un domaine
   de brouillon. Voir [Concevoir des doctypes](/fr/build/designing-doctypes/).
 - **Rien à créer.** Les doctypes sidecar `core.Comment` et `core.Attachment`
-  existent sur chaque instance. Vous les déclarez sur votre hôteà ; vous ne
+  existent sur chaque instance. Vous les déclarez sur votre hôte ; vous ne
   les créez pas.
 - **Un nom de segment disponible.** Un nom de segment (le segment de route du
   panneau, comme `comments`) ne peut pas entrer en collision avec une relation
@@ -37,7 +37,7 @@ pouvez donc les donner à n’importe quel doctype de votre domaine.
 
 ### 1. Ajouter le bloc `sidecars` au doctype hôte
 
-Chaque entrée décrit un panneauà : la clé est le segment de route, et la
+Chaque entrée décrit un panneau : la clé est le segment de route, et la
 valeur désigne le doctype sidecar et la colonne de référence qui pointe vers
 l’hôte.
 
@@ -48,13 +48,13 @@ l’hôte.
 }
 ```
 
-Deux clés facultatives affinent le panneauà : `label` change le texte de
+Deux clés facultatives affinent le panneau : `label` change le texte de
 l’onglet — `"Notes"` au lieu de « Comments » — et `order` règle l’ordre des
 onglets quand l’ordre alphabétique par défaut ne convient pas.
 
 ### 2. Vérifier les droits
 
-Une attribution sidecar imbriquée suit le chemin de l’hôte. En pratiqueà :
+Une attribution sidecar imbriquée suit le chemin de l’hôte. En pratique :
 
 | Droit de l’appelant | Ce qu’il permet |
 | --- | --- |
@@ -63,7 +63,7 @@ Une attribution sidecar imbriquée suit le chemin de l’hôte. En pratiqueà :
 | create sur `hr.Employee.Comment` | Commenter en tant qu’utilisateur en lecture seule. |
 
 C’est ainsi que vous permettez à un utilisateur en lecture seule de
-commenterà : ses droits sur l’hôte restent en lecture seule, et vous ajoutez
+commenter : ses droits sur l’hôte restent en lecture seule, et vous ajoutez
 la ligne imbriquée explicite pour l’action.
 
 ### 3. Voir le panneau
@@ -95,7 +95,7 @@ avec l’onglet des commentaires renommé.
 }
 ```
 
-L’API crée un commentaire via le chemin de l’hôteà :
+L’API crée un commentaire via le chemin de l’hôte :
 
 ```sh
 curl -k -X POST "https://facet.localhost:3443/Api/hr/Employee/01HQ2F5WX8K4M3PZC6NRB9TJVA/comments" \
@@ -129,7 +129,7 @@ route directe. Utilisez le chemin imbriqué montré dans l’exemple.
 ### Les commentaires disparaissent après un delete
 
 Facet supprime les enregistrements sidecar quand leur hôte est supprimé.
-Cette suppression est séparée de celle de l’hôteà : elle n’est pas annulée
+Cette suppression est séparée de celle de l’hôte : elle n’est pas annulée
 quand le document hôte lui-même est restauré.
 
 ## Voir aussi

@@ -28,18 +28,30 @@ module Facet
     # renderer normalizes the shapes it can (duplicate relation column keys
     # included — the first occurrence wins).
     module ViewTemplateGate
-      # Validates the `template` of a `core.DocumentView` document against
-      # the parent doctype definition (`core.DocType` id — the projection
-      # the view attaches to). Returns one `ValidationError` per `:error`
-      # issue, empty when there is nothing to check: no template, no parent
-      # id, an unresolvable parent definition, or a clean tree. Shared by
-      # the create and update dispatches.
+      # Validates a whole `core.DocumentView` content object — reads its
+      # `template` key and checks it. Used by the create door. The update
+      # door validates the SUBMITTED template value (replace-on-write, see
+      # `Document::Update::REPLACE_ON_WRITE_FIELDS`), so it calls
+      # `template_errors` with the value directly.
       def self.errors(
         db : DB::Connection,
         parent_id : String?,
         document : JSON::Any,
       ) : Array(ValidationError)
-        template = document["template"]?
+        template_errors(db, parent_id, document["template"]?)
+      end
+
+      # Validates a template value against the parent doctype definition
+      # (`core.DocType` id — the projection the view attaches to). Returns
+      # one `ValidationError` per `:error` issue, empty when there is
+      # nothing to check: no template, no parent id, an unresolvable parent
+      # definition, or a clean tree. Shared by the create and update
+      # dispatches.
+      def self.template_errors(
+        db : DB::Connection,
+        parent_id : String?,
+        template : JSON::Any?,
+      ) : Array(ValidationError)
         return [] of ValidationError unless template
         return [] of ValidationError unless parent_id
 

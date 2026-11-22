@@ -30,7 +30,7 @@ un `pattern` ou un garde-fou du cycle de vie est plus simple (voir
   nom d’action reprend la clé de l’action, par exemple `promote` sur
   `hr.Employee`.
 - **Un nom libre.** `validate`, `create` et `update` sont des noms
-  réservésà ; ils appartiennent au cycle de vie.
+  réservés ; ils appartiennent au cycle de vie.
 
 ## Étapes
 
@@ -98,7 +98,7 @@ end
 return export
 ```
 
-L’appel exécute l’action sur un documentà :
+L’appel exécute l’action sur un document :
 
 ```sh
 curl -k -X POST "https://facet.localhost:3443/Api/projects/Order/01HQ2F5WX8K4M3PZC6NRB9TJVA/release" \
@@ -127,7 +127,7 @@ fermée `values`. Le message nomme l’argument.
 
 La fonction Lua a levé une erreur qu’elle n’a pas interceptée. Le message
 porte le numéro de ligne dans votre script. Corrigez le script et
-enregistrez le doctypeà ; le cache de définition se met à jour une à deux
+enregistrez le doctype ; le cache de définition se met à jour une à deux
 secondes plus tard.
 
 ### L’action s’est exécutée mais rien n’a changé

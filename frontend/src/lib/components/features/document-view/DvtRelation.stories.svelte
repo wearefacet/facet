@@ -705,6 +705,45 @@
 	{/snippet}
 </Story>
 
+<!-- F03-02: the section header counts the visible list. In editable mode the
+     body renders the staged drafts, so the header count follows the drafts —
+     including a row the user adds before the document is saved. -->
+<Story
+	name="EditableHeaderCountsDrafts"
+	args={{
+		template: experiencesEditableTemplate,
+		document: candidateDoc
+	}}
+	play={async ({ canvasElement }) => {
+		await sleep(800);
+		const canvas = within(canvasElement);
+		const section = canvasElement.querySelector('.dvt-relation');
+		if (!section) throw new Error('relation section not found');
+		const status = (): string =>
+			section.querySelector('.dvt-relation-status')?.textContent?.trim() ?? '';
+		// Two seeded experience rows are visible.
+		await expect(status()).toBe('2');
+		const addBtn = canvas.getByRole('button', { name: /Add Work Experience/ });
+		await userEvent.click(addBtn);
+		await waitFor(() => expect(status()).toBe('3'));
+		// Removing the new draft drops it from both the body and the count.
+		const removeBtns = canvas.getAllByRole('button', { name: /Remove/ });
+		await userEvent.click(removeBtns[removeBtns.length - 1]);
+		await waitFor(() => expect(status()).toBe('2'));
+	}}
+>
+	{#snippet template(args)}
+		<div class="dvt-story-frame">
+			<DvtRelation
+				template={args.template}
+				document={args.document}
+				driver={candidateExperiencesDriver}
+				values={{}}
+			/>
+		</div>
+	{/snippet}
+</Story>
+
 <Story
 	name="EditableAddRowProxied"
 	args={{

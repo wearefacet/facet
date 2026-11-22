@@ -4,6 +4,7 @@
 require "json"
 require "pg"
 require "opentelemetry"
+require "../config"
 require "./provenance"
 require "../util/script_helpers"
 require "../error"
@@ -398,6 +399,14 @@ module Facet
         mutation_id : String,
       ) : String
         resolved = (cause || Cause.root(CauseKind::Request)).resolve(mutation_id)
+        # Stage the snapshot interval the `periodic_snapshot` trigger reads.
+        # The YAML config is the single source of truth; a writer that does
+        # not stage the GUC (raw SQL, the seed) falls back to the
+        # DB-level `facet.snapshot_interval`, then to 10 in the trigger.
+        db.exec(
+          "SELECT set_config($1, $2, true)",
+          "harness.snapshot_every", Facet::Config.instance.snapshot_every.to_s,
+        )
         db.query_one(
           <<-SQL,
             INSERT INTO mutations (

@@ -277,6 +277,26 @@ describe "domain-editor RBAC enforcement matrix" do
       end
     end
 
+    it "gates draft-from on membership whatever the create verdict (F04-01)" do
+      with_db do |db|
+        seed_live_domain(db, "crm")
+        create_domain_editor_row(db, "acc_member", "crm")
+
+        # The seeded editor role holds a blanket `create core.Domain` (All).
+        # That must not let a non-member fork a foreign domain's definition.
+        outsider = role_ctx(db, "acc_outsider")
+        denied = Facet::Domain::Draft.create_from(db, "crm", "acc_outsider", outsider)
+        denied.should be_a(Facet::ServiceError)
+        denied.as(Facet::ServiceError).status.should eq(403)
+
+        # A member of the source domain still forks it.
+        member = role_ctx(db, "acc_member")
+        allowed = Facet::Domain::Draft.create_from(db, "crm", "acc_member", member)
+        allowed.should be_a(Facet::Domain::Draft::Result)
+        allowed.as(Facet::Domain::Draft::Result).projection.content["source_domain"].as_s.should eq("crm")
+      end
+    end
+
     it "denies a non-member's view update with 403 (scope) while create denies with 422 (hook)" do
       with_db do |db|
         seed_live_domain(db, "crm")

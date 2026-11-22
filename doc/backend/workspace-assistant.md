@@ -67,7 +67,7 @@ A workspace conversation stores
 | `POST` | `/Api/assistant/conversations/:id/turns` | Shared turn write; owner-only for a workspace conversation — a turn injects replay context, so the next stream would resume from it. |
 | `POST` | `/Api/assistant/conversations/:id/stream` | Shared streaming route. Resolves the kind, runs the workspace gates, wires `Workspace::Registrar.register` plus `argument_tools = {"navigate", "show_documents"}`. |
 | `POST` | `/Api/assistant/cancel/:turn_token` | Shared cancel. |
-| `GET` | `/Api/assistant/usage` | The caller's rolling-window usage meter: `{total, budget, window_start, window_days}` from one `Usage.total_for_account` call plus `Access.effective_budget`. `budget: null` means unlimited. Authenticated callers only (`401` for the bypass / anonymous principals). |
+| `GET` | `/Api/assistant/usage` | The caller's rolling-window usage meter: `{total, estimated_total, budget, window_start, window_days}` from one `Usage.total_for_account` call plus `Access.effective_budget`. `estimated_total` is the part of `total` the provider never reported on (a character-count estimate), so the meter can mark the number as a guess. `budget: null` means unlimited. Authenticated callers only (`401` for the bypass / anonymous principals). |
 
 ## Gates
 
@@ -228,9 +228,12 @@ computes the caller's billable account id (`nil` for the system bypass
 and the anonymous principal), and `Stream::Session` inserts the row at the
 turn's terminal path:
 
-- **Success** — the provider-reported counts, unestimated.
-- **Cancelled** — the response's reported counts when the provider
-  delivered them before the abort; otherwise an **estimate** (see below).
+- **Delivering turn with a positive report** (success, cancelled, capped,
+  truncated) — the provider-reported counts, unestimated.
+- **Delivering turn with no report** (or an all-zero report) — the
+  **estimate** (see below), marked `estimated`. This covers the success
+  turn on a provider that reports nothing on stream, and the cancelled
+  turn whose final-chunk report an abort never delivered.
 - **Terminal error** — reported counts only. No output was delivered, so
   there is nothing to siphon, and estimating would overcharge turns that
   failed before the provider processed the prompt.
@@ -240,13 +243,14 @@ row — `agent_turns.usage` stays the source of truth. Rows the provider
 never reported on are marked `estimated` on the ledger row (the turn row
 keeps the reported zeros).
 
-The anti-siphon estimate covers the hole where a client cancels mid-stream
-and receives the partial answer: OpenAI-style providers report usage only
-in the final chunk, which an abort never delivers, so agent-cr finishes a
-cancelled turn with zeroed metadata. The Session then bills ~4
-chars/token (`Stream::Session::CHARS_PER_TOKEN` — the only heuristic in
-the feature): streamed content + reasoning characters as output, the
-serialized prompt (full history, user message included) as input.
+The estimate is one character-count heuristic applied on every delivering
+exit path, not a cancelled-turn special case: OpenAI-style providers
+report usage only in the final chunk, so a cancelled turn finishes with
+zeroed metadata, and a provider without `stream_options` never reports at
+all. The Session then bills ~4 chars/token
+(`Stream::Session::CHARS_PER_TOKEN` — the only heuristic in the feature):
+streamed content + reasoning characters as output, the serialized prompt
+(full history, user message included) as input.
 
 A workspace conversation can only be streamed by its owner, so every row
 attributes to the account that caused the turn.
@@ -254,7 +258,7 @@ attributes to the account that caused the turn.
 | Method | Description |
 |---|---|
 | `Usage.insert(db, account_id, conversation_id, turn_id, model, input_tokens, output_tokens, estimated = false, recorded_at = nil)` | Writes one ledger row. `recorded_at` defaults to `now()`; the explicit form lets specs place rows inside or outside a query window. Callers run on their own connection. |
-| `Usage.total_for_account(db, account_id, since, to)` | Sums `{input, output, total}` over a `recorded_at` window. `since` is inclusive, `to` exclusive; bounds convert to UTC. An unknown account returns zeros. |
+| `Usage.total_for_account(db, account_id, since, to)` | Sums `{input, output, total, estimated_total}` over a `recorded_at` window. `total` is `input + output`; `estimated_total` is the part of `total` from `estimated` rows, so `total - estimated_total` is the reported part. `since` is inclusive, `to` exclusive; bounds convert to UTC. An unknown account returns zeros. |
 | `Limits.allow?(db, account_id)` | The enforcement seam. `handle_stream` calls it before the SSE headers and answers `false` with a JSON `429`. A rolling 30-day window of total tokens (`Usage.total_for_account`, `recorded_at >= now - 30 days`, open upper bound) compared against `Access.effective_budget`: `total >= budget` denies, so a budget of `0` means "no tokens" and an unset budget skips the sum. Domain-builder turns share the ledger and the rule. |
 | `Limits::WINDOW_DAYS` | The rolling window length (30). `assistant.usage_retention_days` must be `0` or above this value — the prune warns when it is not. |
 

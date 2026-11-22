@@ -15,7 +15,7 @@ retour arrière, la rétention, et les règles pour les applications et
 l’assistant.
 
 Commencez par les pages d’identité, puis les pages d’autorisation, puis les
-pages d’assurance. Chaque page se lit seuleà ; les liens croisés
+pages d’assurance. Chaque page se lit seule ; les liens croisés
 complètent le modèle.
 
 ## Identité
@@ -34,7 +34,7 @@ complètent le modèle.
   provisionnement JIT, et le mode SSO seul.
 - [Sessions, tokens et verrouillages](/fr/govern/sessions-tokens-lockouts/) —
   durées de vie des tokens, rotation, et limitation des connexions.
-- [Accès machineà : clés d’API](/fr/govern/api-keys/) — des clés
+- [Accès machine : clés d’API](/fr/govern/api-keys/) — des clés
   statiques épinglées à un compte et un rôle.
 
 ## Autorisation

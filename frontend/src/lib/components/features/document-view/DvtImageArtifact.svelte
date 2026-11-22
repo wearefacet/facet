@@ -6,7 +6,7 @@
 	import type { ImageArtifactNode, ReferenceClickHandler } from '$lib/template-types';
 	import type { DocumentResponse } from '$lib/datasource/types';
 	import ArtifactImage from './ArtifactImage.svelte';
-	import type { ArtifactGrant } from '$lib/components/primitives/data/FileArtifact.svelte';
+	import type { ArtifactGrant } from '$lib/artifacts.js';
 
 	let {
 		template,

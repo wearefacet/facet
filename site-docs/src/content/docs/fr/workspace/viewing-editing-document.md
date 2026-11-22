@@ -27,7 +27,7 @@ supprimer un enregistrement.
 
 ### 1. Ouvrez un document
 
-Trois chemins s’offrent à vousà :
+Trois chemins s’offrent à vous :
 
 - **Depuis une liste** — sélectionnez une ligne, une carte kanban ou une puce
   de calendrier. Le tiroir d’aperçu s’ouvre avec un aperçu.
@@ -39,9 +39,9 @@ Trois chemins s’offrent à vousà :
   Le tiroir d’aperçu montre l’aperçu rapide. Utilisez l’icône crayon pour
   ouvrir le formulaire d’édition. Utilisez l’icône flèche
   (« Ouvrir en pleine page ») pour la pleine page. Vous pouvez aussi envoyer
-  l’adresse de la page à un collègueà ; elle ouvre le même document.
+  l’adresse de la page à un collègue ; elle ouvre le même document.
 
-  La pleine page montreà :
+  La pleine page montre :
 
 | Partie | Ce qu’elle montre |
 | --- | --- |
@@ -52,7 +52,7 @@ Trois chemins s’offrent à vousà :
 | Référencé par | Les enregistrements qui pointent vers celui-ci. |
 
 Un doctype sans disposition conçue montre à la place une simple liste de
-champsà : un libellé et une valeur par ligne.
+champs : un libellé et une valeur par ligne.
 
 :::tip
 Appuyez sur `E` sur la page du document pour ouvrir l’éditeur.
@@ -62,13 +62,13 @@ Enregistrez avec `Ctrl+S` ou `Ctrl+Entrée`.
 ### 2. Modifiez les champs
 
 Sélectionnez « Modifier ». Le formulaire s’ouvre avec les champs de
-l’enregistrementà :
+l’enregistrement :
 
 - **Texte** — les champs texte prennent du texte. Un champ texte long prend du
   markdown.
 - **Liste de choix** — le champ offre ses valeurs fixes dans un menu déroulant.
 - **Date ou heure** — le champ ouvre un sélecteur. Vous saisissez l’heure
-  civile dans votre propre fuseau horaireà ; Facet stocke la valeur en
+  civile dans votre propre fuseau horaire ; Facet stocke la valeur en
   UTC (temps universel coordonné).
 - **Montant** — le champ prend un montant et une devise.
 - **Référence** — le champ ouvre une recherche sur le doctype lié.
@@ -101,11 +101,11 @@ minutes d’intervalle se replie en une seule entrée. Voir
 
 Facet ne verrouille pas un document. Deux personnes peuvent ouvrir et modifier
 le même enregistrement. Chaque sauvegarde se fond dans le document stocké,
-champ par champà :
+champ par champ :
 
 - **Des champs différents** — vous changez un champ et un collègue en change
-  un autreà : les deux changements passent.
-- **Le même champ** — vous le changez tous les deuxà : la sauvegarde qui
+  un autre : les deux changements passent.
+- **Le même champ** — vous le changez tous les deux : la sauvegarde qui
   arrive en dernier gagne. La page se rafraîchit d’elle-même et montre la
   valeur la plus récente.
 
@@ -118,11 +118,11 @@ champ par champà :
 ### 5. Lancez une action ou supprimez le document
 
 Le bouton « Actions » liste les actions que le doctype définit, par exemple un
-changement d’étape. Sélectionnez-en uneà ; si elle demande des entrées,
+changement d’étape. Sélectionnez-en une ; si elle demande des entrées,
 remplissez la boîte de dialogue et confirmez.
 
 Pour supprimer, ouvrez « Actions » et sélectionnez « Supprimer ». Facet demande
-d’abordà :
+d’abord :
 
 > Supprimer {name} ? Cette action est irréversible.
 
@@ -146,7 +146,7 @@ avec un bouton « Restaurer ».
 
 ## Exemple
 
-Une édition courte depuis le tiroir d’aperçuà :
+Une édition courte depuis le tiroir d’aperçu :
 
 ```
 /crm/Deal            sélectionnez une ligne       le tiroir s’ouvre
@@ -173,7 +173,7 @@ administrateur.
 
 ### Une sauvegarde échoue avec un message de champ
 
-Lisez le message sous le champ. Cas courantsà :
+Lisez le message sous le champ. Cas courants :
 
 - un champ requis est vide
 - le texte est trop long
@@ -184,7 +184,7 @@ Corrigez les champs marqués et enregistrez à nouveau.
 
 ### Votre changement a disparu
 
-Quelqu’un a enregistré le même champ après vousà ; la sauvegarde la
+Quelqu’un a enregistré le même champ après vous ; la sauvegarde la
 plus récente gagne. Ouvrez « Historique », trouvez votre changement, et ramenez
 le document à ce changement au besoin. Voir
 [Historique et retour arrière](/fr/workspace/history-undo/).

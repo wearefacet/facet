@@ -209,13 +209,33 @@ describe "Children parent_id linkage" do
       assert_error_contains(resp, "belongs to")
     end
 
-    it "names the valid relations in the unknown-child error" do
+    it "names the valid relations in the unknown-relation error" do
       customer_id = create_doc_id_http("childtest", "Customer", j(%({"name": "ACME"})))
       resp = create_child_document_http("childtest", "Customer", customer_id, "ghosts", j(%({"name": "Boo"})))
       assert_http_status(resp, 404)
       error = parse_body(resp)["error"].as_s
-      error.should contain("Unknown child 'ghosts'")
+      error.should contain("Unknown relation 'ghosts'")
       error.should contain("valid relations: contacts")
+    end
+
+    it "keeps relations and actions apart in the single-segment POST miss (F03-01)" do
+      # A single-segment POST tries a sidecar, then an action, then a child.
+      # A typo is answered with each vocabulary in its own list, so an
+      # action typo never reads as a child typo.
+      create_doctype_with_children!("childtest", "Ticked",
+        j(%({"lines": {"doctype": "TicketLine", "collection": true}})),
+        j(%({"title": {"type": "string"}}))
+      )
+      create_simple_doctype!("childtest", "TicketLine", "Ticked", j(%({"label": {"type": "string"}})))
+      ticked_id = create_doc_id_http("childtest", "Ticked", j(%({"title": "T1"})))
+
+      resp = create_child_document_http("childtest", "Ticked", ticked_id, "aprove", j(%({})))
+      assert_http_status(resp, 404)
+      error = parse_body(resp)["error"].as_s
+      error.should contain("Unknown relation 'aprove'")
+      error.should contain("valid relations: lines")
+      error.should contain("unknown action 'aprove'")
+      error.should contain("valid actions: none")
     end
 
     it "names the single-segment action route for POST .../actions/:action" do
@@ -416,14 +436,14 @@ describe "Children parent_id linkage" do
       assert_http_status(resp, 404)
     end
 
-    it "names the valid relations in the unknown-child error on a deep create" do
+    it "names the valid relations in the unknown-relation error on a deep create" do
       c_id = create_doc_id_http("childtest", "Customer", j(%({"name": "A customer"})))
       contact_id = create_child_doc_id_http("childtest", "Customer", c_id, "contacts", j(%({"name": "John"})))
 
       resp = create_child_document_http("childtest", "Customer", c_id, "contacts/#{contact_id}/ghosts", j(%({"content": "x"})))
       assert_http_status(resp, 404)
       error = parse_body(resp)["error"].as_s
-      error.should contain("Unknown child 'ghosts'")
+      error.should contain("Unknown relation 'ghosts'")
       error.should contain("valid relations: notes")
     end
 

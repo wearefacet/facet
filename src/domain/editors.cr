@@ -30,10 +30,10 @@ module Facet
     # - `authorize_doctype_create?` — the layered gate: `All` (wildcard) and
     #   system pass; a `Scoped` caller must be a member of the target
     #   domain.
-    # - `authorize_draft_from?` — the same layered gate for
-    #   `Domain::Draft.create_from`: a `Scoped` caller must be a member of
-    #   the source domain, because drafting from a live domain forks its
-    #   definition surface.
+    # - `authorize_draft_from?` — the gate for `Domain::Draft.create_from`:
+    #   a real caller must be a member of the source domain, whatever its
+    #   create verdict, because drafting from a live domain forks that
+    #   domain's definition surface. System bypasses.
     #
     # A dangling `domain` value on a row never matches any scope — the
     # resolution side fails closed by construction. `Scratch.dispose_definitions!`
@@ -158,23 +158,19 @@ module Facet
       # Create-time gate for `Domain::Draft.create_from` (the draft-from-live
       # route): the permission scopes cannot bite at create (no row exists),
       # so membership is checked here. Drafting from a live domain forks its
-      # definition surface, so a `Scoped` caller must be a member of the
-      # source domain. `All` (wildcard role) and the system bypass pass;
-      # anything else fails closed.
+      # definition surface, so the caller must be a member of the source
+      # domain. The create verdict does not relax this: a blanket
+      # `create core.Domain` (the seeded `editor` role) still forks only a
+      # domain the caller edits. Only the system bypass passes; a preview
+      # principal and a caller without `create core.Domain` fail closed.
       def self.authorize_draft_from?(db : DB::Connection, source_domain : String, auth_context : RBAC::AuthContext) : Bool
         return true if auth_context.system?
         # A preview principal never drafts from a live domain — its
         # capability is scoped to one draft domain. Fail closed regardless.
         return false if auth_context.preview?
+        return false if auth_context.can?("create", "core", ["Domain"]).is_a?(RBAC::CanResult::Denied)
 
-        case auth_context.can?("create", "core", ["Domain"])
-        when RBAC::CanResult::All
-          true
-        when RBAC::CanResult::Scoped
-          member?(db, source_domain, auth_context.account_id)
-        else
-          false
-        end
+        member?(db, source_domain, auth_context.account_id)
       end
 
       # ── Private ──────────────────────────────────────────────────────

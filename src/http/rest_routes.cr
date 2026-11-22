@@ -474,7 +474,7 @@ module Facet
               Facet::Document::Action.call(db, domain, root_doctype, root_id, rel_or_action, body, Helpers.auth_context(env))
             else
               child = defn.children[rel_or_action]?
-              next unknown_child_error(rel_or_action, defn, include_sidecars: true, include_actions: true) if child.nil?
+              next unknown_relation_or_action_error(rel_or_action, defn) if child.nil?
               # B-276: the child will link to this row, so the row must
               # exist and be live. The lock answer is the non-disclosing
               # 404 — a parent id that does not exist, or a real id of
@@ -529,7 +529,7 @@ module Facet
           defn = Helpers.fetch_doctype_defn(db, "#{t_domain}.#{t_doctype}")
           next Facet::ServiceError.new(404, "Unknown doctype: #{t_domain}.#{t_doctype}") unless defn
           child_rel = defn.children[rel]?
-          next unknown_child_error(rel, defn) if child_rel.nil?
+          next unknown_relation_error(rel, defn) if child_rel.nil?
           # B-276: every parent hop in the URL must be a live row of its
           # resolved doctype — the same verdict the single-depth branch
           # runs on the root row.
@@ -563,7 +563,7 @@ module Facet
           hop_defn = Helpers.fetch_doctype_defn(db, "#{domain}.#{current_doctype}")
           return Facet::ServiceError.new(404, "Unknown doctype: #{domain}.#{current_doctype}") if hop_defn.nil?
           hop_rel = hop_defn.children[segments[idx]]?
-          return unknown_child_error(segments[idx], hop_defn) if hop_rel.nil?
+          return unknown_relation_error(segments[idx], hop_defn) if hop_rel.nil?
           return Facet::ServiceError.new(404, "Not found") unless Helpers.lock_live_projection_for_update(db, domain, hop_rel.doctype, segments[idx + 1])
           current_doctype = hop_rel.doctype
           idx += 2
@@ -573,21 +573,41 @@ module Facet
 
       # Renders the non-disclosing 404 for an unknown nested relation. The
       # message names the relations the resolved definition accepts, so a
-      # caller can correct the path without probing. Children are always
-      # listed; `include_sidecars` / `include_actions` add the other
-      # relation kinds at the routes that dispatch them.
-      private def self.unknown_child_error(
+      # caller can correct the path without probing. A relation is a child
+      # or a sidecar — the two segments a nested route resolves.
+      private def self.unknown_relation_error(
         relation : String,
         defn : Facet::Doctype::DoctypeDefinition,
         include_sidecars : Bool = false,
-        include_actions : Bool = false,
       ) : Facet::ServiceError
         relations = defn.children.keys
         relations += defn.sidecars.keys if include_sidecars
-        relations += defn.actions.keys if include_actions
         relations = relations.uniq.sort!
         detail = relations.empty? ? "none" : relations.join(", ")
-        Facet::ServiceError.new(404, "Unknown child '#{relation}' — valid relations: #{detail}")
+        Facet::ServiceError.new(404, "Unknown relation '#{relation}' — valid relations: #{detail}")
+      end
+
+      # Renders the 404 for a single-segment POST whose name matches neither
+      # a child, a sidecar, nor an action. The dispatcher tried all three, so
+      # the message keeps the two vocabularies apart: relations (children and
+      # sidecars) and actions each get their own list. A typo in an action
+      # name is then answered with action names, never child names.
+      private def self.unknown_relation_or_action_error(
+        segment : String,
+        defn : Facet::Doctype::DoctypeDefinition,
+      ) : Facet::ServiceError
+        actions = defn.actions.keys.sort!
+        action_detail = actions.empty? ? "none" : actions.join(", ")
+        Facet::ServiceError.new(
+          404,
+          "Unknown relation '#{segment}' — valid relations: #{relation_list(defn)}; " \
+          "unknown action '#{segment}' — valid actions: #{action_detail}"
+        )
+      end
+
+      private def self.relation_list(defn : Facet::Doctype::DoctypeDefinition) : String
+        relations = (defn.children.keys + defn.sidecars.keys).uniq!.sort!
+        relations.empty? ? "none" : relations.join(", ")
       end
 
       # PATCH: update a specific child document (even segments = specific target).

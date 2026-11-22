@@ -41,12 +41,12 @@ module Facet
     #    A definition that declares `migrations` must also carry a `script` —
     #    a migration function runs only through the doctype's Lua script.
     module Update
-      # The 422 message when the PUT body matches the stored definition —
-      # the seed reconcile treats it as the healthy no-op signal.
-      NO_CHANGES_MESSAGE = "No changes detected in doctype definition"
-
       record Result,
-        mutation_id : String
+        mutation_id : String,
+        # True when the PUT body matched the stored definition. The service
+        # wrote nothing — an idempotent re-save answers `200` with the
+        # unchanged projection.
+        unchanged : Bool = false
 
       # The `$force` flag, when passed at the root of the JSON body, allows
       # destructive same-version edits (field removals, type changes).
@@ -96,11 +96,28 @@ module Facet
           validation_error, definition = validate_update(db, domain, doctype_id, current_def, definition, current_version, force)
           return validation_error if validation_error
 
+          # 6.5. Duplicate scan for fields that gain `unique: true`. The
+          #      managed unique index the flag produces cannot build over
+          #      existing duplicates — reject the update with the values
+          #      named, before any mutation is written. Draft domains skip
+          #      the scan: publish copies structure only, so the definition
+          #      meets fresh data on the live domain.
+          unless draft_domain?(db, domain)
+            unique_errors = UniquePrecheck.validate_added_unique(db, current_def, definition)
+            unless unique_errors.empty?
+              return Facet::ServiceError.new(422, "Doctype validation failed", details: unique_errors)
+            end
+          end
+
           # 7. Compute diff and persist
           diff = compute_diff(current_content, definition)
 
+          # An idempotent re-save is a success, not a caller error: the
+          # stored definition already matches the body, so the PUT answers
+          # `200` with the unchanged projection. `mutation_id` is the row's
+          # current `state` — the same ETag validator a write would return.
           if diff.empty?
-            return Facet::ServiceError.new(422, NO_CHANGES_MESSAGE)
+            return Result.new(mutation_id: DefinitionStore.fetch_state(db, doctype_id) || "", unchanged: true)
           end
 
           mut_id = Database.with_transaction(db, ignore_if_set: true) do |txn|

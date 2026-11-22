@@ -103,6 +103,11 @@ module Facet
       # dispatch compares the token `aud` against. The browser must never
       # derive them from `window.location.origin` (a non-Caddy origin would
       # mint links whose `aud` fails the exact-match check).
+      #
+      # The listing is filtered on the `mcp` channel — the same derivation
+      # the consent gate runs (`IAM::Helpers.mcp_channel?`): a role whose
+      # connectivity excludes `mcp` cannot open the endpoint, so it is not
+      # offered (F08-03).
       private def self.mcp_endpoints(env) : Nil
         auth_context = HTTP::AuthHandler.auth_context_from_request(env)
         unless auth_context
@@ -113,7 +118,10 @@ module Facet
         endpoints = Database.with_db(:read_only) do |db|
           account = IAM::Helpers.find_account_by_id(db, auth_context.account_id)
           roles = account ? account[:roles] : [] of String
-          roles.sort.map do |role|
+          roles.sort.compact_map do |role|
+            role_content = IAM::Helpers.find_role_content(db, role)
+            next nil unless role_content && IAM::Helpers.mcp_channel?(role_content)
+
             {role: role, url: MCP.resource_identifier(role)}
           end
         end

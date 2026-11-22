@@ -6,9 +6,48 @@
 	import ListView from './ListView.svelte';
 	import CanFixture from '$lib/components/features/admin/CanFixture.svelte';
 	import { createMockDriver } from '$lib/datasource/mock-seed.js';
-	import { parseDoctypeDef } from '$lib/doctype/types.js';
+	import { MockDataSource } from '$lib/datasource/MockDataSource.js';
+	import { parseDoctypeDef, type DoctypeDef } from '$lib/doctype/types.js';
+	import { resolveColumnLabel } from '$lib/doctype/columnLabel.js';
+	import Table from '$lib/table/Table.svelte';
+	import type { Column } from '$lib/table/types.js';
 	import type { DataDriver, Domain } from '$lib/datasource/driver.js';
 	import type { DataSource } from '$lib/datasource/interface.js';
+
+	// ── F10-06 fixture: a saved column without a `label` ──────────────────────
+	//
+	// A view written by REST, an agent, or an import stores the column `key`
+	// alone. `label` is optional in the schema, so `ListView` resolves the
+	// header at render time as `label ?? field.title ?? humanize(key)`. The
+	// story drives `resolveColumnLabel` for the saved-column shape, and the
+	// `Table` below renders the resolved headers.
+	const bareDealDef: DoctypeDef = {
+		doctype: 'Deal',
+		domain: 'crm',
+		fields: [
+			{ key: 'title', type: 'string', title: 'Deal Title' },
+			{ key: 'value', type: 'money', title: 'Deal Value', currency: 'USD' },
+			{ key: 'probability', type: 'integer', title: 'Probability' },
+			{ key: 'lost_reason', type: 'string' }
+		],
+		children: [],
+		actions: []
+	};
+	// One column per fallback step: a declared title, a declared title, and a
+	// key with no declared title (the humanized form). `label` is left out, the
+	// shape a REST or import write stores.
+	const bareDealColumns: Column<Record<string, unknown>>[] = (
+		['title', 'value', 'probability', 'lost_reason'] as const
+	).map((key) => ({ key, label: resolveColumnLabel(bareDealDef, key, undefined) }));
+	const bareDealDs = new MockDataSource<Record<string, unknown>>('crm', 'Deal', [
+		{
+			id: 'crm.Deal.1',
+			title: 'Acme Corp — Platform License',
+			value: { value: '120000', currency: 'USD' },
+			probability: 60,
+			lost_reason: ''
+		}
+	]);
 
 	// Single mock driver seeded with all fixtures (doctype defs + documents,
 	// including the core.CollectionView children of crm.Deal).
@@ -175,6 +214,44 @@
 					parentDocId="crm.Deal"
 					pageSize={25}
 					showTabs={false}
+				/>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<Story
+	name="KeyOnlyColumnUsesFieldTitle"
+	play={async ({ canvasElement }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+		// The saved view's columns carry keys with no `label` — the same shape a
+		// REST or import write stores. The header falls back to the field's
+		// declared title. The table header uppercases through CSS, so the DOM
+		// text keeps the declared casing.
+		const headers = canvas.getAllByRole('columnheader');
+		const labels = headers.map((h) => h.textContent?.trim() ?? '');
+		await expect(labels).toContain('Deal Title');
+		await expect(labels).toContain('Deal Value');
+		await expect(labels).toContain('Probability');
+		// A key with no declared title humanizes ('lost_reason' → 'Lost Reason').
+		await expect(labels).toContain('Lost Reason');
+		// The raw key never prints.
+		await expect(labels).not.toContain('Title');
+		await expect(labels).not.toContain('LOST_REASON');
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={adminManifest}>
+			<div
+				style="position: relative; width: 100%; height: 80vh; min-height: 500px; overflow: hidden; padding: 24px;"
+			>
+				<Table
+					columns={bareDealColumns}
+					datasource={bareDealDs}
+					doctype={bareDealDef}
+					rowKey={(item) => String((item as Record<string, unknown>)['id'])}
+					pageSize={25}
 				/>
 			</div>
 		</CanFixture>

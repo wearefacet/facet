@@ -6,6 +6,7 @@
 	import { expect, within } from 'storybook/test';
 	import DvtField from './DvtField.svelte';
 	import { setVisibleTags } from '$lib/permissions.svelte';
+	import { artifactMetadataCache } from '$lib/datasource/clientCache.js';
 	import type { DocumentMeta } from '$lib/datasource/types';
 	import type { DoctypeDef } from '$lib/doctype/types.js';
 
@@ -239,6 +240,10 @@
 	}}
 	play={async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
+		// The artifact metadata cache is shared across stories; drop the entry so
+		// this story renders the pre-fetch state (the id as the label) whatever
+		// an earlier story resolved.
+		artifactMetadataCache.invalidate(FILE_ARTIFACT_ID);
 		// A file-typed field renders an artifact download link labelled with
 		// the stored id; the grant URL is minted lazily on click, never on
 		// render, so the link starts as the in-page anchor `#`.

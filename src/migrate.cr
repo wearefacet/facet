@@ -37,7 +37,12 @@ module Facet
     {% end %}
 
     # Splits a migration file into its `-- UP` and `-- DOWN` sections.
-    SECTION_SPLIT_RE = /^--\s*DOWN\b/im
+    #
+    # The marker is a comment line on its own: `-- DOWN` followed by the line
+    # end. The trailing `$` matters — without it, prose such as
+    # `-- DOWN restores the function body …` in the file header matches, and
+    # the `-- UP` section truncates to the header comments.
+    SECTION_SPLIT_RE = /^--\s*DOWN[ \t]*$/im
 
     # Raised when a revert plan cannot be executed. Raised before any SQL
     # runs, so a failed plan leaves the database untouched.

@@ -10,7 +10,7 @@ verified_at: fd345fe3
 
 Le watcher de domaines surveille un dossier de fichiers de domaines et
 applique chaque changement à un serveur de dev en cours d’exécution. Vous
-modifiez le YAML dans votre éditeur et enregistrezà ; le serveur met à jour les
+modifiez le YAML dans votre éditeur et enregistrez ; le serveur met à jour les
 domaines un instant plus tard. Aucun clic dans l’interface, aucun appel d’API,
 aucun redémarrage.
 
@@ -23,9 +23,9 @@ aucun redémarrage.
 ## Avant de commencer
 
 - **Un serveur de dev qui vous appartient.** Le watcher ne tourne jamais en
-  productionà ; le serveur y refuse de le démarrer.
+  production ; le serveur y refuse de le démarrer.
 - **Un dossier que le serveur peut lire.** Ajoutez la section `dev.domain_watch`
- à votre configuration de devà :
+ à votre configuration de dev :
 
 ```yaml
 dev:
@@ -42,7 +42,7 @@ dev:
 | `documents` | `preserve` | `preserve` garde les documents que vous avez créés dans l’app. `discard` reconstruit tout depuis les fichiers à chaque changement. |
 
 :::caution
-La ligne de configuration vaut consentementà : chaque synchronisation remplace
+La ligne de configuration vaut consentement : chaque synchronisation remplace
 les définitions des domaines surveillés et, en mode `discard`, leurs documents
 aussi. Pointez `path` vers un dossier qui vous appartient.
 :::
@@ -51,7 +51,7 @@ aussi. Pointez `path` vers un dossier qui vous appartient.
 
 ### 1. Disposer un dossier par domaine
 
-Chaque sous-dossier direct du chemin surveillé porte un bundle de domaineà :
+Chaque sous-dossier direct du chemin surveillé porte un bundle de domaine :
 
 ```
 dev/
@@ -62,7 +62,7 @@ dev/
         └── acme.Project.yml
 ```
 
-Le nom du sous-dossier est libreà ; le nom du domaine vient de `bundle.yml` :
+Le nom du sous-dossier est libre ; le nom du domaine vient de `bundle.yml` :
 
 ```yml
 format_version: 2
@@ -73,7 +73,7 @@ facet_version: 0.1.0
 
 `domain.yml` porte le document du domaine — un bloc `content` avec le libellé
 et la description, et un `meta` vide. Chaque fichier de `doctypes/` est une
-définition de doctypeà :
+définition de doctype :
 
 ```yml
 content:
@@ -94,15 +94,15 @@ meta:
 ### 2. Enregistrer et laisser faire le watcher
 
 Enregistrez n’importe quel fichier. Dans un cycle de scrutation ou deux, le
-serveur applique le dossierà : il lit le bundle, remplace les définitions et
+serveur applique le dossier : il lit le bundle, remplace les définitions et
 rapporte une ligne par domaine dans le journal du serveur. Un bundle ajouté
 pendant que le serveur tourne est ramassé à la scrutation suivante. Le watcher
-attend que l’activité cesseà ; un enregistrement qui arrive en plusieurs
+attend que l’activité cesse ; un enregistrement qui arrive en plusieurs
 écritures de fichiers ne s’applique qu’une fois.
 
 Après chaque synchronisation, le serveur lance la vérification du domaine et
 journalise le compteur d’anomalies. Pour le rapport complet, interrogez la
-route du rapport de devà :
+route du rapport de dev :
 
 ```sh
 curl -k -H "Authorization: Bearer $FACET_API_KEY" \
@@ -121,7 +121,7 @@ d’exemple figées.
 
 ## Exemple
 
-Vous ajoutez un champ `priority` au doctype Projectà :
+Vous ajoutez un champ `priority` au doctype Project :
 
 ```yml
     priority:
@@ -131,7 +131,7 @@ Vous ajoutez un champ `priority` au doctype Projectà :
 
 Vous enregistrez. La ligne de journal rapporte la synchronisation de acme avec
 ses compteurs d’import. Vous ouvrez l’app en cours d’exécution : le formulaire
-Project affiche déj à le nouveau champ. Comme le mode est `preserve`, les
+Project affiche déjà le nouveau champ. Comme le mode est `preserve`, les
 projets créés pendant vos tests sont toujours là.
 
 ## Dépannage
@@ -144,13 +144,13 @@ fichier est ignoré.
 
 **La synchronisation échoue à chaque enregistrement.**
 
-Lisez les erreurs de champ journaliséesà ; elles nomment le fichier et le
+Lisez les erreurs de champ journalisées ; elles nomment le fichier et le
 champ. Le domaine reste dans son état précédent, et vous corrigez le fichier
 pendant que l’app tourne.
 
 **Le même domaine apparaît deux fois.**
 
-Deux sous-dossiers déclarent le même nom de domaine. Gardez-en unà ; le
+Deux sous-dossiers déclarent le même nom de domaine. Gardez-en un ; le
 journal nomme les deux.
 
 ## Voir aussi

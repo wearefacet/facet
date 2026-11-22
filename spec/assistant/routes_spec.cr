@@ -1043,11 +1043,35 @@ describe "GET /Api/assistant/usage" do
     assert_http_status(response, 200)
     body = JSON.parse(response.body)
     body["total"].as_i64.should eq(130)
+    # Both rows are reported turns — nothing estimated.
+    body["estimated_total"].as_i64.should eq(0)
     # The account holds no role projections — unlimited.
     body["budget"].raw.should be_nil
     body["window_days"].as_i.should eq(30)
     window_start = Time.parse_rfc3339(body["window_start"].as_s)
     (Time.utc - window_start - 30.days).abs.should be < 1.minute
+  end
+
+  it "splits the estimated part out of the total (F08-01)" do
+    account = Facet::Util::ScriptHelpers.ulid
+    with_db do |db|
+      Facet::Assistant::Usage.insert(
+        db, account, "conv_1", "turn_1", "test-model", 100_i64, 20_i64
+      )
+      Facet::Assistant::Usage.insert(
+        db, account, "conv_1", "turn_2", "test-model", 30_i64, 8_i64, estimated: true
+      )
+    end
+
+    response = call_api_as(
+      HTTP::Request.new("GET", "/Api/assistant/usage"),
+      auth_as(account),
+    )
+
+    assert_http_status(response, 200)
+    body = JSON.parse(response.body)
+    body["total"].as_i64.should eq(158)
+    body["estimated_total"].as_i64.should eq(38)
   end
 
   it "answers 401 for a caller with no billable account" do

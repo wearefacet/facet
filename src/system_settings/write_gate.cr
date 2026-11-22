@@ -43,6 +43,33 @@ module Facet
       # The longest display name a save may pin.
       NAME_MAX_LENGTH = 40
 
+      # The refusal for `artifact.storage` and every value beneath it. The
+      # storage adapter is deployment material, not a runtime knob: it wires
+      # once per process from the config file, and every artifact row lives
+      # under the one constant storage key, so a runtime switch would strand
+      # the existing bytes in the old backend. One constant so the REST door
+      # answers the same sentence for the intermediate node and for the leaf
+      # (F09-05 — the schema layer refuses the undeclared node before this
+      # gate could run, so `WriteGate.refusal` reuses the text there too).
+      STORAGE_FIXED_MESSAGE = "is fixed at deployment: the storage adapter wires at boot from the config " \
+                              "file and existing artifact bytes stay in the previous backend. Change " \
+                              "artifact.storage in the config file and restart"
+
+      # Returns the gate's `ValidationError` for the deployment-material
+      # field named by `path`, or `nil` when `path` is not that subtree.
+      # Used by the patch-validation layer to answer the right sentence for
+      # `artifact.storage` (an intermediate node the schema has no leaf
+      # for) instead of "is not a defined field".
+      def self.refusal(path : String) : ValidationError?
+        return nil unless path == "artifact.storage" || path.starts_with?("artifact.storage.")
+
+        ValidationError.new(
+          field: path,
+          message: STORAGE_FIXED_MESSAGE,
+          code: "invalid_format",
+        )
+      end
+
       # Validates the merged document state. Returns the structured
       # validation errors (empty = valid). `db` serves the save-time query
       # the `oidc_only` rule runs (one indexed count over the provider
@@ -292,9 +319,7 @@ module Facet
 
         errors << ValidationError.new(
           field: "artifact.storage.type",
-          message: "is fixed at deployment: the storage adapter wires at boot from the config " \
-                   "file and existing artifact bytes stay in the previous backend. Change " \
-                   "artifact.storage in the config file and restart",
+          message: STORAGE_FIXED_MESSAGE,
           code: "invalid_format",
         )
       end

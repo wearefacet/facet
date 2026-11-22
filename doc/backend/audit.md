@@ -249,7 +249,9 @@ Each GET route names the one key it reads beyond the grammar, and the strict sca
 | `/Api/Audit`, `/:id/:child/:child_id/history` | — | No keys beyond the grammar |
 | `/Api/core/Webhook/:id/calls` | `status` | Delivery-status filter (see `doc/backend/webhook.md`) |
 
-The QUERY forms are unchanged: they parse the body leniently, so a body `include` or `status` keeps working.
+The global audit list (`/Api/Audit`) reads only a subset of the grammar — `page`, `items`, `sort`, and the `filters` bracket form. It forwards exactly those to `Audit::List`, so the other grammar keys (`field`, `select`, `aggregate`, `scope`, `deleted`) answer `422 Unknown parameter '<key>'` instead of vanishing into an unfiltered `200` (F07-03): the audit log has no `select` projection, no field aggregate, and no named scope, so admitting the keys would be a silent drop. The document-history and child-history routes read the whole grammar and admit it all.
+
+The QUERY forms parse the body strictly under the same admitted set. A route that reads a key beyond the grammar names it as an extra body key — `include` on the history routes, `status` on the webhook-calls route — and an unknown body key answers the same `422`.
 
 ### Mutation-id shape (422)
 

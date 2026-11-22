@@ -13,9 +13,9 @@ Enregistrez l’app, connectez les utilisateurs, puis appelez Facet via l’API
 REST ou le SDK TypeScript. Les pages de cette section couvrent chaque étape,
 et chacune porte du code à copier et à exécuter.
 
-> **Pour les agentsà :** lisez d’abord `/llms.txt`, puis récupérez n’importe
-> quelle page en markdown brut sur `/apps/<page>.md` (à  l’octet près,
-> front-matter conservé). Séquence minimaleà : enregistrez une app
+> **Pour les agents :** lisez d’abord `/llms.txt`, puis récupérez n’importe
+> quelle page en markdown brut sur `/apps/<page>.md` (à l’octet près,
+> front-matter conservé). Séquence minimale : enregistrez une app
 > (`POST /Api/app/App`) → connectez un utilisateur (`/OAuth/authorize` →
 > `/OAuth/token`, ou une clé `fct_` propre à l’app) → appelez
 > `/Api/<domain>/<Doctype>` avec `Authorization`. Commencez par
@@ -26,11 +26,11 @@ et chacune porte du code à copier et à exécuter.
 - [Comment fonctionnent les apps sur Facet](/fr/apps/how-apps-work/)
 - [Démarrage rapide avec la CLI de dev](/fr/apps/quickstart-dev-cli/)
 - [Enregistrer une app (publique, confidentielle ou headless)](/fr/apps/registering-app/)
-- [Connexion utilisateurà : OAuth 2.1 + PKCE](/fr/apps/oauth-login/)
+- [Connexion utilisateur : OAuth 2.1 + PKCE](/fr/apps/oauth-login/)
 - [La liaison DPoP des tokens](/fr/apps/dpop/)
 - [CORS et origines autorisées](/fr/apps/cors-origins/)
 - [Comptes de service pour les apps backend](/fr/apps/service-accounts/)
-- [Héberger votre frontendà : déploiement, versions, retour arrière, domaines personnalisés](/fr/apps/hosting-deploy/)
+- [Héberger votre frontend : déploiement, versions, retour arrière, domaines personnalisés](/fr/apps/hosting-deploy/)
 - [Le SDK TypeScript (`@facetapp/sdk`)](/fr/apps/typescript-sdk/)
 
 ## API et agents
@@ -42,7 +42,7 @@ et chacune porte du code à copier et à exécuter.
 - [Import et export en masse via l’API](/fr/apps/bulk-import-export/)
 - [Conditionner votre UI au manifest](/fr/apps/permission-manifest/)
 - [Intégrer l’assistant (`@facetapp/chat`)](/fr/apps/chat-embed/)
-- [MCPà: connecter des agents](/fr/apps/mcp-agents/)
+- [MCP : connecter des agents](/fr/apps/mcp-agents/)
 - [Outils pour agents](/fr/apps/agent-tools/)
 - [Construire des apps avec un agent de code IA](/fr/apps/ai-coding-agents/)
 

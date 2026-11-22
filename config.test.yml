@@ -60,8 +60,9 @@ iam:
   # Short TTL for tests so expiry paths are quick to exercise.
   change_password_expiration: 3600
 
-# Lua sandbox limits for doctype scripts. These match the code defaults
-# (`Config::LuaConfig`) — kept here as the visible reference for the knobs.
+# Lua sandbox limits for doctype scripts. These deliberately sit above the
+# code defaults (`Config::LuaConfig`: 1M / 32 MB / 0.5 s) so specs that do
+# not test the limits never trip them.
 lua:
   instruction_limit: 10000000
   memory_limit_mb: 100

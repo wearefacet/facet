@@ -27,6 +27,7 @@ require "./file_mime_check"
 require "./money_currency_check"
 require "./unique_constraint"
 require "./view_template_gate"
+require "./collection_view_gate"
 require "../grants/validator"
 require "../app/grants_validator"
 require "../rbac"
@@ -520,8 +521,9 @@ module Facet
       end
 
       # Authoring-time validation for the view children of `core.DocType`.
-      # `core.CollectionView` — a calendar title template must compile and
-      # reference only the parent doctype's fields (see
+      # `core.CollectionView` — the `config` must be usable by its surface
+      # (see `Document::CollectionViewGate`) and a calendar title template
+      # must compile and reference only the parent doctype's fields (see
       # `CollectionView::TitleTemplate`). `core.DocumentView` — the template
       # tree must pass `ViewTemplateValidator` against the parent doctype
       # definition (see `Document::ViewTemplateGate`). The parent is the
@@ -536,7 +538,8 @@ module Facet
         parent_id : String?,
       ) : Facet::ServiceError?
         if {domain, doc_type} == {"core", "CollectionView"}
-          errors = collection_view_title_template_errors(db, parent_id, document)
+          errors = CollectionViewGate.errors(db, parent_id, document)
+          errors += collection_view_title_template_errors(db, parent_id, document["config"]?)
           return Facet::ServiceError.new(422, "Collection view validation failed", details: errors) unless errors.empty?
         end
 
@@ -549,18 +552,18 @@ module Facet
       end
 
       # Extracts the calendar title template from a `core.CollectionView`
-      # document and validates it against the parent doctype's definition.
-      # Returns an empty array when there is nothing to check (no calendar
-      # config or no template) or when the parent definition cannot be
-      # resolved.
+      # `config` value and validates it against the parent doctype's
+      # definition. Returns an empty array when there is nothing to check (no
+      # calendar config or no template) or when the parent definition cannot
+      # be resolved.
       private def self.collection_view_title_template_errors(
         db : DB::Connection,
         parent_id : String?,
-        document : JSON::Any,
+        config : JSON::Any?,
       ) : Array(ValidationError)
         return [] of ValidationError unless parent_id
 
-        template = document.dig?("config", "calendar", "title_template").try(&.as_s?)
+        template = config.try(&.dig?("calendar", "title_template")).try(&.as_s?)
         return [] of ValidationError unless template
 
         case defn = Doctype::DefinitionStore.fetch!(db, parent_id)
@@ -718,6 +721,7 @@ module Facet
           name = final_document["name"]?.try(&.as_s?)
           raise Facet::NamedIdError.new(422, "Role creation requires a 'name'") if name.nil? || name.empty?
           role_doc_id = "iam.Roles.#{name}"
+          lock_named_id(txn, "iam", "Roles", role_doc_id)
           if Facet::Util::Projections.exists?(txn, "iam", "Roles", role_doc_id)
             raise Facet::NamedIdError.new(409, "Role '#{name}' already exists")
           end
@@ -727,6 +731,7 @@ module Facet
         if {domain, doc_type} == {"iam", "Account"}
           email = final_document["email"]?.try(&.as_s?).try(&.strip.downcase)
           raise Facet::NamedIdError.new(422, "Account creation requires an 'email'") if email.nil? || email.empty?
+          lock_named_id(txn, "iam", "Account", email)
           if Facet::Util::Projections.exists?(txn, "iam", "Account", email)
             raise Facet::NamedIdError.new(409, "Account '#{email}' already exists")
           end
@@ -738,6 +743,23 @@ module Facet
         else
           Util::ScriptHelpers.ulid
         end
+      end
+
+      # Serialises concurrent creates that derive the same business-key id
+      # (an `iam.Account` email, an `iam.Roles` name). The existence check
+      # above is a plain read: without this lock two concurrent creates both
+      # read "absent", both write a mutation, and the projection trigger's
+      # `ON CONFLICT (domain, doc_type, id) DO UPDATE` silently folds the
+      # second into the first — the caller never sees the conflict, so it
+      # reports success twice (e.g. two OIDC JIT callbacks for one email
+      # both emit `oidc_provisioned`). The transaction-scoped lock blocks the
+      # second create until the first commits, so its re-check sees the row
+      # and raises `NamedIdError` (409). Same wrapping rule as
+      # `SequenceId.generate`: `String#hash` is `UInt64`, the PG lock takes a
+      # signed `Int64`.
+      private def self.lock_named_id(txn : DB::Connection, domain : String, doc_type : String, id : String) : Nil
+        lock_key = "named-id:#{domain}:#{doc_type}:#{id}".hash.to_i64!
+        txn.exec("SELECT pg_advisory_xact_lock($1)", lock_key)
       end
 
       # Adoption rejects the document (an unknown, expired, or forged

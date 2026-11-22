@@ -178,6 +178,28 @@ module Facet::Doctype
 
     # ── Error: doctype does not exist ─────────────────────────────────
 
+    it "answers 200 with the unchanged projection when the body matches the stored definition (F03-03)" do
+      with_temp_doctype("noop") do |db, domain, dt|
+        doctype_id = create_v1_doctype(db, domain, dt)
+        stored = Facet::Mutation::Client.fetch_content(db, "core", "DocType", doctype_id)
+
+        result = Update.call(db, doctype_id, stored.to_json, Facet::RBAC::AuthContext.system)
+        case result
+        in Update::Result
+          result.unchanged.should be_true
+          # The row's current `state` — the same ETag validator a GET serves.
+          state = db.query_one("SELECT state FROM projections WHERE id = $1", doctype_id, as: String)
+          result.mutation_id.should eq(state)
+        in Facet::ServiceError
+          fail "Expected an idempotent success but got #{result.status}: #{result.message}"
+        end
+
+        # No mutation row was written — an idempotent re-save is not an event.
+        mutation_count = db.scalar("SELECT count(*) FROM mutations WHERE doc_id = $1", doctype_id).as(Int64)
+        mutation_count.should eq(1) # only the create
+      end
+    end
+
     it "returns 404 when the doctype does not exist" do
       with_temp_doctype("mig") do |db, domain, dt|
         doctype_id = "#{domain}.#{dt}"

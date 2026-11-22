@@ -13,19 +13,19 @@ d’un document porte l’id d’un artefact, pas les octets. Un champ longtext
 peut embarquer un lien `urn:facet:artifact:<id>`. Les lectures des octets
 passent par des URLs signées à durée de vie courte.
 
-> **Pour les agentsà :** À l’écriture, joignez avec
+> **Pour les agents :** À l’écriture, joignez avec
 > `POST /Api/<domain>/<doctype>` (ou `PATCH`) en `multipart/form-data` — une
 > part `$content` avec le JSON du document plus une part par champ `file`.
-> Hors documentà : `POST /Api/core/artifacts` avec une part `file`
+> Hors document : `POST /Api/core/artifacts` avec une part `file`
 > répond `201 {id, filename, mime_type, size, sha256}`.
-> `GET /Api/core/artifacts/:id` renvoie une `url` signée fraîche (TTL 1 hà ;
+> `GET /Api/core/artifacts/:id` renvoie une `url` signée fraîche (TTL 1 h ;
 > médias 6 h) ; forgez-en une autre avec
 > `POST /Api/core/artifacts/:id/grant`. Servez une origine d’app avec
 > `GET /Api/core/artifacts/:id/download?app=<APP_ID>` (`Origin` enregistrée).
 
 ## Quand l’utiliser
 
-Utilisez cette page quandà :
+Utilisez cette page quand :
 
 - Vous joignez des fichiers aux documents quand les utilisateurs
   enregistrent.
@@ -65,14 +65,14 @@ curl -s -X POST "https://facet.company.tld/Api/crm/Company" \
 ```
 
 La part `$content` porte le JSON du document. Chaque champ `file` voyage
-dans une part nommée d’après son chemin de champà : `logo`,
+dans une part nommée d’après son chemin de champ : `logo`,
 `avatars[0].file`, `items[0].file`. Le serveur téléverse les octets et place
 l’id de l’artefact dans le champ. Un échec annule ensemble les
 téléversements et le document.
 
 ### 2. Téléversez hors document, puis liez
 
-Quand le document n’existe pas encore, téléversez d’abordà :
+Quand le document n’existe pas encore, téléversez d’abord :
 
 ```sh
 curl -s -X POST "https://facet.company.tld/Api/core/artifacts" \
@@ -105,17 +105,17 @@ curl -s "https://facet.company.tld/Api/core/artifacts/01JARQ5G7X9K2M3N4P5Q6R7S8T
   -H "Authorization: Bearer $FACET_TOKEN"
 ```
 
-La réponse est la forme du téléversement plus deux membresà : `url`,
+La réponse est la forme du téléversement plus deux membres : `url`,
 l’URL signée qui sert le fichier, et `expires_at`. L’URL change à chaque
 lecture. `POST /Api/core/artifacts/:id/grant` forge une autre URL sans les
-métadonnées. Le TTL est calculé par le serveurà : 1 heure pour les
+métadonnées. Le TTL est calculé par le serveur : 1 heure pour les
 documents et les images, 6 heures pour l’audio et la vidéo.
 
 ### 4. Servez un fichier à un navigateur
 
 La passerelle de téléchargement fait la vérification d’authentification, la
 vérification de lecture et le forgeage, puis répond `302` vers l’URL
-signéeà :
+signée :
 
 ```http
 GET /Api/core/artifacts/01JARQ5G7X9K2M3N4P5Q6R7S8T/download?app=01JHQ9M4T8C3XK2PB5WY6RD7QF
@@ -126,7 +126,7 @@ app. Quand `?app=` est présent, la requête doit porter un en-tête `Origin`
 qui correspond à une origine autorisée enregistrée. La passerelle résout
 l’app depuis l’`Origin`, vérifie qu’il vaut la valeur de `?app=`, et lit
 sous le plafond d’attribution de l’app. Sans en-tête `Origin`, la partie
-`?app=` est ignoréeà : l’appel retombe sur une authentification par
+`?app=` est ignorée : l’appel retombe sur une authentification par
 cookie ou par bearer. Une requête sans aucun identifiant tourne sous le rôle
 `anonymous` créé par l’initialisation. La passerelle répond
 `Cache-Control: no-store`, donc chaque clic forge une attribution fraîche.
@@ -197,7 +197,7 @@ const bytes = await facet.artifacts.download(id); // suit le 302, renvoie les oc
   ignore le `Content-Type` du client. Un type inconnu devient
   `application/octet-stream`.
 - **La déduplication réutilise des octets que vous pouvez lire.** Des octets
-  identiques sous une provenance lisible sont réutilisésà ; l’écriture
+  identiques sous une provenance lisible sont réutilisés ; l’écriture
   dans le stockage est sautée.
 - **La route de service durcit les réponses.** Elle envoie `nosniff`, une
   Content Security Policy (CSP), et un `Content-Disposition` qui suit le
@@ -212,7 +212,7 @@ const bytes = await facet.artifacts.download(id); // suit le 302, renvoie les oc
 
 **Un téléchargement répond `403`.**
 
-Aucune provenance lisibleà : l’id n’est dans aucun document que vos
+Aucune provenance lisible : l’id n’est dans aucun document que vos
 identifiants peuvent lire. Liez-le dans un document que vous pouvez lire, ou
 lisez-le comme le compte qui l’a téléversé.
 
@@ -227,7 +227,7 @@ part.
 
 **Une URL signée a cessé de marcher.**
 
-Le TTL a expiré. Forgez-en une nouvelleà ; le serveur déduit le TTL du
+Le TTL a expiré. Forgez-en une nouvelle ; le serveur déduit le TTL du
 type MIME.
 
 **L’image s’affiche chez un collègue mais répond `403` dans votre app.**
@@ -246,5 +246,5 @@ deux.
   de l’origine que la passerelle vérifie.
 - [Outils pour agents](/fr/apps/agent-tools/) — `get_artifact` et
   `request_artifact_upload` pour les agents.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [artifact.md](https://github.com/wearefacet/facet/blob/main/doc/backend/artifact.md).

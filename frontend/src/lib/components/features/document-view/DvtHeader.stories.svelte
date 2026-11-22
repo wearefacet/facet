@@ -6,7 +6,7 @@
 	import { expect, fn, userEvent, within, waitFor } from 'storybook/test';
 	import DvtHeader from './DvtHeader.svelte';
 	import { MockDataDriver } from '$lib/datasource/MockDriver.js';
-	import type { ArtifactGrant } from '$lib/components/primitives/data/FileArtifact.svelte';
+	import type { ArtifactGrant } from '$lib/artifacts.js';
 	import type { DocumentMeta } from '$lib/datasource/types';
 	import type { DoctypeDef } from '$lib/doctype/types.js';
 
@@ -133,8 +133,8 @@
 		actions: []
 	};
 
-	// The base def plus a money field — the chip routes the stored
-	// `{value, currency}` object through the shared typed-text pipeline.
+	// The base def plus a money field — the chip formats the stored
+	// `{value, currency}` pair through the show page's money pipeline.
 	const moneyDef: DoctypeDef = {
 		...def,
 		fields: [...def.fields, { key: 'budget', type: 'money', currency: 'EUR' }]
@@ -575,8 +575,11 @@
 	{/snippet}
 </Story>
 
-<!-- F10-D: a chip bound to a money field renders "<currency> <value>" —
-     never the `String(value)` artifact. -->
+<!-- F10-D / F10-08: a chip bound to a money field renders through the same
+     `formatMoneyAmount` + `composeMoneyText` pair as the show page — the
+     symbol and grouped amount, never the bare ticker with the raw value and
+     never the `String(value)` artifact. The preview loader seeds the EUR row
+     (`€`, 2 digits, standard grouping). -->
 <Story
 	name="MoneyChip"
 	args={{
@@ -587,7 +590,8 @@
 	play={async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		await expect(canvas.getByText('Initech')).toBeVisible();
-		await expect(canvas.getByText('EUR 12.50')).toBeVisible();
+		await expect(canvas.getByText('€ 12.50')).toBeVisible();
+		await expect(canvas.queryByText('EUR 12.50')).toBeNull();
 		await expect(canvas.queryByText('[object Object]')).toBeNull();
 		await expect(canvas.queryByText('[Object Object]')).toBeNull();
 	}}

@@ -9,6 +9,7 @@
 	import { page } from '$app/state';
 	import { setSearchParams } from '$lib/utils/searchParams.js';
 	import { isSortableField, type DoctypeDef } from '$lib/doctype/types.js';
+	import { resolveColumnLabel } from '$lib/doctype/columnLabel.js';
 	import { SYSTEM_TIMESTAMP_FIELD_DEFS } from '$lib/doctype/filters.js';
 	import Table from '$lib/table/Table.svelte';
 	import Calendar from '$lib/calendar/Calendar.svelte';
@@ -294,14 +295,19 @@
 	}
 
 	/** Columns shown in the active tab — from the view's config, or fallback.
-	 * In trash mode a trailing Restore action column is appended. */
+	 * In trash mode a trailing Restore action column is appended.
+	 *
+	 * A saved column may carry no `label` — a view written by REST, an agent, or
+	 * an import stores the key alone, while the editor resolves `key → title`
+	 * before saving. `resolveColumnLabel` applies one rule at render time so both
+	 * doors show the same header: `label ?? field.title ?? humanize(key)`. */
 	const columns = $derived.by<Column<Record<string, unknown>>[]>(() => {
 		const cfg = activeView?.config?.columns;
 		const cols: Column<Record<string, unknown>>[] =
 			cfg && cfg.length > 0
 				? cfg.map((c) => ({
 						key: c.key,
-						label: c.label ?? c.key,
+						label: resolveColumnLabel(doctype, c.key, c.label),
 						width: c.width,
 						sortable: isSortableColumnKey(c.key),
 						// Inline boolean edit rides the view config; tombstone rows

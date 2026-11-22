@@ -1,5 +1,5 @@
 ---
-title: "Appsà : attributions ∩ rôles"
+title: "Apps : attributions ∩ rôles"
 description: Comment une app agit avec l’intersection de son attribution et du rôle élu de l’utilisateur.
 audience: [developer, admin]
 features: [RBC-08]
@@ -40,17 +40,17 @@ faire, pour chaque utilisateur.
 | Élément d’une entrée d’attribution | Contenu |
 | --- | --- |
 | `target` | un chemin de doctype concret, comme `crm.Contact` ; les cibles joker sont refusées |
-| action `name` | `read`, `write`, `delete`, ou une action nomméeà ; `write` se décompose en `create` et `update` |
+| action `name` | `read`, `write`, `delete`, ou une action nommée ; `write` se décompose en `create` et `update` |
 | action `required` | à `true`, un rôle qui n’a pas l’action ne peut pas utiliser l’app |
 
 À la connexion, l’utilisateur élit un rôle sur l’écran de consentement. Cet
-écran s’affiche toujours, même si l’utilisateur s’est déj à connecté. Facet
+écran s’affiche toujours, même si l’utilisateur s’est déjà connecté. Facet
 calcule ensuite le périmètre effectif. L’app ne peut tenter que ce qui se
 trouve dans les deux ensembles.
 
 **L’attribution plafonne même les utilisateurs puissants.** Un rôle admin
 atteint tous les doctypes. Par l’app, ce même admin n’atteint que ce que
-l’attribution nomme. L’attribution est un plafondà ; elle n’élargit jamais un
+l’attribution nomme. L’attribution est un plafond ; elle n’élargit jamais un
 rôle.
 
 **Un changement d’attribution s’applique à l’appel suivant.** Facet relit
@@ -82,7 +82,7 @@ actions manquantes. Élargissez ensuite le rôle, ou resserrez l’attribution.
 **Le compromis découle de la conception.** La même app peut marcher pour un
 utilisateur et échouer pour un autre. L’attribution est statique, tandis que
 le rôle élu varie selon l’utilisateur. Quand l’app échoue, vérifiez les deux
-côtésà : l’attribution sur le document d’app, et les lignes de permission du
+côtés : l’attribution sur le document d’app, et les lignes de permission du
 rôle élu.
 
 ## Voir aussi
@@ -94,4 +94,4 @@ rôle élu.
 - [Rôles, niveaux et garde-fou d’autorité](/fr/concepts/roles-levels-authority/) —
   le modèle de rôles d’où vient le rôle élu.
 - [Gouverner l’accès](/fr/govern/) — modifier les rôles qu’une app peut élire.
-- Internes sur GitHubà : [app-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/app-system.md).
+- Internes sur GitHub : [app-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/app-system.md).

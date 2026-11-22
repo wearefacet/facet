@@ -56,10 +56,10 @@ module Facet
     # Compiles parsed `ScopePredicate`s into SQL WHERE fragments against the
     # `projections` table. This is the single owner of scope → SQL
     # compilation: it serves `ReadEnforcer` (named-scope list path) and
-    # `ContextResolver` (context-set resolution), and exposes the scalar and
-    # LHS helpers that `ScopeMatcher` reuses for the in-process match path.
-    # All authorization surfaces therefore implement the same operator
-    # semantics.
+    # `ContextResolver` (context-set resolution), and serves the single-row
+    # gate (`EnforcerSupport.row_authorized?`) that answers one projection
+    # row against the same compiled clauses. All authorization surfaces
+    # therefore implement the same operator semantics.
     #
     # LHS: a normal field reads `content->>'field'`; the reserved
     # `$parent_id` token reads the system-managed parent linkage at
@@ -339,8 +339,7 @@ module Facet
       end
 
       # Resolves a Literal / OrganizationalUnit value to its bound string
-      # form. Public because `ScopeMatcher` resolves the same RHS forms for
-      # the in-process match path. `$self` is deliberately not resolved
+      # form. `$self` is deliberately not resolved
       # here: a single scalar cannot represent it, because its predicate
       # clauses accept both stored principal forms (see `self_forms`).
       def self.resolve_scalar(sv : ScopeValue, scope_context : ScopeContext) : String

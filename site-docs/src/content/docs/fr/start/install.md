@@ -14,7 +14,7 @@ essayer le produit, prenez la pile Docker Compose — voir
 
 ## Prérequis
 
-Installez d’abord ces outils. Le tableau dit à quoi chacun sertà :
+Installez d’abord ces outils. Le tableau dit à quoi chacun sert :
 
 | Outil                       | Notes                                                                                 |
 | --------------------------- | ------------------------------------------------------------------------------------- |
@@ -27,7 +27,7 @@ Installez d’abord ces outils. Le tableau dit à quoi chacun sertà :
 
 ## Récupérer le code
 
-Clonez le dépôtà :
+Clonez le dépôt :
 
 ```sh
 git clone https://github.com/wearefacet/facet.git
@@ -44,7 +44,7 @@ Deux fichiers portent la configuration :
 
 ## Amorcer
 
-Lancez les trois scripts dans l’ordreà :
+Lancez les trois scripts dans l’ordre :
 
 ```sh
 scripts/init              # crée la base, applique les migrations, initialise les doctypes de base + un admin de dev
@@ -63,7 +63,7 @@ effacer à tout moment — la plateforme le refuse en production.
 
 ## Ce qui tourne
 
-Trois processus servent la pileà :
+Trois processus servent la pile :
 
 <!-- d2
 caddy: Caddy
@@ -89,7 +89,7 @@ frontend `:5173`).
 
 ## Commandes du quotidien
 
-Backend (à  la racine du dépôt) :
+Backend (à la racine du dépôt) :
 
 | Commande                            | But                                                                      |
 | ----------------------------------- | ------------------------------------------------------------------------ |
@@ -105,7 +105,7 @@ Frontend (dans `frontend/`) :
 | ---------------- | -------------------------------------------------------------- |
 | `pnpm check`     | `svelte-check` — types, syntaxe Svelte, accessibilité.          |
 | `pnpm lint`      | Prettier + ESLint.                                             |
-| `pnpm test`      | Vitestà : logique pure + fonctions play des stories Storybook.             |
+| `pnpm test`      | Vitest : logique pure + fonctions play des stories Storybook.             |
 | `pnpm storybook` | L’atelier de composants.                                       |
 
 ## Pour aller plus loin

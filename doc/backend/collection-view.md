@@ -15,12 +15,15 @@ This is distinct from `core.DocumentView` (the per-**document** presentation tem
 | `data/seeds/core.DocType/definition.yml` (`children.collection_view`) | Declares CollectionView as a child of `core.DocType`                                   |
 | `src/doctype/collection_view_defaults.cr`                             | `CollectionView::Defaults` — the seeded "All Records" view builder (columns + content) |
 | `src/doctype/collection_view_title_template.cr`                       | `CollectionView::TitleTemplate` — authoring-time calendar title-template validation    |
+| `src/document/collection_view_gate.cr`                                | `Document::CollectionViewGate` — write-time `config` validation against the parent doctype |
+| `src/document/collection_view_gate.cr`                                | `Document::CollectionViewGate` — per-surface `config` rules at the write doors and in `/check` |
 | `src/rbac/read_enforcer.cr`                                           | OR-joined scope expansion (general + personal) via `list_where_clauses`                |
 | `src/document/list.cr`                                                | Threads RBAC scope clauses into the listing SQL                                        |
 | `spec/integration/collection_view_spec.cr`                            | Schema, HTTP child CRUD, RBAC scoped behavior                                          |
 | `spec/doctype/collection_view_default_spec.cr`                        | Default-view seed rule + idempotent re-seed                                            |
 | `spec/doctype/collection_view_title_template_spec.cr`                 | Title-template validator unit rule set                                                 |
 | `spec/doctype/collection_view_title_template_gate_spec.cr`            | Write-path gate: create / update / rename on the merged document                       |
+| `spec/document/collection_view_gate_spec.cr`                          | Write-path `config` gate: per-surface rules, replace-on-write                          |
 
 ## Routes
 
@@ -49,6 +52,31 @@ The list route serves the whole child collection: it takes no `page` / `items` (
 | `config`   | `object`                    | —        | Surface-specific config. For `table`: `{ columns: [{ key, label?, width?, editable? }] }`. For `calendar`: `{ calendar: { discriminator, end_field?, color_by?, title_template?, week_start } }`. For `kanban`: `{ kanban: { mode, group_by?, lanes?: [{ label, color?, filter }], filters?, sort?, page_size? } }` |
 | `owner_id` | `reference` (`iam.Account`) | —        | Creator account id for personal views; null for general views. Forced by the Lua create hook from the matched permission's scope; **immutable** after create                                                                                                                                                        |
 
+## Config validation
+
+On every create, and on an update whose patch carries `config`, the `config`
+is validated against the **parent** doctype's definition
+(`Document::CollectionViewGate`). An unusable config answers `422` with field
+paths instead of landing and rendering an empty surface. The rules, per
+`surface`, mirror the frontend editor (`frontend/src/lib/collectionView/config.ts`):
+
+| Surface    | Rule |
+|---|---|
+| `table`    | at least one column; every column `key` is a declared parent field or a system timestamp (`created_at` / `updated_at`) |
+| `calendar` | `discriminator` exists and serves the window filter — a `period` / `dateperiod` range type, or a `date` / `datetime` field with both `gte` and `lte` |
+| `kanban`   | `mode` is `values` or `custom`; `values` needs a `group_by` that exists, is writable, is `enum` / `boolean`, and serves `eq`; `custom` needs at least one lane |
+
+The public entry points are `CollectionViewGate.errors(db, parent_id, document)`
+(reads `config` and `surface` from the content) and
+`CollectionViewGate.errors(db, parent_id, config, surface)` (the update door,
+which passes the submitted config). `CollectionViewGate.validate(config,
+surface, definition)` is the pure rule set with no database access.
+
+`config` **replaces on write**: a PATCH that carries `config` replaces the
+stored object instead of merging into it (see [mutation.md](mutation.md) →
+Write-time coalescing and the `Document::Update` replace-on-write set), so the
+gate validates the submitted config, never a merge product.
+
 ## Title template validation
 
 On every create, and on an update whose patch touches `config`, the calendar
@@ -69,6 +97,20 @@ the API refuses to re-save.
 
 The template renders client-side only — see
 [`frontend/templating.md`](../frontend/templating.md) for the render rules.
+
+## Config validation
+
+`Document::CollectionViewGate` validates the `config` against the parent doctype's definition on create, and on an update whose patch touches `config`. Each surface has its own rule, mirroring the frontend editor (`frontend/src/lib/collectionView/config.ts`):
+
+| Surface    | Rule |
+| ---------- | ---- |
+| `table`    | at least one column; every column `key` is declared on the parent doctype (or is `created_at` / `updated_at`) |
+| `calendar` | `discriminator` exists and serves the window filter — a `period` / `dateperiod` range type, or a `date` / `datetime` that serves `gte` + `lte` (the `comparison` capability) |
+| `kanban`   | `mode` is `values` or `custom`; `values` needs a `group_by` that exists, is writable, is `enum` / `boolean`, and serves `eq` (the `equality` capability); `custom` needs at least one lane |
+
+A failure answers `422` with the `config.…` field path and a code (`required`, `unknown_field`, `unsupported_field`, `invalid_value`).
+
+`GET /Api/core/DocType/:id/check` runs the same rule set (`CollectionViewGate.validate`) on every live view and reports each failure as a `:view` **warning**, naming the view, the field, and the capability it lacks — the check endpoint never blocks. See [`doctype-system.md`](doctype-system.md) → Doctype::Check.
 
 ## Scopes
 

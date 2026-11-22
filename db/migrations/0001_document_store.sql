@@ -822,8 +822,8 @@ CREATE TRIGGER trg_after_mutation_insert
 -- Periodic snapshot trigger on mutations.
 --
 -- After every mutation insert, checks if the mutation's idx is a multiple
--- of the configured snapshot interval (default 25). If so, reads the current
--- projection state and creates a snapshot mutation.
+-- of the configured snapshot interval. If so, reads the current projection
+-- state and creates a snapshot mutation.
 --
 -- This replaces the Crystal-level Audit::Snapshot.after_mutation calls,
 -- guaranteeing snapshots for ALL mutation paths (create, update, delete,
@@ -833,10 +833,14 @@ CREATE TRIGGER trg_after_mutation_insert
 -- projection dispatch above): a bypassed insert — the compaction snapshot
 -- or a coalesced update — never produces a periodic snapshot.
 --
--- The snapshot interval is configurable via the facet.snapshot_interval
--- parameter. To change it:
---   ALTER DATABASE facet SET facet.snapshot_interval TO 10;
--- (Default 10, matching the Crystal Config default.)
+-- Snapshot interval, in resolution order:
+--   1. harness.snapshot_every — staged per transaction by
+--      Mutation::Client.insert_mutation from the YAML config
+--      (`snapshot_every`), the single source of truth.
+--   2. facet.snapshot_interval — the DB-level operator override
+--      (ALTER DATABASE facet SET facet.snapshot_interval TO 10;).
+--   3. 10 — the last-resort fallback for a writer that stages nothing
+--      (raw SQL, the seed).
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION periodic_snapshot()
 RETURNS trigger
@@ -856,8 +860,11 @@ BEGIN
         RETURN NEW;
     END IF;
 
-    -- Read the snapshot interval from database config, default 10
-    snap_interval := current_setting('facet.snapshot_interval', true)::int;
+    snap_interval := COALESCE(
+        NULLIF(current_setting('harness.snapshot_every', true), '')::int,
+        NULLIF(current_setting('facet.snapshot_interval', true), '')::int,
+        10
+    );
     IF snap_interval IS NULL OR snap_interval <= 0 THEN
         snap_interval := 10;
     END IF;
@@ -867,9 +874,10 @@ BEGIN
         RETURN NEW;
     END IF;
 
-    -- Fetch current projection content. Skip tombstoned rows: their content
-    -- is cleared on delete (see projection_from_delete), so snapshotting
-    -- would persist an empty payload. A snapshot is deferred until the
+    -- Fetch current projection content. Skip tombstoned rows: a delete
+    -- tombstone keeps its pre-delete payload (the prune cron clears it
+    -- later), so snapshotting it would persist a stale payload as a fresh
+    -- checkpoint of a live document. A snapshot is deferred until the
     -- document is resurrected (create-upsert or Audit::Rollback).
     SELECT content, meta, version, created_at
     INTO proj_record

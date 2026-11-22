@@ -1,6 +1,6 @@
 ---
 title: Réponses d’erreur
-description: "Formes des réponses d’erreurà : 422 de validation, échecs d’authentification et 404 sans divulgation."
+description: "Formes des réponses d’erreur : 422 de validation, échecs d’authentification et 404 sans divulgation."
 audience: [developer, operator]
 features: [PLT-13]
 sidebar:
@@ -41,23 +41,23 @@ refus permet à un appelant de conclure.
 | `405` | Le chemin répond à d’autres méthodes. | Porte l’en-tête `Allow` ; le message nomme le même ensemble. |
 | `409` | Une écriture concurrente a perdu la course d’ordonnancement, un enregistrement de doctype en double, ou un conflit d’état comme restaurer un document non supprimé. | `{"error": "Concurrent write on this document — retry the request"}` pour la course d’écriture. Renvoyez la même requête. |
 | `410` | Le document existe sous forme de pierre tombale. | Porte `X-Document-Deleted: true`, plus `display_name` et `deleted_at` quand ils sont connus. |
-| `415` | La requête déclare un type de média non JSON l à où la route attend du JSON. | |
+| `415` | La requête déclare un type de média non JSON là où la route attend du JSON. | |
 | `422` | La validation a échoué, le corps a une forme incorrecte, ou un paramètre de requête est inconnu. | Porte `details` quand la validation de champs a échoué. |
 | `500` | Une défaillance inattendue. | Toujours `{"error": "Internal server error"}` — jamais le texte d’une exception. Les détails vont dans le journal du serveur. |
 | `503` | Un agrégat de liste a dépassé le timeout d’instruction. | Réessayez avec un filtre plus étroit. |
 
 ## Forme de validation 422
 
-Chaque entrée de `details` décrit une valeur rejetéeà :
+Chaque entrée de `details` décrit une valeur rejetée :
 
 | Champ | Présence | Contenu |
 | --- | --- | --- |
-| `field` | quand l’erreur nomme un champ | Chemin séparé par des points. Les indices de tableau sont des segments numériques nusà : `items.3.name`. |
+| `field` | quand l’erreur nomme un champ | Chemin séparé par des points. Les indices de tableau sont des segments numériques nus : `items.3.name`. |
 | `message` | toujours | Le texte de repli en anglais. |
 | `code` | quand le producteur en appose un | Une étiquette machine stable sur laquelle se brancher. |
 | `params` | quand le code est un gabarit | Un objet `{name: value}` à plat avec les interpolations. |
 
-Les codes stablesà :
+Les codes stables :
 
 | Code | Signification |
 | --- | --- |
@@ -85,7 +85,7 @@ Branchez sur `code`, jamais sur le texte de `message`.
 ### Exemple
 
 Une création qui envoie une valeur d’énumération que le doctype ne déclare
-pasà :
+pas :
 
 ```sh
 curl -X POST -H "Authorization: Bearer $FACET_API_KEY" \
@@ -94,7 +94,7 @@ curl -X POST -H "Authorization: Bearer $FACET_API_KEY" \
   "https://facet.example.com/Api/helpdesk/Ticket"
 ```
 
-La réponse està :
+La réponse est :
 
 ```json
 {
@@ -115,12 +115,12 @@ La réponse està :
 ```
 
 Un client qui exploite `params` peut afficher le refus dans la langue de
-l’utilisateurà ; sinon, il affiche `message`.
+l’utilisateur ; sinon, il affiche `message`.
 
 ## 404 sans divulgation
 
 Une lecture ou une écriture de document répond de l’une de ces trois
-façonsà :
+façons :
 
 | Situation | Réponse |
 | --- | --- |
@@ -130,14 +130,14 @@ façonsà :
 
 Le `404` est délibérément sans divulgation : un document inaccessible est
 indistinguable d’un document absent. Un appelant peut conclure que l’id ne
-désigne aucun document lisible. Un appelant ne peut rien conclure surà :
+désigne aucun document lisible. Un appelant ne peut rien conclure sur :
 
 - si le document existe,
 - qui peut le voir,
 - pourquoi le périmètre n’a pas correspondu.
 
 Ce contrat protège les documents dont les ids sont énumérables. Gardez-le
-intact dans votre propre gestion d’erreursà :
+intact dans votre propre gestion d’erreurs :
 
 - Affichez le même corps pour les deux causes.
 - Ne sondez pas les ids pour cartographier la portée d’un rôle — chaque refus
@@ -151,7 +151,7 @@ ensemble vide.
 
 | Situation | Réponse |
 | --- | --- |
-| Aucun identifiant | La requête tourne sous le rôle `anonymous` créé par l’initialisation. Ses droits de lecture sont la surface publiqueà ; tout ce qui les dépasse répond `403`. |
+| Aucun identifiant | La requête tourne sous le rôle `anonymous` créé par l’initialisation. Ses droits de lecture sont la surface publique ; tout ce qui les dépasse répond `403`. |
 | Un identifiant est présenté mais invalide — expiré, signature erronée, en-tête `Authorization` inexploitable, schéma inconnu | `401` `{"error": "Authentication required"}`. Un identifiant cassé ne bascule jamais vers l’accès anonyme. |
 | Un refus de permission sur une route de document ou de fonctionnalité | `403` `{"error": "Forbidden"}`. |
 | Une requête qui change l’état, depuis une session cookie, sans l’en-tête `X-Requested-With` | `403` `{"error": "CSRF: Missing X-Requested-With header"}`. |

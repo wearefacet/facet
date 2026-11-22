@@ -9,7 +9,7 @@ verified_at: fd345fe3
 ---
 
 Une notification est un message court dans le menu de la cloche d’une
-personne, qui pointe vers un document. Deux chemins les créentà : vous tapez
+personne, qui pointe vers un document. Deux chemins les créent : vous tapez
 `@` dans un commentaire, ou un script en envoie une. Cette page couvre les
 deux, plus l’interrupteur qui les rend muettes.
 
@@ -24,7 +24,7 @@ deux, plus l’interrupteur qui les rend muettes.
 
 - **Pour les mentions @ :** écrivez un commentaire sur n’importe quel
   document. Voir [Commentaires et pièces jointes](/fr/workspace/comments-attachments/).
-- **Pour les notifications par scriptà :** vous écrivez du Lua dans un script
+- **Pour les notifications par script :** vous écrivez du Lua dans un script
   de doctype ou un hook.
 
 ## Étapes
@@ -42,7 +42,7 @@ texte.
 2. Activez ou désactivez **Notifications dans l’application**.
 
 La désactivation coupe la cloche, le badge et le panneau en temps réel. Rien
-ne se perdà : Facet enregistre toujours les notifications, et la réactivation
+ne se perd : Facet enregistre toujours les notifications, et la réactivation
 affiche ce qui est arrivé pendant la coupure.
 
 ### 3. Envoyer depuis un script
@@ -113,11 +113,11 @@ reste non lue jusqu’à ce qu’elle la lise ou la rejette.
 **Une mention n’a produit aucune notification.**
 
 Vous vous êtes mentionné, ou le nom n’a pas été choisi dans la liste. Seule
-une mention en « chip » envoieà ; le texte brut n’envoie rien.
+une mention en « chip » envoie ; le texte brut n’envoie rien.
 
 **La cloche ne montre rien de nouveau.**
 
-La préférence est peut-être désactivée, ou la notification était déj à lue.
+La préférence est peut-être désactivée, ou la notification était déjà lue.
 Vérifiez dans Paramètres → Notifications.
 
 **Mon envoi par script échoue avec une erreur de validation.**

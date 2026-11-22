@@ -32,6 +32,8 @@ The site has no spec suite. `npm run build` is the gate: the `prebuild` hook run
 | `public/diagrams/`     | Built diagram SVGs — generated, not edited |
 | `src/scripts/copy-as-markdown.ts` | Client script behind the "Copy as markdown" button           |
 | `src/components/PageTitle.astro` | Starlight override: page title + the "Copy as markdown" button |
+| `src/components/Hero.astro` | Starlight override: the landing-page hero — title, tagline and actions from front-matter, animated gem in place of an image |
+| `src/components/landing/` | The landing-page blocks: `SectionHead`, `Pillar`, `FlowDiagram`, `Door`, `LandingGrid`, `Closing`, `FacetGem` — see [Landing page](#landing-page) |
 | `src/styles/global.css`  | Tailwind + Starlight compatibility CSS, app theme token mapping |
 | `scripts/emit-md.mjs`    | Postbuild step: copies every page into `dist/` as a raw `.md` twin |
 | `scripts/emit-robots.mjs` | Postbuild step: emits `dist/robots.txt` from the site URL |
@@ -62,7 +64,32 @@ Eleven sections, ordered by persona journey, not by backend module. The sidebar 
 | `compare/`   | Compare             | evaluator           | `compare/index.md`    |
 | `changelog/` | Changelog           | operator, developer | `changelog/index.md`  |
 
-Each section directory holds an `index.md` overview: one paragraph plus the list of pages the section plan adds. The landing page (`index.mdx`, splash template) links the three entry doors: `/start/`, `/tutorials/`, `/operate/`.
+Each section directory holds an `index.md` overview: one paragraph plus the list of pages the section plan adds. The landing page (`index.mdx`, splash template) opens the site: the three promises as pillar cards, an animated flow diagram, and the three entry doors — `/start/`, `/tutorials/`, `/operate/`. See [Landing page](#landing-page).
+
+## Landing page
+
+The landing page is the site's front door. Two pages share it: `src/content/docs/index.mdx` (English) and `src/content/docs/fr/index.mdx` (French). Both use the `template: splash` front-matter, which hides the sidebar, and a `hero` front-matter key, which turns on the Hero override.
+
+| File | Covers |
+| --- | --- |
+| `src/components/Hero.astro` | The Starlight `Hero` override. It keeps the default hero contract — title, tagline, and actions come from the `hero` front-matter, and the h1 keeps the `_top` anchor — and swaps the optional image for the animated gem (`FacetGem`). The localized eyebrow lives in the component. |
+| `src/components/landing/FacetGem.astro` | The animated gem: the logo geometry assembling facet by facet, with app cards, wires and orbiting data points. |
+| `src/components/landing/SectionHead.astro` | A section heading: eyebrow, h2, optional lead paragraph (the slot). |
+| `src/components/landing/Pillar.astro` | One promise card — `data`, `permissions` or `history` — with a small looping illustration. |
+| `src/components/landing/FlowDiagram.astro` | The "how it fits" diagram: apps → Facet layers → domains, with travelling packets. All labels are props. |
+| `src/components/landing/Door.astro` | An entry-door card (Evaluate / Build / Operate): icon, step number, hover reveal. |
+| `src/components/landing/LandingGrid.astro` | The responsive grid for card rows; the `min` prop sets the column floor (default `15rem`). |
+| `src/components/landing/Closing.astro` | The closing call-to-action band: title and links (the slot) over a drifting gem pattern. |
+
+Rules:
+
+- **All words live in the pages.** The `.mdx` files hold every sentence, so the raw `.md` twin stays the readable source for agents. `FlowDiagram` takes its labels as props so each locale passes its own words; `Hero` keeps only the eyebrow inside the component.
+- **Components opt out of prose styling** with the `not-content` class. Starlight's markdown styles would otherwise fight the component CSS.
+- **Every animation sits behind `prefers-reduced-motion`**, including the SMIL packets, which hide under it. With motion off, the page must read complete.
+- **Colours come from the theme tokens** — `--accent`, `--surface-2`, `--border`, `--sunken`, and friends. The few fixed golds (`#c26f22`, `#d9822b`, `#f2c14e`, `#e8a33d`, `#9a4f12` for light, plus `#f8dc94` and `#b8621b` for dark) copy the two logo lockups (`src/assets/facet-lockup-*.svg`); update the components when the lockups move.
+- **Hero pages get a wider column.** `:root[data-has-hero]` in `src/styles/global.css` raises `--sl-content-width` to `68rem` and clips the hero backdrop bleed with `overflow-x: clip` on `main`.
+
+The Hero override applies to any page with a `hero` front-matter key; today that is the two landing pages only.
 
 ## Page front-matter
 

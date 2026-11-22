@@ -12,10 +12,13 @@ module Facet
     # The Prometheus scrape endpoint: `GET /metrics`.
     #
     # Access is deliberately unauthenticated (like `/Healthcheck`): the
-    # dev Caddyfile does not route `/metrics` to the backend, so the
+    # edge Caddyfiles do not route `/metrics` to the backend, so the
     # endpoint is only reachable on the backend origin of the private
     # network — that is also the scrape address to configure (e.g.
-    # `http://127.0.0.1:3000/metrics`). See `doc/backend/metrics.md`.
+    # `http://127.0.0.1:3000/metrics`). Through the edge, `/metrics`
+    # answers a bare 404 for every method (a reserved probe name, never
+    # the SPA fallback), and `/Healthcheck` is the edge readiness probe.
+    # See `doc/backend/metrics.md`.
     #
     # Counters accumulate through hooks in the application code; the
     # gauges below are scrape-time views over existing process state and

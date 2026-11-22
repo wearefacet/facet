@@ -395,11 +395,14 @@ module Facet
           RBAC::AuthContext.system,
           cause: Mutation::Cause.root(Mutation::CauseKind::Seed),
         )
-        return doctype_id if result.is_a?(Doctype::Update::Result)
+        # A no-op re-save answers `200` with the unchanged projection
+        # (`Result#unchanged`): the stored definition already matches the
+        # seed, so this is not an update to report.
+        if result.is_a?(Doctype::Update::Result)
+          return result.unchanged ? nil : doctype_id
+        end
 
         error = result.as(Facet::ServiceError)
-        return nil if error.status == 422 && error.message == Update::NO_CHANGES_MESSAGE
-
         detail = error.details.try(&.map(&.message).join("; "))
         raise "Seed update for #{doctype_id} failed: #{error.message}#{detail ? " (#{detail})" : ""}"
       end

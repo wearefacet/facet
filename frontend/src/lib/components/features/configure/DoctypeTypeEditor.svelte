@@ -4,11 +4,7 @@
 <script lang="ts">
 	import type { FieldDef } from '$lib/doctype/types.js';
 	import { humanize } from '$lib/doctype/types.js';
-	import {
-		defaultFilterCapabilities,
-		validFilterCapabilities,
-		type FilterCapability
-	} from '$lib/doctype/capabilities.js';
+	import { validFilterCapabilities, type FilterCapability } from '$lib/doctype/capabilities.js';
 	import { hashColor } from '$lib/utils/color.js';
 	import Input from '../../primitives/forms/Input.svelte';
 	import Select from '../../primitives/forms/Select.svelte';
@@ -63,18 +59,6 @@
 	/** Capabilities the author may pick for a field of the given type. */
 	function capabilitiesFor(type: string): FilterCapability[] {
 		return validFilterCapabilities(type);
-	}
-
-	/**
-	 * Re-seeds the capability set when the field's type changes. The old
-	 * set may carry capabilities the new type may not declare (the backend
-	 * validator would reject them), and a fresh type should start from the
-	 * same filterable-by-default state as a freshly added field.
-	 */
-	function applyCapabilityDefaults(type: string) {
-		if (!field || readonly) return;
-		const caps = defaultFilterCapabilities(type);
-		field.filters = caps.length > 0 ? [...caps] : undefined;
 	}
 
 	// ── Enum helpers ──────────────────────────────────────────────────────

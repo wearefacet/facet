@@ -105,6 +105,21 @@
 	});
 </script>
 
+<script lang="ts">
+	// Late-resolved label fixture: the selected value starts on the fallback
+	// label (the bare ticker), then the "registry" resolves the display name
+	// after mount — the shape the currency picker hits when its lazy load
+	// lands after the first render.
+	let lateResolved = $state(false);
+	$effect(() => {
+		const id = setTimeout(() => (lateResolved = true), 30);
+		return () => clearTimeout(id);
+	});
+	const lateResolvedOptions = $derived<SelectOption[]>(
+		lateResolved ? [{ value: 'EUR', label: 'Euro' }] : [{ value: 'EUR', label: 'EUR' }]
+	);
+</script>
+
 <!-- 1. Default ----------------------------------------------------------- -->
 <Story
 	name="Default"
@@ -516,3 +531,33 @@
 		expect(args.onValueChange).not.toHaveBeenCalled();
 	}}
 />
+
+<!-- 19. Late-resolved label re-syncs the input (F07-05 currency registry) -- -->
+<!-- A lazily loaded option list resolves the selected value's display label -->
+<!-- after the first render (the currency registry load). The input must -->
+<!-- follow the resolved label, not stay on the raw value. -->
+<Story
+	name="LateResolvedLabel"
+	args={{}}
+	play={async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const input = canvas.getByLabelText('Currency');
+		// Starts on the fallback label (the bare ticker)…
+		await expect(input).toHaveValue('EUR');
+		// …then the registry resolves the display name.
+		await waitFor(() => {
+			expect(input).toHaveValue('Euro');
+		});
+	}}
+>
+	{#snippet template()}
+		<div style="padding: 24px; max-width: 360px;">
+			<Select
+				label="Currency"
+				value="EUR"
+				options={lateResolvedOptions}
+				placeholder="Pick a currency…"
+			/>
+		</div>
+	{/snippet}
+</Story>

@@ -10,26 +10,26 @@ verified_at: a77c6171
 
 Un seul WebSocket porte chaque changement que votre app observe. Vous vous
 abonnez à un document ou à une collection entière, et Facet pousse une petite
-trame à chaque mutation. Les trames sont des indications, pas un étatà :
+trame à chaque mutation. Les trames sont des indications, pas un état :
 rechargez via l’API REST ce à quoi vous vous abonnez — voir
 [Utiliser l’API REST](/fr/apps/rest-api/).
 
-> **Pour les agentsà :** Ouvrez `wss://<host>/Ws` avec les sous-protocoles
+> **Pour les agents :** Ouvrez `wss://<host>/Ws` avec les sous-protocoles
 > `["facet-ws-v1", <app JWT>]`. Abonnez-vous avec
 > `{"action": "subscribe", "args": ["/crm/Company/<id>"]}` ; un chemin à deux
 > segments vise la collection entière. Les trames portent
 > `{channel, event, payload.id, headers}` ; reconnaissez le `channel` par
 > préfixe (le nom de l’événement est ajouté) et rechargez à chaque trame — il
-> n’y a pas de rejeu. Codes de fermetureà : `4401` token invalide, `4403`
+> n’y a pas de rejeu. Codes de fermeture : `4401` token invalide, `4403`
 > origine non enregistrée.
 
 ## Quand l’utiliser
 
-Utilisez le socket quandà :
+Utilisez le socket quand :
 
 - Vous affichez un document ou une liste que d’autres personnes modifient en
   même temps.
-- Vous voulez un flux de changements à peu de fraisà : les trames portent des
+- Vous voulez un flux de changements à peu de frais : les trames portent des
   ids, jamais le contenu.
 - Vous devez réagir à une action nommée, par exemple `closed` sur un deal.
 
@@ -39,10 +39,10 @@ Utilisez le socket quandà :
   enregistrée sur une app active — voir
   [CORS et origines autorisées](/fr/apps/cors-origins/). Si l’origine n’est
   enregistrée nulle part, le socket se ferme avec `4403`.
-- Un identifiant que le handshake peut porterà : un JWT d’app dans la liste des
+- Un identifiant que le handshake peut porter : un JWT d’app dans la liste des
   sous-protocoles, ou une clé statique `fct_` sur l’en-tête `Authorization`
   seulement.
-- Les chemins à observerà : un document, un enfant imbriqué, ou une collection
+- Les chemins à observer : un document, un enfant imbriqué, ou une collection
   entière.
 
 ## Étapes
@@ -51,14 +51,14 @@ Utilisez le socket quandà :
 
 L’endpoint est `wss://<host>/Ws`. Un navigateur ne peut pas poser d’en-tête
 `Authorization` sur une requête d’upgrade, donc le token voyage dans la liste
-des sous-protocolesà :
+des sous-protocoles :
 
 ```js
 const ws = new WebSocket("wss://facet.company.tld/Ws", ["facet-ws-v1", accessToken]);
 ```
 
 Facet répond `101` et renvoie `facet-ws-v1` en écho. Trois transports
-existentà :
+existent :
 
 | Transport               | Identifiant                | Notes |
 | ----------------------- | -------------------------- | ----- |
@@ -67,14 +67,14 @@ existentà :
 | Cookie de session       | Session navigateur         | Le frontend de Facet lui-même. Le cookie ne circule pas entre sites. |
 
 Un token lié à DPoP ne peut pas présenter sa preuve sur le transport par
-sous-protocolesà ; ce handshake se solde par un refus avec `4401`. Voir
+sous-protocoles ; ce handshake se solde par un refus avec `4401`. Voir
 [Liaison des tokens par DPoP](/fr/apps/dpop/). Deux codes de fermeture mettent
-fin au socketà : `4401` pour un token absent ou invalide, et `4403` pour une
+fin au socket : `4401` pour un token absent ou invalide, et `4403` pour une
 `Origin` refusée.
 
 ### 2. Abonnez-vous à un chemin
 
-Envoyez une trame JSONà:
+Envoyez une trame JSON :
 
 ```json
 {"action": "subscribe", "args": ["/crm/Company/crm.Company.abc", "/crm/Company"]}
@@ -92,12 +92,12 @@ Un chemin qui se termine sur un nom de relation, par exemple
 serveur le refuse.
 
 Le serveur n’envoie aucun accusé de réception d’abonnement. Un refus répond
-par une trame d’erreur dans le flux, avec un message qui ne divulgue rienà ;
+par une trame d’erreur dans le flux, avec un message qui ne divulgue rien ;
 le socket reste ouvert.
 
 ### 3. Recevez les trames
 
-Une trame ressemble à cecià :
+Une trame ressemble à ceci :
 
 ```json
 {
@@ -110,7 +110,7 @@ Une trame ressemble à cecià :
 
 `payload` porte l’id du document seulement, jamais le contenu. `headers` nomme
 la mutation, l’acteur et le doctype. Sur un abonnement de collection, le canal
-ne porte pas d’id de documentà : `fanout:crm.Company:created`.
+ne porte pas d’id de document : `fanout:crm.Company:created`.
 
 Rattachez les trames aux abonnements par **préfixe** de canal, jamais par
 égalité. Le serveur ajoute le nom de l’événement à la fin du canal.
@@ -125,7 +125,7 @@ Rattachez les trames aux abonnements par **préfixe** de canal, jamais par
 
 Sur `created`, `updated` ou `deleted`, rechargez le document ou la liste. Sur
 `child_changed`, rechargez le parent. Après une reconnexion, rechargez la
-liste complèteà : le serveur ne délivre aucun rejeu.
+liste complète : le serveur ne délivre aucun rejeu.
 
 :::caution[Les trames sont des indications]
 Le serveur ne conserve rien en cas de coupure. Ne stockez aucun état issu des
@@ -134,7 +134,7 @@ trames. Rechargez ce à quoi vous vous abonnez avant d’agir dessus.
 
 ### 5. Désabonnez-vous
 
-Envoyez le chemin, ou `*` pour lever tous les abonnements du socketà :
+Envoyez le chemin, ou `*` pour lever tous les abonnements du socket :
 
 ```json
 {"action": "unsubscribe", "args": ["/crm/Company/crm.Company.abc"]}
@@ -146,7 +146,7 @@ Fermer le socket retire aussi tous les abonnements.
 ## Exemple
 
 Ce script navigateur ouvre le socket, s’abonne à un document et à sa
-collection, et recharge à chaque trameà :
+collection, et recharge à chaque trame :
 
 ```js
 // À exécuter sur une origine enregistrée. accessToken vient de votre connexion
@@ -234,7 +234,7 @@ complète.
 
 **La promesse `subscribe()` du SDK ne se conclut jamais.**
 
-Elle se conclut au premier message attribuableà : une trame de données la
+Elle se conclut au premier message attribuable : une trame de données la
 résout, une trame d’erreur la rejette. Sur un canal silencieux, elle reste en
 attente. Ne l’attendez pas quand cela compte.
 
@@ -247,5 +247,5 @@ attente. Ne l’attendez pas quand cela compte.
   d’origines autorisées que le handshake vérifie.
 - [Liaison des tokens par DPoP](/fr/apps/dpop/) — pourquoi un token lié a
   besoin du transport par en-tête.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [websocket.md](https://github.com/wearefacet/facet/blob/main/doc/backend/websocket.md).

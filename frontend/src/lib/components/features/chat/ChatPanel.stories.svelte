@@ -215,6 +215,7 @@
 	const meterAssistant = new MockAssistantDriver(defaultScripts, {
 		usage: {
 			total: 62000,
+			estimated_total: 9000,
 			budget: 100000,
 			window_start: '2026-09-19T00:00:00.000Z',
 			window_days: 30

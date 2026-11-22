@@ -367,9 +367,9 @@
 	}}
 />
 
-<!-- A no-op Save must not render a failure. The backend refuses a
-	definition that diffs empty with a 422 "No changes detected …"; the
-	editor presents it as the neutral saved state. -->
+<!-- A no-op Save is a success, not a failure. The backend answers 200 with
+	the unchanged projection when the definition diffs empty; the editor
+	presents it as the neutral saved state. -->
 <Story
 	name="Templated — no-op save is neutral"
 	args={{
@@ -386,13 +386,10 @@
 				input.includes('/Api/core/DocType/') &&
 				init?.method === 'PUT'
 			) {
-				return new Response(
-					JSON.stringify({ error: 'No changes detected in doctype definition' }),
-					{
-						status: 422,
-						headers: { 'Content-Type': 'application/json' }
-					}
-				);
+				return new Response(JSON.stringify({ mid: 'unchanged-mid' }), {
+					status: 200,
+					headers: { 'Content-Type': 'application/json' }
+				});
 			}
 			return originalFetch.call(window, input, init);
 		};

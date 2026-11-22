@@ -10,7 +10,7 @@ verified_at: fd345fe3
 
 Les domaines gardent leurs données séparées. Deux outils ouvrent une porte
 contrôlée entre eux. Une **attribution de domaine** est un contrat de
-consentementà : le domaine producteur nomme un consommateur et les ressources
+consentement : le domaine producteur nomme un consommateur et les ressources
 que celui-ci peut lire. Un **champ répliqué** copie une valeur d’un document
 source dans le document du consommateur, qui l’affiche sans aller-retour.
 
@@ -24,7 +24,7 @@ source dans le document du consommateur, qui l’affiche sans aller-retour.
 
 ## Avant de commencer
 
-- **Deux côtés.** Décidez quel côté porte le contratà : le **producteur**
+- **Deux côtés.** Décidez quel côté porte le contrat : le **producteur**
   fournit les données, le **consommateur** les reçoit.
 - **Étiquettes.** Étiquetez les champs du producteur que vous partagez. Un
   champ sans étiquette porte l’étiquette implicite `default`.
@@ -36,7 +36,7 @@ source dans le document du consommateur, qui l’affiche sans aller-retour.
 ### 1. Déposez l’attribution chez le producteur
 
 Créez un document d’attribution sous le domaine **producteur**, comme enfant de
-son document de domaine. Une attribution par consommateurà :
+son document de domaine. Une attribution par consommateur :
 
 ```json
 {
@@ -48,25 +48,25 @@ son document de domaine. Une attribution par consommateurà :
 ```
 
 `resources` compte une entrée par doctype producteur que le consommateur peut
-lire. Les étiquettes servent de masque de champs, à l’échelle de l’étiquetteà :
+lire. Les étiquettes servent de masque de champs, à l’échelle de l’étiquette :
 un champ est couvert dès qu’il partage au moins une étiquette avec l’entrée.
 
 ### 2. Activez l’attribution
 
 Une nouvelle attribution démarre inactive. Un détenteur de l’action `activate`
-sur les attributions du domaine producteur l’activeà ; le même droit la
+sur les attributions du domaine producteur l’active ; le même droit la
 désactive. Facet refuse l’auto-attribution : un domaine n’a besoin d’aucun
 contrat pour se lire lui-même.
 
 :::note
 Une attribution inactive n’ouvre rien. La désactivation n’efface pas les
-valeurs déj à copiées.
+valeurs déjà copiées.
 :::
 
 ### 3. Déclarez le champ répliqué chez le consommateur
 
-Sur le doctype consommateur, ajoutez deux champsà : une référence vers le
-doctype source, et un champ qui porte la copieà :
+Sur le doctype consommateur, ajoutez deux champs : une référence vers le
+doctype source, et un champ qui porte la copie :
 
 ```yaml
 fields:
@@ -81,13 +81,13 @@ fields:
     on_source_delete: unset
 ```
 
-Règles du coupleà :
+Règles du couple :
 
 - `via` nomme le champ de référence sur le même doctype.
 - Le champ source ne doit pas être un secret, et une copie ne peut pas
   alimenter une autre copie.
 - `on_source_delete` vaut `keep` (défaut) ou `unset`. `keep` conserve la valeur
-  copiéeà ; `unset` l’efface quand la source est supprimée.
+  copiée ; `unset` l’efface quand la source est supprimée.
 - Les utilisateurs ne peuvent pas écrire un champ copié. Il ne peut être ni
   obligatoire ni unique.
 
@@ -109,7 +109,7 @@ n’a pas activé le contrat.
 
 Le domaine `bill` facture des personnes enregistrées dans le domaine
 `identity`. Le producteur dépose puis active une attribution sur
-`identity.Person` avec l’étiquette `default`. Le doctype `bill.Invoice` porteà :
+`identity.Person` avec l’étiquette `default`. Le doctype `bill.Invoice` porte :
 
 ```yaml
 fields:
@@ -134,7 +134,7 @@ facture.
 
 **La copie reste vide.**
 
-Suivez la chaîneà : l’attribution doit être active, elle doit nommer le doctype
+Suivez la chaîne : l’attribution doit être active, elle doit nommer le doctype
 source, et ses étiquettes doivent couvrir le champ source. Le contrôle du
 doctype nomme la pièce manquante.
 

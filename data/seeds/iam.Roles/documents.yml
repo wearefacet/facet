@@ -25,14 +25,19 @@
       account is a domain editor of, and may discard the drafts it edits.
       Any editor can draft a new domain; the creator becomes its editor.
     visible_tags: [default]
-    connectivity: [mcp, webhook, api, assistant]
+    connectivity: [api, assistant]
     permissions:
       # Content plane — everything except the definition surfaces and the
       # provider registry (a rogue provider pointed at the editor's own IdP
       # would be a self-escalation path: provider management is admin-only,
       # mirroring core.SystemSettings). core.Webhook is carved out of the
       # management actions only — webhooks are ownership-scoped (see the
-      # webhook block below); create rides this blanket unrestricted.
+      # webhook block below).
+      # The connectivity list carries no `webhook` and no `mcp` channel: an
+      # outbound webhook is an egress path, so its authoring gate is the
+      # `webhook` channel (the core.Webhook script refuses a role without
+      # it) and only admin carries it by seed. The SSRF host gate bounds
+      # where a webhook may point; the channel bounds who may open one.
       # core.SchematicLayout is carved out of the writes for the same
       # reason as the other definition surfaces — writes are domain-scoped
       # (the schematic-layout block below); its read is one of the
@@ -59,11 +64,11 @@
         "on": core.DomainGrant
       - action: read
         "on": core.SchematicLayout
-      # Webhooks — authoring open, management ownership-scoped (B-76
-      # arbitration): any editor can mint a webhook, and the binding stamps
-      # the creator, but only the creator (or an admin) can see, edit, or
-      # delete one afterwards. The SSRF surface is bounded by the target
-      # host gate (Webhook::TargetCheck), not by the role.
+      # Webhooks — management is ownership-scoped (B-76 arbitration): the
+      # binding stamps the creator, so only the creator (or an admin) can
+      # see, edit, or delete a webhook afterwards. The editor role cannot
+      # author one: its connectivity list excludes the `webhook` channel,
+      # so the create hook answers 422. Admin alone holds the channel.
       # Domain plane — scoped to domains the account edits.
       - action: update
         "on": core.Domain

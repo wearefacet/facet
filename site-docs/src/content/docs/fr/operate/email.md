@@ -8,7 +8,7 @@ sidebar:
 verified_at: 008dd880
 ---
 
-Facet envoie des mails pour les parcours d’identifiantsà : réinitialisation
+Facet envoie des mails pour les parcours d’identifiants : réinitialisation
 de mot de passe, invitations, premiers identifiants et liens d’activation de la
 MFA. La livraison passe par un seul adaptateur de mail. L’adaptateur par défaut
 imprime les mails sur stdout. La production exige une vraie livraison via SMTP.
@@ -17,15 +17,15 @@ jamais le mail.
 
 ## Quand l’utiliser
 
-Configurez le mail dans ces casà :
+Configurez le mail dans ces cas :
 
-- vous installez SMTP pour une nouvelle installationà ;
-- vous faites passer une installation de la livraison stdout à un relaisà ;
+- vous installez SMTP pour une nouvelle installation ;
+- vous faites passer une installation de la livraison stdout à un relais ;
 - vous changez l’adresse d’expédition sans redémarrer.
 
 ## Avant de commencer
 
-- Vous disposez d’un compte de relais SMTPà: hôte, port, identifiant, mot
+- Vous disposez d’un compte de relais SMTP : hôte, port, identifiant, mot
   de passe.
 - Vous connaissez le `APP_ENV` du déploiement.
 - Les clés `mail:` sont des clés à chaud. Un enregistrement des paramètres
@@ -51,7 +51,7 @@ mail:
     use_tls: true
 ```
 
-Les clés et leurs valeurs par défautà :
+Les clés et leurs valeurs par défaut :
 
 | Clé | Valeur par défaut | Signification |
 | --- | --- | --- |
@@ -68,7 +68,7 @@ Les clés et leurs valeurs par défautà :
 
 Le démarrage refuse `adapter: dev` quand `APP_ENV=production` et que le fichier
 ne définit pas la porte de sortie. L’erreur nomme les clés exactes des deux
-voiesà :
+voies :
 
 - Définissez `mail.adapter: smtp` avec les clés `mail.smtp.*` — la voie
   normale.
@@ -91,7 +91,7 @@ ne se définit que dans le fichier.
 
 Les clés `mail.*` sont à chaud. Épinglez-les sur la page
 **Configurer → Plateforme → Paramètres**, ou enregistrez le document de
-paramètresà :
+paramètres :
 
 ```sh
 curl -k -X PATCH -H "Authorization: Bearer $FACET_API_KEY" \
@@ -100,22 +100,22 @@ curl -k -X PATCH -H "Authorization: Bearer $FACET_API_KEY" \
   "https://facet.localhost:3443/Api/core/SystemSettings/settings"
 ```
 
-Un enregistrement des paramètres reconstruit l’adaptateurà : le mail
+Un enregistrement des paramètres reconstruit l’adaptateur : le mail
 suivant utilise les nouvelles valeurs. Le contrôle à l’écriture vérifie l’état
-fusionnéà : `mail.adapter: smtp` exige un `mail.smtp.host` non nul.
+fusionné : `mail.adapter: smtp` exige un `mail.smtp.host` non nul.
 
 ### 4. Testez la livraison
 
 Lancez une réinitialisation de mot de passe depuis la page Connexion. Le lien
 de réinitialisation arrive uniquement par mail, donc un mail bien livré prouve
-toute la chaîneà : adaptateur, relais, adresse d’expédition et TTL du
+toute la chaîne : adaptateur, relais, adresse d’expédition et TTL du
 lien. Le TTL du lien est `iam.change_password_expiration`, 24 heures par
 défaut.
 
 ## Exemple
 
 Une installation isolée du réseau qui doit garder la livraison stdout, avec la
-porte de sortie définieà :
+porte de sortie définie :
 
 ```yaml
 mail:
@@ -139,7 +139,7 @@ deux voies indiquées dans le message d’erreur, ou voyez l’étape 2.
 **Le mail n’arrive pas.**
 
 Cherchez la tentative d’envoi dans les logs du backend. Puis examinez le
-relaisà : mauvais port, `use_tls: false` face à un relais qui n’accepte
+relais : mauvais port, `use_tls: false` face à un relais qui n’accepte
 que TLS, et échecs d’authentification au relais sont les causes courantes.
 Relancez une réinitialisation de mot de passe pour retester.
 
@@ -172,6 +172,6 @@ défaut. Demandez un nouveau lien.
   les TTL des liens et les règles de verrouillage.
 - [Bootstrap et tâches CLI](/fr/operate/bootstrap-cli/) — `seed:admin`, qui
   imprime son mot de passe au lieu de l’envoyer par mail.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [config.md](https://github.com/wearefacet/facet/blob/main/doc/backend/config.md),
   [system-settings.md](https://github.com/wearefacet/facet/blob/main/doc/backend/system-settings.md).

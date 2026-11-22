@@ -31,6 +31,17 @@ require "../../src/doctype"
 # the system definition evolves through the seed, not the API.
 private ALLOWLISTED_KEYS = {} of String => String
 
+# The array item descriptor keys the seed schema declares and the GET mask
+# keeps (F10-04). `doctype` is the load-bearing one — an array-of-reference
+# target lives on the item, and a dropped target makes the data-shape guard
+# refuse a GET → PUT round-trip.
+private ARRAY_ITEM_SEED_KEYS = %w[
+  type doctype required unique collection title description owned dangling
+  default min max pattern pattern_flags tags filters filter on_source_delete
+  compute compute_when replicate accept write_only read_only mode ttl_seconds
+  currency precision operators
+]
+
 private def core_doctype_seed_path : String
   File.join(__DIR__, "..", "..", "data", "seeds", "core.DocType", "definition.yml")
 end
@@ -116,6 +127,11 @@ end
 
 NESTED_KEY_POSITIONS = [
   {"field entry", ["fields", "fields", "values", "properties"], Facet::Doctype::FieldDefinition::KNOWN_KEYS},
+  # The array item descriptor carries the reference target (`doctype`) a
+  # GET → PUT round-trip must keep (F10-04). Its own nested `values` /
+  # `items` / `properties` sub-schemas are not declared — the mask drops
+  # them, but no shipped doctype relies on a round-trip of those slots.
+  {"array item entry", ["fields", "fields", "values", "properties", "items", "properties"], ARRAY_ITEM_SEED_KEYS},
   {"replicate entry", ["fields", "fields", "values", "properties", "replicate", "properties"], Facet::Doctype::ReplicateConfig::KNOWN_KEYS},
   {"enum value entry", ["fields", "fields", "values", "properties", "values", "items", "properties"], Facet::Doctype::EnumValue::KNOWN_KEYS},
   {"action entry", ["fields", "actions", "values", "properties"], Facet::Doctype::ActionDefinition::KNOWN_KEYS},

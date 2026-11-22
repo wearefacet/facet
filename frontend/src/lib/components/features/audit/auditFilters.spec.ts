@@ -19,9 +19,10 @@ import { channelLabel } from './auditDiff.js';
 // `eq` / `ne`; the doc pins (`domain`, `doc_type`, `doc_id`) serve `eq` only;
 // `emitted_at` serves the range operators.
 const backendKeys = new Set<string>(
-	(
-		['action', 'actioner_id', 'app', 'channel', 'kind', 'trace'] as const
-	).flatMap((f) => [`${f}__eq`, `${f}__ne`])
+	(['action', 'actioner_id', 'app', 'channel', 'kind', 'trace'] as const).flatMap((f) => [
+		`${f}__eq`,
+		`${f}__ne`
+	])
 );
 for (const f of ['domain', 'doc_type', 'doc_id'] as const) backendKeys.add(`${f}__eq`);
 for (const op of ['gte', 'lte'] as const) backendKeys.add(`emitted_at__${op}`);
@@ -97,9 +98,9 @@ describe('auditFilterDoctype', () => {
 		expect(field('action').values?.map((v) => v.key)).toEqual([...AUDIT_ACTIONS]);
 		expect(field('channel').values?.map((v) => v.key)).toEqual([...AUDIT_CHANNELS]);
 		expect(field('kind').values?.map((v) => v.key)).toEqual([...AUDIT_CAUSE_KINDS]);
-		// 12 members of `Mutation::CauseKind` — a new backend member must be
+		// 13 members of `Mutation::CauseKind` — a new backend member must be
 		// added here or it stays unfilterable.
-		expect(AUDIT_CAUSE_KINDS).toHaveLength(12);
+		expect(AUDIT_CAUSE_KINDS).toHaveLength(13);
 	});
 
 	it('labels the session channel `facet` and keeps other channels verbatim', () => {

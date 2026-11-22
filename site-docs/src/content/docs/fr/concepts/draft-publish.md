@@ -54,11 +54,11 @@ brouillon :
   **Ce que fait la publication.** `POST /Api/core/Domain/:id/publish`
   transforme le brouillon en domaine réel. Publier, c’est copier puis
   supprimer, pas renommer. La cible reçoit de nouvelles lignes sous son
-  propre nomà ; le brouillon est ensuite supprimé. En mode écrasement, le
-  document `core.Domain` réel reste tel quelà : sa description, ses context
+  propre nom ; le brouillon est ensuite supprimé. En mode écrasement, le
+  document `core.Domain` réel reste tel quel : sa description, ses context
   sets et ses hooks gardent leurs valeurs réelles, et un hook du brouillon
   que le domaine réel n’a pas revient en avertissement. Avant d’écrire quoi
-  que ce soit, la publication vérifie queà :
+  que ce soit, la publication vérifie que :
 
 - le nom cible ne contient que des lettres minuscules, des chiffres et des
   tirets, et commence par une lettre. Un `_` initial répond `422` : ce
@@ -67,11 +67,11 @@ brouillon :
 - le graphe de composition est fermé — chaque entrée `children:` a un
   `member_of` correspondant,
 - en mode création (`overwrite: false`, par défaut), le nom cible est
-  libre. Un nom qu’un domaine réel porte déj à répond `409`,
-- en mode écrasement (`overwrite: true`), le nom cible peut déj à exister.
+  libre. Un nom qu’un domaine réel porte déjà répond `409`,
+- en mode écrasement (`overwrite: true`), le nom cible peut déjà exister.
   Chaque doctype dont la structure diffère de celle du réel doit porter un
   `schema_version` exactement égal à la version réelle plus un, et une
-  fonction de migration pour cet écartà ; un écart sans fonction répond
+  fonction de migration pour cet écart ; un écart sans fonction répond
   `422`. Un doctype de structure identique passe sans changement de version.
 
   Puis, en une seule transaction, la publication :
@@ -93,13 +93,13 @@ la même publication.
   **Que deviennent les documents.** La publication ne migre jamais les
   documents réels à l’avance. Ils restent à leur version de schéma stockée.
   Une migration à la demande parcourt la chaîne à la prochaine lecture. La
-  barrière de version garantit que chaque écart a une fonctionà ; le
+  barrière de version garantit que chaque écart a une fonction ; le
   parcours à la demande ne peut donc échouer sur une entrée manquante.
 
   **Les données d’un brouillon sont jetables.** Les documents créés dans le
   brouillon ne passent pas de l’autre côté — la publication les supprime
   logiquement avec le brouillon. Seule la structure se publie. Un token
-  d’aperçu vous permet de tester d’abordà : il ouvre les routes standard
+  d’aperçu vous permet de tester d’abord : il ouvre les routes standard
   pour les documents du brouillon, sous votre propre identité.
 
   **Le compromis.** Les vérifications qui protègent les données réelles ne
@@ -110,13 +110,13 @@ la même publication.
   qu’au moment de publier. Deux états, c’est aussi deux copies d’une
   définition. Le domaine réel continue de servir ses définitions actuelles
   pendant que vous éditez le brouillon. Vos changements n’atteignent les
-  autres utilisateurs qu’à la publication. Une dernière limiteà : la
+  autres utilisateurs qu’à la publication. Une dernière limite : la
   réplication reste inerte dans un brouillon. Un domaine de brouillon ne
   sert jamais de source ni de consommateur de réplication, vous ne pouvez
   donc pas tester un champ `replicate` avant de publier.
 
 :::tip
-Appelez l’endpoint de vérification avant de publierà :
+Appelez l’endpoint de vérification avant de publier :
 `GET /Api/core/Domain/:id/check`. Il signale les problèmes doctype par
 doctype — références cassées, problèmes de modèles, vues manquantes — et la
 confirmation de publication affiche la même liste.
@@ -133,4 +133,4 @@ confirmation de publication affiche la même liste.
   domaine borne.
 - [Évolution du schéma](/fr/concepts/schema-evolution/) — la barrière de
   version et la migration à la demande en détail.
-- Internes sur GitHubà : [draft-domains.md](https://github.com/wearefacet/facet/blob/main/doc/backend/draft-domains.md).
+- Internes sur GitHub : [draft-domains.md](https://github.com/wearefacet/facet/blob/main/doc/backend/draft-domains.md).

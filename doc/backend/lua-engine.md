@@ -169,19 +169,21 @@ The engine is sandboxed to prevent escape from doctype scripts:
 | `collectgarbage` | Can interfere with GC behavior |
 | `rawget`, `rawset`, `rawequal` | Bypass metatable protections |
 
-**Instruction limit** — a C-level instruction-count hook aborts any infinite loop or excessive computation. Default: 10 million instructions. The error message is "instruction limit exceeded (N)".
+**Instruction limit** — a C-level instruction-count hook aborts any infinite loop or excessive computation. Default: 1 million instructions. The error message is "instruction limit exceeded (N)".
 
-**Time limit** — wall-clock time is checked every 100k instructions. If the script exceeds the configured time limit, it is aborted with "time limit exceeded (Ns)". Default: 5 seconds.
+**Time limit** — wall-clock time is checked every 100k instructions. If the script exceeds the configured time limit, it is aborted with "time limit exceeded (Ns)". Default: 0.5 seconds.
 
-**Memory limit** — a custom allocator installed via `lua_setallocf` tracks and caps total Lua heap allocations. When the limit is exceeded, the allocator returns NULL (OOM), which causes Lua to raise a memory error. Default: 100 MB.
+**Memory limit** — a custom allocator installed via `lua_setallocf` tracks and caps total Lua heap allocations. When the limit is exceeded, the allocator returns NULL (OOM), which causes Lua to raise a memory error. Default: 32 MB.
+
+All three limits are per engine. The budget state lives in a heap tracker that the allocator owns; the instruction hook reads it back from the Lua state with `lua_getallocf`. Two overlapping runs — a script paused on a db call while another engine starts — keep separate budgets: one run cannot reset or stretch the other's counters.
 
 All three limits are configurable via the `lua:` section in `config.{env}.yml`:
 
 ```yaml
 lua:
-  instruction_limit: 10000000
-  memory_limit_mb: 100
-  time_limit_s: 5.0
+  instruction_limit: 1000000
+  memory_limit_mb: 32
+  time_limit_s: 0.5
 ```
 
 ## Available globals

@@ -1,7 +1,9 @@
 /lib/
 /tmp/
 
-/bin/
+/bin/*
+!/bin/ameba.cr
+!/bin/lucky.gen.email.cr
 /build/
 
 main

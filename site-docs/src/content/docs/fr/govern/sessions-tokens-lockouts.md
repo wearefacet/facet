@@ -28,13 +28,13 @@ Une session est un hash dans Redis sous `session:{id}`. Elle porte les
 ids de refresh courant et précédent, l’id du compte, le rôle élu, les
 horodatages, le User-Agent, l’adresse du client, et le mode de livraison du
 token. Les sessions s’inscrivent aussi dans un ensemble par compte et un
-ensemble par app. Une perte complète de Redis ne force qu’une reconnexionà ;
+ensemble par app. Une perte complète de Redis ne force qu’une reconnexion ;
 rien de durable n’en dépend.
 
 ### Le token d’accès
 
 Le token d’accès est un JSON Web Token (JWT) signé avec l’algorithme ES256.
-L’algorithme de signature est épingléà ; l’en-tête du token ne le choisit
+L’algorithme de signature est épinglé ; l’en-tête du token ne le choisit
 jamais, ce qui ferme les attaques connues de confusion d’algorithme. La
 durée de vie par défaut est de 900 secondes, fixée par
 `iam.jwt.access_token_ttl`.
@@ -64,7 +64,7 @@ les tokens des autres. Générez une clé avec
 ### Le refresh token et la rotation
 
 Le refresh token est une paire opaque `session_id.refresh_id`. Chaque usage
-le fait tournerà :
+le fait tourner :
 
 1. L’id de refresh présenté passe en `previous`.
 2. Un nouvel id de refresh le remplace.
@@ -74,7 +74,7 @@ le fait tournerà :
 
   Un id présenté qui ne correspond à aucun des deux est une réutilisation de
   token. Facet supprime la session aussitôt et écrit un événement
-  `refresh_reuse` dans le journal des connexions. Le token d’accès déj à émis
+  `refresh_reuse` dans le journal des connexions. Le token d’accès déjà émis
   reste valable jusqu’à son TTL, la même règle qu’une révocation explicite.
 
   La durée de vie de la session est de 14 jours, fixée par
@@ -86,19 +86,19 @@ le fait tournerà :
 
 La connexion livre les tokens en cookies HttpOnly ou dans le corps JSON. La
 session retient le mode. Un refresh avec l’autre mode répond `422` avant
-tout changement d’étatà : rien ne tourne, la session reste.
+tout changement d’état : rien ne tourne, la session reste.
 
 ### La gestion des sessions
 
 | Route                                  | Ce qu’elle fait                                                                                          |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | `GET /Api/iam/sessions`                 | Liste les sessions de l’appelant avec ids et métadonnées.                                                   |
-| `DELETE /Api/iam/sessions/:session_id`  | Révoque une de ses sessions. Idempotentà : un id inconnu répond `200` avec `revoked: false`.                  |
+| `DELETE /Api/iam/sessions/:session_id`  | Révoque une de ses sessions. Idempotent : un id inconnu répond `200` avec `revoked: false`.                  |
 | `DELETE /Api/iam/sessions`              | Révoque chaque session de l’appelant sauf la courante.                                                      |
 | `DELETE /Api/iam/apps/:app_id/sessions` | Révoque chaque session que l’appelant détient pour une app.                                                 |
 
 Après une révocation, le token d’accès vivant fonctionne jusqu’à
-l’expiration de son TTLà; le refresh suivant échoue parce que la ligne de
+l’expiration de son TTL ; le refresh suivant échoue parce que la ligne de
 session a disparu. Les titulaires de comptes gèrent leurs propres sessions
 dans l’espace de travail — voir
 [Vos paramètres, sessions et clés d’API](/fr/workspace/settings-sessions-api-keys/).
@@ -107,12 +107,12 @@ dans l’espace de travail — voir
 
 La limitation garde son état dans Redis. Cinq compteurs et un indicateur
 s’appliquent. Les compteurs et l’indicateur de verrouillage sont des clés
-séparéesà ; un compteur peut expirer pendant que le verrouillage tient
+séparées ; un compteur peut expirer pendant que le verrouillage tient
 toujours.
 
 | Compteur                                 | Déclencheur                                | Effet                                                                      |
 | ----------------------------------------- | ------------------------------------------- | --------------------------------------------------------------------------- |
-| Tentatives de mot de passe par compte     | 10 mots de passe faux                       | La prochaine tentative pose l’indicateur de verrouillageà ; la connexion répond `429`. |
+| Tentatives de mot de passe par compte     | 10 mots de passe faux                       | La prochaine tentative pose l’indicateur de verrouillage ; la connexion répond `429`. |
 | Tentatives de mot de passe par adresse client | 20 mots de passe faux depuis une adresse | La connexion répond `429` tant que le compteur est à sa limite. Pas d’indicateur de verrouillage. |
 | Réponses au défi MFA                      | 5 réponses fausses                          | Le défi est supprimé et l’indicateur de verrouillage est posé.              |
 | Vérification MFA à l’enrôlement           | 5 codes faux                                | Le point d’entrée répond `429`. Pas d’indicateur de verrouillage.           |
@@ -130,7 +130,7 @@ verrouillage du défi MFA. Tant que l’indicateur est présent, chaque
 connexion répond `429` avant toute vérification de mot de passe, même après
 l’expiration du compteur qui l’a causé.
 
-La trace d’audit est délibéréeà : seul le verrouillage écrit une ligne dans
+La trace d’audit est délibérée : seul le verrouillage écrit une ligne dans
 le journal des connexions. Chaque tentative échouée va plutôt dans le
 journal du backend, sous `facet.iam.login` au niveau warn, avec l’id du
 compte, l’adresse du client, et les tentatives restantes. Voir
@@ -144,7 +144,7 @@ d’événements.
 Chaque clé expire d’elle-même 300 secondes après son démarrage. Pour
 libérer un compte aussitôt, supprimez les clés Redis sur l’hôte du serveur.
 
-Un nettoyage complet supprime quatre familles de clésà :
+Un nettoyage complet supprime quatre familles de clés :
 
 ```sh
 redis-cli DEL login_lockout:<account_id> \
@@ -154,14 +154,14 @@ redis-cli DEL login_lockout:<account_id> \
 ```
 
 Remplacez `<account_id>` par l’id du compte et `<address>` par l’adresse du
-client. Pour nettoyer chaque compteur par adresse, scannez-lesà :
+client. Pour nettoyer chaque compteur par adresse, scannez-les :
 
 ```sh
 redis-cli --scan --pattern 'pwd_attempts:ip:*' | xargs redis-cli DEL
 ```
 
 Un nettoyage limité au mot de passe garde le limiteur MFA intact et
-supprime trois famillesà :
+supprime trois familles :
 
 ```sh
 redis-cli DEL login_lockout:<account_id> pwd_attempts:<account_id>
@@ -185,7 +185,7 @@ connexion réussit et les compteurs repartent de zéro.
 ## Exemple
 
 Révoquez chaque session d’un compte depuis l’API, comme titulaire du compte
-ou avec son identifiantà :
+ou avec son identifiant :
 
 ```sh
 curl -k -X DELETE -H "Authorization: Bearer $FACET_API_KEY" \
@@ -193,7 +193,7 @@ curl -k -X DELETE -H "Authorization: Bearer $FACET_API_KEY" \
   "https://facet.localhost:3443/Api/iam/sessions"
 ```
 
-La réponse donne le nombreà : `{"ok": true, "revoked": 3}`. Chaque
+La réponse donne le nombre : `{"ok": true, "revoked": 3}`. Chaque
 session révoquée écrit un événement `session_revoked`. La session courante
 survit à l’appel.
 
@@ -213,7 +213,7 @@ reconnecter.
 
 ### Les tokens cessent d’être vérifiés après un redémarrage
 
-`JWT_SIGNING_KEY` n’est pas positionnéeà ; chaque processus a généré sa
+`JWT_SIGNING_KEY` n’est pas positionnée ; chaque processus a généré sa
 propre clé. Positionnez la variable et redéployez. Chaque titulaire doit se
 reconnecter une fois.
 
@@ -233,5 +233,5 @@ du backend sous `facet.iam.login` pour la trace par tentative.
 - [Imposer le MFA](/fr/govern/enforcing-mfa/) — les limites de débit du MFA.
 - [Gérer les comptes](/fr/govern/accounts-lifecycle/) — les statuts que la
   connexion vérifie.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [iam.md](https://github.com/wearefacet/facet/blob/main/doc/backend/iam.md).

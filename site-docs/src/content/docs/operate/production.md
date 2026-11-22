@@ -5,7 +5,7 @@ audience: [operator]
 features: [PLT-16, APP-06, PLT-11, IAM-12]
 sidebar:
   order: 3
-verified_at: f1409cdc
+verified_at: e7c24a4
 ---
 
 The production path is Docker Compose: PostgreSQL, Redis, the backend, the
@@ -38,7 +38,7 @@ Docker with Compose. That is all.
 3. Create the first administrator:
 
    ```sh
-   docker compose -f docker/compose.prod.yml exec backend facet seed:admin ops@your-company.tld
+   docker compose -f docker/compose.prod.yml run --rm backend seed:admin ops@your-company.tld
    ```
 
    The command prints a one-time password. It is shown once — record it in a

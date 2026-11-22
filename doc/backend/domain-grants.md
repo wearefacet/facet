@@ -121,7 +121,9 @@ POST /Api/core/Domain/:producer/grants
 
 The flat route (`POST /Api/:domain/DomainGrant`) and the wrong nested
 form (`POST /Api/core/Domain/:producer/DomainGrant`) answer 404. The
-`Unknown child` error names the valid relations (`doctypes`, `grants`).
+`Unknown relation` error names the valid relations (`doctypes`, `grants`)
+— and, on a single-segment POST, the valid actions in their own list
+(`unknown action '<x>' — valid actions: …`).
 
 ## Activate / deactivate routes
 

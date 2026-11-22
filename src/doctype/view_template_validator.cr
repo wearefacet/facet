@@ -2,6 +2,9 @@
 # Copyright (c) 2026 Amplitude Solutions Ltd
 
 require "json"
+require "pg"
+require "../database"
+require "./definition_store"
 
 module Facet
   module Doctype
@@ -30,7 +33,8 @@ module Facet
     # - `:warning` — the node renders but degrades (unknown node type,
     #                empty `options`, unusable `relation.source`,
     #                unresolved wrapper `field`, input/field-type
-    #                affinity mismatch).
+    #                affinity mismatch, an interpolation or relation
+    #                column that names no field).
     #
     # When a `DoctypeDefinition` is passed, the walk additionally tracks
     # the *resolution scope* — the set of fields an input at this point
@@ -38,6 +42,17 @@ module Facet
     # `object` node shifts it to the bound field's properties, an `array`
     # node to the array item properties. Without a definition only the
     # structural checks run (bindings are not checked).
+    #
+    # With a definition, the walk also resolves the doctype facts a node
+    # names: a `children` relation's `rel` against the owning doctype's
+    # `children` (or a child's own `member_of`), a `filter` relation's
+    # `doctype`, the relation column keys against the row doctype, and the
+    # `$field` interpolation tokens of the display nodes against the scope.
+    # An unresolvable target is a `:warning` — the renderer degrades on it
+    # (empty cell, unknown-relationship placeholder), so the write door
+    # stays tolerant. The doctype graph is read through
+    # `Doctype::DefinitionStore`; a call that passes no definition never
+    # touches it.
     #
     # The property requirements mirror the frontend component registry
     # (`DocumentViewTemplate.svelte`) and the `TemplateNode` union in
@@ -122,6 +137,23 @@ module Facet
         "input-list"       => Set{"array"},
       }
 
+      # Display nodes that read a document value through `$field`
+      # interpolation, mapped to the property names carrying it. An
+      # interpolation token that resolves to no field at the current scope
+      # renders nothing (the node stays empty), so the gate reports it as a
+      # warning.
+      private INTERPOLATED_PROPS = {
+        "field"          => ["value"],
+        "label"          => ["value"],
+        "capsule"        => ["value"],
+        "title"          => ["value"],
+        "markdown"       => ["field"],
+        "header"         => ["title", "subtitle"],
+        "link"           => ["label"],
+        "email"          => ["label"],
+        "image-artifact" => ["alt"],
+      }
+
       # URL-bearing display nodes resolve their target by `$field`
       # interpolation. A token that names a `file` field can never produce a
       # working URL — a file field stores a bare artifact id, not a link —
@@ -174,7 +206,7 @@ module Facet
         issues = [] of Issue
         return issues if template.nil?
         scope = definition.try(&.fields)
-        walk(template, "template", issues, scope)
+        walk(template, "template", issues, scope, definition.try(&.qualified_name))
         issues
       end
 
@@ -185,7 +217,13 @@ module Facet
 
       # ── Tree walk ───────────────────────────────────────────────────
 
-      private def self.walk(node : JSON::Any, path : String, issues : Array(Issue), scope : Hash(String, FieldDefinition)?) : Nil
+      private def self.walk(
+        node : JSON::Any,
+        path : String,
+        issues : Array(Issue),
+        scope : Hash(String, FieldDefinition)?,
+        owner : String?,
+      ) : Nil
         obj = node.as_h?
         if obj.nil?
           issues << Issue.new(:error, path, "template node at '#{path}' is not an object")
@@ -213,18 +251,18 @@ module Facet
 
         case type
         when "tabs"
-          walk_tabs(obj, path, issues, scope)
+          walk_tabs(obj, path, issues, scope, owner)
         when "if"
-          walk_branch(obj, "else", path, issues, child_scope)
+          walk_branch(obj, "else", path, issues, child_scope, owner)
         when "input-select"
           walk_options(obj, path, issues)
         when "relation"
-          walk_relation(obj, path, issues)
+          walk_relation(obj, path, issues, scope, owner)
         end
 
         # Every container type recurses through `children`; node types
         # without the property simply skip.
-        walk_branch(obj, "children", path, issues, child_scope) unless type == "tabs"
+        walk_branch(obj, "children", path, issues, child_scope, owner) unless type == "tabs"
       end
 
       # Emits the missing-discriminator error and returns `nil` when `type`
@@ -252,7 +290,8 @@ module Facet
       end
 
       # Definition-aware checks for a known node type — dispatches between
-      # `input` / `input-*` binding validation and wrapper-target validation.
+      # `input` / `input-*` binding validation, wrapper-target validation,
+      # and the `$field` interpolation bindings of the display nodes.
       # Runs only when a doctype definition scopes the walk. The bare `input`
       # node goes through the same binding checks as the specialized
       # `input-*` family; its affinity step is a no-op (the auto node has no
@@ -266,12 +305,17 @@ module Facet
       ) : Nil
         return if scope.nil?
         input_node = type == "input" || type.starts_with?("input-")
-        return unless input_node || {"object", "array", "dict", "if"}.includes?(type)
-
         if input_node
           check_input_binding(obj, type, path, issues, scope)
-        else
+          return
+        end
+
+        if {"object", "array", "dict", "if"}.includes?(type)
           issue_scope_target(obj, type, path, issues, scope)
+        end
+
+        if INTERPOLATED_PROPS.has_key?(type)
+          check_interpolation_bindings(obj, type, path, issues, scope)
         end
       end
 
@@ -318,6 +362,47 @@ module Facet
         return check_input_list_binding(bound, bound_type, field, path, issues) if type == "input-list"
         return issue_container_binding(type, bound_type, field, path, issues) if container_binding?(bound_type)
         issue_affinity_mismatch(type, bound_type, field, path, issues)
+      end
+
+      # Interpolation-target check for the display nodes that read a
+      # document value through `$field` interpolation (`markdown.field`,
+      # the `value` of `field` / `label` / `capsule` / `title`, a `header`
+      # title / subtitle, a `link` / `email` label, an `image-artifact`
+      # alt). Definition-aware only: a token that resolves to no field at
+      # the current scope is a `:warning` — the node renders nothing for it.
+      # The resolution is the same `resolve_scope_field` lookup the `input`
+      # binding and the URL interpolation checks use, so dotted tokens
+      # descend through declared object properties.
+      #
+      # `markdown.field` is a plain field key, not an interpolated string:
+      # its single token is checked as-is (`field`), with no leading `$`.
+      private def self.check_interpolation_bindings(
+        obj : Hash(String, JSON::Any),
+        type : String,
+        path : String,
+        issues : Array(Issue),
+        scope : Hash(String, FieldDefinition),
+      ) : Nil
+        props = INTERPOLATED_PROPS[type]?
+        return if props.nil?
+
+        props.each do |prop|
+          value = obj[prop]?.try(&.as_s?)
+          next if value.nil? || value.empty?
+          tokens = type == "markdown" && prop == "field" ? [value] : interpolation_tokens(value)
+          tokens.each do |token|
+            next unless resolve_scope_field(token, scope).nil?
+            issues << Issue.new(:warning, join(path, prop),
+              "'#{type}' node references '#{token}' in '#{prop}' which is not a defined field at this scope — the node renders nothing for it")
+            break # one warning per property — the fix is the same for every token
+          end
+        end
+      end
+
+      # `$token` references inside a display string (e.g. `$status`,
+      # `$contact.name`). A `$$` escape is not a token.
+      private def self.interpolation_tokens(value : String) : Array(String)
+        value.scan(/(?<!\$)\$(\w+(?:\.\w+)*)/).map(&.[1])
       end
 
       # Interpolation-target check for the URL-bearing display nodes
@@ -482,6 +567,11 @@ module Facet
           "'#{type}' node targets '#{field}' of type '#{bound_type}' — the wrapper adds no usable scope; the node renders nothing")
       end
 
+      # A free-form field type: its value has no declared shape, so the
+      # bindings inside its wrapper are unknown, not wrong. An `object` is
+      # not free-form — its declared `properties` are the scope.
+      private FREE_FORM_SCOPE_TYPES = Set{"any", "dictionary"}
+
       # Resolution scope for a node's children. `nil` means "bindings
       # inside cannot be validated" — e.g. a free-form object, a
       # dictionary, or a scalar-array item.
@@ -497,6 +587,8 @@ module Facet
           derive_object_scope(obj, scope)
         when "array"
           derive_array_scope(obj, scope)
+        when "dict"
+          derive_dict_scope(obj, scope)
         else
           # `if` and layout containers keep the current scope; everything
           # else (display nodes, relation, …) too.
@@ -505,7 +597,9 @@ module Facet
       end
 
       # Scope inside an `object` wrapper: the bound field's declared
-      # properties. Free-form objects (no properties) yield `nil`.
+      # properties. A free-form object (no properties) yields a scope of
+      # unknown bindings, not `nil` — its keys are not declared anywhere, so
+      # a child binding there is not provably wrong.
       private def self.derive_object_scope(
         obj : Hash(String, JSON::Any),
         scope : Hash(String, FieldDefinition),
@@ -514,11 +608,13 @@ module Facet
         return nil if field.nil? || field.empty?
         resolved = resolve_scope_field(field, scope)
         return nil if resolved.nil?
+        return unknown_scope if free_form_scope?(resolved.type.try(&.type_name))
         properties_or_nil(resolved.properties)
       end
 
       # Scope inside an `array` wrapper: the item schema's declared
-      # properties. Scalar items yield `nil`.
+      # properties. A scalar item is read as the synthetic `value`; a
+      # free-form item yields a scope of unknown bindings.
       private def self.derive_array_scope(
         obj : Hash(String, JSON::Any),
         scope : Hash(String, FieldDefinition),
@@ -527,7 +623,51 @@ module Facet
         return nil if field.nil? || field.empty?
         resolved = resolve_scope_field(field, scope)
         return nil if resolved.nil?
-        properties_or_nil(resolved.items.try(&.properties))
+        items = resolved.items
+        return unknown_scope if items.nil?
+        props = properties_or_nil(items.properties)
+        return props unless props.nil?
+        return unknown_scope if free_form_scope?(items.type.try(&.type_name))
+        synthetic_scope("value")
+      end
+
+      # Scope inside a `dict` wrapper: the frontend renders each entry
+      # through a synthetic document whose only keys are `key` and `value`.
+      # The wrapper iterates an object or dictionary value — a free-form
+      # object (no declared `properties`) included.
+      private def self.derive_dict_scope(
+        obj : Hash(String, JSON::Any),
+        scope : Hash(String, FieldDefinition),
+      ) : Hash(String, FieldDefinition)?
+        field = obj["field"]?.try(&.as_s?)
+        return nil if field.nil? || field.empty?
+        resolved = resolve_scope_field(field, scope)
+        return nil if resolved.nil?
+        type_name = resolved.type.try(&.type_name)
+        return nil unless {"object", "dictionary"}.includes?(type_name)
+        synthetic_scope("key", "value")
+      end
+
+      # A field type whose value shape the definition does not declare.
+      private def self.free_form_scope?(type_name : String?) : Bool
+        type_name.nil? || FREE_FORM_SCOPE_TYPES.includes?(type_name)
+      end
+
+      # A field with no declared type, used for synthetic scope entries.
+      private UNTYPED_FIELD = FieldDefinition.new
+
+      # A scope where every name is valid: the value comes from a source the
+      # definition does not describe, so a binding cannot be proven wrong.
+      private def self.unknown_scope : Hash(String, FieldDefinition)
+        Hash(String, FieldDefinition).new(UNTYPED_FIELD)
+      end
+
+      # A scope holding only the synthetic entry names the frontend creates
+      # (`key` / `value`). They are untyped — only their existence is known.
+      private def self.synthetic_scope(*names : String) : Hash(String, FieldDefinition)
+        scope = Hash(String, FieldDefinition).new
+        names.each { |name| scope[name] = UNTYPED_FIELD }
+        scope
       end
 
       private def self.properties_or_nil(props : Hash(String, FieldDefinition)?) : Hash(String, FieldDefinition)?
@@ -588,6 +728,7 @@ module Facet
         path : String,
         issues : Array(Issue),
         scope : Hash(String, FieldDefinition)?,
+        owner : String?,
       ) : Nil
         tabs = obj["tabs"]?.try(&.as_a?)
         return if tabs.nil? # missing/non-array already reported by the required check
@@ -603,7 +744,7 @@ module Facet
           if label.nil? || label.empty?
             issues << Issue.new(:error, "#{tab_path}.label", "tab entry is missing a 'label'")
           end
-          walk_branch(h, "children", tab_path, issues, scope)
+          walk_branch(h, "children", tab_path, issues, scope, owner)
         end
       end
 
@@ -614,6 +755,7 @@ module Facet
         path : String,
         issues : Array(Issue),
         scope : Hash(String, FieldDefinition)?,
+        owner : String?,
       ) : Nil
         branch = obj[prop]?
         return if branch.nil?
@@ -623,7 +765,7 @@ module Facet
           return
         end
         arr.each_with_index do |child, i|
-          walk(child, "#{join(path, prop)}.#{i}", issues, scope)
+          walk(child, "#{join(path, prop)}.#{i}", issues, scope, owner)
         end
       end
 
@@ -653,8 +795,16 @@ module Facet
       end
 
       # `relation.source` selects the query mode: `children` needs `rel`,
-      # `filter` needs `field`. Both must be non-empty strings.
-      private def self.walk_relation(obj : Hash(String, JSON::Any), path : String, issues : Array(Issue)) : Nil
+      # `filter` needs `field`. Both must be non-empty strings. When a
+      # definition scopes the walk, the target is also resolved against the
+      # doctype graph (see `validate_relation_source`).
+      private def self.walk_relation(
+        obj : Hash(String, JSON::Any),
+        path : String,
+        issues : Array(Issue),
+        scope : Hash(String, FieldDefinition)?,
+        owner : String?,
+      ) : Nil
         source = obj["source"]?
         source_path = join(path, "source")
         h = source.try(&.as_h?)
@@ -663,10 +813,10 @@ module Facet
           return
         end
 
-        kind = validate_relation_source(h, source_path, issues)
+        target = validate_relation_source(obj, h, source_path, issues, owner)
         check_relation_view(obj, path, issues)
-        check_relation_editable(obj, kind, path, issues)
-        check_relation_columns(obj, path, issues)
+        check_relation_editable(obj, h["kind"]?.try(&.as_s?) || "", path, issues)
+        check_relation_columns(obj, target, path, issues, scope)
       end
 
       # A relation column must be an object with a non-empty `key`: the
@@ -678,7 +828,16 @@ module Facet
       # does not write — so the flag is a no-op there. Warns so the author
       # is not left with a silent no-op. A repeated `key` renders one column
       # (the frontend keeps the first occurrence), so it warns too.
-      private def self.check_relation_columns(obj : Hash(String, JSON::Any), path : String, issues : Array(Issue)) : Nil
+      #
+      # When a definition scopes the walk and the row doctype resolves, a
+      # column key that names no field on it warns: the cell renders empty.
+      private def self.check_relation_columns(
+        obj : Hash(String, JSON::Any),
+        target : DoctypeDefinition?,
+        path : String,
+        issues : Array(Issue),
+        scope : Hash(String, FieldDefinition)?,
+      ) : Nil
         columns = obj["columns"]?.try(&.as_a?)
         return if columns.nil?
 
@@ -704,6 +863,8 @@ module Facet
             seen_keys << key
           end
 
+          check_relation_column_key(key, col_path, issues, target) unless scope.nil?
+
           next unless h["editable"]?.try(&.as_bool)
           next unless key.includes?('.')
           issues << Issue.new(:warning, "#{col_path}.editable",
@@ -711,29 +872,137 @@ module Facet
         end
       end
 
-      # Validates the `source.kind` discriminant and its required payload.
-      # Returns the resolved kind (empty string when unusable).
+      # Warns when a relation column key resolves to no field on the row
+      # doctype. A dotted key resolves through the referenced document's
+      # declared object properties; the first segment may also name a
+      # `reference` field, whose leaf lives on the referenced doctype and is
+      # not resolved here.
+      private def self.check_relation_column_key(
+        key : String,
+        col_path : String,
+        issues : Array(Issue),
+        target : DoctypeDefinition?,
+      ) : Nil
+        return if target.nil?
+        head = target.fields[key.split('.', 2)[0]]?
+        return unless head.nil?
+        return if key.includes?('.') # dotted leaf on a reference or object target — not resolved here
+
+        issues << Issue.new(:warning, "#{col_path}.key",
+          "relation column '#{key}' names no field on '#{target.qualified_name}' — the cell renders empty")
+      end
+
+      # Validates the `source.kind` discriminant and its required payload,
+      # then resolves the relation target against the doctype graph.
+      # Returns the target definition when it resolves, `nil` otherwise.
+      #
+      # `children` targets the child declared by `source.rel` on the owning
+      # doctype, or on any doctype declaring `member_of` back at the owner (a
+      # template authored on the child lists its siblings). `filter` targets
+      # the relation's own `doctype`. An unresolvable target is a `:warning`:
+      # the renderer prints an unknown-relationship placeholder.
       private def self.validate_relation_source(
+        obj : Hash(String, JSON::Any),
         h : Hash(String, JSON::Any),
         source_path : String,
         issues : Array(Issue),
-      ) : String
-        kind = h["kind"]?.try(&.as_s?) || ""
-        case kind
+        owner : String?,
+      ) : DoctypeDefinition?
+        case h["kind"]?.try(&.as_s?) || ""
         when "children"
           rel = h["rel"]?.try(&.as_s?)
           if rel.nil? || rel.empty?
             issues << Issue.new(:error, "#{source_path}.rel", "relation source kind 'children' requires a non-empty 'rel'")
+            return nil
           end
+          resolve_child_relation(rel, source_path, issues, owner)
         when "filter"
           field = h["field"]?.try(&.as_s?)
           if field.nil? || field.empty?
             issues << Issue.new(:error, "#{source_path}.field", "relation source kind 'filter' requires a non-empty 'field'")
+            return nil
           end
+          resolve_relation_doctype(obj, source_path, issues)
         else
           issues << Issue.new(:error, "#{source_path}.kind", "relation source 'kind' must be 'children' or 'filter'")
+          nil
         end
-        kind
+      end
+
+      # The doctype a `children` relation names by `rel`, looked up on the
+      # owning doctype's `children` and on the doctypes declaring
+      # `member_of` back at it. Emits a `:warning` when nothing matches.
+      private def self.resolve_child_relation(
+        rel : String,
+        source_path : String,
+        issues : Array(Issue),
+        owner : String?,
+      ) : DoctypeDefinition?
+        return nil if owner.nil? # structural-only call — the graph is unavailable
+
+        defn = Database.with_connection(:read_only, "*") do |conn|
+          Doctype::DefinitionStore.fetch(conn, owner).as(DoctypeDefinition?)
+        end
+        if defn.nil?
+          issues << Issue.new(:warning, "#{source_path}.rel",
+            "relation source names the child relationship '#{rel}' — the owning doctype '#{owner}' is not available to resolve it")
+          return nil
+        end
+
+        if child = defn.children[rel]?
+          child_id = "#{defn.domain}.#{child.doctype}"
+          return Database.with_connection(:read_only, "*") do |conn|
+            Doctype::DefinitionStore.fetch(conn, child_id).as(DoctypeDefinition?)
+          end
+        end
+
+        found = resolve_member_child(rel, defn)
+        if found.nil?
+          issues << Issue.new(:warning, "#{source_path}.rel",
+            "relation source names no child relationship '#{rel}' on '#{owner}' — the renderer prints an unknown-relationship placeholder")
+        end
+        found
+      end
+
+      # The doctype declaring the `children` entry named `rel` while also
+      # declaring `member_of` back at `parent`. A template authored on a child
+      # lists its siblings, so the relationship may be declared on a sibling
+      # rather than on the owner itself.
+      private def self.resolve_member_child(rel : String, parent : DoctypeDefinition) : DoctypeDefinition?
+        rows = Database.with_connection(:read_only, "*") do |conn|
+          conn.query_all(
+            "SELECT content FROM projections " \
+            "WHERE domain = 'core' AND doc_type = 'DocType' AND deleted_at IS NULL " \
+            "AND content->>'domain' = $1 AND content->>'member_of' = $2",
+            parent.domain, parent.doctype,
+          ) { |rs| rs.read(JSON::Any) }
+        end
+        rows.each do |raw|
+          candidate = Doctype::DoctypeDefinition.from_json(raw)
+          return candidate if candidate.children.has_key?(rel)
+        rescue JSON::ParseException
+          next
+        end
+        nil
+      end
+
+      # The doctype a `filter` relation lists, read from the relation's own
+      # `doctype` property. A missing or unregistered target is a warning.
+      private def self.resolve_relation_doctype(
+        obj : Hash(String, JSON::Any),
+        source_path : String,
+        issues : Array(Issue),
+      ) : DoctypeDefinition?
+        target = obj["doctype"]?.try(&.as_s?)
+        return nil if target.nil? || target.empty? # already reported by the required-prop check
+        resolved = Database.with_connection(:read_only, "*") do |conn|
+          Doctype::DefinitionStore.fetch(conn, target).as(DoctypeDefinition?)
+        end
+        if resolved.nil?
+          issues << Issue.new(:warning, "#{source_path}.field",
+            "relation source names no registered doctype '#{target}' to list — the relation renders an unknown-target placeholder")
+        end
+        resolved
       end
 
       private def self.check_relation_view(obj : Hash(String, JSON::Any), path : String, issues : Array(Issue)) : Nil

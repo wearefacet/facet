@@ -67,7 +67,7 @@ The domain, doctype, and app enums start empty and fill from the `core.DocType` 
 
 ## Capped count behaviour
 
-`meta.count` is capped at 1000 and `more` signals rows past the cap. The page never displays an exact total when `more` is true; pagination is prev/next driven by `more`.
+`meta.count` is capped at 1000 and `more` signals rows past the cap. The count is an offset-relative remainder, not a global total: the backend counts the matching rows from the current page's offset (see [`backend/audit.md`](../backend/audit.md) → Response shapes). The footer therefore labels the number for what it is — `Page 2 · 353 mutations from here` — so the shrinking figure between pages does not read as lost rows. While `more` is true the footer shows the open-range wording (`more records available`) instead of a number; pagination is prev/next driven by `more`.
 
 ## Authorization
 
@@ -79,7 +79,7 @@ The global list requires wildcard `read` on `*.*`. `can('*.*', 'read')` cannot e
 - `auditFilters.spec.ts` — pure-logic Vitest (`server` project): the filter schema's keys, operators, control kinds, and enum vocabularies — including the guard that every emittable `field__op` key is one the audit backend answers.
 - `auditDiff.spec.ts` — pure-logic Vitest (`server` project): change grouping, value truncation, channel labels, account-actioner detection, cause-kind provenance rule.
 - `historyDetail.spec.ts` — pure-logic Vitest (`server` project): derivations behind the history detail pane (cause chips, actor labels, child rows).
-- Stories (`GlobalAuditTable.stories.svelte`, `AuditDetail.stories.svelte`, `ChangeList.stories.svelte`, `History.stories.svelte`) — component tests via play functions: rows/badges and capsules (including the actor capsule's QuickView click), row select, filter-chip rendering from a seeded filter map (chip interaction lives in the FilterBar's own stories), the channel column, `more`-driven pagination, grouped/truncated change rendering, rollback gating and confirm flow, cause badges, the detail header's channel/cause chips, version chip, and change stats, controlled selection, deep-link resolution.
+- Stories (`GlobalAuditTable.stories.svelte`, `AuditDetail.stories.svelte`, `ChangeList.stories.svelte`, `History.stories.svelte`) — component tests via play functions: rows/badges and capsules (including the actor capsule's QuickView click), row select, filter-chip rendering from a seeded filter map (chip interaction lives in the FilterBar's own stories), the channel column, the footer's from-here count wording, `more`-driven pagination, grouped/truncated change rendering, rollback gating and confirm flow, cause badges, the detail header's channel/cause chips, version chip, and change stats, controlled selection, deep-link resolution.
 
 ## Document history page (`/{domain}/{doctype}/{id}/history`)
 

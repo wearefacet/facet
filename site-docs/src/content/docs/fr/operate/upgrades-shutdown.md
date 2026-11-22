@@ -10,13 +10,13 @@ verified_at: 008dd880
 
 Une version est une nouvelle image de conteneur. L’entrypoint migre le schéma
 au démarrage, donc une mise à niveau tient en un pull, un redémarrage, et un
-contrôle de santé. Un arrêt est un signalà : le backend ferme ses ports
+contrôle de santé. Un arrêt est un signal : le backend ferme ses ports
 d’écoute, envoie des trames de fermeture à chaque WebSocket, attend les
 requêtes en cours, puis démonte ses sous-systèmes dans un ordre fixe.
 
 ## Quand l’utiliser
 
-Utilisez ce runbook quandà :
+Utilisez ce runbook quand :
 
 - vous passez une installation à une nouvelle étiquette de version,
 - vous arrêtez ou redémarrez une instance du backend,
@@ -30,7 +30,7 @@ Utilisez ce runbook quandà :
 - Prenez un instantané de la base de données avant de revenir en arrière sur
   une migration. Un retour arrière exécute du DDL que seul un instantané peut
   annuler.
-- Retenez la règle append-onlyà : les fichiers de migration appliqués ne
+- Retenez la règle append-only : les fichiers de migration appliqués ne
   sont jamais édités, renumérotés, ni fusionnés.
 
 ## Étapes
@@ -43,7 +43,7 @@ docker compose -f docker/compose.prod.yml up -d
 ```
 
 La nouvelle image du backend démarre et son entrypoint exécute une
-chaîneà :
+chaîne :
 
 ```text
 render config (when absent) → migrate → seed:core → server
@@ -51,7 +51,7 @@ render config (when absent) → migrate → seed:core → server
 
 Chaque étape est idempotente. L’étape migrate réessaie trois fois, puis le
 démarrage s’arrête. Après le démarrage, vérifiez que le backend est
-prêtà :
+prêt :
 
 ```sh
 curl -sf https://facet.example.tld/Healthcheck
@@ -92,7 +92,7 @@ scripts de mise à niveau.
 ### 4. Retenez la séquence d’arrêt
 
 Le gestionnaire attrape `SIGTERM`, `SIGINT` et `SIGHUP` dès le premier
-instant du démarrage. Un signal lance cette séquenceà :
+instant du démarrage. Un signal lance cette séquence :
 
 <!-- d2
 direction: down
@@ -120,7 +120,7 @@ abonnés du cache, fanout WebSocket, et le gestionnaire d’événements en
 dernier. Il draine le DDL d’index en arrière-plan avec une borne de
 5 secondes, puis ferme les pools de la base de données. Chaque étape
 s’exécute même si une étape antérieure a levé une erreur. Un second signal
-sort immédiatementà : le teardown tourne toujours, mais l’attente du
+sort immédiatement : le teardown tourne toujours, mais l’attente du
 drain non.
 
 Sur un déploiement multi-instances, un arrêt propre libère aussitôt les
@@ -142,7 +142,7 @@ services:
 
 ## Exemple
 
-Un runbook de mise à niveau complet pour une installation Composeà :
+Un runbook de mise à niveau complet pour une installation Compose :
 
 ```sh
 # 1. Récupérez les nouvelles images de version.
@@ -154,7 +154,7 @@ docker compose -f docker/compose.prod.yml up -d
 # 3. Vérifiez que le backend est prêt.
 curl -sf https://facet.example.tld/Healthcheck
 
-# 4. Plus tard, à l’arrêt du backend, confirmez l’arrêt propre dans les logsà :
+# 4. Plus tard, à l’arrêt du backend, confirmez l’arrêt propre dans les logs :
 #    la ligne "graceful shutdown complete" termine la séquence.
 ```
 
@@ -171,7 +171,7 @@ au-dessus de 30 secondes, comme dans le fragment ci-dessus.
 
 **Le démarrage s’arrête après trois tentatives de migrate.**
 
-Lisez les logs du backendà : une base injoignable ou un problème de
+Lisez les logs du backend : une base injoignable ou un problème de
 permissions en est la cause habituelle. Corrigez la cause, puis relancez
 `docker compose up -d`.
 
@@ -198,4 +198,4 @@ Une migration en échec se nomme elle-même dans les logs du backend.
   déploiement.
 - [Contrôles de santé, métriques, tracing, logs](/fr/operate/health-metrics-logs/) —
   les sondes que ce runbook vérifie.
-- Internes sur GitHubà : [shutdown.md](https://github.com/wearefacet/facet/blob/main/doc/backend/shutdown.md), [migrations.md](https://github.com/wearefacet/facet/blob/main/doc/backend/migrations.md).
+- Internes sur GitHub : [shutdown.md](https://github.com/wearefacet/facet/blob/main/doc/backend/shutdown.md), [migrations.md](https://github.com/wearefacet/facet/blob/main/doc/backend/migrations.md).

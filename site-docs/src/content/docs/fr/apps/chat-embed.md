@@ -11,23 +11,23 @@ verified_at: a77c6171
 `@facetapp/chat` monte l’assistant Facet dans votre app, attaché à
 
 l’assistant propre à votre app. Le backend possède le modèle, le prompt et
-les outils. Le package possède l’interfaceà : deux custom elements, une façade
+les outils. Le package possède l’interface : deux custom elements, une façade
 à un appel, et un driver HTTP. Votre app fournit ses identifiants au travers
 d’une seule fonction, et le package ne les voit jamais.
 
-> **Pour les agentsà :** Contrôle d’accèsà : `const gate = await facet.assistant()`
+> **Pour les agents :** Contrôle d’accès : `const gate = await facet.assistant()`
 > — `{access, token_budget, name}` ; masquez le lanceur quand `gate.access`
-> est faux. Installation : `pnpm add @facetapp/chat`. Authà : passez un `fetch`
+> est faux. Installation : `pnpm add @facetapp/chat`. Auth : passez un `fetch`
 > qui ajoute `Authorization: DPoP <token>` (une preuve `DPoP` fraîche par
 > requête quand le token est lié) et `X-Requested-With: XMLHttpRequest` —
-> POST/PATCH sans lui répond `403`. Montageà : `FacetAssistant.open({ baseUrl,
+> POST/PATCH sans lui répond `403`. Montage : `FacetAssistant.open({ baseUrl,
 > fetch: hostFetch, appId })` ou `FacetAssistant.mount('#chat-root', config)` ;
-> `close()` masque, `destroy()` retire. Routeà :
+> `close()` masque, `destroy()` retire. Route :
 > `POST /Api/assistant/app/conversations`, puis flux (SSE).
 
 ## Quand l’utiliser
 
-Intégrez l’assistant quandà :
+Intégrez l’assistant quand :
 
 - Vous donnez un assistant aux comptes de votre app sans construire
   d’interface de chat.
@@ -37,18 +37,18 @@ Intégrez l’assistant quandà :
 
 ## Avant de commencer
 
-Trois contrôles doivent passer avant qu’une conversation s’ouvreà :
+Trois contrôles doivent passer avant qu’une conversation s’ouvre :
 
-- L’appelant est attaché à une appà : un token d’app OAuth. Voir
-  [Connexion utilisateurà : OAuth 2.1 + PKCE](/fr/apps/oauth-login/) et
+- L’appelant est attaché à une app : un token d’app OAuth. Voir
+  [Connexion utilisateur : OAuth 2.1 + PKCE](/fr/apps/oauth-login/) et
   [Liaison des tokens par DPoP](/fr/apps/dpop/).
 - Le drapeau `assistant_enabled` de l’app est actif. L’admin de l’app le règle
-  sur l’onglet Paramètresà ; l’enregistrement exige `update` sur `app.App`. Le
+  sur l’onglet Paramètres ; l’enregistrement exige `update` sur `app.App`. Le
   champ facultatif `assistant_prompt` sur le même onglet ajoute au prompt des
   instructions propres à l’app.
 - La connectivité du rôle de l’appelant liste le canal `assistant`.
 
-Vérifiez ce contrôle depuis votre app avec le SDKà:
+Vérifiez ce contrôle depuis votre app avec le SDK :
 
 ```ts
 import { createFacetClient, oauthBrowser } from '@facetapp/sdk';
@@ -78,7 +78,7 @@ L’import enregistre deux custom elements et exporte la façade
 ### 2. Passer un fetch authentifié
 
 Le package ne touche jamais aux tokens. Vous passez un `fetch` qui ajoute vos
-en-têtes d’authentification, et chaque appel du driver passe par luià :
+en-têtes d’authentification, et chaque appel du driver passe par lui :
 
 ```js
 async function hostFetch(input, init = {}) {
@@ -98,7 +98,7 @@ async function hostFetch(input, init = {}) {
 `getAppToken` et `makeDpopProof` restent à votre charge — voir
 [Liaison des tokens par DPoP](/fr/apps/dpop/) pour le contrat de preuve. La
 preuve doit couvrir la méthode et l’URL de la requête. Un token émis sans
-preuve DPoP est un token bearerà ; envoyez-le sous
+preuve DPoP est un token bearer ; envoyez-le sous
 `Authorization: Bearer <token>` sans en-tête `DPoP`.
 
 `X-Requested-With` doit accompagner chaque appel qui change l’état. Facet
@@ -120,7 +120,7 @@ FacetAssistant.open({
 
 Le premier appel enregistre la configuration et affiche la fenêtre, ancrée en
 bas à droite. `bubble: true` affiche un bouton lanceur rond tant que la
-fenêtre est fermée. `FacetAssistant.close()` la masqueà ;
+fenêtre est fermée. `FacetAssistant.close()` la masque ;
 `FacetAssistant.destroy()` retire chaque montage et efface l’état enregistré.
 
 ### 4. Ou monter dans la page
@@ -134,16 +134,16 @@ FacetAssistant.mount('#chat-root', {
 ```
 
 Le panneau remplit `#chat-root` ; votre CSS possède la mise en page. Rien ne
-persisteà : `close()` masque le panneau pour la session seulement.
+persiste : `close()` masque le panneau pour la session seulement.
 
-Un seul chat tourne à la fois. `open()` active la fenêtreà ; `mount()` active
+Un seul chat tourne à la fois. `open()` active la fenêtre ; `mount()` active
 le panneau dans la page. Activer l’un retire l’autre, si bien qu’il n’y a
 jamais un second flux d’événements.
 
 ### 5. Configurer le montage
 
 La configuration de la façade, l’argument de `open()` / `mount()`, et les
-propriétés des éléments portent les mêmes champsà :
+propriétés des éléments portent les mêmes champs :
 
 | Option | Type | Défaut | Objectif |
 | --- | --- | --- | --- |
@@ -154,7 +154,7 @@ propriétés des éléments portent les mêmes champsà :
 | `name` | `string` | `'Assistant'` | Nom affiché dans l’en-tête de la fenêtre et les en-têtes des tours. |
 | `driver` | `AssistantDriver` | `HttpAssistantDriver` | Remplacement du transport — voir l’exemple ci-dessous. |
 | `tokens` | `Record<string, string>` | — | Remplacements des tokens `--facet-*`, posés sur les éléments montés. |
-| `bubble` | `boolean` | `false` | Montage flottant seulementà : le lanceur tant que la fenêtre est fermée. |
+| `bubble` | `boolean` | `false` | Montage flottant seulement : le lanceur tant que la fenêtre est fermée. |
 
 ## Explication
 
@@ -163,7 +163,7 @@ propriétés des éléments portent les mêmes champsà :
 Le chat se limite à une app. Le rail des conversations liste avec les filtres
 `context.kind__eq=app` et `context.app_id__eq`. Les nouvelles conversations
 passent par `POST /Api/assistant/app/conversations`. Le backend construit le
-contexte de la conversation à partir de l’appelant authentifiéà ; le corps ne
+contexte de la conversation à partir de l’appelant authentifié ; le corps ne
 porte que la langue.
 
 Le streaming passe par des server-sent events (SSE) : une trame `meta`, puis
@@ -181,7 +181,7 @@ saisie. Un `429` sur le flux affiche l’avis de budget sur le tour.
 L’import du package enregistre `<facet-assistant>` (panneau dans la page) et
 `<facet-assistant-window>` (fenêtre flottante). Utilisez les éléments
 directement quand vous voulez un contrôle total. Le thème traverse la
-frontière du shadow DOM sous forme de propriétés personnalisées CSSà; chaque
+frontière du shadow DOM sous forme de propriétés personnalisées CSS ; chaque
 token porte le préfixe `--facet-*` :
 
 ```css
@@ -192,12 +192,12 @@ facet-assistant {
 
 Les diagrammes Mermaid sont une peer dependency facultative. Installez
 `mermaid` dans le projet hôte, et les blocs `mermaid` délimités se rendent en
-diagrammesà ; sans lui, ils se rendent en blocs de code.
+diagrammes ; sans lui, ils se rendent en blocs de code.
 
 ## Exemple
 
 Le package livre un driver réel et un mock scripté. Cet exemple diffuse un
-tour contre le mock, sans backendà :
+tour contre le mock, sans backend :
 
 ```ts
 import { createMockAssistant, FacetAssistant } from '@facetapp/chat';
@@ -254,5 +254,5 @@ fini.
   l’attachement aux apps et le plafond d’attribution sur les appels d’outils.
 - [Gouverner l’assistant](/fr/govern/governing-assistant/) — budgets, noms et
   instructions dans l’app principale.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [packages/chat/README.md](https://github.com/wearefacet/facet/blob/main/packages/chat/README.md).

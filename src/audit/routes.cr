@@ -36,6 +36,13 @@ module Facet
       # and admit none.
       HISTORY_EXTRA_QUERY_KEYS = Set{"include"}
 
+      # The list-grammar keys the global audit list reads. The route
+      # forwards `filters`, `sort`, `page`, and `items` to `Audit::List` and
+      # nothing else, so the other grammar keys (`field`, `select`,
+      # `aggregate`, `scope`, `deleted`) answer `422` instead of vanishing
+      # into an unfiltered `200` (F07-03).
+      GLOBAL_LIST_KEYS = Set{"page", "items", "sort", "filters"}
+
       # Returns `nil` when the value is a well-formed ULID; otherwise the
       # shared `422` error. All four audit write handlers (global rollback,
       # document rollback, child rollback, restore) run this check.
@@ -96,12 +103,13 @@ module Facet
       # ── Handlers ────────────────────────────────────────────────────────
 
       private def self.handle_global_list(env)
-        list_req = HTTP::Helpers.get_list_request(env, strict: true) || return
+        list_req = HTTP::Helpers.get_list_request(env, strict: true,
+          admitted_body_keys: GLOBAL_LIST_KEYS, admitted_query_keys: GLOBAL_LIST_KEYS) || return
         render_global_list(env, list_req)
       end
 
       private def self.handle_query_global_list(env)
-        list_req = HTTP::Helpers.query_list_request(env) || return
+        list_req = HTTP::Helpers.query_list_request(env, admitted_keys: GLOBAL_LIST_KEYS) || return
         render_global_list(env, list_req)
       end
 
@@ -192,7 +200,7 @@ module Facet
 
       private def self.handle_query_document_history(env)
         include_children = false
-        list_req = HTTP::Helpers.query_list_request(env) do |body|
+        list_req = HTTP::Helpers.query_list_request(env, extra_body_keys: HISTORY_EXTRA_QUERY_KEYS) do |body|
           include_children = body.try(&.["include"]?.try(&.as_s?)) == "children"
         end
         return if list_req.nil?

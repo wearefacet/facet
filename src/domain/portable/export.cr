@@ -10,6 +10,7 @@ require "../../doctype/definition_store"
 require "../../doctype/doctype_definition"
 require "../../error"
 require "./archive"
+require "./secret_stripper"
 
 # Facet's own version, embedded at compile time from `shard.yml` at the
 # repo root. Used to stamp `bundle.yml`'s `facet_version` so an operator
@@ -60,11 +61,18 @@ module Facet
         # are NEVER captured as documents — they are already carried as
         # definition entries (the `core` domain is excluded entirely
         # from the document set).
+        #
+        # When `omit_secrets` is true, every `secret` marker in a captured
+        # document is replaced with `null` (see `SecretStripper`). The
+        # secret state is lost: the fields import unset, because a marker
+        # names a slot row that does not exist on the importing instance
+        # and the import's secret-leaf gate refuses it.
         def self.call(
           db : DB::Connection,
           source_domain : String,
           *,
           with_documents : Bool = false,
+          omit_secrets : Bool = false,
         ) : Result | Facet::ServiceError
           domain_entry, draft = fetch_domain(db, source_domain)
           return domain_entry if domain_entry.is_a?(Facet::ServiceError)
@@ -88,6 +96,14 @@ module Facet
             collection_views[qualified] = cvs unless cvs.empty?
             if with_documents
               docs = fetch_documents(db, qualified)
+              if omit_secrets && !docs.empty?
+                defn = Doctype::DefinitionStore.fetch(db, qualified)
+                if defn
+                  docs.each do |doc|
+                    SecretStripper.strip!(defn, doc.entry.content)
+                  end
+                end
+              end
               documents[qualified] = docs unless docs.empty?
             end
           end

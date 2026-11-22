@@ -12,7 +12,7 @@ Un champ calculé garde une valeur à jour sans qu’aucun utilisateur ne l’é
 
 ## Quand l’utiliser
 
-Ajoutez un champ calculé pour une valeur que les utilisateurs devraient sinon tenir à jour à la main, et se tromperaientà : un total sur des lignes de commande, une ancienneté en jours, un numéro composé de plusieurs parties. Un champ calculé ne vient jamais de la saisie utilisateur. Facet refuse toute valeur fournie pour lui.
+Ajoutez un champ calculé pour une valeur que les utilisateurs devraient sinon tenir à jour à la main, et se tromperaient : un total sur des lignes de commande, une ancienneté en jours, un numéro composé de plusieurs parties. Un champ calculé ne vient jamais de la saisie utilisateur. Facet refuse toute valeur fournie pour lui.
 
 ## Avant de commencer
 
@@ -106,7 +106,7 @@ La liste `compute_when` doit nommer la relation enfant, pas un champ de l’enfa
 
 ### L’écriture répond `422` avec `Computed fields failed`
 
-La fonction a levé une erreur. Lisez le message, corrigez la fonction, et enregistrez le doctype. Un échec déclenche un retour arrière de toute l’écritureà : aucune valeur obsolète n’est stockée.
+La fonction a levé une erreur. Lisez le message, corrigez la fonction, et enregistrez le doctype. Un échec déclenche un retour arrière de toute l’écriture : aucune valeur obsolète n’est stockée.
 
 ### Un utilisateur a tenté de remplir le champ
 

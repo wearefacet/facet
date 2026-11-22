@@ -17,7 +17,7 @@ document et définissent son texte de recherche.
 ## Quand l’utiliser
 
 Vous ajoutez un doctype à un domaine de brouillon, ou vous retravaillez un
-doctype existant. Concevez dans un domaine de brouillonà ; publiez une fois le
+doctype existant. Concevez dans un domaine de brouillon ; publiez une fois le
 modèle au point (voir
 [Domaines, brouillons et éditeurs de domaines](/fr/build/domains-drafts-editors/)).
 
@@ -29,7 +29,7 @@ modèle au point (voir
 - **Un domaine d’accueil.** Le domaine doit exister avant que Facet n’y
   accepte un doctype.
 - **Un nom d’action libre.** Les noms d’action réservés (`validate`, `create`,
-  `update`) ne sont pas disponiblesà ; ils désignent les hooks de cycle de vie.
+  `update`) ne sont pas disponibles ; ils désignent les hooks de cycle de vie.
 
 ## Étapes
 
@@ -52,7 +52,7 @@ table complète.
 
 ### 3. Choisir racine ou enfant
 
-Un doctype est exactement l’une de ces deux chosesà :
+Un doctype est exactement l’une de ces deux choses :
 
 | Type | Déclaration | Signification |
 | --- | --- | --- |

@@ -17,11 +17,11 @@ pas une variable d’environnement.
 
 ## Quand l’utiliser
 
-Mettez en place l’observabilité dans ces casà :
+Mettez en place l’observabilité dans ces cas :
 
-- vous branchez les sondes de l’orchestrateur sur le backendà ;
-- vous scrapez des métriques ou alertez dessusà ;
-- vous envoyez des traces vers un collecteurà ;
+- vous branchez les sondes de l’orchestrateur sur le backend ;
+- vous scrapez des métriques ou alertez dessus ;
+- vous envoyez des traces vers un collecteur ;
 - vous réglez le format et le niveau des logs pour le déploiement.
 
 ## Avant de commencer
@@ -48,10 +48,10 @@ Mettez en place l’observabilité dans ces casà :
 
 Utilisez `/Healthcheck` comme sonde de disponibilité, et seulement pour cela.
 La santé des dépendances la fait osciller, et une boucle de redémarrage n’aide
-personne. Utilisez `/Healthcheck/live` comme sonde de vivacitéà : elle n’échoue
+personne. Utilisez `/Healthcheck/live` comme sonde de vivacité : elle n’échoue
 que quand le processus a disparu.
 
-Le corps de la sonde de disponibilité nomme la partie en échecà :
+Le corps de la sonde de disponibilité nomme la partie en échec :
 
 ```json
 {
@@ -92,7 +92,7 @@ démarrage quand vous déboguez une instance parmi d’autres.
 ### 2. Lisez les compteurs de perte d’événements
 
 La livraison des événements est au plus une fois, par conception. L’objet
-`event_loss` rend visible la part silencieuseà :
+`event_loss` rend visible la part silencieuse :
 
 | Clé | Compte |
 | --- | --- |
@@ -101,7 +101,7 @@ La livraison des événements est au plus une fois, par conception. L’objet
 | `messages_dropped` | Messages jetés par un consommateur après une erreur de handler. |
 
 Les compteurs vivent dans le processus et se remettent à zéro au redémarrage.
-Ils sont l à pour la visibilité, pas pour la comptabilitéà : PostgreSQL détient
+Ils sont là pour la visibilité, pas pour la comptabilité : PostgreSQL détient
 l’état durable.
 
 `event_lag.max_lag` est le plus grand retard de groupe de consommateurs observé
@@ -112,10 +112,10 @@ lent ne perde des entrées à la troncature du flux.
 ### 3. Scrapez les métriques
 
 `GET /metrics` sert le format texte Prometheus 0.0.4. Aucune authentification
-requise. Les compteurs sont par processusà : scrapez chaque instance et laissez
+requise. Les compteurs sont par processus : scrapez chaque instance et laissez
 Prometheus faire l’agrégation.
 
-Compteurs incrémentés par le codeà :
+Compteurs incrémentés par le code :
 
 | Métrique | Étiquettes | Compte |
 | --- | --- | --- |
@@ -129,11 +129,11 @@ Compteurs incrémentés par le codeà :
 | `facet_http_requests_total` | `method`, `route`, `status_class` | Requêtes HTTP, par classe de statut finale. |
 | `facet_db_checkout_total` | `database`, `role` | Emprunts de connexions au pool. La donnée d’entrée pour dimensionner le pool. |
 | `facet_cron_task_failures_total` | `task` | Exécutions de tâche cron qui ont levé une erreur. |
-| `facet_cron_task_lease_skips_total` | `task` | Déclenchements déj à effectués par une autre instance. |
+| `facet_cron_task_lease_skips_total` | `task` | Déclenchements déjà effectués par une autre instance. |
 | `facet_fiber_restarts_total` | `fiber` | Redémarrages supervisés de fiber. |
 | `facet_fiber_loop_errors_total` | `fiber` | Tours de boucle longue durée ayant intercepté une erreur. |
 
-Jauges et compteurs lus depuis l’état vivant à chaque scrapeà :
+Jauges et compteurs lus depuis l’état vivant à chaque scrape :
 
 | Métrique | Type | Source |
 | --- | --- | --- |
@@ -146,7 +146,7 @@ Jauges et compteurs lus depuis l’état vivant à chaque scrapeà :
 
 ### 4. Activez le tracing
 
-Définissez trois variables d’environnement avant le démarrageà :
+Définissez trois variables d’environnement avant le démarrage :
 
 ```sh
 export OTEL_SERVICE_NAME=facet
@@ -160,13 +160,13 @@ réglage sûr pour dev et test.
 Chaque requête HTTP ouvre un span racine nommé `http.server.request`. Chaque
 instruction SQL ouvre un span `db.query`, avec le texte SQL tronqué à
 
-2000 caractères. Un span qui se termine en erreur porte le statut d’erreurà :
+2000 caractères. Un span qui se termine en erreur porte le statut d’erreur :
 les écritures en échec se retrouvent donc dans la trace. Un échec de télémétrie
 ne fait jamais échouer la requête observée.
 
 ### 5. Réglez le format et le niveau des logs
 
-La section facultative `logs:` pilote tout le processusà :
+La section facultative `logs:` pilote tout le processus :
 
 | Clé | Valeurs | Défaut |
 | --- | --- | --- |
@@ -174,10 +174,10 @@ La section facultative `logs:` pilote tout le processusà :
 | `level` | `trace`, `debug`, `info`, `notice`, `warn`, `error`, `fatal` | `info` |
 
 Une valeur inconnue fait échouer le démarrage. La variable d’environnement
-`LOG_LEVEL` n’affecte pas le processus applicatifà ; le fichier est l’unique
+`LOG_LEVEL` n’affecte pas le processus applicatif ; le fichier est l’unique
 source.
 
-Au format `json`, un objet s’imprime par ligneà :
+Au format `json`, un objet s’imprime par ligne :
 
 | Champ | Contenu |
 | --- | --- |
@@ -195,7 +195,7 @@ sous la forme `host:port/db`, jamais avec son mot de passe.
 
 ## Exemple
 
-Une configuration de production complèteà : logs JSON au niveau `info`, tracing
+Une configuration de production complète : logs JSON au niveau `info`, tracing
 actif, et une vérification de sonde après un déploiement.
 
 ```yaml
@@ -231,7 +231,7 @@ redémarrage du backend recrée les groupes au démarrage.
 
 L’edge ne la route pas. Scrapez le port du backend sur le réseau privé, par
 exemple `http://127.0.0.1:3000/metrics` depuis l’intérieur du réseau Docker.
-Depuis l’hôte, lancez le scrape dans le conteneur backendà :
+Depuis l’hôte, lancez le scrape dans le conteneur backend :
 `docker compose -f docker/compose.prod.yml exec backend curl -sf http://127.0.0.1:3000/metrics`.
 
 **Aucune trace n’atteint le collecteur.**
@@ -255,7 +255,7 @@ le fichier de configuration et redémarrez.
   de l’image, qui appelle `/Healthcheck` par curl.
 - [Migrations de base de données](/fr/operate/migrations/) — la chaîne de
   démarrage que la sonde de disponibilité protège.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [metrics.md](https://github.com/wearefacet/facet/blob/main/doc/backend/metrics.md),
   [telemetry.md](https://github.com/wearefacet/facet/blob/main/doc/backend/telemetry.md),
   [logging.md](https://github.com/wearefacet/facet/blob/main/doc/backend/logging.md),

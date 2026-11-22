@@ -404,9 +404,7 @@ module Facet
           # A role whose connectivity excludes `mcp` cannot open the MCP
           # channel at all — the pinned screen denies with the same shape
           # as an unheld role.
-          channels = role_content["connectivity"]?.try(&.as_a?)
-          mcp_ok = channels.try(&.any?(&.as_s?.try(&.==("mcp")))) == true
-          unless mcp_ok
+          unless IAM::Helpers.mcp_channel?(role_content)
             raise InvalidRequest.new("access_denied",
               "Role '#{role}' does not exist or is not usable", 403)
           end
@@ -451,9 +449,7 @@ module Facet
         # consent denial, not a malformed request. The gate lives here, not
         # in `validate_election`: delegated app tokens are never gated by
         # the field (see `doc/backend/oauth.md`).
-        channels = role_content["connectivity"]?.try(&.as_a?)
-        mcp_ok = channels.try(&.any?(&.as_s?.try(&.==("mcp")))) == true
-        raise AccessDenied.new(params.redirect_uri, params.state) unless mcp_ok
+        raise AccessDenied.new(params.redirect_uri, params.state) unless IAM::Helpers.mcp_channel?(role_content)
 
         # The URL pins the role: dispatch compares the token's `role` claim
         # against the `:role_slug` in the URL the token's `aud` points at, so

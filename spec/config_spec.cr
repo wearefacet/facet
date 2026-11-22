@@ -958,8 +958,9 @@ module Facet
 
       it "treats an empty lua: section like an absent one" do
         cfg = Config.from_yaml_node(build_yaml_config("lua:"))
-        cfg.lua.instruction_limit.should eq(10_000_000)
-        cfg.lua.memory_limit_mb.should eq(100)
+        cfg.lua.instruction_limit.should eq(1_000_000)
+        cfg.lua.memory_limit_mb.should eq(32)
+        cfg.lua.time_limit_s.should eq(0.5)
       end
 
       it "treats an empty hooks: section like an absent one" do
@@ -1013,6 +1014,37 @@ module Facet
         cfg = Config.from_yaml_node(build_yaml_config("database:"))
         cfg.database.statement_timeout_ms.should be_nil
         cfg.database.cluster.should be_nil
+      end
+    end
+
+    describe "assistant null keys" do
+      # The `!env?` collapse (Util::YamlInclude) rewrites an unset variable
+      # to an explicit YAML null — the key is present, the value nil. The
+      # shipped production example renders `api_endpoint` / `model` exactly
+      # this way when the FACET_AI_* variables are unset, so a null must
+      # fall back to the default, not fail the boot with a nil cast.
+      it "falls back to defaults when api_endpoint and model are explicit nulls" do
+        cfg = Config.from_yaml_node(build_yaml_config(<<-YAML
+          assistant:
+            api_endpoint:
+            api_key:
+            model:
+          YAML
+        ))
+        cfg.assistant.api_endpoint.should eq("https://api.openai.com/v1")
+        cfg.assistant.model.should eq("gpt-4o")
+        cfg.assistant.api_key.should be_nil
+      end
+
+      it "keeps values that are present" do
+        cfg = Config.from_yaml_node(build_yaml_config(<<-YAML
+          assistant:
+            api_endpoint: "https://llm.example.tld/v1"
+            model: "claude-sonnet"
+          YAML
+        ))
+        cfg.assistant.api_endpoint.should eq("https://llm.example.tld/v1")
+        cfg.assistant.model.should eq("claude-sonnet")
       end
     end
 

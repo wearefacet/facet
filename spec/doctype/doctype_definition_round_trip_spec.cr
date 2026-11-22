@@ -116,6 +116,20 @@ private def create_fixture_doctype(body : String) : String
   JSON.parse(resp.body)["meta"]["id"].as_s
 end
 
+# An array-of-reference field: the reference target lives on the `items`
+# sub-definition, not on the parent. `refs` targets a doctype the same
+# domain declares, so the authoring gate accepts the qualified form.
+private def array_of_reference_definition_body(suffix : String) : String
+  %({"doctype": "Specimen#{suffix}", "domain": "rt#{suffix}", "schema_version": 1,
+     "aggregate_root": true,
+     "display_name": "{{ title }}",
+     "search": "{{ title }}",
+     "fields": {
+       "title": {"type": "string", "required": true},
+       "refs": {"type": "array", "items": {"type": "reference", "doctype": "rt#{suffix}.Partner"}}
+     }})
+end
+
 private def get_definition(doctype_id : String, ctx : Facet::RBAC::AuthContext) : JSON::Any
   Fiber.current.auth_context = ctx
   resp = get_document_http("core", "DocType", doctype_id)
@@ -227,9 +241,10 @@ describe "Doctype definition GET → PUT round-trip (B-101ext)" do
     end
   end
 
-  it "answers 422 no-changes when the unmodified GET body is PUT back" do
+  it "answers 200 with the unchanged projection when the unmodified GET body is PUT back" do
     # The mask must return the complete stored definition: any dropped key
     # would make the PUT a real change, and the replace would delete it.
+    # An idempotent re-save is a success, not a caller error.
     suffix = unique_suffix(6)
     with_db do |db|
       ensure_domain(db, "core")
@@ -242,13 +257,41 @@ describe "Doctype definition GET → PUT round-trip (B-101ext)" do
       get_data = get_definition(doctype_id, ctx)
 
       put_resp = put_definition(doctype_id, get_data.to_json, ctx)
-      assert_http_status(put_resp, 422)
-      JSON.parse(put_resp.body)["error"].as_s.should contain("No changes detected")
+      assert_http_status(put_resp, 200)
 
       defn = stored_definition(db, doctype_id)
       defn.sidecars.has_key?("notes").should be_true
       defn.scopes.has_key?("mine").should be_true
       defn.identifier.should_not be_nil
+    end
+  end
+
+  it "accepts a GET → PUT round-trip of an array-of-reference field (F10-04)" do
+    # The GET response presents the array item's full definition, target
+    # included; a faithful round-trip is therefore accepted — the data-shape
+    # guard never sees a dropped reference target.
+    suffix = unique_suffix(6)
+    with_db do |db|
+      ensure_domain(db, "core")
+      ensure_domain(db, "rt#{suffix}")
+      Facet::Doctype::Seed.ensure_doctype_definition(db, "core", "DocType")
+
+      doctype_id = create_fixture_doctype(array_of_reference_definition_body(suffix))
+      ctx = round_trip_admin_context(db)
+
+      get_data = get_definition(doctype_id, ctx)
+      refs = get_data.as_h["fields"].as_h["refs"].as_h
+      items = refs["items"].as_h
+      items["type"].as_s.should eq("reference")
+      items["doctype"].as_s.should eq("rt#{suffix}.Partner"),
+        "GET dropped the array item's reference target — a GET → PUT round-trip is refused"
+
+      # A faithful round-trip (no edit) is a 200 no-op.
+      put_resp = put_definition(doctype_id, get_data.to_json, ctx)
+      assert_http_status(put_resp, 200)
+
+      defn = stored_definition(db, doctype_id)
+      defn.fields["refs"].items.not_nil!.doctype.should eq("rt#{suffix}.Partner")
     end
   end
 
@@ -300,8 +343,7 @@ describe "Doctype definition GET → PUT round-trip (B-101ext)" do
       # The mask must return the complete stored definition: any dropped key
       # would make the PUT a real change, and the replace would delete it.
       put_resp = put_definition(doctype_id, get_data.to_json, ctx)
-      assert_http_status(put_resp, 422)
-      JSON.parse(put_resp.body)["error"].as_s.should contain("No changes detected")
+      assert_http_status(put_resp, 200)
 
       defn = stored_definition(db, doctype_id)
       defn.fields["salary"].mode.should eq("sealed")

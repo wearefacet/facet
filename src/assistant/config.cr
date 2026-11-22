@@ -123,9 +123,12 @@ module Facet
 
         new(
           name: file_name.presence || "Assistant",
-          api_endpoint: raw["api_endpoint"]?.try(&.as_s) || "https://api.openai.com/v1",
+          # The `!env?` collapse renders an unset variable as an explicit
+          # YAML null (the key is present, the value nil) — read with the
+          # nil-safe casts or a disabled assistant fails the boot.
+          api_endpoint: raw["api_endpoint"]?.try(&.as_s?) || "https://api.openai.com/v1",
           api_key: raw["api_key"]?.try(&.as_s?),
-          model: raw["model"]?.try(&.as_s) || "gpt-4o",
+          model: raw["model"]?.try(&.as_s?) || "gpt-4o",
           system_prompt: raw["system_prompt"]?.try(&.as_s?),
           max_history: raw["max_history"]?.try(&.as_i?),
           max_tokens: raw["max_tokens"]?.try(&.as_i?),
@@ -133,9 +136,9 @@ module Facet
           auto_execute_tools: raw["auto_execute_tools"]?.try(&.as_bool?) || true,
           cancel_ttl_seconds: raw["cancel_ttl_seconds"]?.try(&.as_i) || 15,
           turn_timeout_seconds: raw["turn_timeout_seconds"]?.try(&.as_i) || 900,
-          turn_sweep_cron: raw["turn_sweep_cron"]?.try(&.as_s) || "*/5 * * * *",
+          turn_sweep_cron: raw["turn_sweep_cron"]?.try(&.as_s?) || "*/5 * * * *",
           usage_retention_days: raw["usage_retention_days"]?.try(&.as_i) || 0,
-          usage_prune_cron: raw["usage_prune_cron"]?.try(&.as_s) || "30 4 * * *",
+          usage_prune_cron: raw["usage_prune_cron"]?.try(&.as_s?) || "30 4 * * *",
         )
       end
     end

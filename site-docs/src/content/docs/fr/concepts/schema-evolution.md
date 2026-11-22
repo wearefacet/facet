@@ -1,6 +1,6 @@
 ---
 title: Évolution du schéma
-description: Modifiez un doctype sans backfillà ; les documents stockés migrent à leur prochaine lecture.
+description: Modifiez un doctype sans backfill ; les documents stockés migrent à leur prochaine lecture.
 audience: [author, developer]
 features: [DOM-17]
 sidebar:
@@ -10,7 +10,7 @@ verified_at: 7a6cb462
 
 Dans Facet, changer un doctype ne réécrit jamais les documents stockés. La
 définition passe à une nouvelle version de schéma, et chaque document se met
-à jour à la prochaine lecture qui le touche. C’est la migration à la demandeà :
+à jour à la prochaine lecture qui le touche. C’est la migration à la demande :
 pas de job de backfill, le travail de migration se fait à la lecture.
 
 ## Explication
@@ -58,7 +58,7 @@ Une mise à jour de doctype doit augmenter `schema_version` d’exactement
 un — impossible de sauter une version. Chaque écart entre l’ancienne et la
 nouvelle version demande une entrée de migration. Chaque fonction nommée
 doit exister dans le script Lua du doctype. La map `migrations` de la
-définition les nommeà :
+définition les nomme :
 
 ```json
 {
@@ -74,7 +74,7 @@ Une fonction de migration est du Lua ordinaire, dans le même script que les
 hooks de cycle de vie. Elle modifie le contenu du document en place, et les
 hooks de cycle de vie ne se réexécutent pas pendant la migration. Rien
 n’est automatique dans un changement de champ — c’est la fonction qui opère
-chaque changementà :
+chaque changement :
 
 | Changement | La fonction de migration | Exemple |
 | --- | --- | --- |
@@ -116,4 +116,4 @@ schéma se déploie sans backfill de toute la table.
   un changement de schéma dans un domaine de brouillon.
 - [Documents, doctypes et projections](/fr/concepts/documents-doctypes-projections/) —
   où se trouvent le contenu et le meta d’un document.
-- Internes sur GitHubà : [schema-migration.md](https://github.com/wearefacet/facet/blob/main/doc/backend/schema-migration.md).
+- Internes sur GitHub : [schema-migration.md](https://github.com/wearefacet/facet/blob/main/doc/backend/schema-migration.md).

@@ -111,6 +111,14 @@ field and the write gate refuses any value that reaches it, so the pin can
 never exist — the registry entry only keeps the effective adapter on the
 GET surface for the settings page's read-only row.
 
+The `artifact.storage` **node** is not a declared leaf either, so schema
+validation would answer "is not a defined field" for a `PATCH` that targets
+it. `Document::Update` remaps that refusal through
+`SystemSettings::WriteGate.refusal`, so `artifact.storage` (and any value
+beneath it) answers the write gate's deployment-material sentence instead —
+the same text the leaf refuses with, from `WriteGate::STORAGE_FIXED_MESSAGE`.
+Both doors name the config-file remedy.
+
 The two credential fields are `secret` fields (`mode: sealed`) on the
 doctype — legal inside nested `object` properties; their values never enter
 `mutations` or `projections.content`, and neither secret root field appears

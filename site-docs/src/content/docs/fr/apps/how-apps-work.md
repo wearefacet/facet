@@ -8,7 +8,7 @@ sidebar:
 verified_at: a77c6171
 ---
 
-Une app sur Facet est un enregistrementà : un document du doctype `app.App`.
+Une app sur Facet est un enregistrement : un document du doctype `app.App`.
 Votre code tourne en dehors de Facet et appelle Facet via HTTP. Facet
 n’exécute jamais de code d’app et ne donne jamais à une app de connexion à
 
@@ -16,19 +16,19 @@ la base de données. Facet est à la fois la source d’identité et la source d
 données. Le document d’enregistrement porte la politique qui encadre chaque
 appel que l’app effectue.
 
-> **Pour les agentsà :** enregistrez l’app avec `POST /Api/app/App` (cookie
+> **Pour les agents :** enregistrez l’app avec `POST /Api/app/App` (cookie
 > de session plus `X-Requested-With: XMLHttpRequest`) ; le hook de création
 > écrit le `client_id` en lecture seule. Une app navigateur se connecte avec
 > `GET /OAuth/authorize`, puis `POST /OAuth/token` avec PKCE, et appelle
 > `GET /Api/{domain}/{doctype}` avec `Authorization: Bearer` ou
 > `DPoP <access_token>`. Une app backend appelle avec
 > `Authorization: Bearer fct_…` depuis `POST /Api/app/:id/api-key`. Chaque
-> requête résout attributions ∩ rôle à partir du document d’app courantà ;
+> requête résout attributions ∩ rôle à partir du document d’app courant ;
 > une modification d’attribution s’applique donc à la requête suivante.
 
 ## Quand l’utiliser
 
-Ouvrez cette page quandà :
+Ouvrez cette page quand :
 
 - Vous construisez un frontend ou une intégration sur Facet.
 - Vous devez expliquer pourquoi un appel d’app a été autorisé ou refusé.
@@ -46,7 +46,7 @@ Ouvrez cette page quandà :
 ### Le document d’enregistrement
 
 Le document d’app porte les champs qui décident de l’identité et de la
-portéeà :
+portée :
 
 | Champ | À quoi il sert |
 | --- | --- |
@@ -96,7 +96,7 @@ le rôle, sinon le rôle est inutilisable pour l’app.
 
 L’attribution pose le plafond. Le rôle décide de ce qui existe à attribuer.
 Facet ne garde que les actions que le rôle donne aussi. Le rôle vient de
-l’un de ces deux endroitsà :
+l’un de ces deux endroits :
 
 - **Flux navigateur** — le compte qui se connecte élit un rôle sur l’écran
   de consentement. L’écran s’affiche à chaque connexion.
@@ -110,7 +110,7 @@ n’élargit jamais un filtre de lignes.
 Le token ne porte jamais l’attribution. Facet recharge le document d’app
 courant, recalcule attributions ∩ rôle, et construit le contexte de la
 requête à partir de ce résultat. Une modification d’attribution s’applique
-dès la requête suivanteà ; aucun token n’a besoin d’être réémis.
+dès la requête suivante ; aucun token n’a besoin d’être réémis.
 
 <!-- d2
 direction: down
@@ -138,7 +138,7 @@ run -> attribute
 
 Un token d’app porte `typ: "app"` et emprunte le flux de connexion OAuth.
 Une clé propre à l’app commence par `fct_` et emprunte le canal clé API.
-Les deux canaux aboutissent aux mêmes limitesà : attributions ∩ rôle,
+Les deux canaux aboutissent aux mêmes limites : attributions ∩ rôle,
 recalculées à chaque requête.
 
 ### Le lanceur du tableau de bord
@@ -160,7 +160,7 @@ tous les droits de modification.
 
 Chaque mutation passée sous identité d’app enregistre l’id de l’app dans
 `mutations.app`. La liste d’audit filtre avec `app__eq`. Les événements de
-connexion portent l’imputation de l’appà : les approbations de consentement,
+connexion portent l’imputation de l’app : les approbations de consentement,
 les refresh de token, et les refus à la prévérification des attributions.
 Voir [Auditer l’activité](/fr/govern/auditing-activity/).
 
@@ -190,7 +190,7 @@ une session opérateur.
 ## Voir aussi
 
 - [Enregistrer une app](/fr/apps/registering-app/) — créer l’enregistrement.
-- [Connexion utilisateurà : OAuth 2.1 + PKCE](/fr/apps/oauth-login/) — la
+- [Connexion utilisateur : OAuth 2.1 + PKCE](/fr/apps/oauth-login/) — la
   connexion navigateur.
 - [Comptes de service pour les apps backend](/fr/apps/service-accounts/) —
   le canal des clés.
@@ -198,5 +198,5 @@ une session opérateur.
   concept à la base des deux limites.
 - [Maîtrer la portée des apps (attributions)](/fr/govern/app-grants/) — la
   vue admin.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [app-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/app-system.md).

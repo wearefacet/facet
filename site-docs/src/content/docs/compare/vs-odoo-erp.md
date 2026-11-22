@@ -39,7 +39,7 @@ Odoo is priced per user per month, with promotional first-year pricing that rene
 | Primary purpose | Integrated business suite: accounting, inventory, CRM, HR, manufacturing, website, POS | Governed home for your own operational data, plus the apps that run on it |
 | Who builds | The vendor ships the processes; staff and partners configure; Studio (Custom plan) and Python modules customize | You model your domains with the AI assistant, or our team does it with you |
 | Data ownership & portability | Odoo Online (hosted, with database backup download); Community self-host; Custom plan: on-premise or Odoo.sh | Your own PostgreSQL; domain export/import, API, webhooks |
-| Hosting & data residency | Odoo Online, Odoo.sh, or self-hosted (Community, or Custom plan) | Self-host anywhere, or managed hosting in France |
+| Hosting & data residency | Odoo Online, Odoo.sh, or self-hosted (Community, or Custom plan) | Self-host anywhere, or managed hosting with your choice of location |
 | Permissions | Per-app access rights and record rules, configured per model | Roles with row scopes and field tags, enforced in the data layer on every access path |
 | Audit & history | Change tracking on the fields each module chooses to track; a complete audit trail needs an add-on module | Full change log on every record by default: who, what, when; per-document rollback. Retention set by you, globally or per document |
 | File storage | Attachments on records; the Documents app on paid plans | Built-in, on S3-compatible storage, under the same grants as the records. Volume limited only by your storage |
@@ -47,7 +47,7 @@ Odoo is priced per user per month, with promotional first-year pricing that rene
 | Custom apps on top | Website builder and portal; anything else is a custom module | Any app your AI tool builds, on the SDK, signed in over OAuth. Facet hosts it; the person who built it can publish it and roll it back |
 | AI | Agentic AI on the Custom plan | In-app assistant and builder on your own API key, any provider; embeddable assistant for your apps; MCP for coding agents. Every AI acts within the user's role |
 | Logic & automation | Automation rules; custom modules | Lua lifecycle hooks on document events inside a domain; real-time updates; webhooks to drive external automation tools |
-| Reporting & analytics | Reports inside each app, accounting in particular | No built-in charts; your data sits in standard PostgreSQL, reachable from any BI tool through export or the API |
+| Reporting & analytics | Reports inside each app, accounting in particular | No built-in charts; BI reads data through export or the API, so the role rules still apply. Direct database access is an admin privilege, outside the role model |
 | Ready-made business modules | Yes: the point of the product | None prebuilt yet; you model what is specific to you. A marketplace of one-click domains, with apps and roles, is planned |
 | Pricing model | Per user per month; One App Free, Standard, Custom; promotional first year; priced by country | Free to use and self-host (source-available, BSL 1.1), for any number of users; paid services only if you want them |
 | Maturity | Mature suite, large partner network | Young product in beta, small ecosystem, built on proven foundations: PostgreSQL, Redis, an event log |
@@ -120,7 +120,7 @@ Yes, through Odoo's export or external API. The import maps onto your Facet doma
 ## Sources
 
 - Odoo editions: two versions, Community (open source) and Enterprise (licensed), with the feature-by-feature comparison — https://www.odoo.com/page/editions — checked 2026-11-13
-- Odoo pricing: One App Free, Standard and Custom plans; US prices ($16.90 first year, then $21.10 per user per month on Standard, yearly billing); the Custom plan carries Studio, the external API, custom modules, multi-company, Odoo.sh and on-premise hosting; first-year discount terms; implementations for larger companies routed through partners — https://www.odoo.com/pricing — checked 2026-11-13
+- Odoo pricing: One App Free, Standard and Custom plans; US prices ($24.90 first year, then $31.10 per user per month on Standard, yearly billing); the Custom plan carries Studio, the external API, custom modules, multi-company, Odoo.sh and on-premise hosting; first-year discount terms; implementations for larger companies routed through partners; prices vary by the visitor's location, not the billing country — https://www.odoo.com/pricing — checked 2026-11-20
 - Odoo upgrade-cost figures are partner estimates, not vendor figures: Ventor, on upgrade cost being driven by customizations — https://ventor.tech/services/odoo-upgrade/ — and Ecosire, on version-migration cost ranges — https://ecosire.com/blog/odoo-migration-v17-to-v18-guide — checked 2026-11-13
 - Activepieces, on Studio and the external API requiring the Custom plan; the plan comparison itself is on https://www.odoo.com/pricing — https://www.activepieces.com/blog/odoo-pricing-2026-plans-hosting-and-implementation — checked 2026-11-13
 - Facet's own claims come from this site: [Domains, drafts and domain editors](/build/domains-drafts-editors/).

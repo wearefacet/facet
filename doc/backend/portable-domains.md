@@ -1,6 +1,6 @@
 # Portable Domains
 
-**Files:** `src/domain/portable.cr`, `src/domain/portable/archive.cr` (require root), `src/domain/portable/archive/` (`bundle.cr`, `writer.cr`, `reader.cr`, `yaml_encode.cr`), `src/domain/portable/export.cr`, `src/domain/portable/import.cr`, `src/domain/portable/cli.cr`, `src/util/yaml_json.cr`, `src/main.cr`
+**Files:** `src/domain/portable.cr`, `src/domain/portable/archive.cr` (require root), `src/domain/portable/archive/` (`bundle.cr`, `writer.cr`, `reader.cr`, `yaml_encode.cr`), `src/domain/portable/export.cr`, `src/domain/portable/secret_stripper.cr`, `src/domain/portable/import.cr`, `src/domain/portable/cli.cr`, `src/util/yaml_json.cr`, `src/main.cr`
 
 A portable-domain bundle is a self-contained snapshot of a domain's **definition** — the `core.Domain` document, every `core.DocType` definition in that domain, every owned `core.DocumentView`, and every **general** `core.CollectionView`. It is the interchange format for moving a domain's schema between Facet instances (e.g. staging → production, or vendoring a domain definition out of a repo).
 
@@ -80,7 +80,7 @@ meta: {}
 Two commands — both bypass RBAC (`AuthContext.system`), like every other CLI subcommand. Multiple domains are declared comma-separated (`a,b,c`) or whitespace-separated (`a b c`); both forms may be mixed.
 
 ```
-facet domain:export <domain>[,domain,...] [--output PATH | --output-dir DIR] [--with-documents]
+facet domain:export <domain>[,domain,...] [--output PATH | --output-dir DIR] [--with-documents] [--omit-secrets]
 facet domain:import <path>[,path,...] [--into <domain>[,domain,...]] [--merge]
 ```
 
@@ -89,6 +89,7 @@ facet domain:import <path>[,path,...] [--into <domain>[,domain,...]] [--merge]
 | `--output PATH` | `export` | `./{domain}.facet-domain` | Single-domain shortcut. Rejects multiple domains. A path ending in `.tar.gz` / `.tgz` produces a tarball; any other path is a directory tree. Mutually exclusive with `--output-dir`. |
 | `--output-dir DIR` | `export` | current directory | Fan-out for multi-domain exports: one bundle per domain, written to `DIR/{domain}.facet-domain`. The directory is created if absent. Mutually exclusive with `--output`. |
 | `--with-documents` | `export` | off | Also captures every non-deleted document of every user doctype in the source domain. Definition doctypes (`core.*`) are never captured as documents — they are already carried as definition entries. The bundle then carries a `documents/` section. Applies to every domain in the batch. |
+| `--omit-secrets` | `export` | off (secrets are exported) | Nulls every `secret` marker in the captured documents (`SecretStripper`), so the bundle imports on an instance that does not hold the slots. **The secret state is lost: the fields import unset.** Without the flag a bundle that carries a set secret refuses on import (see *Secret-leaf gate on bundled documents*). Applies to every domain in the batch. |
 | `--into DOMAINS` | `import` | bundle's `source_domain` | Renames each bundle during import — orthogonal to `--merge`. Single value when one path is given; comma-separated list aligned with multiple paths when several bundles are imported at once (counts must align). A single `--into` value combined with multiple paths is rejected. |
 | `--merge` | `import` | off | Allows importing onto an existing domain, subject to the version gate; creates the domain when it does not exist yet (same as the default fresh-create branch). Applies to every domain in the batch. Without `--merge`, the import refuses if any target domain already exists. |
 
@@ -156,7 +157,7 @@ All three modules are top-level singletons whose entry points return `Result | F
 
 | Method | Returns | Notes |
 |---|---|---|
-| `Export.call(db, source_domain, *, with_documents = false)` | `Export::Result \| Facet::ServiceError` | Builds the in-memory `Archive::Bundle`. Refuses a `draft = true` domain with a `422`. Returns `404` when the source domain does not exist. When `with_documents: true` is set, every non-deleted document of every user doctype in the source domain is captured into `bundle.documents`; the `core` domain is never captured as documents. |
+| `Export.call(db, source_domain, *, with_documents = false, omit_secrets = false)` | `Export::Result \| Facet::ServiceError` | Builds the in-memory `Archive::Bundle`. Refuses a `draft = true` domain with a `422`. Returns `404` when the source domain does not exist. When `with_documents: true` is set, every non-deleted document of every user doctype in the source domain is captured into `bundle.documents`; the `core` domain is never captured as documents. When `omit_secrets: true` is also set, every `secret` marker in a captured document is replaced with `null` (`SecretStripper`) — the secret state is lost and the fields import unset. |
 
 `Export::Result` carries the `bundle` plus the four summary counts (`doctype_count`, `document_view_count`, `collection_view_count`, `document_count`) so the CLI can print without re-querying.
 
@@ -226,7 +227,7 @@ An empty `script` is "no script": the direct `ScriptValidator` pass only runs wh
 
 ### Secret-leaf gate on bundled documents
 
-A bundled document row bypasses the document pipeline, so the secret gate the write door runs never saw it. The import now runs the same gate on every bundled row (B-370): `SecretType#validate` for the leaf shape (a plaintext string or a malformed marker answers `422` naming the field), then `Secrets::Adoption.call` for handle/marker semantics. A bundle carries no secret material: a stage handle has no staging row on the importing instance, and a shape-valid marker with no matching slot row is a forged state — both refuse with `422`, and the transaction rolls back, so no mutation row persists. The payload is never redacted or rewritten (`mutations` is the replay source). A bundle whose `secret` leaves are absent or `null` imports unchanged.
+A bundled document row bypasses the document pipeline, so the secret gate the write door runs never saw it. The import now runs the same gate on every bundled row (B-370): `SecretType#validate` for the leaf shape (a plaintext string or a malformed marker answers `422` naming the field), then `Secrets::Adoption.call` for handle/marker semantics. A bundle carries no secret material: a stage handle has no staging row on the importing instance, and a shape-valid marker with no matching slot row is a forged state — both refuse with `422`, and the transaction rolls back, so no mutation row persists. The payload is never redacted or rewritten (`mutations` is the replay source). A bundle whose `secret` leaves are absent or `null` imports unchanged. To move a domain that carries set secrets, export it with `--omit-secrets`: every marker becomes `null`, so the bundle imports and the fields land unset (the secret state is lost).
 
 ### Replication invariant gate
 

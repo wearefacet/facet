@@ -11,7 +11,7 @@ verified_at: fd345fe3
 Un champ peut porter une ou plusieurs étiquettes de sensibilité. Un rôle
 déclare quelles étiquettes il peut voir dans sa liste `visible_tags`. Facet
 cache tout autre champ en lecture, refuse d’écrire dans les champs cachés,
-et retire leurs valeurs du journal d’audit. La règle refuse par défautà : une
+et retire leurs valeurs du journal d’audit. La règle refuse par défaut : une
 étiquette qu’aucun rôle n’accorde cache le champ à tout le monde.
 
 ## Quand l’utiliser
@@ -92,7 +92,7 @@ ne connaît pas sont omises aussi, pour chaque principal réel.
   ramène les membres dans les valeurs d’objet, les clés de dictionnaire, et
   les marqueurs secrets au champ qui les possède. Un changement qui
   atterrit dans un champ invisible est refusé.
-- Le travail de cycle de vie, lui, remplit toujours les champs invisiblesà :
+- Le travail de cycle de vie, lui, remplit toujours les champs invisibles :
   défauts, champs calculés, hooks.
 
 ### Le caviardage dans l’audit
@@ -105,7 +105,7 @@ forme que les chemins de diff.
 
 | Forme de la ligne                                       | Ce que voit l’appelant                                                          |
 | -------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Ligne de contenu complète (create, instantané, tombstone de suppression) | valeurs invisibles retirées à chaque niveauà ; un parent visible garde sa partie visible |
+| Ligne de contenu complète (create, instantané, tombstone de suppression) | valeurs invisibles retirées à chaque niveau ; un parent visible garde sa partie visible |
 | Diff de mise à jour                                      | une entrée `set` sur un chemin invisible garde son chemin mais perd sa valeur    |
 | Définition manquante                                     | toutes les valeurs retirées — le refus par défaut                                |
 
@@ -123,7 +123,7 @@ champ invisible répond `403` — voir
 
 Les étiquettes cachent un champ par rôle. Deux genres de champs se cachent à
 
-tout le mondeà :
+tout le monde :
 
 - Un champ `secret` ne stocke jamais sa valeur dans un document ni dans le
   journal.
@@ -179,6 +179,6 @@ l’appelant et les transitions pilotées par l’appelant sont gardées.
   `redacted`.
 - [Champs secrets et en écriture seule](/fr/build/secret-write-only-fields/) —
   caché à tout le monde, pas par rôle.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md),
   [audit.md](https://github.com/wearefacet/facet/blob/main/doc/backend/audit.md).

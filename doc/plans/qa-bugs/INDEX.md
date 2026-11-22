@@ -4,6 +4,96 @@ One file per finding. Each file records the finding as filed and its verificatio
 
 Files exist for findings verified CONFIRMED or PARTIAL. Findings marked INFIRMED or UNVERIFIABLE get no file — the sweep section below records their disposition.
 
+## Sweep 2026-11-21 — naive F01–F10 against the release `02b67c90` (verified against HEAD `2953fb7`)
+
+Naive full F-series pass run against the first public release (`02b67c90`, tag `v0.2.0`). The
+report was consolidated in one file; verification here is source review, read-only, at HEAD
+`2953fb7` (four commits after the release: `d0efac9`, `e963d10`, `fe26a4a`, `2953fb7`). The
+release-to-HEAD delta changed no verified path except the document-update and RBAC scope
+internals, which touch F04-01 and F10-09 only by strengthening the same code.
+
+The report carried 59 findings (F01→F10). 22 were verified actionable and got a file: 15
+CONFIRMED, 5 PARTIAL, 2 confirmed-but-by-design with a documentation gap. The rest split as
+below — 16 INFIRMED, 12 brief drift or by-design with no in-repo action, 4 UNVERIFIABLE, 3
+duplicates of a finding above, and 2 not a defect.
+
+Headline: **F04-01** (an editor forks and publishes a foreign live domain — the documented 403
+can never fire for the seeded role) and **F07-01** (the seeded `editor` can open a working
+outbound webhook — containment C7 FAIL). The F10 authoring-door cluster (F10-01, F10-02, F10-03,
+F10-04) is the other load-bearing group: a view config, a view template, and a doctype round-trip
+all accept input the renderer cannot use. Two findings the previous sweep fixed did **not**
+reproduce as filed and are recorded as PARTIAL or INFIRMED (F05-01, F09-02).
+
+### Filed — resolved 2026-11-22 (files removed)
+
+All 21 finding files were fixed and removed. The two by-design rows (F02-01) stay in **Not
+filed**. One row records what each fix changed.
+
+| ID | Sev | Finding | Fix |
+|---|---|---|---|
+| F04-01 | 🟠 | A domain editor forks **and publishes** a live domain she does not edit | `Domain::Editors.authorize_draft_from?` requires source membership whenever a `source_domain` is present; the `All` create verdict no longer bypasses it. |
+| F07-01 | 🟠 | The seeded `editor` carries the `webhook` channel, so a non-admin opens a working egress channel (C7 FAIL) | The seeded `editor` role carries `connectivity: [api, assistant]`; only `admin` holds `webhook` and `mcp`. |
+| F10-01 | 🟡 | CollectionView `config` is unvalidated; an unusable config renders an empty board | New `Document::CollectionViewGate` validates `config` against the parent doctype at both write doors (`422` with field paths). |
+| F10-02 | 🟡 | `PATCH` on a `core.DocumentView` merges `template` instead of replacing it | `Document::Update` replaces `template` (`core.DocumentView`) and `config` (`core.CollectionView`) on write; both gates validate the submitted value. |
+| F10-03 | 🟡 | The template gate does not resolve `relation.source.rel`, relation column keys, or display-node bindings | `ViewTemplateValidator` resolves these against the doctype definition and emits `:warning`; `/check` reports them. |
+| F10-04 | 🟡 | The doctype GET→PUT round-trip drops an array-of-reference target | `FieldDefinition#to_json` emits the full nested `items` / `properties` / `values`; the refusal names the flat authoring PATCH. |
+| F03-01 | 🟡 | The nested-route 404 mixes children, sidecars and actions under "child" | The miss message splits "unknown relation" (children + sidecars) from "unknown action"; the action route's location is documented (the declarative slice stays hand-maintained). |
+| F03-02 | 🟡 | The inline-children counter stays at the persisted-row count while drafts are staged | The relation header counts visible drafts when editable. |
+| F03-03 | ⚪ | A no-op `PUT core.DocType` answers `422` with a text-only match and no machine code | An idempotent re-save answers `200` with the unchanged projection (`Result#unchanged`); the seed reconcile treats it as a no-op. |
+| F06-01 | 🟡 | The audit pager prints the from-offset count as "N total mutations" | The footer labels the remainder ("N more from here"); the API contract is unchanged. |
+| F07-03 | 🟡 | `GET /Api/Audit` admits `field=` / `select=` and ignores them | The audit route admits only the keys it reads; other grammar keys answer `422`. |
+| F07-05 | ⚪ | A lowercase probe path answers `303 → /Login` and `200` HTML | Both edge Caddyfiles answer `404` for `/healthcheck` and `/metrics` on every method, before the SPA fallback. |
+| F08-01 | 🟡 | The usage meter cannot tell an estimate from a bill | `GET /Api/assistant/usage` returns `estimated_total`; the meter shows a hint; the two doc paragraphs are reconciled to the code. |
+| F08-03 | ⚪ | `/Api/_mcp/endpoints` lists roles with no `mcp` channel | The listing filters on the `mcp` channel through the shared consent helper. |
+| F09-01 | 🟡 | A Redis outage reaches the login box as an opaque `500` | Connection-level errors map to `503 {"error": "Service unavailable", "dependency": …}`; documented in `http-layer.md`. |
+| F09-03 | 🟡 | A domain with a set secret cannot be moved between instances | `facet domain:export --omit-secrets` strips the secret markers so the bundle imports with the fields unset. |
+| F09-05 | ⚪ | The REST refusal for `artifact.storage` names a field that does not exist | The `artifact.storage` node answers the write-gate message (config-file remedy) instead of `unknown_field`. |
+| F10-06 | ⚪ | A hand-authored column without `label` prints the raw field key | One render-time rule: `label ?? field.title ?? humanize(key)`. |
+| F10-07 | ⚪ | A `file` cell shows the artifact id in the table and a filename on the show page | `file` cells resolve the cached filename (shared cache) and fall back to the id with the id as a tooltip. |
+| F10-08 | ⚪ | Money formats three ways on one document; `-0.00` prints | The header chip uses `formatMoneyAmount` + `composeMoneyText`; a value that rounds to zero drops its sign. |
+| F10-09 | ⚪ | Nested child reads need no child grant, and the docs do not say so | Documented in `rbac.md` and `http-layer.md`: the nested route reads children through the parent; the flat child route stays refused. |
+| F10-10 | ⚪ | `Doctype::Check` does not name a view that groups on an unservable field | `check.cr` reads the doctype's `core.CollectionView` rows through `CollectionViewGate.validate` and reports a `:warning`. |
+
+### Not filed — no verification file
+
+| ID | Verdict | Disposition |
+|---|---|---|
+| F01-01 | By design | The guard is per-email and `iam.md` names `accounts:create` as the second-admin path. Residual: the CLI does not say it created an *additional* admin. |
+| F02-01 (filed) | By design | `filters` stays opt-in and `doctype-system.md` states that no authoring door applies a default. The Builder's defaults live in `frontend/src/lib/doctype/capabilities.ts`. The asymmetry is documented; the residual is discoverability (see F10-10). |
+| F02-02 | INFIRMED | The skip is by design (the cross-doctype endpoint needs a `search` template; the list `search` filter keeps the `display_name` fallback corpus). The check notice is accurate per surface — the two clauses describe two different routes, not one contradiction. |
+| F02-03 | By design | An earlier-step close is session-only by documented design (`doc/frontend/settings.md`); only the last step and the checkbox persist. |
+| F04-02 | By design | The qualified id `iam.Roles.<slug>` is documented (`iam.md`). The 404 names the wrong id form but the doc does not. |
+| F04-03 | By design | `import-export.md` states the header follows the caller's selection and the cells are masked. The `422` contract covers unknown and duplicate keys only. |
+| F04-04 | By design | `active: false` covers both "never accepted" and "paused" by documented design (D6). No doc requires a dropped-consumer marker. |
+| F04-05 | CONFIRMED (doc gap) | Correct by design (the `activate` action is doctype-global, held by the admin). The gap is that no doc says "only an administrator can accept a grant" and the `403` names no holder. |
+| F05-01 | INFIRMED | `iam.mfa.enforcement` IS rendered (`SystemSettingsForm.svelte`), hidden only while `iam.mfa.type === 'none'`. The residual observation holds: the default is `preferred`, so flipping TOTP alone does not enforce. |
+| F05-02 | CONFIRMED (doc gap) | The Accounts subtitle promises credential management; the peek is read-only and the actions live on the document page. The copy should change. |
+| F05-03 | Brief drift | A revoked key stays listed with a `REVOKED` badge, and no `challenge` LoginEvent exists — both match the docs. |
+| F06-02 | CONFIRMED (label) | The history chip says "Document version {idx}" while `meta.version` is the snapshot counter. Two meanings of "version" on one document. |
+| F06-03 | Brief drift | Redaction is a read-side transform; a write into an invisible field is refused `403` first. The docs match the code. |
+| F06-04 | PARTIAL | The slug-vs-ULID split holds, and a ULID app addressed by slug answers `404`. The seeded `facet-cli` is `public`, so it answers `422 "App is not a backend app"`, not `404`. |
+| F07-02 | INFIRMED | The suspected replay path does not exist: a new group is created at `$`; an existing group resumes its cursor, and a `no_ack: true` + `>` reader leaves the cursor at the tail. The doc wording for the existing-group case is thin, not wrong. |
+| F07-04 | CONFIRMED (feature gap) | A hook's `document.*` error carries only the top-level message; `details` are dropped. No doc promises them to hook authors. |
+| F07-06 | Brief drift | The vocabulary is the documented closed set of bare verbs. |
+| F07-07 | PARTIAL | The `confidential (secret)` copy contradicts the "nothing here is confidential" panel, but the two do not appear on one page. |
+| F07-08 | CONFIRMED (UI) | Two `window.confirm` calls sit beside dialog-based destructive actions in the same surface. |
+| F07-09 | By design | `app.Deployment` declares no actions; rollback is `PATCH app.App {active_deployment}`, documented in `app-system.md`. The 404 does not point there. |
+| F08-02 | By design (open decision) | The terminal refusal rides `cancelled`, and `agent-conversations.md` now documents it in three places. A distinguishing status stays an open product decision (same as the earlier sweep's F08-01). |
+| F08-04 | CONFIRMED (copy) | The authorize refusal says `App is not active (status=draft)` and does not name the field to set. |
+| F08-05 | By design | `@facetapp/chat` is source-only and disclosed in `doc/packages/chat.md`. A bundler is required by contract. |
+| F09-02 | INFIRMED | An emptied numeric input submits no key (`state.text === ''` is skipped in `buildPatch`). Only the explicit keep-forever toggle writes `0`. |
+| F09-04 | CONFIRMED (prose) | `openapi.md` said 26 paths / 36 operations; the spec carries 27 paths / 30 standard operations + 7 `x-query` twins. The prose now states the real counts and names `doc/api/openapi.json` as the source of truth. |
+| F09-06 | Duplicate | Same mechanism as F07-05, on `/metrics` — fixed with it. |
+| F10-05 | INFIRMED | The calendar's own picker text names `filters: [comparison]`; the `[equality]` hint belongs to the kanban group-by and to the filter compiler, and is correct there. |
+| F10-11 | Brief drift | `doc/frontend/kanban.md` states the surface is read-only in this version ("no drag and drop"). |
+
+### Retracted or not a defect
+
+| ID | Reason |
+|---|---|
+| F03-04 | Brief drift — MIME comes from magic bytes by design, and the signed URL is `/A/:gid`. |
+| F07-05 residual (`/metrics`) | Kept inside F07-05; the edge does not route `/metrics`, which `metrics_route.cr` documents. |
+
 ## Sweep 2026-11-20 — naive F01–F10 (verified against `1b7bf906`)
 
 Ninth naive full F-series pass (report dated 2026-11-19/20). The sweep ran on another machine; the detailed repro evidence and the consolidated report live with that session. Verification here is source review, read-only, against the sweep commit `1b7bf906` and HEAD `abe21a28`. Two commits landed between the sweep and verification (`8234d6e9` site-docs only; `abe21a28` OIDC role provision + system settings) and none changed a verified path — the one relevant delta is JIT role provisioning (roles now resolve from the instance baseline instead of the provider's `default_role`), which touches no verdict. Thirteen parallel source-review agents produced the verdicts; the load-bearing claims were spot-checked directly.

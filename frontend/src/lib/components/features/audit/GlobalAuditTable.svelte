@@ -62,15 +62,20 @@
 	const canGoPrev = $derived(page > 1);
 	const canGoNext = $derived(items.length === pageSize);
 
-	/** Exact totals shown only when `more` is false; the count is capped at 1000. */
+	/**
+	 * Rows matching the filter from this page's offset. The API reports a
+	 * bounded remainder, not a global total (see `doc/backend/audit.md`), so
+	 * the label says what the number is: the rows from here onward. When
+	 * `more` is set the remainder is capped, so the count is a floor.
+	 */
 	const countLabel = $derived(
 		meta == null
 			? ''
 			: meta.more
 				? messages.audit_more_records()
 				: meta.count === 1
-					? messages.audit_total_count_singular({ count: meta.count })
-					: messages.audit_total_count_plural({ count: meta.count })
+					? messages.audit_remaining_count_singular({ count: meta.count })
+					: messages.audit_remaining_count_plural({ count: meta.count })
 	);
 </script>
 

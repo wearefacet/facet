@@ -13,6 +13,7 @@
 # See `doc/backend/portable-domains.md`.
 
 require "./portable/archive"
+require "./portable/secret_stripper"
 require "./portable/export"
 require "./portable/import"
 require "./portable/cli"

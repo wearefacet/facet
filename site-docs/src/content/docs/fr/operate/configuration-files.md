@@ -8,35 +8,35 @@ sidebar:
 verified_at: 008dd880
 ---
 
-Un fichier YAML configure tout le backendà : `config.{env}.yml`. C’est la
+Un fichier YAML configure tout le backend : `config.{env}.yml`. C’est la
 source de vérité unique du démarrage. Les adresses de la base de données et
 de Redis n’existent que dans ce fichier, qui doit donc se charger avant la
-connexion à la base. Certaines clés sont à chaudà : un document de
+connexion à la base. Certaines clés sont à chaud : un document de
 paramètres d’exécution peut les surpasser sans redémarrage, et le fichier
 reste la valeur de secours.
 
 ## Quand l’utiliser
 
-Consultez cette page quandà :
+Consultez cette page quand :
 
 - vous écrivez ou modifiez `config.production.yml` ;
-- vous gardez les secrets hors du fichier YAMLà;
+- vous gardez les secrets hors du fichier YAML ;
 - vous devez savoir quelles clés un redémarrage modifie, et lesquelles il
   ne touche pas.
 
 ## Avant de commencer
 
 - vous connaissez la valeur de `APP_ENV` pour le déploiement. Elle se lit
-  dans le nom du fichierà : `config.production.yml` pour
+  dans le nom du fichier : `config.production.yml` pour
   `APP_ENV=production` ;
-- trois valeurs restent dans l’environnement, jamais dans le YAMLà:
+- trois valeurs restent dans l’environnement, jamais dans le YAML :
   `DATABASE_URL`, `APP_ENV`, et `JWT_SIGNING_KEY`.
 
 ## Étapes
 
-### 1. Placez le fichier l à où le backend le cherche
+### 1. Placez le fichier là où le backend le cherche
 
-Le backend ne résout qu’un seul fichier, dans cet ordreà :
+Le backend ne résout qu’un seul fichier, dans cet ordre :
 
 1. `FACET_CONFIG_FILE` — un chemin explicite. Un chemin défini mais absent
    fait échouer le démarrage. Aucun repli vers un autre fichier.
@@ -48,20 +48,20 @@ ne démarre jamais avec les réglages d’un autre environnement.
 ### 2. Injectez les secrets avec `!env`
 
 Marquez n’importe quel scalaire avec `!env` pour y développer une variable
-d’environnement au chargementà :
+d’environnement au chargement :
 
 ```yaml
 artifact_grant_secret: !env ARTIFACT_GRANT_SECRET
 ```
 
-Règlesà :
+Règles :
 
-- la valeur développée est toujours une chaîne de caractèresà ;
+- la valeur développée est toujours une chaîne de caractères ;
 - une variable absente fait échouer le démarrage. L’erreur nomme la
   variable et le fichier de configuration. Aucun repli silencieux vers une
-  valeur videà ;
-- la balise marche partout dans le documentà : clés de premier niveau,
-  sections imbriquées, et listesà ;
+  valeur vide ;
+- la balise marche partout dans le document : clés de premier niveau,
+  sections imbriquées, et listes ;
 - la balise est refusée dans les bundles de domaines et les définitions de
   doctypes. Le contenu importé ne peut pas lire votre environnement.
 
@@ -89,7 +89,7 @@ Règlesà :
 | `webhook`, `import_export`, `sidecar`, `mcp` | Réglages des sous-systèmes facultatifs | Valeurs par défaut si absent. |
 | `dev` | Observateur réservé au développement | Pas pour la production. |
 
-Les clés de premier niveau se placent hors des sectionsà : `host`,
+Les clés de premier niveau se placent hors des sections : `host`,
 `base_url`, `artifact_base_url`, `artifact_grant_secret`,
 `artifact_grant_secret_previous`, `snapshot_every`, `trusted_proxies`.
 `artifact_base_url` et `artifact_grant_secret` sont obligatoires. Le
@@ -97,17 +97,17 @@ démarrage échoue sans elles.
 
 ### 4. Sachez quelles clés sont à chaud
 
-Une clé à chaud se résout, au moment de l’usage, dans cet ordreà : le
+Une clé à chaud se résout, au moment de l’usage, dans cet ordre : le
 document `core.SystemSettings`, puis la valeur du fichier, puis la valeur
 par défaut intégrée. Un administrateur peut épingler une clé à chaud à
 
 l’exécution — voir [Paramètres système](/fr/operate/system-settings/).
 
-Clés à chaudà : la connexion de l’assistant, les valeurs `mail.*`, les
+Clés à chaud : la connexion de l’assistant, les valeurs `mail.*`, les
 réglages de service des artefacts, les fenêtres de rétention, les valeurs
 par défaut de localisation, et les valeurs de la politique IAM.
 
-Les clés réservées au fichier se fixent au démarrageà : les planifications
+Les clés réservées au fichier se fixent au démarrage : les planifications
 cron, les réglages `jobs.*` et `hooks.*`, l’adaptateur de stockage,
 `retention_overrides`, et `mail.allow_dev_adapter_in_production`.
 
@@ -121,7 +121,7 @@ choisir l’adresse IP client que voit le serveur.
 ## Exemple
 
 Une configuration de production minimale. Chaque clé est une clé que le
-démarrage exige ou lità :
+démarrage exige ou lit :
 
 ```yaml
 host: !env FACET_HOST
@@ -185,8 +185,8 @@ Une valeur épinglée à l’exécution l’emporte sur le fichier. Vérifiez le
   adresses que le fichier doit porter.
 - [Envoi des mails](/fr/operate/email/) — la section `mail:` en
   entier.
-- [Stockage de fichiersà : local ou S3](/fr/operate/file-storage/) —
+- [Stockage de fichiers : local ou S3](/fr/operate/file-storage/) —
   la section `artifact:` en entier.
 - [Configurer l’assistant](/fr/operate/assistant-config/) — la section
   `assistant:` en entier.
-- Internes sur GitHubà : [config.md](https://github.com/wearefacet/facet/blob/main/doc/backend/config.md), [system-settings.md](https://github.com/wearefacet/facet/blob/main/doc/backend/system-settings.md).
+- Internes sur GitHub : [config.md](https://github.com/wearefacet/facet/blob/main/doc/backend/config.md), [system-settings.md](https://github.com/wearefacet/facet/blob/main/doc/backend/system-settings.md).

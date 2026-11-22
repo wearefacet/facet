@@ -9,6 +9,17 @@
 	--sl-content-width: 50rem;
 }
 
+/* The landing page (splash template with a hero) gets a wider column for its
+ * card grids and the animated diagram. */
+:root[data-has-hero] {
+	--sl-content-width: 68rem;
+}
+
+/* The hero backdrop bleeds to the viewport edges; clip it horizontally. */
+:root[data-has-hero] main {
+	overflow-x: clip;
+}
+
 /*
  * App design tokens — copied from frontend/src/lib/styles/tokens.css, the
  * source of truth the Svelte app renders (the example/design-guideline.html

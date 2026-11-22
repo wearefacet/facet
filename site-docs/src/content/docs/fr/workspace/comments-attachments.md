@@ -70,7 +70,7 @@ notification.
 
 La liste démarre avec le domaine du document. Utilisez la ligne « Tous les
 domaines » pour chercher partout. Appuyez sur `Échap` pour fermer la
-listeà ; le texte que vous avez tapé reste.
+liste ; le texte que vous avez tapé reste.
 
 La liste ne s’ouvre pas quand `@` se trouve dans un mot, par exemple dans une
 adresse.
@@ -128,14 +128,14 @@ téléchargement.
 
 :::caution[La suppression est définitive]
 Quand vous confirmez la suppression, la pièce jointe disparaît du document.
-Facet demandeà : « Supprimer cette pièce jointeà? Cette action est
+Facet demande : « Supprimer cette pièce jointe ? Cette action est
 irréversible. »
 :::
 
 ## Exemple
 
 En mode « Écrire », vous tapez `@` et vous choisissez dans la liste. En mode
-« Markdown », le même commentaire ressemble à cecià :
+« Markdown », le même commentaire ressemble à ceci :
 
 ```markdown
 Vérification des totaux avec [@Marie Dubois](urn:facet:iam:Account:01JCATPMKP4N82GVG2J7K4MHZZ).
@@ -157,7 +157,7 @@ Dans une fenêtre étroite, regardez sous le document. Le panneau se tient là.
 
 ### La zone de saisie manque
 
-Votre rôle ne peut pas commenter ce doctype. Facet afficheà : « Vous ne
+Votre rôle ne peut pas commenter ce doctype. Facet affiche : « Vous ne
 pouvez pas commenter ce document. » Demandez le droit de commentaire à votre
 administrateur.
 
@@ -167,7 +167,7 @@ administrateur.
    limite par défaut est de 50 mégaoctets. Prenez un fichier plus petit, ou
    demandez à votre administrateur de relever la limite.
 2. Vérifiez vos droits. Votre rôle manque peut-être aussi du droit de
-   connexion de fichier. Facet affiche alorsà : « Vous ne pouvez pas
+   connexion de fichier. Facet affiche alors : « Vous ne pouvez pas
    joindre de fichiers à ce document. »
 
 ### Je ne vois pas Modifier sur un commentaire

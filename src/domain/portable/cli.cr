@@ -23,8 +23,18 @@ module Facet
       # Wraps `Export` and `Import` with database lifecycle and event
       # flushing, mirroring `Domain::Publish`'s HTTP path.
       module CLI
+        # The parsed `domain:export` arguments. `omit_secrets` nulls every
+        # secret marker in the captured documents so a bundle imports on an
+        # instance that does not hold the slots (see `SecretStripper`).
+        record ExportOptions,
+          domains : Array(String),
+          output : String?,
+          output_dir : String?,
+          with_documents : Bool,
+          omit_secrets : Bool
+
         # `facet domain:export <domain>[,domain,...] [--output-dir DIR]
-        #                       [--with-documents]`.
+        #                       [--with-documents] [--omit-secrets]`.
         #
         # Writes one bundle per requested domain. Multiple domains are
         # declared comma-separated (`a,b,c`) or whitespace-separated
@@ -35,15 +45,23 @@ module Facet
         # domain (CWD when `--output-dir` is omitted). Refuses to export a
         # draft domain. `--with-documents` also captures every non-deleted
         # document of every user doctype in the source domain.
+        # `--omit-secrets` replaces every secret marker in the captured
+        # documents with `null`, so the bundle imports on an instance that
+        # does not hold the slots — the secret state is lost and the fields
+        # import unset.
         def self.run_export(args : Array(String)) : Int32
-          domains, output, output_dir, with_documents = parse_export_args(args)
-          paths = resolve_export_outputs(domains, output, output_dir)
+          options = parse_export_args(args)
+          paths = resolve_export_outputs(options.domains, options.output, options.output_dir)
 
           Facet::Index::Manager.synchronous = true
           Facet::Database.init
           Facet::Database.with_db do |db|
-            domains.each_with_index do |domain, i|
-              result = Export.call(db, domain, with_documents: with_documents)
+            options.domains.each_with_index do |domain, i|
+              result = Export.call(
+                db, domain,
+                with_documents: options.with_documents,
+                omit_secrets: options.omit_secrets,
+              )
               case result
               in Export::Result
                 written = Archive.write(result.bundle, paths[i])
@@ -130,19 +148,20 @@ module Facet
 
         # ── Argument parsing ──────────────────────────────────────────────
 
-        # Parses `domain:export` arguments. Returns `{domains, output,
-        # output_dir, with_documents}` and aborts with a usage message on
-        # bad input. `domains` is the de-duplicated list of domains to
-        # export (whitespace- and comma-separated forms are both accepted).
-        # `output` is mutually exclusive with multi-domain: the single-domain
-        # operator passes one domain plus `--output PATH`; the multi-domain
-        # operator passes multiple domains plus `--output-dir DIR`.
-        private def self.parse_export_args(args : Array(String)) : {Array(String), String?, String?, Bool}
+        # Parses `domain:export` arguments into an `ExportOptions`. Aborts
+        # with a usage message on bad input. `domains` is the de-duplicated
+        # list of domains to export (whitespace- and comma-separated forms
+        # are both accepted). `output` is mutually exclusive with
+        # multi-domain: the single-domain operator passes one domain plus
+        # `--output PATH`; the multi-domain operator passes multiple domains
+        # plus `--output-dir DIR`.
+        private def self.parse_export_args(args : Array(String)) : ExportOptions
           output : String? = nil
           output_dir : String? = nil
           with_documents = false
+          omit_secrets = false
           positional = [] of String
-          banner = "Usage: facet domain:export <domain>[,domain,...] [--output PATH | --output-dir DIR] [--with-documents]"
+          banner = "Usage: facet domain:export <domain>[,domain,...] [--output PATH | --output-dir DIR] [--with-documents] [--omit-secrets]"
           OptionParser.parse(args) do |parser|
             parser.banner = banner
             parser.on("-o", "--output PATH", "Destination directory or .tar.gz (single-domain only; default: ./{domain}.facet-domain)") do |p|
@@ -153,6 +172,9 @@ module Facet
             end
             parser.on("--with-documents", "Also export every document of every user doctype in the domain") do
               with_documents = true
+            end
+            parser.on("--omit-secrets", "Null every secret marker in the exported documents (the secret state is lost; the fields import unset)") do
+              omit_secrets = true
             end
             parser.on("-h", "--help", "Show help") do
               puts parser
@@ -172,7 +194,7 @@ module Facet
           if output && output_dir
             abort "Error: --output and --output-dir are mutually exclusive.\n#{banner}"
           end
-          {domains, output, output_dir, with_documents}
+          ExportOptions.new(domains, output, output_dir, with_documents, omit_secrets)
         end
 
         # Resolves the per-domain output paths from `domains`, `--output`,

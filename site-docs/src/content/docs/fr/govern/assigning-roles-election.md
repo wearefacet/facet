@@ -9,7 +9,7 @@ verified_at: fd345fe3
 ---
 
 Un compte porte des rôles dans son tableau `roles`. Une requête ne les
-fusionne jamaisà : elle tourne sous exactement un rôle élu. Cette page montre
+fusionne jamais : elle tourne sous exactement un rôle élu. Cette page montre
 comment un administrateur affecte et retire des rôles, et comment l’élection
 fonctionne à la connexion et au refresh.
 
@@ -24,7 +24,7 @@ fonctionne à la connexion et au refresh.
 
 - **La bonne page.** Ouvrez **Configurer → Accès → Affectations**. Il vous
   faut le droit `update` sur `iam.Account`.
-- **Le garde-fou.** Le garde-fou d’autorité des rôles s’appliqueà : vous ne
+- **Le garde-fou.** Le garde-fou d’autorité des rôles s’applique : vous ne
   pouvez affecter que des rôles de votre niveau élu ou en dessous. Voir
   [Rôles et lignes de permission](/fr/govern/roles-permission-lines/).
 
@@ -32,7 +32,7 @@ fonctionne à la connexion et au refresh.
 
 ### 1. Ouvrir l’éditeur d’affectations
 
-Ouvrez **Configurer → Accès → Affectations**. L’éditeur a deux modesà :
+Ouvrez **Configurer → Accès → Affectations**. L’éditeur a deux modes :
 
 | Mode       | Ce qu’il affiche                            | Ce qu’il écrit                                                   |
 | ---------- | -------------------------------------------- | ---------------------------------------------------------------- |
@@ -49,7 +49,7 @@ un rechargement.
 
 Dans le mode Par compte, cherchez le compte par courriel, puis ajoutez un ou
 plusieurs rôles. Chaque enregistrement émet une mise à jour du document
-compte, comme un PATCH manuelà :
+compte, comme un PATCH manuel :
 
 ```sh
 curl -k -X PATCH -H "Authorization: Bearer $FACET_API_KEY" \
@@ -61,7 +61,7 @@ curl -k -X PATCH -H "Authorization: Bearer $FACET_API_KEY" \
 Remplacez les ids de rôles et l’id du compte par vos valeurs. La réponse est
 le document compte mis à jour.
 
-Les règles que l’écriture imposeà :
+Les règles que l’écriture impose :
 
 - Chaque rôle du tableau final doit exister et être vivant.
 - Chaque rôle doit se situer à votre niveau ou en dessous.
@@ -83,7 +83,7 @@ l’écriture.
 
 ### 4. Vérifier le résultat
 
-Relisez le compteà :
+Relisez le compte :
 
 ```sh
 curl -k -H "Authorization: Bearer $FACET_API_KEY" \
@@ -101,13 +101,13 @@ sa prochaine connexion ou au refresh de son token.
 Les rôles ne fusionnent jamais. Un compte qui porte `editor` et `viewer`
 agit sous l’un d’eux par requête. L’ensemble effectif de permissions est
 exactement celui d’un rôle. Rapprocher des périmètres entre deux rôles n’a
-pas de réponse non surprenanteà ; Facet ne le tente pas. Voir
+pas de réponse non surprenante ; Facet ne le tente pas. Voir
 [Contextes d’authentification](/fr/concepts/auth-contexts/) pour le modèle.
 
 ### L’élection à la connexion
 
 La requête de connexion peut porter l’élection dans son champ `role`, comme
-id qualifiéà :
+id qualifié :
 
 ```sh
 curl -k -X POST -H "Content-Type: application/json" \
@@ -118,7 +118,7 @@ curl -k -X POST -H "Content-Type: application/json" \
 
 L’ordre de résolution : l’élection explicite, puis `default_role`, puis le
 premier rôle affecté. Élire un rôle que le compte ne porte pas répond `403`.
-Les réponses de connexion, de refresh et de `me` portent toutes la paireà :
+Les réponses de connexion, de refresh et de `me` portent toutes la paire :
 
 - `active_role` — l’id du rôle élu.
 - `available_roles` — les ids des rôles affectés, la liste entre laquelle un
@@ -153,7 +153,7 @@ rôle voyage dans la réponse, et l’interface se resserre aussitôt.
 
 ### L’écriture d’affectation répond `403`
 
-Vérifiez le niveauà : vous ne pouvez affecter que des rôles de votre niveau
+Vérifiez le niveau : vous ne pouvez affecter que des rôles de votre niveau
 élu ou en dessous, et vous ne pouvez pas modifier un compte dont le plafond
 de rôles dépasse le vôtre.
 
@@ -169,7 +169,7 @@ le rôle, ou connectez-vous sans le champ `role`.
 
 ### Un membre agit avec des droits inattendus
 
-Demandez-lui quel rôle il a élu. Un seul rôle s’applique par requêteà ; les
+Demandez-lui quel rôle il a élu. Un seul rôle s’applique par requête ; les
 droits peuvent venir d’un rôle plus large que vous ne le pensez. Le journal
 d’audit nomme le rôle agissant à chaque écriture — voir
 [Auditer l’activité](/fr/govern/auditing-activity/).
@@ -187,6 +187,6 @@ d’audit nomme le rôle agissant à chaque écriture — voir
   chaque écriture.
 - [Se connecter, MFA, réinitialiser votre mot de passe](/fr/workspace/sign-in-mfa/) —
   les étapes de connexion du membre.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md),
   [access-assignments.md](https://github.com/wearefacet/facet/blob/main/doc/frontend/access-assignments.md).

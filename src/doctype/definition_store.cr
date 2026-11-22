@@ -244,6 +244,24 @@ module Facet
         row
       end
 
+      # Reads the projection `state` (the ULID of the last mutation) for a
+      # doctype definition row. `Doctype::Update` returns it as the unchanged
+      # re-save's `mutation_id` — the same ETag validator a write carries.
+      # Returns `nil` if the doctype does not exist or is deleted.
+      def self.fetch_state(
+        db : DB::Connection,
+        doctype_id : String,
+      ) : String?
+        db.query_one?(
+          <<-SQL,
+            SELECT state FROM projections
+            WHERE domain = 'core' AND doc_type = 'DocType' AND id = $1
+            AND deleted_at IS NULL
+          SQL
+          doctype_id, as: String
+        )
+      end
+
       # Invalidates a single doctype entry in the cache.
       # Called after a doctype update to ensure subsequent reads get the
       # new definition.

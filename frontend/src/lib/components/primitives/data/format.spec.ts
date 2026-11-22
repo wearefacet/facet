@@ -28,6 +28,18 @@ describe('formatMoneyAmount', () => {
 		expect(formatMoneyAmount(0, { digits: 0 })).toBe('0');
 	});
 
+	it('drops the sign when the rounded magnitude is zero', () => {
+		// `Intl.NumberFormat` keeps the sign of a value that rounds to zero
+		// (`-0.001` → `-0.00`); a negative zero is not a balance.
+		expect(formatMoneyAmount(-0.001)).toBe('0.00');
+		expect(formatMoneyAmount(-0.004, { digits: 2 })).toBe('0.00');
+		expect(formatMoneyAmount(-0.4, { digits: 0 })).toBe('0');
+	});
+
+	it('keeps the sign when the rounded magnitude is not zero', () => {
+		expect(formatMoneyAmount(-0.006)).toBe('-0.01');
+	});
+
 	it('groups the Indian way under the lakhs style', () => {
 		expect(formatMoneyAmount(1234567, { grouping: 'lakhs' })).toBe('12,34,567.00');
 		expect(formatMoneyAmount(123456789, { grouping: 'lakhs', digits: 0 })).toBe('12,34,56,789');

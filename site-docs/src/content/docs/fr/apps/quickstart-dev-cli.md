@@ -13,18 +13,18 @@ de build statique en révision déployée d’une app Facet. Il n’y a pas d’
 d’installation : lancez chaque commande via `pnpx`. La CLI demande Node 20 ou
 plus récent.
 
-> **Pour les agentsà :** tout le parcours tient en trois commandesà :
+> **Pour les agents :** tout le parcours tient en trois commandes :
 > `pnpx @facetapp/cli init`, puis `pnpx @facetapp/cli login`, puis
 > `pnpx @facetapp/cli deploy --note "first build"`. La configuration se trouve
 > dans `facet.config.json` (clés `app`, `outDir`) ; la session, dans
 > `~/.config/facet/auth.json` (mode 600). Pour l’automatisation, mettez un
 > token d’accès dans `FACET_TOKEN` ; il gagne sur toute session enregistrée et
 > n’est jamais rafraîchi. Le déploiement est un `POST /Api/app/:id/deploy`
-> multipartà ; la route répond `{id, revision, activated, files}`.
+> multipart ; la route répond `{id, revision, activated, files}`.
 
 ## Quand l’utiliser
 
-Utilisez la CLI quandà :
+Utilisez la CLI quand :
 
 - Vous déployez un premier build statique sur une instance Facet.
 - Vous poussez un nouveau build depuis votre machine ou depuis l’intégration
@@ -49,7 +49,7 @@ Utilisez la CLI quandà :
 pnpx @facetapp/cli init
 ```
 
-La commande demande trois valeursà : le slug de l’app, le dossier de build et
+La commande demande trois valeurs : le slug de l’app, le dossier de build et
 l’URL de l’instance. Elle écrit `facet.config.json` à la racine du projet.
 
 Avec une session enregistrée, `init` lit l’app par son slug. Quand cette app
@@ -73,7 +73,7 @@ méthode de challenge est S256. La CLI démarre un serveur de bouclage à usage
 unique et y reçoit le code.
 
 La CLI se connecte par l’enregistrement `facet-cli` pré-créé. Cet
-enregistrement n’accepte que des adresses de redirection en bouclageà :
+enregistrement n’accepte que des adresses de redirection en bouclage :
 `http://localhost:*`, `http://127.0.0.1:*` et `http://[::1]:*`.
 
 La session atterrit dans `~/.config/facet/auth.json` avec le mode `600`.
@@ -91,7 +91,7 @@ re-stockés.
 ### 3. Construisez et déployez
 
 Construisez votre app avec n’importe quel générateur de site statique. Puis
-lancezà :
+lancez :
 
 ```sh
 pnpx @facetapp/cli deploy --note "first build"
@@ -99,10 +99,10 @@ pnpx @facetapp/cli deploy --note "first build"
 
 La commande parcourt le dossier de build. Elle saute `node_modules`, `.git` et
 `.DS_Store`. Elle téléverse une requête multipart et active la nouvelle
-révision. Elle affiche la révision attribuée et l’URL de l’appà ; le schéma et
+révision. Elle affiche la révision attribuée et l’URL de l’app ; le schéma et
 le port suivent l’URL de l’instance.
 
-Passez `--no-activate` pour téléverser une révision qui reste dormanteà :
+Passez `--no-activate` pour téléverser une révision qui reste dormante :
 
 ```sh
 pnpx @facetapp/cli deploy --no-activate
@@ -136,7 +136,7 @@ pnpx @facetapp/cli rollback 2
 La commande pointe `active_deployment` vers le déploiement de révision `2`.
 Une révision inconnue échoue avec la liste de celles qui existent.
 
-Déconnectez-vous quand vous avez finià :
+Déconnectez-vous quand vous avez fini :
 
 ```sh
 pnpx @facetapp/cli logout
@@ -146,7 +146,7 @@ La commande retire la session enregistrée de l’instance. Elle est idempotente
 
 ### 6. Déployez depuis la CI
 
-Mettez un token d’accès dans l’environnement de la CIà:
+Mettez un token d’accès dans l’environnement de la CI :
 
 ```sh
 export FACET_TOKEN="paste-an-access-token"
@@ -160,7 +160,7 @@ exécution.
 
 ## Exemple
 
-Ce `facet.config.json` configure deux ciblesà :
+Ce `facet.config.json` configure deux cibles :
 
 ```json
 {
@@ -194,7 +194,7 @@ Sans le drapeau, la CLI emploie `defaultTarget`. Sans les deux, la commande
 
 ## Dépannage
 
-La CLI affiche un message par échecà :
+La CLI affiche un message par échec :
 
 | Message | Cause et étape suivante |
 | --- | --- |
@@ -207,7 +207,7 @@ La CLI affiche un message par échecà :
 | `No app with slug "x" on <instance>` | Le slug `app` de la configuration ne correspond à aucune app de l’instance. Créez-la ou corrigez le slug. |
 | `The build folder "x" does not exist` | `outDir` pointe vers un dossier absent. Vérifiez la configuration. |
 | `holds no files to deploy` | Le dossier de build est vide. Construisez d’abord. |
-| `HTTP 422 from /api/app/…/deploy: …` | Le serveur a refusé le téléversement. Une app en brouillon ou désactivée est la cause habituelleà ; un chemin de fichier refusé est l’autre. |
+| `HTTP 422 from /api/app/…/deploy: …` | Le serveur a refusé le téléversement. Une app en brouillon ou désactivée est la cause habituelle ; un chemin de fichier refusé est l’autre. |
 | `Cannot reach <instance>` | Échec réseau. Vérifiez l’URL et la connectivité. |
 
 **Une app neuve répond sans fin `HTTP 422` au déploiement.**
@@ -229,7 +229,7 @@ Mettez un token d’accès neuf dans le secret CI.
   brouillon et l’activation.
 - [Le SDK TypeScript (`@facetapp/sdk`)](/fr/apps/typescript-sdk/) — appelez
   l’API depuis le code de l’app.
-- Le README de la CLI sur GitHubà :
+- Le README de la CLI sur GitHub :
   [packages/cli/README.md](https://github.com/wearefacet/facet/blob/main/packages/cli/README.md).
-- Le contrat du backend sur GitHubà :
+- Le contrat du backend sur GitHub :
   [doc/packages/cli.md](https://github.com/wearefacet/facet/blob/main/doc/packages/cli.md).

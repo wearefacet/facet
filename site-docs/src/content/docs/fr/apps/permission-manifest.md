@@ -12,23 +12,23 @@ Tout appelant de l’API peut aussi lire ce qu’il a le droit de tenter. Le
 manifeste de permissions de `GET /Api/iam/me` liste les chemins de doctypes,
 les actions et les périmètres de lignes que l’appelant atteint. Utilisez-le
 pour cacher des boutons et pour dimensionner l’interface. Le manifeste n’a
-qu’une valeur indicativeà : le serveur revérifie chaque requête et ne relit
+qu’une valeur indicative : le serveur revérifie chaque requête et ne relit
 jamais le manifeste.
 
-> **Pour les agentsà :** point de terminaison : `GET /Api/iam/me` — renvoie
+> **Pour les agents :** point de terminaison : `GET /Api/iam/me` — renvoie
 > `permissions` (une map des clés `"domain.Doctype"` vers des listes
 > d’actions), `scopes` (doctype → action → alias de périmètres),
-> `connectivity` et `assistant` (`{access, token_budget, name}`). SDKà:
+> `connectivity` et `assistant` (`{access, token_budget, name}`). SDK :
 > `await facet.whoami()` (en cache) → `await facet.can('delete', 'crm.Company')`
 > répond `'all' | 'scoped' | 'denied'` ;
-> `await facet.scopes('update', 'crm.Company')` lit les aliasà ;
+> `await facet.scopes('update', 'crm.Company')` lit les alias ;
 > `await facet.refreshRights()` après un changement de rôle ou d’attribution.
 > Les clés réservées `"*.*"`, `"{domain}.*"` et `"*.*.except.<action>"` sont
 > une entrée du matcher, pas des doctypes.
 
 ## Quand l’utiliser
 
-Utilisez le manifeste quandà :
+Utilisez le manifeste quand :
 
 - vous cachez des boutons ou des entrées de menu que l’appelant ne peut pas
   utiliser,
@@ -38,11 +38,11 @@ Utilisez le manifeste quandà :
 
 ## Avant de commencer
 
-- Un moyen de s’authentifier auprès de l’APIà: un token de session, un token
+- Un moyen de s’authentifier auprès de l’API : un token de session, un token
   d’app OAuth, ou une clé `fct_` statique. Les trois lisent le manifeste.
-- Le modèle de portée qui sous-tend le manifesteà :
-  [Appsà : attributions ∩ rôles](/fr/concepts/apps-grants-roles/).
-- Comment les apps reçoivent cette portéeà :
+- Le modèle de portée qui sous-tend le manifeste :
+  [Apps : attributions ∩ rôles](/fr/concepts/apps-grants-roles/).
+- Comment les apps reçoivent cette portée :
   [Le fonctionnement des apps sur Facet](/fr/apps/how-apps-work/).
 
 ## Étapes
@@ -50,7 +50,7 @@ Utilisez le manifeste quandà :
 ### 1. Lire le manifeste
 
 Appelez le point de terminaison avec votre moyen d’authentification. Une clé
-statique emprunte le schéma bearerà :
+statique emprunte le schéma bearer :
 
 ```sh
 curl -s https://facet.example.com/Api/iam/me \
@@ -59,19 +59,19 @@ curl -s https://facet.example.com/Api/iam/me \
 
 Un token d’app emprunte le schéma DPoP avec une preuve à chaque appel — voir
 [Liaison de token DPoP](/fr/apps/dpop/). La réponse porte quatre champs en
-plus du profil du compteà :
+plus du profil du compte :
 
 | Champ | Contenu |
 | --- | --- |
 | `permissions` | Une map des clés `"domain.Doctype"` vers des listes d’actions. |
 | `scopes` | Une map du doctype vers l’action vers les alias de périmètres. `[]` signifie sans restriction. |
-| `connectivity` | Les canaux du rôle actifà : `mcp`, `webhook`, `api`, `assistant`. |
+| `connectivity` | Les canaux du rôle actif : `mcp`, `webhook`, `api`, `assistant`. |
 | `assistant` | `{access, token_budget, name}` — la porte d’accès au chat, le budget (`null` = illimité) et le nom d’affichage. |
 
 ### 2. Reconnaître les formes de clés
 
 La map `permissions` regroupe les lignes de permission du rôle. Ces règles
-produisent chaque cléà :
+produisent chaque clé :
 
 - Une ligne concrète sur `crm.Company` atterrit sous la clé littérale
   `"crm.Company"`.
@@ -117,11 +117,11 @@ Si vous écrivez votre propre matcher, accordez dans cet ordre et arrêtez-vous
 à la première correspondance :
 
 1. Court-circuit admin : la clé `"*.*"` avec les actions `["*"]` donne tout.
-2. Clé exacteà : `"crm.Company"` donne `crm.Company`. Une clé atteint aussi ses
+2. Clé exacte : `"crm.Company"` donne `crm.Company`. Une clé atteint aussi ses
    descendants — `"crm.Contact"` atteint `crm.Contact.Comment`.
-3. Clé joker de domaineà : `"hr.*"` donne chaque doctype du domaine. Les
+3. Clé joker de domaine : `"hr.*"` donne chaque doctype du domaine. Les
    retranchements ne la suppriment jamais.
-4. Repli jokerà : la liste d’actions de `"*.*"` donne le chemin. Mais une
+4. Repli joker : la liste d’actions de `"*.*"` donne le chemin. Mais une
    entrée `"*.*.except.<action>"` pour l’action vérifiée la soustrait quand
    elle est égale au chemin ou lui correspond par préfixe. Une entrée sur
    `core.DocType` exclut aussi `core.DocType.Comment`. Ce qu’une clé explicite
@@ -133,7 +133,7 @@ une ligne à l’échelle du domaine, et `scopes["*.*"]` derrière le repli joke
 
 ### 4. Utiliser les helpers du SDK
 
-Le SDK associe les deux formes de manifeste pour vousà :
+Le SDK associe les deux formes de manifeste pour vous :
 
 ```ts
 import { createFacetClient, oauthBrowser } from '@facetapp/sdk';
@@ -156,14 +156,14 @@ chemin.
 :::caution[Dimensionnez l’UI, jamais la sécurité]
 Le serveur revérifie chaque requête et ne relit jamais le manifeste.
 Considérez le `404` ou le `403` d’un appel refusé comme faisant foi. Une
-réponse `'scoped'` signifie que le serveur restreint les lignesà ; lisez les
+réponse `'scoped'` signifie que le serveur restreint les lignes ; lisez les
 alias avec `scopes` et nommez la limite dans l’UI.
 :::
 
 ### 5. Les appelants d’app lisent le manifeste effectif
 
 Un token d’app ou une clé d’app lit l’intersection résolue de l’attribution et
-du rôle, pas le manifeste propre du rôleà :
+du rôle, pas le manifeste propre du rôle :
 
 - Les clés sont les doctypes concrets que l’attribution nomme, plus la forme
   joker de domaine quand une cible d’attribution joker se combine avec une
@@ -184,7 +184,7 @@ modèle attribution et rôle.
 Cet exemple dimensionne une barre d’outils d’après le manifeste. Il retire la
 barre d’outils quand la lecture est refusée, cache le bouton supprimer quand
 la suppression est refusée, et affiche une indication quand la mise à jour est
-limitée par des périmètresà :
+limitée par des périmètres :
 
 ```ts
 import { createFacetClient, oauthBrowser } from '@facetapp/sdk';
@@ -221,7 +221,7 @@ repli joker donne `read`), garde le bouton supprimer (la clé exacte donne
 
 **L’élément s’affiche, mais l’appel répond `403`.**
 
-Le manifeste est indicatifà ; le serveur refuse. La portée a changé — appelez
+Le manifeste est indicatif ; le serveur refuse. La portée a changé — appelez
 `await facet.refreshRights()` et refaites le rendu.
 
 **Un bouton manque alors que le rôle donne l’action.**
@@ -250,6 +250,6 @@ Faites le rendu à partir des définitions de doctypes.
   grammaire des lignes que le manifeste regroupe.
 - [Les périmètres de lignes](/fr/govern/row-scopes/) — ce que signifient les
   alias de périmètres.
-- [Appsà : attributions ∩ rôles](/fr/concepts/apps-grants-roles/) — le concept.
-- Internes sur GitHubà :
+- [Apps : attributions ∩ rôles](/fr/concepts/apps-grants-roles/) — le concept.
+- Internes sur GitHub :
   [doc/backend/iam.md](https://github.com/wearefacet/facet/blob/main/doc/backend/iam.md).

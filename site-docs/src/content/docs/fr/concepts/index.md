@@ -1,6 +1,6 @@
 ---
 title: Concepts
-description: "Comment Facet penseà : des pages courtes qui expliquent le modèle derrière le produit."
+description: "Comment Facet pense : des pages courtes qui expliquent le modèle derrière le produit."
 audience: [evaluator]
 features: []
 sidebar:
@@ -29,7 +29,7 @@ Lisez-les quand un guide pratique part du modèle sans le réexpliquer.
   périmètres de lignes, étiquettes de champ, et refus sans divulgation.
 - [Rôles, niveaux et garde-fou d’autorité](/fr/concepts/roles-levels-authority/) —
   qui peut modifier les rôles, et qui ne le peut pas.
-- [Applicationsà : attributions ∩ rôles](/fr/concepts/apps-grants-roles/) —
+- [Applications : attributions ∩ rôles](/fr/concepts/apps-grants-roles/) —
   l’intersection qui plafonne chaque appel d’application.
 - [Événements et garanties de livraison](/fr/concepts/events-delivery/) —
   une livraison au plus une fois, et les crons qui la réparent.

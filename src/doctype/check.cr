@@ -6,6 +6,7 @@ require "pg"
 require "./doctype_definition"
 require "./definition_store"
 require "./view_template_validator"
+require "../document/collection_view_gate"
 require "../replication/validator"
 require "../rbac"
 require "../error"
@@ -50,11 +51,16 @@ module Facet
     # - `:view`        — the doctype's `core.DocumentView` children have
     #                  structural problems (a malformed template tree) or
     #                  a standard view kind (`view`, `form`, `quickView`,
-    #                  `inline`, `card`) is not defined.
-    #                  A malformed template is a warning; a missing kind
-    #                  is an `:info` notice — the frontend falls back to
-    #                  generic layouts for the missing kinds, so absent
-    #                  optional UI is not a fault (B-304).
+    #                  `inline`, `card`) is not defined. A
+    #                  `core.CollectionView` child has a config its surface
+    #                  cannot use (a kanban `group_by` without the `eq`
+    #                  capability, a calendar `discriminator` without the
+    #                  window filter) — see `Document::CollectionViewGate`.
+    #                  A malformed template or an unusable view config is a
+    #                  warning; a missing kind is an `:info` notice — the
+    #                  frontend falls back to generic layouts for the
+    #                  missing kinds, so absent optional UI is not a fault
+    #                  (B-304).
     # - `:actions`     — the definition declares named actions but ships no
     #                  Lua script. The authoring gate rejects this state;
     #                  the warning covers definitions published before the
@@ -272,10 +278,7 @@ module Facet
         definition : DoctypeDefinition,
         issues : Array(Issue),
       ) : Nil
-        definition.fields.each do |field_name, field_def|
-          next unless field_def.reference?
-          next if field_def.type.nil?
-
+        reference_fields(definition.fields).each do |field_name, field_def|
           target = field_def.qualified_doctype
           next if target.nil?
 
@@ -302,10 +305,26 @@ module Facet
               severity: :warning,
               category: :reference,
               field: field_name,
-              message: "Reference field '#{field_name}' targets doctype '#{target}' which is not a registered doctype",
+              message: reference_target_missing_message(definition, field_name, target),
             )
           end
         end
+      end
+
+      # The remedy a missing reference target names. A `PATCH` on the
+      # definition replaces the stored content outright — it would drop an
+      # array item's target the same way a `PUT` of the GET body would — so
+      # the supported edit is the flat authoring `PATCH`, which merges a
+      # `fields` map over the stored definition (`Document::Update` on
+      # `core.DocType`).
+      private def self.reference_target_missing_message(
+        definition : DoctypeDefinition,
+        field_name : String,
+        target : String,
+      ) : String
+        "Reference field '#{field_name}' targets doctype '#{target}' which is not a registered doctype — " \
+        "register it, or repair the definition with " \
+        "PATCH /Api/core/DocType/#{definition.qualified_name} {\"fields\": {\"#{field_name}\": {…}}}"
       end
 
       # Mirrors `Replication::Validator.validate` — each returned error
@@ -605,6 +624,14 @@ module Facet
       # downgraded to warning — the check endpoint never blocks); missing
       # kinds are `:info` notices — they describe absent optional UI, not a
       # schema fault, and the frontend renders fallbacks for them (B-304).
+      #
+      # Every live `core.CollectionView` child is then validated through
+      # `Document::CollectionViewGate.validate` — the same rule set the write
+      # doors enforce — and each problem is reported as a `:warning` under
+      # the `:view` category. The field path and the message carry the
+      # surface config path, the field name, and the capability the field
+      # lacks (a kanban `group_by` without `eq`, a calendar `discriminator`
+      # without the window filter).
       private def self.check_views(
         db : DB::Connection,
         definition : DoctypeDefinition,
@@ -643,9 +670,83 @@ module Facet
             message: "No '#{kind}' DocumentView defined for #{definition.qualified_name} — #{VIEW_KIND_FALLBACKS[kind]}",
           )
         end
+
+        check_collection_views(db, definition, issues)
+      end
+
+      # Reports a `core.CollectionView` config the renderer cannot use as a
+      # `:view` warning. The rules come from
+      # `Document::CollectionViewGate.validate` — the write doors refuse the
+      # same shapes with `422`, and the check endpoint downgrades them to a
+      # warning (it never blocks).
+      private def self.check_collection_views(
+        db : DB::Connection,
+        definition : DoctypeDefinition,
+        issues : Array(Issue),
+      ) : Nil
+        db.query(
+          "SELECT content->>'name', content->>'surface', content->'config' FROM projections " \
+          "WHERE domain = 'core' AND doc_type = 'CollectionView' " \
+          "AND meta->>'parent_id' = $1 AND deleted_at IS NULL",
+          definition.qualified_name,
+        ) do |rs|
+          rs.each do
+            name = rs.read(String?)
+            surface = rs.read(String?)
+            config = rs.read(JSON::Any?)
+            next if config.nil?
+
+            Document::CollectionViewGate.validate(config, surface, definition).each do |error|
+              issues << Issue.new(
+                severity: :warning,
+                category: :view,
+                field: error.field,
+                message: "CollectionView '#{name || surface}': #{error.message}",
+              )
+            end
+          end
+        end
       end
 
       # ── Helpers ──────────────────────────────────────────────────────
+
+      # Every reference-typed field reachable from the top-level `fields`
+      # map, keyed by its dotted content path — the `items` / `properties` /
+      # `values` sub-definitions included, so an array-of-reference target is
+      # checked like a scalar one. Only the outermost reference of a branch
+      # is yielded: a nested sub-definition below a reference field carries
+      # no own target.
+      private def self.reference_fields(
+        fields : Hash(String, FieldDefinition),
+        prefix : String? = nil,
+        collected : Hash(String, FieldDefinition) = {} of String => FieldDefinition,
+      ) : Hash(String, FieldDefinition)
+        fields.each do |name, field|
+          path = prefix ? "#{prefix}.#{name}" : name
+          if field.reference? && !field.type.nil?
+            collected[path] = field
+            next
+          end
+          collect_nested_reference_fields(field, path, collected)
+        end
+        collected
+      end
+
+      private def self.collect_nested_reference_fields(
+        field : FieldDefinition,
+        path : String,
+        collected : Hash(String, FieldDefinition),
+      ) : Nil
+        if items = field.items
+          reference_fields({"items" => items}, path, collected)
+        end
+        if props = field.properties
+          reference_fields(props, "#{path}.properties", collected)
+        end
+        if dict_value = field.dictionary_value
+          reference_fields({"values" => dict_value}, path, collected)
+        end
+      end
 
       # Returns true if a non-deleted `core.DocType` projection exists for
       # the qualified id (e.g. `"identity.Person"`).

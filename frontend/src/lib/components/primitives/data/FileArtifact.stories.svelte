@@ -5,7 +5,8 @@
 	import { defineMeta } from '@storybook/addon-svelte-csf';
 	import { expect, within, waitFor } from 'storybook/test';
 	import FileArtifact from './FileArtifact.svelte';
-	import type { ArtifactGrant } from './FileArtifact.svelte';
+	import type { ArtifactGrant } from '$lib/artifacts.js';
+	import { artifactMetadataCache } from '$lib/datasource/clientCache.js';
 
 	const { Story } = defineMeta({
 		title: 'Components/Primitives/Data/FileArtifact',
@@ -37,6 +38,11 @@
 	args={{ artifactId: SYNTHETIC_ID, fetchArtifact: syntheticGrant }}
 	play={async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
+		// The artifact metadata cache is shared by every file surface. Drop the
+		// entry before the render so this story always exercises the mount
+		// fetch instead of a cached hit (the `FallsBackOnFetchError` story
+		// resolves the same id).
+		artifactMetadataCache.invalidate(SYNTHETIC_ID);
 		// On mount the component resolves the artifact metadata, so the
 		// link label flips from the bare id to the filename. Until the
 		// fetch resolves, the id remains the visible fallback.
@@ -66,6 +72,9 @@
 	}}
 	play={async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
+		// Drop the shared cache entry so this story exercises the failing
+		// fetch instead of a cached hit.
+		artifactMetadataCache.invalidate(SYNTHETIC_ID);
 		// When filename resolution fails on mount, the label falls back to the
 		// raw artifact id and remains visible. The download link is unaffected
 		// — the gateway mints a grant server-side regardless of filename

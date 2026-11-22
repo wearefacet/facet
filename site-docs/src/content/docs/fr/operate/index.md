@@ -23,7 +23,7 @@ rétention, les mises à niveau, et la localisation.
 - [Déployer en production](/fr/operate/production/) — le guide Docker
   Compose à copier-coller.
 - [Fichiers de configuration](/fr/operate/configuration-files/) — un seul
-  fichier YAML configure le backendà ; les secrets s’injectent avec `!env`.
+  fichier YAML configure le backend ; les secrets s’injectent avec `!env`.
 - [Paramètres système](/fr/operate/system-settings/) — changez les réglages
   de la plateforme à chaud, avec le fichier de configuration en secours.
 - [Amorçage et tâches CLI](/fr/operate/bootstrap-cli/) — premier
@@ -31,7 +31,7 @@ rétention, les mises à niveau, et la localisation.
   maintenance.
 - [Envoi des mails](/fr/operate/email/) — la configuration SMTP, le
   contrôle de production, et les changements à chaud.
-- [Stockage de fichiersà : local ou S3](/fr/operate/file-storage/) —
+- [Stockage de fichiers : local ou S3](/fr/operate/file-storage/) —
   le magasin d’artefacts, ses réglages, et ses tâches d’entretien.
 - [Configurer l’assistant](/fr/operate/assistant-config/) — connectez un
   fournisseur compatible OpenAI et ajustez les tours d’échange.

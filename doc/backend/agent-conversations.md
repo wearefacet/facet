@@ -212,15 +212,16 @@ status = 'running'`, which enforces the one-running-turn invariant.
 
 One row per billed streaming turn, written by `Stream::Session` at the
 turn's terminal path when the session carries an account id and the turn
-carries billable counts — success turns with the provider-reported
-counts, cancelled turns with reported counts or an anti-siphon estimate,
-and terminal-error turns with reported counts only (nothing was
-delivered, so there is nothing to siphon). Zero-count turns insert no
-row. The table carries **no foreign keys**: rows outlive conversations,
-so deleting a conversation never erases billing history (`turn_id` and
-`conversation_id` are loose references; `agent_turns.usage` can re-derive
-a lost reported row — an estimated row has no turn-side mirror by
-design).
+carries billable counts. One rule sets `estimated`: a delivering turn
+(success, cancelled, capped, truncated) whose provider reported positive
+counts bills them unestimated, and one with no report (or an all-zero
+report) bills a character-count estimate. Terminal-error turns bill
+reported counts only (nothing was delivered, so there is nothing to
+siphon). Zero-count turns insert no row. The table carries **no foreign
+keys**: rows outlive conversations, so deleting a conversation never
+erases billing history (`turn_id` and `conversation_id` are loose
+references; `agent_turns.usage` can re-derive a lost reported row — an
+estimated row has no turn-side mirror by design).
 
 | Column | Type | Description |
 |---|---|---|
@@ -231,12 +232,12 @@ design).
 | `model` | `text` | Model snapshot of the resumed conversation; nullable |
 | `input_tokens` | `bigint` NOT NULL, default `0` | Prompt tokens of the turn |
 | `output_tokens` | `bigint` NOT NULL, default `0` | Completion tokens of the turn |
-| `estimated` | `boolean` NOT NULL, default `false` | `true` when the counts are the Session's anti-siphon estimate for a cancelled turn the provider never reported on (see [`workspace-assistant.md`](workspace-assistant.md) → Usage ledger) |
+| `estimated` | `boolean` NOT NULL, default `false` | `true` when the counts are a character-count estimate: a delivering turn (success, cancelled, capped, truncated) the provider reported no positive counts for (see [`workspace-assistant.md`](workspace-assistant.md) → Usage ledger) |
 | `recorded_at` | `timestamp` NOT NULL, default `now()` | UTC write time; the windowing column |
 
 Index: `assistant_usage_account_recorded_idx` on `(account_id, recorded_at)` — the windowed per-account sum (`Assistant::Usage.total_for_account`).
 
-The read/write service is `Assistant::Usage` (`src/assistant/usage.cr`) — `Usage.insert(...)` and `Usage.total_for_account(db, account_id, since, to)` → `{input, output, total}`. See [`workspace-assistant.md`](workspace-assistant.md) for the attribution rules and the limit seam that sums it.
+The read/write service is `Assistant::Usage` (`src/assistant/usage.cr`) — `Usage.insert(...)` and `Usage.total_for_account(db, account_id, since, to)` → `{input, output, total, estimated_total}` (`estimated_total` is the estimated part of `total`). See [`workspace-assistant.md`](workspace-assistant.md) for the attribution rules and the limit seam that sums it.
 
 Retention: `Cron::AssistantUsagePrune` deletes rows whose conversation has
 been quiet past `assistant.usage_retention_days` (default `0` — never).

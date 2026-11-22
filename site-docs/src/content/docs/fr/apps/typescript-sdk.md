@@ -16,11 +16,11 @@ enfants, les sidecars, les agrégats, l’historique, le retour arrière, la
 restauration, les liens entrants, le realtime, les artifacts et le manifeste de
 permissions de l’appelant.
 
-> **Pour les agentsà :** installez avec `pnpm add @facetapp/sdk`. Clientà :
+> **Pour les agents :** installez avec `pnpm add @facetapp/sdk`. Client :
 > `createFacetClient({ baseUrl, auth })` avec `staticKey(process.env.FACET_API_KEY!)`
-> (app backend) ou `oauthBrowser({ slug, redirectUri })` (app navigateurà ; puis
+> (app backend) ou `oauthBrowser({ slug, redirectUri })` (app navigateur ; puis
 > `await auth.signIn()` et `await auth.handleCallback(location.href)` sur la
-> route de callback). Séquenceà : `facet.domain('crm').doctype('Company').list({ items: 50 })` →
+> route de callback). Séquence : `facet.domain('crm').doctype('Company').list({ items: 50 })` →
 > `page.next()` (null à la fin) → `.doc(id).show()` →
 > `.doc(id).update({ status: 'archived' })` ; portée via `await facet.whoami()`
 > et `await facet.can('read', 'crm.Company')` ; les erreurs sont des
@@ -28,12 +28,12 @@ permissions de l’appelant.
 
 ## Quand l’utiliser
 
-Choisissez le SDK quandà :
+Choisissez le SDK quand :
 
 - vous construisez un frontend TypeScript ou un service Node qui communique
-  avec Facetà ;
+  avec Facet ;
 - vous voulez des handles typés, la pagination et des erreurs typées plutôt que
-  du HTTP brutà ;
+  du HTTP brut ;
 - vous avez besoin des frames realtime, de l’envoi de fichiers ou du manifeste
   de permissions dans le code de l’app.
 
@@ -48,9 +48,9 @@ Pour un contrôle HTTP brut, ou pour un autre langage, utilisez
   [comptes de service et clés API](/fr/apps/service-accounts/).
 - Une app navigateur a besoin d’une connexion OAuth et d’une origine dans la
   liste d’autorisation — voir
-  [Connexion utilisateurà : OAuth 2.1 + PKCE](/fr/apps/oauth-login/) et
+  [Connexion utilisateur : OAuth 2.1 + PKCE](/fr/apps/oauth-login/) et
   [CORS et origines autorisées](/fr/apps/cors-origins/).
-- Le modèle de portéeà : [Apps, attributions et rôles](/fr/concepts/apps-grants-roles/).
+- Le modèle de portée : [Apps, attributions et rôles](/fr/concepts/apps-grants-roles/).
 
 ## Installation et connexion
 
@@ -58,10 +58,10 @@ Installez avec `pnpm add @facetapp/sdk`. Deux canaux d’appel existent, et le
 SDK sert les deux. La portée effective reste l’intersection de l’attribution de
 l’app et du rôle. Le backend la recalcule à chaque requête.
 
-### App backendà : une clé statique
+### App backend : une clé statique
 
 Une app backend s’authentifie avec une clé API propre à l’app, lue depuis une
-variable d’environnementà :
+variable d’environnement :
 
 ```ts
 import { createFacetClient, staticKey } from '@facetapp/sdk';
@@ -75,7 +75,7 @@ const facet = createFacetClient({
 La clé appartient au compte de service de l’app — voir
 [Comptes de service pour les apps backend](/fr/apps/service-accounts/).
 
-### App navigateurà : OAuth avec PKCE
+### App navigateur : OAuth avec PKCE
 
 Le compte se connecte par l’écran de consentement. Cet écran élit un rôle pour
 l’app.
@@ -86,7 +86,7 @@ import { createFacetClient, oauthBrowser } from '@facetapp/sdk';
 const auth = oauthBrowser({ slug: 'my-app', redirectUri: `${location.origin}/callback` });
 const facet = createFacetClient({ baseUrl: 'https://facet.example.com', auth });
 
-await auth.signIn(); // une fois, sur la route de connexionà ; navigue vers l’écran de consentement
+await auth.signIn(); // une fois, sur la route de connexion ; navigue vers l’écran de consentement
 await auth.handleCallback(location.href); // sur la route de redirection
 ```
 
@@ -98,7 +98,7 @@ reconnecte. Les blocs de code qui suivent réutilisent ce client `facet`.
 
 ## Documents et requêtes
 
-Chaque appel part d’un arbre de handlesà : `facet.domain('crm')` renvoie un
+Chaque appel part d’un arbre de handles : `facet.domain('crm')` renvoie un
 handle de domaine, `.doctype('Company')` un handle de collection, `.doc(id)`
 une référence de document. Aucun appel réseau ne part tant que vous n’appelez
 pas une méthode sur un handle.
@@ -132,10 +132,10 @@ await doc.children('contacts').list();
 await doc.sidecars('comments').list();
 ```
 
-`doc.delete()` supprime le document logiquementà ; `doc.restore()` ramène un
+`doc.delete()` supprime le document logiquement ; `doc.restore()` ramène un
 tombstone (document supprimé).
 
-Les paramètres de `list` reflètent la grammaire `ListRequest` du backendà :
+Les paramètres de `list` reflètent la grammaire `ListRequest` du backend :
 
 | Paramètre | Usage |
 | --- | --- |
@@ -150,22 +150,22 @@ Les paramètres de `list` reflètent la grammaire `ListRequest` du backendà :
 Le SDK valide les paramètres avant d’envoyer quoi que ce soit. Un suffixe
 `__op` inconnu lève `UsageError` ; un mélange de `aggregate: 'count'` avec
 `page` ou `items` aussi. Aucun appel réseau ne part. Les valeurs de pagination
-hors bornes sont ramenées dans les bornesà : `items` à 1..1000, `page` à 1 ou
+hors bornes sont ramenées dans les bornes : `items` à 1..1000, `page` à 1 ou
 plus.
 
-Pour des lectures plus rapides, mettez `cache: true` sur le clientà :
+Pour des lectures plus rapides, mettez `cache: true` sur le client :
 `createFacetClient({ baseUrl, auth, cache: true })`. Chaque `GET` stocke alors
 le validateur ETag fort, et le prochain fetch de la même URL envoie
-`If-None-Match`. Une réponse `304` sert l’enveloppe en cacheà ; une réponse
+`If-None-Match`. Une réponse `304` sert l’enveloppe en cache ; une réponse
 `200` remplace l’entrée. Les verbes de mutation ne touchent jamais le magasin.
-Le cache est désactivé par défautà ; un magasin personnalisé implémente `get`,
+Le cache est désactivé par défaut ; un magasin personnalisé implémente `get`,
 `set` et `delete` sur une clé de type chaîne.
 
 ## Ce que le token peut faire
 
 `GET /Api/iam/me` répond pour chaque credential que le SDK détient. Le
-manifeste suit le credentialà : une session navigateur lit le manifeste du rôle
-actifà ; un token d’app ou une clé propre à l’app lit l’attribution et le rôle
+manifeste suit le credential : une session navigateur lit le manifeste du rôle
+actif ; un token d’app ou une clé propre à l’app lit l’attribution et le rôle
 résolus. Un doctype que l’attribution ne nomme pas n’existe pas dans ce
 manifeste — il n’y a pas de repli `*.*` pour les credentials d’app.
 
@@ -179,7 +179,7 @@ await facet.refreshRights(); // à recharger après un changement de rôle ou d�
 Les réponses sont indicatives. Le serveur recalcule attribution et rôle à
 
 chaque requête et ne relit jamais le manifeste. Utilisez `can` pour décider ce
-que l’UI afficheà ; ne l’employez jamais comme garde-fou de sécurité. Le `404`
+que l’UI affiche ; ne l’employez jamais comme garde-fou de sécurité. Le `404`
 ou le `403` d’un appel refusé fait foi. Voir
 [Piloter votre UI avec le manifeste](/fr/apps/permission-manifest/).
 
@@ -192,24 +192,24 @@ stocké dans un champ `file` ou lié comme `urn:facet:artifact:<id>` dans un
 longtext.
 
 ```ts
-// Joindreà : un seul appel multipartà ; l’upload et la mutation partagent une transaction.
+// Joindre : un seul appel multipart ; l’upload et la mutation partagent une transaction.
 await companies.create({ name: 'Acme' }, { files: { logo: file } });
 await doc.update({ name: 'Acme' }, { files: { 'items[0].file': file } });
 
 const { id } = await facet.artifacts.upload(file);
 await facet.artifacts.uploadAsUrn(file); // urn:facet:artifact:<id> pour les longtexts
 
-const grant = await facet.artifacts.grant(id); // éphémèreà ; le serveur déduit le TTL
+const grant = await facet.artifacts.grant(id); // éphémère ; le serveur déduit le TTL
 await facet.artifacts.show(id);
 await facet.artifacts.revoke(grant.grant_id);
 
-await facet.artifacts.publish(id, { ownerId }); // permanentà ; demande l’action publish_artifact
+await facet.artifacts.publish(id, { ownerId }); // permanent ; demande l’action publish_artifact
 facet.artifacts.downloadUrl(id); // pour <a href> et <img src> ; attribution fraîche par requête
 facet.artifacts.downloadUrl(id, { appId }); // lectures depuis l’origine de l’app
 await facet.artifacts.download(id); // suit le 302 et renvoie les octets
 ```
 
-Une attribution est éphémèreà ; le serveur déduit sa durée de vie du type de
+Une attribution est éphémère ; le serveur déduit sa durée de vie du type de
 média. `downloadUrl` construit l’URL sans appel réseau. Voir
 [Téléverser et servir des fichiers](/fr/apps/files/) pour le modèle.
 
@@ -217,17 +217,17 @@ média. `downloadUrl` construit l’URL sans appel réseau. Voir
 
 Un socket unique vers `/Ws`, ouvert à la demande, multiplexe tous les
 abonnements. `facet.realtime()` l’ouvre au premier subscribe. Les frames sont
-des indices, jamais l’état d’un document. Le serveur n’envoie aucun replayà :
+des indices, jamais l’état d’un document. Le serveur n’envoie aucun replay :
 relisez ce à quoi vous vous abonnez.
 
 ```ts
 const rt = facet.realtime();
-rt.onReconnect(() => companies.list({ items: 50 })); // pas de replayà : relecture à la reconnexion
+rt.onReconnect(() => companies.list({ items: 50 })); // pas de replay : relecture à la reconnexion
 
 rt.subscribe('/crm/Company', (frame) => console.log(frame.event, frame.payload.id));
 const off = await rt.subscribe(`/crm/Company/${id}`, (frame) => console.log(frame.event));
 
-await rt.ensureConnected(); // facultatifà : ouvre le socket maintenant
+await rt.ensureConnected(); // facultatif : ouvre le socket maintenant
 rt.close(); // arrête le handle et abandonne tous les abonnements
 ```
 
@@ -235,8 +235,8 @@ La promesse de `subscribe` se résout au premier message du serveur que le
 handle rattache à ce chemin. Une frame d’erreur in-band — un refus de droits
 ou un abonnement au-del à du plafond du serveur — la rejette. Une frame de
 données correspondante la résout. Sur un canal silencieux, elle reste en
-attenteà ; ne l’attendez pas quand cela compteà ; le handler reçoit les frames
-dans tous les cas. Les codes de fermeture sont des signauxà :
+attente ; ne l’attendez pas quand cela compte ; le handler reçoit les frames
+dans tous les cas. Les codes de fermeture sont des signaux :
 
 | Code de fermeture | Comportement |
 | --- | --- |
@@ -244,10 +244,10 @@ dans tous les cas. Les codes de fermeture sont des signauxà :
 | `4403` | L’origine n’est pas dans la liste d’autorisation. Le handle lève `AuthError` sans réessai. |
 
 Les navigateurs proposent `["facet-ws-v1", accessToken]` dans la liste de
-sous-protocoles. Node 20 n’a pas de `WebSocket` globalà ; làà, passez un
+sous-protocoles. Node 20 n’a pas de `WebSocket` global ; làà, passez un
 constructeur qui accepte des en-têtes. Le credential part alors dans l’en-tête
 `Authorization` de la requête d’upgrade. Les clés statiques `fct_` sont
-acceptées sur cette voieà ; le transport par sous-protocole les refuse.
+acceptées sur cette voie ; le transport par sous-protocole les refuse.
 
 ```ts
 import { WebSocket } from 'ws'; // npm i -D @types/ws
@@ -262,7 +262,7 @@ frames et les chemins de canaux.
 
 ## Erreurs
 
-Une seule classe de base existeà ; le code de l’app se branche donc sur la
+Une seule classe de base existe ; le code de l’app se branche donc sur la
 classe. `UsageError` n’est pas une `ApiError`.
 
 | Classe | Levée quand | Données en plus |
@@ -271,10 +271,10 @@ classe. `UsageError` n’est pas une `ApiError`.
 | `AuthError` | credential absent, refresh en échec ou credential de socket refusé | message d’aide pour se reconnecter |
 | `NotFoundError` | `404` — le backend refuse avec `404`, il ne divulgue jamais l’existence | — |
 | `DeletedError` | `410` tombstone | `displayName`, `deletedAt` |
-| `NetworkError` | `fetch` a levéà ; la requête n’a jamais atteint le serveur | — |
+| `NetworkError` | `fetch` a levé ; la requête n’a jamais atteint le serveur | — |
 | `UsageError` | le SDK a refusé l’appel localement — paramètres mauvais, handle fermé. Pas une `ApiError` ; aucun échange n’a eu lieu | — |
 
-`details` porte les éléments de validation structurésà : `field`, `message`,
+`details` porte les éléments de validation structurés : `field`, `message`,
 `code` et `params`.
 
 ```ts
@@ -291,7 +291,7 @@ try {
 
 **Chaque appel répond `401`.**
 
-Facet revérifie la clé et le document de l’app à chaque requêteà ; une clé
+Facet revérifie la clé et le document de l’app à chaque requête ; une clé
 révoquée ou une app désactivée répond `401`. Émettez une nouvelle clé — voir
 [comptes de service et clés API](/fr/apps/service-accounts/).
 
@@ -308,16 +308,16 @@ L’origine n’est pas dans la liste d’autorisation. Enregistrez-la — voir
 **Un appel répond `NotFoundError` pour un document qui existe.**
 
 Les périmètres de lignes du rôle ou une attribution manquante cachent la
-ligneà ; un `404` ne divulgue jamais l’existence. Vérifiez
+ligne ; un `404` ne divulgue jamais l’existence. Vérifiez
 `facet.can('read', 'crm.Company')` — voir
 [Piloter votre UI avec le manifeste](/fr/apps/permission-manifest/).
 
 ## Voir aussi
 
 - [Utiliser l’API REST](/fr/apps/rest-api/) — la surface HTTP que le SDK enveloppe.
-- [Connexion utilisateurà : OAuth 2.1 + PKCE](/fr/apps/oauth-login/) — le parcours de connexion navigateur en détail.
+- [Connexion utilisateur : OAuth 2.1 + PKCE](/fr/apps/oauth-login/) — le parcours de connexion navigateur en détail.
 - [Liaison DPoP des tokens](/fr/apps/dpop/) — comment un token d’app se lie à une clé.
 - [Realtime avec WebSockets](/fr/apps/websockets/) — la grammaire des frames derrière `realtime()`.
 - [Téléverser et servir des fichiers](/fr/apps/files/) — le modèle d’artifacts, les attributions et la publication.
 - [Piloter votre UI avec le manifeste](/fr/apps/permission-manifest/) — le manifeste derrière `whoami`.
-- Internes sur GitHubà : [packages/sdk/README.md](https://github.com/wearefacet/facet/blob/main/packages/sdk/README.md).
+- Internes sur GitHub : [packages/sdk/README.md](https://github.com/wearefacet/facet/blob/main/packages/sdk/README.md).

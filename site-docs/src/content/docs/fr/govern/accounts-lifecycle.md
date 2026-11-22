@@ -12,7 +12,7 @@ Dans Facet, chaque personne et chaque identité machine est un document compte
 du doctype `iam.Account`. Vous créez les comptes, vous envoyez le premier
 identifiant, et vous pilotez le statut de chacun. Les comptes suivent les
 mêmes règles documentaires fondées sur l’event sourcing que tout autre
-enregistrementà : chaque changement est audité et réversible.
+enregistrement : chaque changement est audité et réversible.
 
 ## Quand l’utiliser
 
@@ -74,12 +74,12 @@ disabled -> active: edit status
 Un compte humain que vous créez est stocké en `pending`, même quand vous
 soumettez `active`. Le compte achève son amorçage avec son premier
 identifiant, et cette première connexion le fait passer en `active`. Deux
-exceptions existentà : un compte de service est créé directement `active`, et
+exceptions existent : un compte de service est créé directement `active`, et
 un compte provisionné par SSO reste `active`. Un statut `suspended` ou
 `disabled` explicite est conservé tel quel.
 
 Un compte `pending` peut se connecter avec son premier identifiant. Un compte
-`suspended` ou `disabled` ne peut pas se connecter du toutà ; la connexion
+`suspended` ou `disabled` ne peut pas se connecter du tout ; la connexion
 répond `403 Account is suspended` (ou `disabled`).
 
 ## Étapes
@@ -137,7 +137,7 @@ document. Deux routes d’opérateur existent. Toutes deux exigent la permission
 
 :::caution
 Le mot de passe temporaire et le lien d’invitation sont des identifiants.
-Transmettez le mot de passe vous-mêmeà ; ne renvoyez jamais le corps de la
+Transmettez le mot de passe vous-même ; ne renvoyez jamais le corps de la
 réponse sur un canal partagé.
 :::
 
@@ -147,10 +147,10 @@ Le panneau des identifiants de la page du compte appelle
 `GET /Api/iam/accounts/credential-states?id=…` au chargement. La route prend
 un ou plusieurs paramètres de requête `id` et répond une entrée par compte,
 dans un tableau `states`. C’est une lecture par lots pour les tableaux de
-comptesà : donnez la liste des ids voulus, et recevez un état pour chacun. La
+comptes : donnez la liste des ids voulus, et recevez un état pour chacun. La
 route exige `provision_credentials` sur `iam.Account`.
 
-Chaque entrée indiqueà :
+Chaque entrée indique :
 
 | Champ            | Signification                                            |
 | ---------------- | -------------------------------------------------------- |
@@ -160,7 +160,7 @@ Chaque entrée indiqueà :
 | `invite_pending` | Un lien d’invitation est en cours.                       |
 | `federated`      | Le compte porte un lien SSO.                             |
 
-Les libellés d’action suivent cet étatà : **Envoyer l’invitation** ou
+Les libellés d’action suivent cet état : **Envoyer l’invitation** ou
 **Renvoyer l’invitation**, **Générer un mot de passe** ou **Régénérer le mot
 de passe**.
 
@@ -169,13 +169,13 @@ de passe**.
 Modifiez le document du compte et mettez `status` à `suspended` ou
 `disabled`. La prochaine tentative de connexion répond `403`. Les sessions
 existantes continuent de fonctionner jusqu’à l’expiration de leur token
-d’accèsà ; voir
+d’accès ; voir
 [Sessions, tokens et verrouillages](/fr/govern/sessions-tokens-lockouts/).
 
 Un compte de service n’a pas de connexion du tout. Il ne peut pas se
 connecter par mot de passe, et les demandes de réinitialisation le
 concernant sont des no-ops silencieux. Sa raison d’être est de porter des
-clés d’API — voir [Accès machineà : clés d’API](/fr/govern/api-keys/).
+clés d’API — voir [Accès machine : clés d’API](/fr/govern/api-keys/).
 
 ### 5. Supprimer un compte
 
@@ -183,7 +183,7 @@ Supprimer un compte est une suppression de document ordinaire. Sélectionnez
 le compte et confirmez la suppression. La ligne devient un tombstone (une
 trace de suppression) ; l’historique reste.
 
-Le garde-fou d’autorité des rôles ajoute une règleà : vous ne pouvez pas
+Le garde-fou d’autorité des rôles ajoute une règle : vous ne pouvez pas
 supprimer un compte dont le niveau de rôle le plus élevé dépasse votre
 propre niveau. La suppression répond `403` dans ce cas. Voir
 [Rôles et lignes de permission](/fr/govern/roles-permission-lines/) pour le
@@ -192,7 +192,7 @@ garde-fou.
 ### 6. Restaurer un compte supprimé
 
 Ouvrez **Configurer → Accès → Comptes**, basculez vers la liste des
-supprimés, et sélectionnez **Restaurer**. La route d’API està :
+supprimés, et sélectionnez **Restaurer**. La route d’API est :
 
 ```sh
 curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
@@ -201,7 +201,7 @@ curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
 ```
 
 Remplacez `01J8Z0A7G3Q5M2X9K4T6VBNR8D` par l’id du compte. L’appel n’a pas
-besoin de corps. Les réponsesà :
+besoin de corps. Les réponses :
 
 | Réponse | Signification                                                     |
 | ------- | ----------------------------------------------------------------- |
@@ -209,7 +209,7 @@ besoin de corps. Les réponsesà :
 | `409`   | Le compte n’est pas supprimé.                                     |
 | `404`   | Aucun historique de mutations n’existe pour cet id.               |
 | `403`   | Votre rôle n’a pas `update` sur `iam.Account`.                    |
-| `422`   | Historique dégénéréà : une suppression sans changement avant elle. |
+| `422`   | Historique dégénéré : une suppression sans changement avant elle. |
 
 Une restauration ramène aussi les enregistrements enfants que la suppression
 avait retirés, quand elle a cascadé. Voir
@@ -218,7 +218,7 @@ avait retirés, quand elle a cascadé. Voir
 ## Le premier administrateur
 
 Un déploiement neuf n’a aucun compte pour se connecter. Créez le premier sur
-le serveurà :
+le serveur :
 
 ```sh
 facet seed:admin ops@your-company.tld
@@ -226,7 +226,7 @@ facet seed:admin ops@your-company.tld
 
 La commande affiche un mot de passe à usage unique, une seule fois.
 Connectez-vous avec, et Facet demande un nouveau mot de passe. La commande
-refuse de s’exécuter si un compte avec ce courriel existe déjà ; récupérez un
+refuse de s’exécuter si un compte avec ce courriel existe déj ; récupérez un
 mot de passe perdu par le flux de réinitialisation.
 
 ## Dépannage
@@ -241,7 +241,7 @@ administrateur, ou ajoutez la ligne
 
 1. Vérifiez le dossier des courriers indésirables.
 2. Vérifiez les réglages de courrier de l’instance.
-3. Renvoyez l’invitationà ; le nouveau lien remplace l’ancien.
+3. Renvoyez l’invitation ; le nouveau lien remplace l’ancien.
 
 ### Une connexion par mot de passe répond `403 Account is suspended`
 
@@ -262,11 +262,11 @@ tombstone.
   le tableau `roles` et `default_role`.
 - [Imposer le MFA](/fr/govern/enforcing-mfa/) — l’indicateur `mfa_enabled` et
   l’action de réinitialisation du MFA.
-- [Accès machineà : clés d’API](/fr/govern/api-keys/) — comment les comptes de
+- [Accès machine : clés d’API](/fr/govern/api-keys/) — comment les comptes de
   service s’authentifient.
 - [Le SSO avec OIDC](/fr/govern/sso-oidc/) — le champ `federated_identities`
   et le provisionnement JIT.
 - [Se connecter, MFA, réinitialiser votre mot de passe](/fr/workspace/sign-in-mfa/) —
   le côté titulaire du compte pour ces flux.
-- Internes sur GitHubà : [iam.md](https://github.com/wearefacet/facet/blob/main/doc/backend/iam.md),
+- Internes sur GitHub : [iam.md](https://github.com/wearefacet/facet/blob/main/doc/backend/iam.md),
   [access-accounts.md](https://github.com/wearefacet/facet/blob/main/doc/frontend/access-accounts.md).

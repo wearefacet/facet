@@ -33,14 +33,14 @@ bornes s’appliquent ensemble à chaque requête.
 ### 1. Créer l’app
 
 Ouvrez **Configurer → Applications** et lancez l’assistant. Choisissez un
-préréglageà : une app web que vous hébergez se connecte par le navigateurà ;
+préréglage : une app web que vous hébergez se connecte par le navigateur ;
 une app backend se connecte avec une clé d’API. L’étape de configuration
 recueille le nom, les origines de connexion, et les adresses de retour.
 
 ### 2. Régler les attributions
 
 L’étape Autorisations — ou l’onglet « Octrois » d’une app existante — liste
-chaque doctype par domaine. Donnez un niveau d’accès par doctypeà :
+chaque doctype par domaine. Donnez un niveau d’accès par doctype :
 
 | Niveau   | Actions accordées                                        |
 | -------- | ---------------------------------------------------------- |
@@ -51,7 +51,7 @@ chaque doctype par domaine. Donnez un niveau d’accès par doctypeà :
 
 Les actions nommées que le doctype déclare apparaissent comme
 interrupteurs supplémentaires dès que le niveau dépasse Aucun. Un doctype
-enfant hérite du niveau de son parent dans l’éditeurà ; l’enregistrement
+enfant hérite du niveau de son parent dans l’éditeur ; l’enregistrement
 écrit une entrée explicite pour lui.
 
 :::note[Les cibles sont concrètes]
@@ -67,7 +67,7 @@ Une app backend agit par une identité machine. Choisissez son unique rôle à
 
 l’étape Autorisations. L’éditeur avertit quand le rôle manque d’une action
 d’attribution requise, par exemple `missing: update on fin.Invoice`.
-L’avertissement ne bloque pas l’enregistrementà ; la vraie vérification
+L’avertissement ne bloque pas l’enregistrement ; la vraie vérification
 tourne à chaque requête. Le rôle doit lister `api` dans ses canaux de
 connectivité, sinon l’émission de clé refuse.
 
@@ -75,7 +75,7 @@ connectivité, sinon l’émission de clé refuse.
 
 Publier met le statut de l’app à `active`. Une app web reçoit son client id
 et se connecte par l’écran de consentement. Une app backend émet une clé
-d’APIà; la clé brute s’affiche une fois.
+d’API ; la clé brute s’affiche une fois.
 
 ### 5. Changer ou révoquer
 
@@ -89,8 +89,8 @@ réémis.
 
 ### Deux bornes, pas une
 
-L’attribution est le plafondà : elle nomme les chemins de doctypes et les
-actions que l’app peut tenter. Le rôle décide de ce qui existe à accorderà :
+L’attribution est le plafond : elle nomme les chemins de doctypes et les
+actions que l’app peut tenter. Le rôle décide de ce qui existe à accorder :
 Facet ne garde que les actions que le rôle donne aussi. Les périmètres de
 lignes du rôle s’appliquent toujours inchangés à l’intérieur des chemins
 accordés. Une attribution n’élargit jamais un filtre de lignes.
@@ -122,7 +122,7 @@ qu’une attribution ne le nomme pas.
   OAuth avec PKCE et DPoP. L’écran de consentement est toujours affiché, et
   le compte qui autorise élit exactement un rôle pour l’app.
 - Une clé d’API possédée par une app (le canal `app_api_key`) authentifie
-  le compte de service de l’app. La vérification contrôle aussi l’appà : une
+  le compte de service de l’app. La vérification contrôle aussi l’app : une
   clé pour une app en brouillon ou désactivée répond le `401` uniforme. Le
   droit effectif est attribution ∩ rôle épinglé, calculé à chaque requête.
 
@@ -137,7 +137,7 @@ le journal des connexions — voir
 ## Exemple
 
 Cet ensemble d’attributions sur un document d’app laisse l’app lire et
-écrire les contacts, et lire les affairesà :
+écrire les contacts, et lire les affaires :
 
 ```json
 {
@@ -193,8 +193,8 @@ l’avertissement dans l’onglet « Octrois » de l’app.
   concept.
 - [Rôles et lignes de permission](/fr/govern/roles-permission-lines/) — le
   côté rôle de l’intersection.
-- [Accès machineà : clés d’API](/fr/govern/api-keys/) — le canal des clés.
+- [Accès machine : clés d’API](/fr/govern/api-keys/) — le canal des clés.
 - [Auditer l’activité](/fr/govern/auditing-activity/) — l’attribution des
   apps dans le journal.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [app-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/app-system.md).

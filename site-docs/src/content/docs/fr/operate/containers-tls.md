@@ -8,7 +8,7 @@ sidebar:
 verified_at: 008dd880
 ---
 
-Facet publie deux images de version sur GHCRà: une pour le backend, une
+Facet publie deux images de version sur GHCR : une pour le backend, une
 pour le frontend. La pile de version y ajoute PostgreSQL, Redis, et un frontal
 Caddy qui termine le TLS et aiguille vers les hôtes d’applications. Cette page
 couvre les images, le contrat de configuration, et le frontal. Le pas-à-pas
@@ -16,7 +16,7 @@ complet reste dans [Déployer en production](/fr/operate/production/).
 
 ## Quand l’utiliser
 
-Lisez cette page quandà :
+Lisez cette page quand :
 
 - vous déployez avec Docker ou Compose,
 - vous choisissez l’étiquette d’image à épingler,
@@ -53,14 +53,14 @@ devez reproduire un build à l’identique.
 
 ### 2. Fournissez la configuration
 
-Le backend ne résout qu’un seul fichier de configuration, dans cet ordreà :
+Le backend ne résout qu’un seul fichier de configuration, dans cet ordre :
 
 1. `FACET_CONFIG_FILE` — un chemin explicite, n’importe quel point de montage.
 2. `/app/config.{APP_ENV}.yml` — votre montage, ou la copie de l’exemple livré
    que fait l’entrypoint, écrite seulement quand le fichier est absent.
 3. Rien — le démarrage échoue et nomme le chemin manquant.
 
-Trois façons de remplacer l’exemple livréà :
+Trois façons de remplacer l’exemple livré :
 
 | Méthode | Comment |
 | --- | --- |
@@ -70,7 +70,7 @@ Trois façons de remplacer l’exemple livréà :
 
 Chaque `!env NAME` de la configuration doit exister dans l’environnement. Une
 variable manquante fait échouer le démarrage au chargement de la
-configuration. L’exemple livré exige ces variablesà :
+configuration. L’exemple livré exige ces variables :
 
 | Variable | Rôle |
 | --- | --- |
@@ -93,7 +93,7 @@ montage `600` possédé par root fait échouer le démarrage avec
 
 ### 3. Laissez l’entrypoint amorcer la base de données
 
-L’entrypoint du backend exécute une chaîne à chaque démarrageà :
+L’entrypoint du backend exécute une chaîne à chaque démarrage :
 
 ```text
 render config (when absent) → migrate → seed:core → exec facet server
@@ -105,7 +105,7 @@ Un conteneur ponctuel exécute directement toute autre commande, donc
 
 ### 4. Servez le TLS par le frontal Caddy
 
-La configuration du frontal compte trois blocs de siteà :
+La configuration du frontal compte trois blocs de site :
 
 | Bloc de site | Routes | TLS |
 | --- | --- | --- |
@@ -128,13 +128,13 @@ hôte d’application enregistré ne reçoit aucun certificat.
 
 ### 5. Vérifiez la pile
 
-Le pipeline de version fait passer un test de fumée à chaque imageà : la
+Le pipeline de version fait passer un test de fumée à chaque image : la
 pile démarre, le backend répond `status: ok` sur `/Healthcheck`, la page de
 connexion se charge à travers le frontend, et les doctypes core existent.
-Faites passer le même test localementà :
+Faites passer le même test localement :
 
 ```sh
-make docker_images   # construit les étiquettes localesà : facet, facet-frontend
+make docker_images   # construit les étiquettes locales : facet, facet-frontend
 make docker_smoke    # lance la pile de test et ses vérifications
 ```
 
@@ -142,7 +142,7 @@ make docker_smoke    # lance la pile de test et ses vérifications
 
 Montez une configuration personnalisée avec un fichier d’override Compose.
 Enregistrez ceci dans `docker/compose.override.yml`, puis lancez Compose avec
-les deux fichiersà :
+les deux fichiers :
 
 ```yaml
 services:
@@ -202,4 +202,4 @@ réessaie l’étape migrate trois fois, puis le démarrage s’arrête.
   l’entrypoint exécute au démarrage.
 - [Hébergement et déploiement des applications](/fr/apps/hosting-deploy/) — la
   surface des applications hébergées.
-- Internes sur GitHubà : [container-images.md](https://github.com/wearefacet/facet/blob/main/doc/ops/container-images.md), [first-deployment.md](https://github.com/wearefacet/facet/blob/main/doc/ops/first-deployment.md).
+- Internes sur GitHub : [container-images.md](https://github.com/wearefacet/facet/blob/main/doc/ops/container-images.md), [first-deployment.md](https://github.com/wearefacet/facet/blob/main/doc/ops/first-deployment.md).

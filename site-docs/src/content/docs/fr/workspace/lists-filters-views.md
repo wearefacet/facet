@@ -9,7 +9,7 @@ verified_at: 49d7c7e5
 ---
 
 Vos enregistrements vivent dans des listes. Chaque doctype en ouvre une, et
-vous choisissez la disposition qui convient au travailà :
+vous choisissez la disposition qui convient au travail :
 
 - **Tableau** — quand vous avez besoin de détail, de colonnes et de tri.
 - **Kanban** — quand le travail passe par des étapes.
@@ -60,7 +60,7 @@ layout -> calendar: Calendar
 
 ### 2. Choisissez la disposition
 
-Chaque disposition convient à un travail différentà :
+Chaque disposition convient à un travail différent :
 
 - **Tableau** — une ligne par enregistrement, une colonne par champ.
   Utilisez-la quand vous avez besoin de détail. La barre d’outils en haut
@@ -70,7 +70,7 @@ Chaque disposition convient à un travail différentà :
   enregistrements par un champ, par exemple le statut. Utilisez-le quand le
   travail passe par des étapes. Chaque carte montre le nom de l’enregistrement
   et son heure de mise à jour. Les colonnes se chargent
-  indépendammentà : une colonne lente ou vide ne bloque jamais le
+  indépendamment : une colonne lente ou vide ne bloque jamais le
   tableau. Une colonne avec plus d’enregistrements que la première page
   affiche « Afficher plus ».
 - **Calendrier** — des enregistrements posés sur une grille de mois ou de
@@ -87,7 +87,7 @@ Chaque disposition convient à un travail différentà :
 ### 3. Resserez la liste avec des filtres
 
 Les filtres ne gardent que les enregistrements dont vous avez besoin.
-Utilisez la barre d’outilsà :
+Utilisez la barre d’outils :
 
 1. Sélectionnez « + Ajouter un filtre ». Un menu liste les champs filtrables.
 2. Sélectionnez un champ. Une puce apparaît, avec l’opérateur et une commande
@@ -96,7 +96,7 @@ Utilisez la barre d’outilsà :
    pendant la saisie.
 
 Le menu des opérateurs n’offre que les comparaisons que le champ
-supporteà :
+supporte :
 
 | Opérateur | Libellé | Pour |
 | --- | --- | --- |
@@ -137,12 +137,12 @@ clic.
 
 1. Sélectionnez la commande « Créer une nouvelle vue » à côté des onglets.
    Vos filtres actuels restent actifs pendant l’édition.
-2. Choisissez le type de vueà : Tableau, Calendrier ou Kanban.
+2. Choisissez le type de vue : Tableau, Calendrier ou Kanban.
 3. Nommez la vue, par exemple `Affaires ouvertes`.
 4. Réglez la portée. « Personnelle » signifie que vous seul la voyez.
    « Générale » signifie que toute l’équipe la partage. Vous ne pouvez plus
    changer cela après l’enregistrement.
-5. Réglez les détails selon le typeà : les colonnes pour un tableau, les
+5. Réglez les détails selon le type : les colonnes pour un tableau, les
    colonnes pour un kanban, le champ de date pour un calendrier. Ajoutez des
    filtres à l’étape « Filtres ».
 6. Sélectionnez « Créer la vue ».
@@ -168,7 +168,7 @@ commande pour désépingler.
 
 ## Exemple
 
-Partagez une liste filtrée avec un collègue par le lien de la vueà :
+Partagez une liste filtrée avec un collègue par le lien de la vue :
 
 ```
 https://facet.localhost:3443/crm/Deal?view=affaires_ouvertes

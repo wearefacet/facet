@@ -1,0 +1,458 @@
+---
+// One of the three promises in the hero tagline — data, permissions, history —
+// as a card with a small looping illustration. The text is the slot, so the
+// page's .md twin keeps the words readable for agents.
+interface Props {
+	kind: 'data' | 'permissions' | 'history';
+	title: string;
+}
+const { kind, title } = Astro.props;
+---
+
+<article class={`pillar pillar--${kind}`}>
+	<div class="pillar__art" aria-hidden="true">
+		{
+			kind === 'data' && (
+				<svg viewBox="0 0 240 120">
+					{[0, 1, 2].map((t) => (
+						<g transform={`translate(${14 + t * 74} 8)`}>
+							<rect width="64" height="88" rx="7" class="pl-card" />
+							<rect x="0" y="0" width="64" height="16" rx="7" class={`pl-head pl-head-${t}`} />
+							<rect x="0" y="9" width="64" height="7" class={`pl-head pl-head-${t}`} />
+							{[0, 1, 2, 3].map((r) => (
+								<rect
+									x="8"
+									y={26 + r * 14}
+									width={[44, 34, 48, 28][(r + t) % 4]}
+									height="6"
+									rx="3"
+									class="pl-row"
+									style={`--k:${t * 4 + r}`}
+								/>
+							))}
+						</g>
+					))}
+					<polygon points="10,104 230,104 222,114 18,114" class="pl-base" />
+				</svg>
+			)
+		}
+		{
+			kind === 'permissions' && (
+				<svg viewBox="0 0 240 120">
+					<g class="pl-user">
+						<circle cx="30" cy="48" r="10" />
+						<path d="M12 80 a18 16 0 0 1 36 0z" />
+					</g>
+					<line x1="52" y1="60" x2="160" y2="60" class="pl-track" />
+					<circle cx="52" cy="60" r="4" class="pl-beam" />
+					<g class="pl-shield">
+						<path d="M100 34 l22 8 v16 c0 15 -10 24 -22 29 c-12 -5 -22 -14 -22 -29 v-16z" />
+						<path d="M91 60 l6 6 12 -13" class="pl-check" />
+					</g>
+					<g transform="translate(150 14)">
+						<rect width="78" height="94" rx="8" class="pl-card" />
+						{[0, 1, 2, 3, 4].map((r) => {
+							const hidden = r === 1 || r === 3;
+							return hidden ? (
+								<g>
+									<rect x="10" y={14 + r * 15} width="58" height="8" rx="4" class="pl-masked" />
+									<g transform={`translate(35 ${11 + r * 15})`}>
+										<g class="pl-lock">
+											<rect x="0" y="4" width="8" height="7" rx="1.5" />
+											<path d="M1.8 4.5 v-1.8 a2.2 2.2 0 0 1 4.4 0 v1.8" fill="none" />
+										</g>
+									</g>
+								</g>
+							) : (
+								<rect x="10" y={14 + r * 15} width={[50, 0, 40, 0, 46][r]} height="8" rx="4" class="pl-granted" style={`--k:${r}`} />
+							);
+						})}
+					</g>
+				</svg>
+			)
+		}
+		{
+			kind === 'history' && (
+				<svg viewBox="0 0 240 120">
+					<line x1="16" y1="70" x2="226" y2="70" class="pl-track" />
+					{[0, 1, 2, 3, 4, 5].map((n) => (
+						<g class={n > 2 ? 'pl-future' : undefined}>
+							<rect x={20 + n * 38} y={40 - (n % 3) * 6} width={[18, 24, 14][n % 3]} height="5" rx="2.5" class="pl-tick" style={`--k:${n}`} />
+							<circle cx={28 + n * 38} cy="70" r="6" class="pl-node" style={`--k:${n}`} />
+						</g>
+					))}
+					<g class="pl-playhead">
+						<line x1="28" y1="54" x2="28" y2="88" />
+						<path d="M22 50 h12 l-6 7z" />
+					</g>
+					<path d="M200 98 C 180 112, 120 112, 106 94" class="pl-rewind" />
+					<path d="M101 99 l4 -7 6 5" class="pl-rewind pl-rewind-head" />
+				</svg>
+			)
+		}
+	</div>
+	<h3 class="pillar__title">{title}</h3>
+	<div class="pillar__body"><slot /></div>
+</article>
+
+<style>
+	.pillar {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+		padding: 1.25rem 1.25rem 1.4rem;
+		border: 1px solid var(--border);
+		border-radius: 1rem;
+		background: linear-gradient(180deg, var(--surface-2), var(--surface));
+		transition:
+			border-color 200ms ease,
+			transform 200ms ease;
+	}
+
+	.pillar:hover {
+		border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+		transform: translateY(-3px);
+	}
+
+	.pillar__art {
+		margin: -0.25rem -0.25rem 0.4rem;
+		padding: 0.75rem;
+		border-radius: 0.7rem;
+		background: var(--sunken);
+	}
+
+	.pillar__art svg {
+		display: block;
+		width: 100%;
+		height: auto;
+		overflow: visible;
+	}
+
+	.pillar__title {
+		margin: 0;
+		font-size: var(--sl-text-xl);
+		font-weight: 600;
+		color: var(--text);
+	}
+
+	.pillar__body {
+		color: var(--text-2);
+		font-size: var(--sl-text-sm);
+		line-height: 1.6;
+	}
+
+	.pillar__body :global(p) {
+		margin: 0;
+	}
+
+	/* --- shared illustration parts --- */
+	.pl-card {
+		fill: var(--surface);
+		stroke: var(--border-strong);
+	}
+	.pl-row,
+	.pl-tick {
+		fill: var(--border-strong);
+	}
+	.pl-head-0 {
+		fill: #d9822b;
+	}
+	.pl-head-1 {
+		fill: #f2c14e;
+	}
+	.pl-head-2 {
+		fill: #e8a33d;
+	}
+	.pl-base {
+		fill: var(--text);
+		opacity: 0.85;
+	}
+	.pl-track {
+		stroke: var(--border-strong);
+		stroke-width: 2;
+		stroke-dasharray: 2 5;
+		stroke-linecap: round;
+	}
+	.pl-user {
+		fill: var(--text-2);
+	}
+	.pl-shield path:first-child {
+		fill: var(--accent-weak);
+		stroke: var(--accent);
+		stroke-width: 2;
+		stroke-linejoin: round;
+	}
+	.pl-check {
+		fill: none;
+		stroke: var(--accent);
+		stroke-width: 3;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+	.pl-beam {
+		fill: var(--accent);
+		opacity: 0;
+	}
+	.pl-granted {
+		fill: var(--accent);
+	}
+	.pl-masked {
+		fill: var(--sunken);
+		stroke: var(--border-strong);
+		stroke-dasharray: 3 3;
+	}
+	.pl-lock rect {
+		fill: var(--text-3);
+	}
+	.pl-lock path {
+		stroke: var(--text-3);
+		stroke-width: 1.4;
+	}
+	.pl-node {
+		fill: var(--surface);
+		stroke: var(--accent);
+		stroke-width: 3;
+	}
+	.pl-playhead line {
+		stroke: var(--text);
+		stroke-width: 2;
+	}
+	.pl-playhead path {
+		fill: var(--text);
+	}
+	.pl-rewind {
+		fill: none;
+		stroke: var(--accent);
+		stroke-width: 2;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+		opacity: 0;
+	}
+
+	/* --- motion --- */
+	@media (prefers-reduced-motion: reduce) {
+		.pl-rewind {
+			opacity: 0.8;
+		}
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		/* data: rows are written into each domain, one after the other */
+		.pl-row {
+			transform-box: fill-box;
+			transform-origin: left center;
+			animation: pl-write 6s cubic-bezier(0.3, 0.7, 0.3, 1) infinite;
+			animation-delay: calc(var(--k) * 0.28s);
+		}
+
+		/* permissions: a request travels user → shield → document */
+		.pl-beam {
+			animation: pl-beam 3.6s ease-in-out infinite;
+		}
+		.pl-shield {
+			transform-box: fill-box;
+			transform-origin: center;
+			animation: pl-shield 3.6s ease-in-out infinite;
+		}
+		.pl-check {
+			stroke-dasharray: 30;
+			animation: pl-check 3.6s ease-in-out infinite;
+		}
+		.pl-granted {
+			animation: pl-grant 3.6s ease-in-out infinite;
+			animation-delay: calc(var(--k) * 0.08s);
+		}
+		.pl-lock {
+			animation: pl-lock 3.6s ease-in-out infinite;
+		}
+
+		/* history: changes land on the log, then a rollback rewinds it */
+		.pl-node,
+		.pl-tick {
+			transform-box: fill-box;
+			transform-origin: center;
+			animation: pl-pop 500ms cubic-bezier(0.3, 1.6, 0.5, 1) both;
+			animation-delay: calc(0.3s + var(--k) * 0.55s);
+		}
+		.pl-playhead {
+			animation: pl-play 8s ease-in-out 0.3s infinite;
+		}
+		.pl-future {
+			animation: pl-dim 8s ease-in-out 0.3s infinite;
+		}
+		.pl-rewind {
+			stroke-dasharray: 140;
+			animation: pl-rewind 8s ease-in-out 0.3s infinite;
+		}
+	}
+
+	@keyframes pl-write {
+		0% {
+			transform: scaleX(0);
+			fill: var(--accent);
+		}
+		12% {
+			transform: scaleX(1);
+			fill: var(--accent);
+		}
+		30%,
+		85% {
+			transform: scaleX(1);
+			fill: var(--border-strong);
+		}
+		100% {
+			transform: scaleX(1);
+			fill: var(--border-strong);
+		}
+	}
+
+	@keyframes pl-beam {
+		0% {
+			opacity: 0;
+			transform: translateX(0);
+		}
+		8% {
+			opacity: 1;
+		}
+		40% {
+			transform: translateX(48px);
+		}
+		50% {
+			transform: translateX(48px);
+		}
+		75% {
+			opacity: 1;
+			transform: translateX(100px);
+		}
+		85%,
+		100% {
+			opacity: 0;
+			transform: translateX(100px);
+		}
+	}
+
+	@keyframes pl-shield {
+		0%,
+		35%,
+		60%,
+		100% {
+			transform: scale(1);
+		}
+		45% {
+			transform: scale(1.12);
+		}
+	}
+
+	@keyframes pl-check {
+		0%,
+		38% {
+			stroke-dashoffset: 30;
+		}
+		52%,
+		92% {
+			stroke-dashoffset: 0;
+		}
+		100% {
+			stroke-dashoffset: 30;
+		}
+	}
+
+	@keyframes pl-grant {
+		0%,
+		70% {
+			opacity: 0.35;
+		}
+		80%,
+		94% {
+			opacity: 1;
+		}
+		100% {
+			opacity: 0.35;
+		}
+	}
+
+	@keyframes pl-lock {
+		0%,
+		72%,
+		100% {
+			transform: translateX(0);
+		}
+		76% {
+			transform: translateX(-1.5px);
+		}
+		80% {
+			transform: translateX(1.5px);
+		}
+		84% {
+			transform: translateX(0);
+		}
+	}
+
+	@keyframes pl-pop {
+		from {
+			opacity: 0;
+			transform: scale(0);
+		}
+	}
+
+	@keyframes pl-play {
+		0% {
+			transform: translateX(0);
+			opacity: 1;
+		}
+		45%,
+		58% {
+			transform: translateX(190px);
+		}
+		72%,
+		92% {
+			transform: translateX(76px);
+			opacity: 1;
+		}
+		97% {
+			transform: translateX(76px);
+			opacity: 0;
+		}
+		100% {
+			transform: translateX(0);
+			opacity: 0;
+		}
+	}
+
+	@keyframes pl-dim {
+		0%,
+		60% {
+			opacity: 1;
+		}
+		72%,
+		92% {
+			opacity: 0.28;
+		}
+		100% {
+			opacity: 1;
+		}
+	}
+
+	@keyframes pl-rewind {
+		0%,
+		58% {
+			opacity: 0;
+			stroke-dashoffset: 140;
+		}
+		62% {
+			opacity: 1;
+			stroke-dashoffset: 140;
+		}
+		72%,
+		90% {
+			opacity: 1;
+			stroke-dashoffset: 0;
+		}
+		96%,
+		100% {
+			opacity: 0;
+			stroke-dashoffset: 0;
+		}
+	}
+</style>

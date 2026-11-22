@@ -263,6 +263,45 @@
 		{ key: 'name', label: 'Deal' },
 		{ key: 'partners', label: 'Partners' }
 	];
+
+	// ── Dense file cell (F10-07) ───────────────────────────────────────────
+	// A `file` field stores a bare artifact id. The show page resolves the
+	// filename; the listing cell must not print the opaque ULID when the
+	// metadata is already cached. The synthetic fetcher stands in for
+	// `GET /Api/core/artifacts/:id`.
+	const ARTIFACT_ID = '01HZZZZZZZZZZZZZZZZZZZZZZZ';
+	function syntheticArtifactFetch(id: string) {
+		return Promise.resolve({
+			id,
+			filename: 'contract.pdf',
+			mime_type: 'application/pdf',
+			url: 'https://artifact.example/a/grant-1?exp=1234&sig=abc'
+		});
+	}
+
+	interface ContractedInvoice {
+		id: string;
+		invoiceNo: string;
+		contract: string;
+	}
+
+	const fileDs = new MockDataSource<ContractedInvoice>('acme', 'Invoice', [
+		{ id: '1', invoiceNo: 'INV-2026-0488', contract: ARTIFACT_ID }
+	]);
+	const fileDef: DoctypeDef = {
+		doctype: 'Invoice',
+		domain: 'acme',
+		fields: [
+			{ key: 'invoiceNo', type: 'string', title: 'Invoice' },
+			{ key: 'contract', type: 'file', title: 'Contract' }
+		],
+		children: [],
+		actions: []
+	};
+	const fileColumns: Column<ContractedInvoice>[] = [
+		{ key: 'invoiceNo', label: 'Invoice' },
+		{ key: 'contract', label: 'Contract' }
+	];
 </script>
 
 <script lang="ts">
@@ -490,5 +529,28 @@
 		// Row 2: an empty array renders the blank dash, not an empty capsule.
 		const row2 = canvas.getByText('Initech rollout').closest('tr');
 		expect(row2?.querySelector('.fv-blank')).not.toBeNull();
+	}}
+/>
+
+<!-- A `file` cell resolves the artifact filename when the metadata is
+     cached, and keeps the id as the tooltip. The show page and the listing
+     then read the same way. -->
+<Story
+	name="FileCellResolvesFilename"
+	args={{
+		columns: fileColumns as unknown as Column<Invoice>[],
+		datasource: fileDs as unknown as DataSource<Invoice>,
+		doctype: fileDef,
+		fetchArtifact: syntheticArtifactFetch
+	}}
+	play={async ({ canvasElement }) => {
+		// The label flips from the bare id to the filename once the metadata
+		// lands. The id stays the tooltip so the stored value is readable.
+		await waitFor(() => {
+			const cell = canvasElement.querySelector('td .cell-text[title]');
+			expect(cell?.textContent?.trim()).toBe('contract.pdf');
+		});
+		const cell = canvasElement.querySelector('td .cell-text[title]');
+		await expect(cell).toHaveAttribute('title', ARTIFACT_ID);
 	}}
 />

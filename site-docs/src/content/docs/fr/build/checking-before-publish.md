@@ -32,7 +32,7 @@ le résultat avant toute écriture.
 Ouvrez le brouillon dans le Builder et ouvrez l’onglet **Vérification**. La
 page d’accueil affiche aussi un compteur d’anomalies sur chaque carte de
 brouillon. Depuis un terminal, la vérification tient en une seule lecture du
-domaineà :
+domaine :
 
 ```sh
 curl -k -H "Authorization: Bearer $FACET_API_KEY" \
@@ -41,21 +41,21 @@ curl -k -H "Authorization: Bearer $FACET_API_KEY" \
 
 ### 2. Lire les anomalies et les remarques
 
-Le rapport se répartit en deux sortes d’entréesà :
+Le rapport se répartit en deux sortes d’entrées :
 
 | Type | Signification |
 | --- | --- |
 | Anomalie (avertissement ou erreur) | Un vrai défaut. La confirmation de publication les compte. |
 | Remarque (info) | Un repli voulu, pas une faute. Par exemple, un type de vue manquant, ou l’absence de modèle `display_name`. |
 
-Un défaut bloque aussi les écritures, et pas seulement le rapportà : un champ
+Un défaut bloque aussi les écritures, et pas seulement le rapport : un champ
 référence déclaré avec un nom non qualifié, tel que `Client` (sans préfixe
 `domain.`), rejette toute valeur de ce champ. La vérification le marque comme
 une erreur.
 
 ### 3. Corriger et relancer
 
-Chaque anomalie nomme une catégorie et souvent un champà :
+Chaque anomalie nomme une catégorie et souvent un champ :
 
 | Catégorie | Concerne |
 | --- | --- |
@@ -69,7 +69,7 @@ Chaque anomalie nomme une catégorie et souvent un champà :
 | `hooks` | Un hook de domaine qui ne compile pas. |
 
 Corrigez la définition dans l’éditeur, puis relancez la vérification. Répétez
-jusqu’à ce que le compteur tombe à zéro. Les remarques peuvent resterà : elles
+jusqu’à ce que le compteur tombe à zéro. Les remarques peuvent rester : elles
 décrivent un comportement, pas une faute.
 
 :::note
@@ -96,7 +96,7 @@ avant votre confirmation :
 
 ## Exemple
 
-La vérification d’un brouillon à un seul doctype renvoie ce rapportà :
+La vérification d’un brouillon à un seul doctype renvoie ce rapport :
 
 ```json
 {
@@ -137,7 +137,7 @@ bien arrivé, attendez un instant, puis relancez la vérification.
 **Une anomalie nomme un doctype hors du brouillon.**
 
 Les vérifications de réplication et de référence vont jusque dans les domaines
-réels. Le défaut reste de votre côtéà : le brouillon pointe vers quelque chose
+réels. Le défaut reste de votre côté : le brouillon pointe vers quelque chose
 que l’autre domaine ne porte pas.
 
 **La publication signale un échec de barrière de version.**

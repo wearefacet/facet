@@ -1,6 +1,6 @@
 ---
 title: Construire des domaines
-description: "Modélisez vos données métier dans Facetà : doctypes, champs, actions, vues et automatisation."
+description: "Modélisez vos données métier dans Facet : doctypes, champs, actions, vues et automatisation."
 audience: [author]
 features: []
 sidebar:
@@ -13,7 +13,7 @@ Facet. Cette section vous montre comment faire. Commencez par un domaine de
 brouillon et un seul doctype. Puis étoffez le modèle à mesure que vous
 découvrez ce que le produit peut contenir.
 
-Vous allez mener quatre chantiersà : **modéliser** les données, **façonner les
+Vous allez mener quatre chantiers : **modéliser** les données, **façonner les
 vues** que les gens utilisent, **publier et faire évoluer** le domaine, et
 **automatiser** ce qui s’ensuit.
 
@@ -21,7 +21,7 @@ vues** que les gens utilisent, **publier et faire évoluer** le domaine, et
 
 - [Domaines, brouillons et éditeurs de domaines](/fr/build/domains-drafts-editors/) — ouvrez un domaine de brouillon, invitez des co-éditeurs et publiez vers le domaine réel.
 - [Concevoir des doctypes](/fr/build/designing-doctypes/) — déclarez les champs, les actions et les modèles d’un type d’enregistrement.
-- [Types de champs (guide)](/fr/build/field-types/) — choisissez le bon type pour chaque champà ; valeurs par défaut et normalisation.
+- [Types de champs (guide)](/fr/build/field-types/) — choisissez le bon type pour chaque champ ; valeurs par défaut et normalisation.
 - [Références, liens et liens entrants](/fr/build/references-links-backlinks/) — reliez les documents entre eux et parcourez les connexions.
 - [Identifiants et contraintes d’unicité](/fr/build/identifiers-unique-constraints/) — des numéros de référence lisibles par l’humain et des règles d’unicité.
 - [Composition parent/enfant](/fr/build/parent-child-composition/) — modélisez des enfants possédés qui vivent et meurent avec leur parent.

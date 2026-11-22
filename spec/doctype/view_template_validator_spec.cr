@@ -4,6 +4,8 @@
 require "spec"
 require "json"
 require "../../src/doctype"
+require "../../src/mutation/client"
+require "../spec_helper"
 
 # A Widget-shaped definition: a nested
 # object field, array fields (string / integer items / object items), a
@@ -40,6 +42,49 @@ private def binding_definition
       "readonly_note": {"type": "string", "read_only": true}
     }
   }))
+end
+
+# An Order / OrderLine composition pair: `Order` declares a `lines`
+# children relationship, `OrderLine` declares `member_of: Order` back and
+# carries a nested `details` object. The child re-declares `lines` so a
+# template authored on it can list its siblings through its own `member_of`.
+private def relation_parent_definition
+  Facet::Doctype::DoctypeDefinition.from_json(%({
+    "doctype": "Order",
+    "domain": "vtvrel",
+    "schema_version": 1,
+    "aggregate_root": true,
+    "fields": {"name": {"type": "string"}},
+    "children": {"lines": {"doctype": "OrderLine", "collection": true}}
+  }))
+end
+
+private def relation_child_definition
+  Facet::Doctype::DoctypeDefinition.from_json(%({
+    "doctype": "OrderLine",
+    "domain": "vtvrel",
+    "schema_version": 1,
+    "aggregate_root": false,
+    "member_of": "Order",
+    "fields": {
+      "sku": {"type": "string"},
+      "details": {"type": "object", "properties": {"qty": {"type": "integer"}}}
+    },
+    "children": {"lines": {"doctype": "OrderLine", "collection": true}}
+  }))
+end
+
+# Persists a definition as its `core.DocType` projection so the walk can
+# resolve it through `Doctype::DefinitionStore`.
+private def persist_relation_doctype(db : DB::Connection, defn : Facet::Doctype::DoctypeDefinition) : Nil
+  doc_id = defn.qualified_name
+  Facet::Mutation::Client.create(
+    db, "core", "DocType",
+    doc_id: doc_id,
+    content: defn.to_json,
+    actioner_id: "system:test",
+  )
+  Facet::Doctype::DefinitionStore.invalidate(doc_id)
 end
 
 module Facet::Doctype
@@ -674,14 +719,15 @@ module Facet::Doctype
         ]
       }))
       issues = ViewTemplateValidator.validate(template, binding_definition)
-      issues.size.should eq(4)
-      issues.all?(&.severity.==(:warning)).should be_true
+      # The four unresolved wrapper targets. The dict branch's `$key` is the
+      # synthetic dict entry key, so it is not flagged.
       issues.map(&.path).should eq([
         "template.children.0.field",
         "template.children.1.field",
         "template.children.2.field",
         "template.children.3.field",
       ])
+      issues.all?(&.severity.==(:warning)).should be_true
     end
 
     it "warns on wrappers targeting the wrong shape (object over scalar, array over object)" do
@@ -700,8 +746,9 @@ module Facet::Doctype
         ]
       }))
       issues = ViewTemplateValidator.validate(template, binding_definition)
-      issues.size.should eq(3)
-      issues.all?(&.severity.==(:warning)).should be_true
+      wrapper_issues = issues.select { |i| i.message.includes?("wrapper adds no usable scope") }
+      wrapper_issues.size.should eq(3)
+      wrapper_issues.all?(&.severity.==(:warning)).should be_true
     end
 
     it "does not flag dotted bindings without a definition (structural-only call)" do
@@ -795,6 +842,117 @@ module Facet::Doctype
         ]
       }))
       ViewTemplateValidator.validate(template, binding_definition).should be_empty
+    end
+
+    # ── Interpolation bindings (F10-03) ───────────────────────────────
+
+    it "warns on a markdown node bound to an unknown field" do
+      issues = ViewTemplateValidator.validate(JSON.parse(%({
+        "type": "markdown", "field": "ghost"
+      })), binding_definition)
+      issues.size.should eq(1)
+      issues.first.severity.should eq(:warning)
+      issues.first.path.should eq("template.field")
+      issues.first.message.should contain("'ghost'")
+    end
+
+    it "warns on a field node value interpolating an unknown field" do
+      issues = ViewTemplateValidator.validate(JSON.parse(%({
+        "type": "field", "label": "Missing", "value": "$absent"
+      })), binding_definition)
+      issues.size.should eq(1)
+      issues.first.severity.should eq(:warning)
+      issues.first.path.should eq("template.value")
+      issues.first.message.should contain("'absent'")
+    end
+
+    it "warns on a header title and subtitle referencing unknown fields" do
+      issues = ViewTemplateValidator.validate(JSON.parse(%({
+        "type": "header", "title": "$ghost", "subtitle": "Owner: $missing"
+      })), binding_definition)
+      issues.size.should eq(2)
+      issues.all?(&.severity.==(:warning)).should be_true
+      issues.map(&.path).should eq(["template.title", "template.subtitle"])
+    end
+
+    it "accepts an interpolation token that resolves at the scope" do
+      issues = ViewTemplateValidator.validate(JSON.parse(%({
+        "type": "col", "children": [
+          { "type": "markdown", "field": "description" },
+          { "type": "field", "label": "Status", "value": "$status" }
+        ]
+      })), binding_definition)
+      issues.should be_empty
+    end
+
+    it "does not flag interpolation bindings without a definition (structural-only call)" do
+      issues = ViewTemplateValidator.validate(JSON.parse(%({
+        "type": "markdown", "field": "ghost"
+      })))
+      issues.should be_empty
+    end
+
+    # ── Relation target + column bindings (F10-03) ────────────────────
+
+    it "warns when a children relation names no relationship" do
+      with_db do |db|
+        ensure_domain(db, "vtvrel")
+        parent = relation_parent_definition
+        persist_relation_doctype(db, parent)
+        persist_relation_doctype(db, relation_child_definition)
+
+        issues = ViewTemplateValidator.validate(JSON.parse(%({
+          "type": "relation", "label": "Lines", "doctype": "vtvrel.OrderLine",
+          "source": { "kind": "children", "rel": "nope" }
+        })), parent)
+        rel_issues = issues.select { |i| i.path == "template.source.rel" }
+        rel_issues.size.should eq(1)
+        rel_issues.first.severity.should eq(:warning)
+        rel_issues.first.message.should contain("'nope'")
+      end
+    end
+
+    it "resolves a children relation through the child's own member_of" do
+      with_db do |db|
+        ensure_domain(db, "vtvrel")
+        persist_relation_doctype(db, relation_parent_definition)
+        persist_relation_doctype(db, relation_child_definition)
+
+        # The same template authored on the child lists its siblings — the
+        # parent's `children` entry resolves through the child's member_of.
+        issues = ViewTemplateValidator.validate(JSON.parse(%({
+          "type": "relation", "label": "Lines", "doctype": "vtvrel.OrderLine",
+          "source": { "kind": "children", "rel": "lines" }
+        })), relation_child_definition)
+        issues.should be_empty
+      end
+    end
+
+    it "warns on a relation column that names no field on the row doctype" do
+      with_db do |db|
+        ensure_domain(db, "vtvrel")
+        parent = relation_parent_definition
+        persist_relation_doctype(db, parent)
+        persist_relation_doctype(db, relation_child_definition)
+
+        issues = ViewTemplateValidator.validate(JSON.parse(%({
+          "type": "relation", "label": "Lines", "doctype": "vtvrel.OrderLine",
+          "source": { "kind": "children", "rel": "lines" },
+          "view": "table",
+          "columns": [
+            { "key": "sku", "label": "SKU" },
+            { "key": "ghost", "label": "Ghost" },
+            { "key": "details.qty", "label": "Qty" },
+            { "key": "details.nope", "label": "Bad" }
+          ]
+        })), parent)
+        key_warnings = issues.select { |i| i.severity == :warning && i.path.ends_with?(".key") }
+        # `ghost` is absent; `details.nope` is dotted and left to the renderer
+        # (its head may be a reference or an object), so it is not flagged.
+        key_warnings.map(&.message).should eq([
+          "relation column 'ghost' names no field on 'vtvrel.OrderLine' — the cell renders empty",
+        ])
+      end
     end
   end
 end

@@ -45,6 +45,20 @@ FAIL_FAST ?= --fail-fast
 # Do not add `--debug` flag unless you want to use gdb. It creates large memory usage.
 SPEC_FLAGS ?=
 
+# Link flag that stops the ELF version-index overflow in the huge spec binary.
+# Crystal links every executable with `-rdynamic`, exporting all symbols; GNU ld
+# reads the `@` in a mangled name (`Slice(T)#[]?<Int32>:...`) as a symbol version
+# and adds one `.gnu.version_d` entry per distinct suffix. The `.gnu.version`
+# index is a 15-bit field (bit 15 is VERSYM_HIDDEN), so past ~32767 versions the
+# library versions (GLIBC_*, ...) get numbered above 0x7fff, the loader masks the
+# index, and a libc symbol resolves against a bogus Crystal method name:
+#   `spec_run: symbol lookup error: undefined symbol: environ, version <mangled>`
+# This only fires on linkers that version `@` names (Ubuntu's GNU ld in CI); the
+# local build is unaffected, so the failure surfaces only on the runner. Upstream
+# issue: crystal-lang/crystal#13193. `--no-export-dynamic` is passed before
+# Crystal's own `-rdynamic` and still wins with GNU ld; lld/mold ignore it safely.
+SPEC_LINK_FLAGS ?= -Wl,--no-export-dynamic
+
 # Explicit, sorted spec file list. `crystal spec` with no arguments collects
 # `spec/**/*_spec.cr` in unsorted readdir order, which differs between a
 # fresh CI checkout and a long-lived dev tree — compile order then decides
@@ -86,7 +100,7 @@ test_build: $(SPEC_BIN) ## Compile the spec suite into build/spec_run (no run)
 $(SPEC_BIN): $(DEPS) $(SPEC_SRCS)
 	@mkdir -p $(BUILD_DIR)
 	@echo "Compiling spec suite into $@ ..."
-	@$(CRYSTAL) build --no-debug -o $@ $(SPEC_FILES)
+	@$(CRYSTAL) build --no-debug --link-flags="$(SPEC_LINK_FLAGS)" -o $@ $(SPEC_FILES)
 
 test_db_up: ## Start the throwaway PostgreSQL for the spec suite (port 5433)
 	docker compose -f compose.test.yml up -d --wait

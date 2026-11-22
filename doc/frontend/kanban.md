@@ -76,6 +76,8 @@ The card root carries `data-doc-id` and lane containers key by index, so a later
 
 Validation: values mode requires a group-by field that serves the lanes' `eq` filter (a stored view whose field lost its `filters:` capability fails the same gate); custom mode requires at least one lane and no `validateLanes` errors (empty label, empty/incomplete filter, duplicate label — one inline error per lane at a time, label before filter). Save is blocked while any error is present.
 
+The backend enforces the same rules at the write door: `Document::CollectionViewGate` (see [`backend/collection-view.md`](../backend/collection-view.md) → Config validation) answers `422` for a kanban `mode` outside `values` / `custom`, a `values` `group_by` that is not a writable `enum` / `boolean` field serving `eq`, and a `custom` mode with no lane. A REST- or agent-authored view therefore cannot store a config the board cannot render.
+
 ## Quirks
 
 - The surface shows no filter bar — filters are authored in the view config (the calendar rule).

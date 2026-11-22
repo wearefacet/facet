@@ -63,12 +63,12 @@ Passez à `always` en connaissance de cause. Chaque compte sans MFA s’arrête
 | Étage     | Où                     | Clés                                                                                                   |
 | --------- | ----------------------- | -------------------------------------------------------------------------------------------------------- |
 | Exécution | `core.SystemSettings`   | `iam.mfa.type` (`none` ou `totp`), `iam.mfa.enforcement` (`preferred` ou `always`)                        |
-| Fichier   | `config.{env}.yml`      | `iam.mfa.totp.enabled` (un booléenà ; `true` se traduit en type `totp`, `false` en `none`), `iam.mfa.enforcement` |
+| Fichier   | `config.{env}.yml`      | `iam.mfa.totp.enabled` (un booléen ; `true` se traduit en type `totp`, `false` en `none`), `iam.mfa.enforcement` |
 
 La valeur d’exécution gagne quand elle est positionnée. Un champ
 d’exécution null signifie « suivre le fichier ». Chaque décision
 d’authentification lit directement la ligne du document d’exécution, jamais
-un cacheà ; un enregistrement s’applique donc aussitôt.
+un cache ; un enregistrement s’applique donc aussitôt.
 
 ## Étapes
 
@@ -79,7 +79,7 @@ Sécurité. Mettez **Type de facteur MFA** à `totp`, puis réglez
 **Application du MFA**. Le sélecteur d’application ne s’affiche que tant que
 le type de facteur est `totp`. Sélectionnez **Enregistrer**.
 
-La page envoie une mise à jour partielle par la route de document standardà :
+La page envoie une mise à jour partielle par la route de document standard :
 
 ```sh
 curl -k -X PATCH -H "Authorization: Bearer $FACET_API_KEY" \
@@ -91,7 +91,7 @@ curl -k -X PATCH -H "Authorization: Bearer $FACET_API_KEY" \
 La barrière d’écriture n’accepte que `none` ou `totp` pour le type, et
 seulement `preferred` ou `always` pour l’application. Une valeur fausse
 répond `422`. Le hook de cycle de vie Lua refuse tout create et tout delete
-du document des réglagesà ; seule la ligne `settings` créée par
+du document des réglages ; seule la ligne `settings` créée par
 l’initialisation existe.
 
 ### 2. Lire les valeurs effectives
@@ -103,7 +103,7 @@ curl -k -H "Authorization: Bearer $FACET_API_KEY" \
 
 La carte `values` porte les valeurs effectives, non secrètes, indexées par
 chemin, par exemple `"iam.mfa.enforcement": "always"`. La liste `pinned`
-nomme les chemins que le document épingle actuellementà ; un chemin absent
+nomme les chemins que le document épingle actuellement ; un chemin absent
 suit le fichier.
 
 ### 3. Enrôler les comptes
@@ -121,7 +121,7 @@ Chaque compte s’enrôle à la connexion :
 4. Le compte tape le code à 6 chiffres et confirme.
 5. Facet bascule `mfa_enabled` sur le compte et affiche 10 codes de secours.
 
-L’appel de vérification renvoie les codes de secours une seule foisà :
+L’appel de vérification renvoie les codes de secours une seule fois :
 
 ```sh
 curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
@@ -143,7 +143,7 @@ chemin d’auto-récupération. Un réenrôlement fabrique une série neuve.
 ### 5. Récupérer un compte
 
 Quand un compte perd son authentificateur et ses codes de secours, un
-administrateur efface son MFAà:
+administrateur efface son MFA :
 
 ```sh
 curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
@@ -155,12 +155,12 @@ curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
 La route exige la permission `mfa_disable` sur `iam.Account`. Le rôle
 `iam.Roles.admin` créé par l’initialisation la détient par `*` sur `*.*`.
 N’accordez pas `mfa_disable` à un rôle qu’une application externe peut
-élireà ; voir
+élire ; voir
 [Rôles et lignes de permission](/fr/govern/roles-permission-lines/). L’appel
 efface le secret stocké, le compteur de rejeu, et les codes de secours, et
 met `mfa_enabled` à `false`. Le compte se connecte et s’enrôle de nouveau.
 
-La page du compte montre **Réinitialiser le MFA** pour cette récupérationà ;
+La page du compte montre **Réinitialiser le MFA** pour cette récupération ;
 elle confirme avant l’appel et se cache pour un compte purement fédéré.
 
 ## Limites de débit
@@ -190,7 +190,7 @@ la fenêtre, puis réessayez avec un code frais.
 ### L’écriture des réglages répond `403`
 
 Votre rôle ne peut ni lire ni mettre à jour `core.SystemSettings`. Les rôles
-editor et viewer créés par l’initialisation ont le chemin retranchéà ;
+editor et viewer créés par l’initialisation ont le chemin retranché ;
 utilisez un rôle d’administrateur, ou accordez le chemin explicitement.
 
 ### Le sélecteur d’application a disparu
@@ -201,7 +201,7 @@ sélecteur apparaît pour l’enregistrement.
 ### Un code ne marche pas
 
 Les codes changent toutes les 30 secondes. Attendez un code frais et
-saisissez-le aussitôt. Vérifiez que l’horloge du serveur est justeà ; TOTP en
+saisissez-le aussitôt. Vérifiez que l’horloge du serveur est juste ; TOTP en
 dépend.
 
 ## Voir aussi
@@ -213,6 +213,6 @@ dépend.
 - [Sessions, tokens et verrouillages](/fr/govern/sessions-tokens-lockouts/) —
   le verrouillage que posent les limites de débit.
 - [La rétention](/fr/govern/retention/) — la durée de vie des défis MFA.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [iam.md](https://github.com/wearefacet/facet/blob/main/doc/backend/iam.md),
   [system-settings.md](https://github.com/wearefacet/facet/blob/main/doc/backend/system-settings.md).

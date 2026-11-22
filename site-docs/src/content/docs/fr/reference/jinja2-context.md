@@ -11,7 +11,7 @@ verified_at: 008dd880
 Utilisez cette page pour écrire un modèle et vérifier les variables et les
 filtres à votre disposition.
 
-Facet rend des modèles Jinja2 à trois endroitsà : l’étiquette `display_name`
+Facet rend des modèles Jinja2 à trois endroits : l’étiquette `display_name`
 et le texte `search` d’un doctype, tous deux sur le serveur, et, dans le
 navigateur, le titre des puces du calendrier d’une vue collection.
 
@@ -23,8 +23,8 @@ enregistrés par le moteur serveur.
 | Modèle | Déclaré dans | Rendu | Moteur |
 | --- | --- | --- | --- |
 | `display_name` | La définition du doctype | Sur le serveur, à chaque écriture de document. Le résultat est l’étiquette du document, tronquée à 255 caractères. | Sous-ensemble Jinja2 complet (Crinja), filtres inclus |
-| `search` | La définition du doctype | Sur le serveur, à chaque écriture de document. Le résultat est le texte de rechercheà : espaces normalisés, accents retirés, tronqué à 256 caractères. | Sous-ensemble Jinja2 complet (Crinja), filtres inclus |
-| `config.calendar.title_template` | Un document `core.CollectionView` | Dans le navigateur, pour chaque puce du calendrier. | Sous-ensemble minimalà : uniquement les placeholders `{{ path }}` |
+| `search` | La définition du doctype | Sur le serveur, à chaque écriture de document. Le résultat est le texte de recherche : espaces normalisés, accents retirés, tronqué à 256 caractères. | Sous-ensemble Jinja2 complet (Crinja), filtres inclus |
+| `config.calendar.title_template` | Un document `core.CollectionView` | Dans le navigateur, pour chaque puce du calendrier. | Sous-ensemble minimal : uniquement les placeholders `{{ path }}` |
 
 Une écriture qui rend un modèle serveur cassé échoue et est annulée. Un
 champ absent n’échoue jamais — le rendu est vide.
@@ -33,11 +33,11 @@ champ absent n’échoue jamais — le rendu est vide.
 
 | Nom | Type | Contenu |
 | --- | --- | --- |
-| `<field_name>` | Le type du champ | Une variable par champ déclaré, liée à la valeur du champ après l’écriture. Les chemins à points descendent dans les champs objetà : `{{ address.postal_code }}`. |
-| `content` | object | L’arbre de contenu brut du document, pour les chemins que les champs déclarés ne décrivent pasà : `{{ content.address.postal_code }}`. |
+| `<field_name>` | Le type du champ | Une variable par champ déclaré, liée à la valeur du champ après l’écriture. Les chemins à points descendent dans les champs objet : `{{ address.postal_code }}`. |
+| `content` | object | L’arbre de contenu brut du document, pour les chemins que les champs déclarés ne décrivent pas : `{{ content.address.postal_code }}`. |
 | `display_name` | string | L’étiquette du document. Liée dans les modèles `search` uniquement. Un modèle `display_name` ne doit pas la référencer — l’enregistrement refuse l’auto-référence. |
 
-Règles que le validateur impose à l’enregistrementà :
+Règles que le validateur impose à l’enregistrement :
 
 - Toute variable racine doit être un champ déclaré ou une variable
   réservée. `{{ id }}` est refusé — l’id du document n’est pas une
@@ -51,13 +51,13 @@ Règles que le validateur impose à l’enregistrementà :
 | Type de valeur | Rendu |
 | --- | --- |
 | Champ référence | L’étiquette stockée du document référencé. Une référence non résolue affiche le nom seul du doctype cible, jamais l’id. Une référence collection affiche sa première entrée. |
-| Champ money | La devise et le montantà : `USD 120000`. Les objets money imbriqués se formatent de la même façon. |
+| Champ money | La devise et le montant : `USD 120000`. Les objets money imbriqués se formatent de la même façon. |
 | Champ absent | Texte vide. Un chemin imbriqué sur un champ absent produit aussi un rendu vide. |
 | Tableau | Style Python : `['a', 'b']`. Utilisez `join` pour une sortie lisible. |
 | Objet affiché comme feuille | Texte vide. |
-| HTML ou guillemets | Tel quel. L’autoescape est désactivéà ; les modèles produisent du texte brut. |
+| HTML ou guillemets | Tel quel. L’autoescape est désactivé ; les modèles produisent du texte brut. |
 
-Deux particularités comptent en pratiqueà :
+Deux particularités comptent en pratique :
 
 - **Une chaîne vide est truthy.** `{% if nick %}` s’exécute pour
   `nick = ""`. Comparez avec `{{ nick == '' }}` quand la valeur vide doit
@@ -80,19 +80,19 @@ nommés, par exemple `{{ tags | join(', ') }}` ou `{{ price | round(2) }}`.
 | `center` | `width` | Complète la valeur avec des espaces jusqu’à `width`. |
 | `count` | — | Alias de `length`. |
 | `d` | — | Alias de `default`. |
-| `date` | `format` | Formate une valeur temporelle avec le motif donné. Les valeurs de champ sont des chaînesà ; ce filtre s’applique donc rarement à elles. |
+| `date` | `format` | Formate une valeur temporelle avec le motif donné. Les valeurs de champ sont des chaînes ; ce filtre s’applique donc rarement à elles. |
 | `default` | `default_value`, `boolean` | Retourne `default_value` quand la valeur est vide. Avec `boolean=true`, aussi quand elle est falsy. |
 | `dictsort` | `case_sensitive`, `by` | Trie un dictionnaire par clé (`by="key"`, la valeur par défaut) ou par valeur. |
 | `e` | — | Alias de `escape`. |
-| `escape` | — | Échappe la valeur en HTML. L’autoescape est désactivéà ; réservez-le aux sorties HTML voulues. |
+| `escape` | — | Échappe la valeur en HTML. L’autoescape est désactivé ; réservez-le aux sorties HTML voulues. |
 | `filesizeformat` | `binary` | Formate un nombre d’octets en `1.5 kB` ou, avec `binary=true`, `1.5 KiB`. |
 | `first` | — | Premier élément d’un tableau. |
-| `float` | `default` | Convertit en floatà ; `default` quand la valeur n’est pas un nombre. |
+| `float` | `default` | Convertit en float ; `default` quand la valeur n’est pas un nombre. |
 | `forceescape` | — | Échappe la valeur en HTML, même dans une chaîne marquée sûre. |
 | `format` | — | Formatage à la `sprintf` : `{{ "%d items" | format(3) }}`. |
 | `groupby` | `attribute` | Regroupe un tableau par attribut. |
 | `indent` | `width`, `indentfirst` | Indente chaque ligne de `width` espaces. |
-| `int` | `default`, `base` | Convertit en entierà ; `default` quand la valeur n’est pas un nombre. |
+| `int` | `default`, `base` | Convertit en entier ; `default` quand la valeur n’est pas un nombre. |
 | `join` | `separator`, `attribute` | Joint un tableau en une seule chaîne. Le filtre dont la plupart des modèles ont besoin. |
 | `last` | — | Dernier élément d’un tableau. |
 | `length` | — | Nombre d’éléments d’un tableau ou d’une chaîne. |
@@ -131,7 +131,7 @@ déclenché le rendu est refusée.
 ## Variables de contexte — modèle de titre du calendrier
 
 Le `title_template` du calendrier se rend dans le navigateur sous un
-ensemble de règles plus restreintà :
+ensemble de règles plus restreint :
 
 | Nom | Contenu |
 | --- | --- |
@@ -141,7 +141,7 @@ ensemble de règles plus restreintà :
 
 `display_name` est refusé dans ce modèle — en l’absence de modèle, la puce
 s’appuie dessus. Le moteur de rendu du navigateur ne connaît que les
-placeholdersà :
+placeholders :
 
 - Les filtres, les blocs `{% if %}` et les commentaires `{# #}` se rendent
   tels quels, sans erreur.
@@ -150,21 +150,21 @@ placeholdersà :
 - Un tableau se rend avec les éléments joints par `, `.
 
 La validation à l’enregistrement vérifie toujours la syntaxe et chaque
-variable racineà ; un modèle qui ne pourrait jamais se rendre est refusé
+variable racine ; un modèle qui ne pourrait jamais se rendre est refusé
 dès la rédaction.
 
 ## Exemple complet
 
 Un doctype `hr.Person` déclare les champs `first_name`, `last_name`,
 `email`, `tags` (tableau de string), `salary` (money) et `manager_id`
-(référence à `hr.Person`). La définition porteà :
+(référence à `hr.Person`). La définition porte :
 
 ```yaml
 display_name: "{{ last_name | upper }}, {{ first_name }} — {{ salary }}"
 search: "{{ first_name }} {{ last_name }} {{ email }} {{ tags | join(', ') }}"
 ```
 
-Un document stockeà :
+Un document stocke :
 
 ```json
 {
@@ -177,20 +177,20 @@ Un document stockeà :
 }
 ```
 
-L’étiquette stockée està :
+L’étiquette stockée est :
 
 ```text
 LOVELACE, Ada — USD 120000
 ```
 
-Le texte de recherche stocké està :
+Le texte de recherche stocké est :
 
 ```text
 Ada Lovelace ada@facet.local crm, vip
 ```
 
 La variable `{{ manager_id }}` afficherait l’étiquette stockée de la
-personne référencéeà ; les deux modèles ci-dessus ne l’utilisent pas.
+personne référencée ; les deux modèles ci-dessus ne l’utilisent pas.
 
 ## Voir aussi
 

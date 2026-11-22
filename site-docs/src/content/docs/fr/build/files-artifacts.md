@@ -12,11 +12,11 @@ Un champ `file` contient un fichier, pas une chaîne de caractères. Le champ st
 
 ## Quand l’utiliser
 
-Choisissez un champ `file` quand le fichier fait partie de l’enregistrementà : un contrat signé sur une affaire, un CV sur un candidat, une photo sur un article. Pour les fichiers d’échange qui ne se rattachent à aucun champ, passez par le panneau des pièces jointes (voir [Sidecars (commentaires, pièces jointes)](/fr/build/sidecars/)).
+Choisissez un champ `file` quand le fichier fait partie de l’enregistrement : un contrat signé sur une affaire, un CV sur un candidat, une photo sur un article. Pour les fichiers d’échange qui ne se rattachent à aucun champ, passez par le panneau des pièces jointes (voir [Sidecars (commentaires, pièces jointes)](/fr/build/sidecars/)).
 
 ## Avant de commencer
 
-- **Le stockage est intégré.** Le magasin d’artifacts existe sur chaque instance. Vous déclarez le champà ; vous ne configurez pas le stockage.
+- **Le stockage est intégré.** Le magasin d’artifacts existe sur chaque instance. Vous déclarez le champ ; vous ne configurez pas le stockage.
 - **Une limite de taille.** Un envoi est limité à 50 mégaoctets par défaut. Votre administrateur règle cette limite.
 - **Une liste de types, si vous en voulez une.** Facet accepte tout type de fichier par défaut. Déclarez une liste `accept` quand le champ ne doit recevoir que certains types.
 
@@ -88,11 +88,11 @@ Le fichier dépasse la limite de taille. Prenez un fichier plus petit, ou demand
 
 ### Le téléversement répond `422` avec une erreur MIME
 
-Le contenu du fichier ne correspond pas à la liste `accept`. Ajustez la liste du champ ou convertissez le fichierà ; changer seulement le nom du fichier ne sert à rien, car Facet lit le contenu.
+Le contenu du fichier ne correspond pas à la liste `accept`. Ajustez la liste du champ ou convertissez le fichier ; changer seulement le nom du fichier ne sert à rien, car Facet lit le contenu.
 
 ### Un export contient un id court au lieu du fichier
 
-C’est l’id de l’artifact. Le contenu du fichier ne voyage pas avec un export CSV ou JSONà; téléchargez les fichiers depuis la page détail du document.
+C’est l’id de l’artifact. Le contenu du fichier ne voyage pas avec un export CSV ou JSON ; téléchargez les fichiers depuis la page détail du document.
 
 ### Un lien de fichier dans un document paraît mort
 

@@ -107,6 +107,8 @@ export default defineConfig({
 				// Renders the title plus the "Copy as markdown" button; the button
 				// behaviour lives in src/scripts/copy-as-markdown.ts.
 				PageTitle: './src/components/PageTitle.astro',
+				// Splash-page hero with the animated gem (src/components/landing/).
+				Hero: './src/components/Hero.astro',
 			},
 			plugins: [starlightLlmsTxt()],
 			sidebar: [

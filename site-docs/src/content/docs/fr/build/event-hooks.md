@@ -11,7 +11,7 @@ verified_at: fd345fe3
 Un domaine peut embarquer sa propre automatisation. Un **hook d’événement**
 exécute un script Lua quand un document change quelque part. Un **hook
 planifié** en exécute un selon une planification cron. Les hooks vivent sur le
-document du domaineà : ils suivent le domaine quand vous le publiez ou
+document du domaine : ils suivent le domaine quand vous le publiez ou
 l’exportez.
 
 ## Quand l’utiliser
@@ -25,7 +25,7 @@ l’exportez.
 
 - **Le document du domaine.** Vous déclarez les hooks en modifiant le document
   du domaine.
-- **Les noms d’événements.** Repérez les noms qui vous concernentà : `created`,
+- **Les noms d’événements.** Repérez les noms qui vous concernent : `created`,
   `updated`, `deleted`, et le reste du vocabulaire des mutations.
 - **Le bon outil.** Les hooks tournent dans Facet. Pour appeler un système
   externe, passez par un webhook. Voir [Webhooks sortants](/fr/build/webhooks/).
@@ -35,7 +35,7 @@ l’exportez.
 ### 1. Écrire l’entrée du hook
 
 Ajoutez une entrée au tableau `hooks` du document du domaine. Un hook
-d’événement nomme une source et porte un scriptà :
+d’événement nomme une source et porte un script :
 
 ```json
 {
@@ -62,7 +62,7 @@ ci-dessus.
 Dans le script, vous lisez et écrivez des documents avec `document.get`,
 `document.list`, `document.create` et `document.update`, et vous prévenez des
 personnes avec `notification.send`. Les écritures issues des hooks sont
-marquées comme automatiséesà : un hook qui écrit ce qu’il observe ne peut pas
+marquées comme automatisées : un hook qui écrit ce qu’il observe ne peut pas
 boucler.
 
 ### 3. Ajouter un hook planifié
@@ -81,7 +81,7 @@ planifié, sans redémarrage.
 
 :::caution
 La livraison est au plus une fois, par conception. Une panne serveur pendant
-un hook perd ce déclenchementà ; rien ne le rejoue. Écrivez des hooks qui
+un hook perd ce déclenchement ; rien ne le rejoue. Écrivez des hooks qui
 tolèrent un manquement, ou faites tourner un hook planifié qui revérifie
 l’état.
 :::
@@ -90,7 +90,7 @@ l’état.
 
 Une consolidation qui compte chaque nuit les contrats actifs dans un document
 `Dashboard` du domaine propriétaire. Déclarez le hook avec `kind: "schedule"`
-et `schedule: "0 3 * * *"`. La valeur `script` est le texte ci-dessousà :
+et `schedule: "0 3 * * *"`. La valeur `script` est le texte ci-dessous :
 
 ```lua
 local export = {}
@@ -128,14 +128,14 @@ accordés.
 
 **Le hook ne se déclenche jamais.**
 
-Vérifiez la sourceà : le domaine doit être réel, le doctype doit exister, et
+Vérifiez la source : le domaine doit être réel, le doctype doit exister, et
 une source étrangère exige une attribution active. Un hook tout neuf part
-aussi du moment présentà ; il ne rejoue pas les événements passés.
+aussi du moment présent ; il ne rejoue pas les événements passés.
 
 **Le script échoue à l’exécution.**
 
 Le déclenchement journalise l’erreur et continue. Corrigez le script et
-enregistrez de nouveau le domaineà ; rien ne rejoue le déclenchement manqué.
+enregistrez de nouveau le domaine ; rien ne rejoue le déclenchement manqué.
 
 **Ma planification n’a pas tourné pendant une panne.**
 
