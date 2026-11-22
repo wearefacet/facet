@@ -160,9 +160,9 @@ These apply regardless of which stack you're working on.
 
 ### Event delivery
 
-- **Event delivery is at-most-once by decision.** The bus (Redis Streams) runs `XREADGROUP no_ack: true`; no `XACK` / `XPENDING` / `XAUTOCLAIM` exists in `src`. Publish and dispatch failures drop events with one log line, counted on `GET /healthcheck` → `event_loss` (`Event::Loss` — in-process, reset on restart). PostgreSQL is the durable state; Redis is a reaction bus.
+- **Event delivery is at-most-once by decision.** The bus (Redis Streams) runs `XREADGROUP no_ack: true`; no `XACK` / `XPENDING` / `XAUTOCLAIM` exists in `src`. Publish and dispatch failures drop events with one log line, counted on `GET /Healthcheck` → `event_loss` (`Event::Loss` — in-process, reset on restart). PostgreSQL is the durable state; Redis is a reaction bus.
 - **Webhooks are the one repaired consumer.** `Cron::WebhookReconcile` re-runs the enqueue decision from the `mutations` log within `webhook.reconcile_window_hours` (must stay below `jobs.retention_days`). The reconciler derives, it does not mark — no delivery state on `mutations`. New code that enqueues a bespoke event name for a standard document mutation must carry the name in `cause_event` or extend the map in `Cron::WebhookReconcile.derive_event_name`.
-- **New replication consumer groups start at `0`** (replay the retained stream — the handler converges); hooks and webhooks keep `$` (a replay would re-fire automations and re-deliver externally). `Cron::EventLagCheck` warns before a slow group reaches the trim point; its max-lag gauge sits on `/healthcheck` next to `event_loss`.
+- **New replication consumer groups start at `0`** (replay the retained stream — the handler converges); hooks and webhooks keep `$` (a replay would re-fire automations and re-deliver externally). `Cron::EventLagCheck` warns before a slow group reaches the trim point; its max-lag gauge sits on `/Healthcheck` next to `event_loss`.
 
 ### Project structure
 
