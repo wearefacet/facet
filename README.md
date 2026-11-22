@@ -5,11 +5,15 @@
   <img src="frontend/src/lib/assets/facet-lockup-light.svg" alt="Facet" width="420">
 </picture>
 
+&nbsp;
+
 [![CI](https://github.com/wearefacet/facet/actions/workflows/ci.yml/badge.svg)](https://github.com/wearefacet/facet/actions/workflows/ci.yml)
 [![E2E](https://github.com/wearefacet/facet/actions/workflows/e2e.yml/badge.svg)](https://github.com/wearefacet/facet/actions/workflows/e2e.yml)
 [![Docker images](https://github.com/wearefacet/facet/actions/workflows/docker.yml/badge.svg)](https://github.com/wearefacet/facet/actions/workflows/docker.yml)
 [![Release npm package](https://github.com/wearefacet/facet/actions/workflows/release-npm.yml/badge.svg)](https://github.com/wearefacet/facet/actions/workflows/release-npm.yml)
 [![version](https://img.shields.io/badge/version-0.2.0--beta-D9822B)](CHANGELOG.md)
+
+[Website](https://facetapp.tech) · [Documentation](https://docs.facetapp.tech)
 
 </div>
 
@@ -100,6 +104,19 @@ Sign in with the seeded dev administrator: `admin@example.tld` / `admin`. This c
 - App-developer CLI: [`packages/cli`](packages/cli) — TypeScript SDK: [`packages/sdk`](packages/sdk) — embeddable assistant chat: [`packages/chat`](packages/chat)
 
 ## Documentation
+
+The full documentation site is [docs.facetapp.tech](https://docs.facetapp.tech). Key pages:
+
+- [Start here](https://docs.facetapp.tech/start/): what Facet is, the architecture, the security model, and the install guide
+- [Tutorials](https://docs.facetapp.tech/tutorials/): run Facet in 15 minutes, build your first domain, give your team access
+- [Use the workspace](https://docs.facetapp.tech/workspace/): records, views, search, history, and notifications
+- [Build domains](https://docs.facetapp.tech/build/): doctypes, fields, views, actions, and automation
+- [Govern access](https://docs.facetapp.tech/govern/): roles, scopes, audit, and rollback
+- [Build apps](https://docs.facetapp.tech/apps/): the TypeScript SDK, the REST API, OAuth, and the MCP server
+- [Operate](https://docs.facetapp.tech/operate/): containers, configuration, monitoring, and upgrades
+- [Reference](https://docs.facetapp.tech/reference/): field types, filter operators, config keys, the CLI, and API details
+
+In this repository:
 
 - [`CONTRIBUTING.md`](CONTRIBUTING.md): environment setup, daily commands, and a map from each subsystem to its concern document
 - [`doc/project-structure.md`](doc/project-structure.md): architecture overview and directory layout
