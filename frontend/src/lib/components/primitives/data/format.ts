@@ -33,16 +33,23 @@ export interface MoneyFormatOptions {
  * (`12,34,567.89`). The amount is always rendered with exactly `digits`
  * fractional places — money values round-half for display only; the stored
  * string value is untouched.
+ *
+ * A value whose magnitude rounds to zero renders without a sign
+ * (`-0.001` at 2 digits → `0.00`, not `-0.00`): the sign survives rounding
+ * from `Intl.NumberFormat`, but a negative zero is not a balance.
  */
 export function formatMoneyAmount(value: number, options: MoneyFormatOptions = {}): string {
 	const rawDigits = options.digits ?? 2;
 	const digits = Number.isInteger(rawDigits) && rawDigits >= 0 ? rawDigits : 2;
 	const locale = options.grouping === 'lakhs' ? 'en-IN' : 'en-US';
+	const factor = 10 ** digits;
+	const magnitude = Math.round(Math.abs(value) * factor);
+	const amount = magnitude === 0 ? 0 : value;
 	return new Intl.NumberFormat(locale, {
 		style: 'decimal',
 		minimumFractionDigits: digits,
 		maximumFractionDigits: digits
-	}).format(value);
+	}).format(amount);
 }
 
 /**

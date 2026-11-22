@@ -11,6 +11,8 @@
 	import PhoneCapsule from './PhoneCapsule.svelte';
 	import UrlLink from './UrlLink.svelte';
 	import FileArtifact from './FileArtifact.svelte';
+	import FileCell from './FileCell.svelte';
+	import type { ArtifactGrant } from '$lib/artifacts.js';
 	import { asSecretMarker, humanize } from '$lib/doctype/types.js';
 	import type { FieldDef, FieldType, MoneyValue } from '$lib/doctype/types.js';
 	import { formatRangeValue } from '$lib/utils/relativeTime.js';
@@ -40,8 +42,10 @@
 	 * `booleanCell` (the table's inline boolean toggle), `referenceCell`
 	 * (the table's reference capsule, rendered once per token), `enumCell`
 	 * (the table's dense enum pill), and `plainCell` (dense surfaces that
-	 * show phone/url/file values as plain text). Without a snippet, each
-	 * kind renders its canonical form.
+	 * show phone/url values as plain text). A `file` value renders through
+	 * the dense `FileCell` when the consumer supplies `fetchArtifact` (the
+	 * table does), and through the show-page capsule otherwise. Without a
+	 * snippet, each kind renders its canonical form.
 	 */
 	let {
 		value,
@@ -53,7 +57,8 @@
 		booleanCell,
 		enumCell,
 		referenceCell,
-		plainCell
+		plainCell,
+		fetchArtifact
 	}: {
 		/** The raw field value from the document content. */
 		value: unknown;
@@ -77,8 +82,14 @@
 		enumCell?: Snippet<[unknown]>;
 		/** Consumer-owned reference cell. Receives the value string and the field definition. */
 		referenceCell?: Snippet<[string, FieldDef | null]>;
-		/** Consumer-owned plain-text cell for phone/url/file kinds. Receives the value. */
+		/** Consumer-owned plain-text cell for phone/url kinds. Receives the value. */
 		plainCell?: Snippet<[unknown]>;
+		/**
+		 * Injectable artifact metadata fetch for the `file` kind. A consumer that
+		 * supplies it gets the dense `FileCell` (filename when cached, the id as
+		 * the fallback and the tooltip) instead of the show-page capsule.
+		 */
+		fetchArtifact?: (id: string) => Promise<ArtifactGrant>;
 	} = $props();
 
 	/** ISO-8601 instant detector. The time part is required, so a plain
@@ -230,7 +241,9 @@
 		<span class="fv-blank">—</span>
 	{/if}
 {:else if kind === 'phone' || kind === 'url' || kind === 'file'}
-	{#if plainCell}
+	{#if kind === 'file' && fetchArtifact}
+		<FileCell artifactId={String(value)} {fetchArtifact} />
+	{:else if plainCell}
 		{@render plainCell(value)}
 	{:else if kind === 'phone'}
 		<PhoneCapsule phone={String(value)} />

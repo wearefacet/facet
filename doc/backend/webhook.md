@@ -88,17 +88,22 @@ The Lua lifecycle hooks (`script.lua`) enforce the authoring rules:
   message lists the allowed names, so a typo'd webhook cannot silently
   never fire. An empty list stays valid (fire on nothing). Named-action
   event names are dynamic per doctype and are not part of the vocabulary.
-- `create` and `update` validate the actioner's connectivity: authoring is
-  open to every role by permission shape (B-76 ownership arbitration), but
-  the real principal's active role must carry the `webhook` connectivity
-  channel — `iam.Roles.connectivity` names the programmatic channels the
-  role may use. A role without `webhook` is refused with 422 (the message
-  names the channel and the role field that grants it), so a webhook that
-  could never fire is not authored at all (the enqueue gate would skip
-  every delivery with `ChannelClosed`). The gate rides the
+- `create` and `update` validate the actioner's connectivity: the real
+  principal's active role must carry the `webhook` connectivity channel —
+  `iam.Roles.connectivity` names the programmatic channels the role may
+  use. A role without `webhook` is refused with 422 (the message names the
+  channel and the role field that grants it), so a webhook that could
+  never fire is not authored at all (the enqueue gate would skip every
+  delivery with `ChannelClosed`). The gate rides the
   `util.role_has_channel` Lua binding (backed by
   `Util::ScriptHelpers.role_has_channel?`) and exempts system callers —
-  seeding and migration stamp bindings after the fact.
+  seeding and migration stamp bindings after the fact. This is the
+  authoring brake on outbound egress: by seed, only `admin` holds the
+  `webhook` channel. `editor` and the other non-admin roles hold
+  `[api, assistant]` and no `webhook`/`mcp`, so a non-admin cannot open a
+  webhook even when its permission shape (`create *.*`) covers
+  `core.Webhook`. The SSRF host gate bounds *where* a webhook may point;
+  the channel bounds *who* may open one.
 - `create` and `update` validate the target `url` in two steps, both on
   the create and the update path:
 

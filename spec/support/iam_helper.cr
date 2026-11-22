@@ -172,6 +172,12 @@ end
 # `editor_*` context sets) are registered — run `restore_seeded_baseline(db)`
 # first in specs that enforce them.
 #
+# Connectivity mirrors the production seed too: `admin` holds every channel,
+# while `editor` and the other non-admin roles hold `api` + `assistant` only —
+# no `webhook`, no `mcp` (F07-01: an outbound webhook is an egress path, so
+# its authoring gate is the `webhook` channel). Specs that exercise webhook or
+# MCP machinery seed their own role with `seed_role` / explicit content.
+#
 # Also seeds `iam.Roles.comment_author`: a role holding ONLY author-scoped
 # grants on `core.Comment` (`read`/`update`/`delete` with the `$mine` scope).
 # It must not carry a wildcard read — an unrestricted matching permission
@@ -218,8 +224,14 @@ def seed_test_roles(db)
       "level"        => role[:level],
       "description"  => role[:description],
       "visible_tags" => role[:name] == "admin" ? ["*"] : ["default"],
-      "connectivity" => role[:name] == "anonymous" ? [] of String : ["mcp", "webhook", "api", "assistant"],
-      "permissions"  => role[:permissions],
+      # Mirrors the production seed: admin holds every channel, the other
+      # roles hold `api` + `assistant` only, and `anonymous` holds none.
+      "connectivity" => case role[:name]
+      when "admin"     then ["mcp", "webhook", "api", "assistant"]
+      when "anonymous" then [] of String
+      else                  ["api", "assistant"]
+      end,
+      "permissions" => role[:permissions],
     }.to_json
 
     Facet::Mutation::Client.create(

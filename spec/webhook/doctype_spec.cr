@@ -693,5 +693,28 @@ module Facet
         end
       end
     end
+
+    # F07-01: the seeded `editor` role must not be able to open an outbound
+    # webhook. Its connectivity list excludes the `webhook` channel, so the
+    # create hook refuses with 422 even though its blanket `create *.*` line
+    # covers `core.Webhook` by permission shape.
+    it "create refuses the seeded editor role (connectivity excludes the webhook channel, 422)" do
+      with_db do |db|
+        restore_seeded_baseline(db)
+        ensure_iam_account(db, "wh_editor_actor")
+
+        role_content = Facet::IAM::Helpers.find_role_content(db, "iam.Roles.editor").not_nil!
+        role = Facet::RBAC::ActiveRole.from_projection_content(role_content)
+        ctx = Facet::RBAC::AuthContext.authenticated("wh_editor_actor", role)
+
+        result = Document::Create.call(db, "core", "Webhook", WEBHOOK_BASE_BODY.to_json, ctx,
+          doc_id: "wh_seeded_editor")
+        result.should be_a(Facet::ServiceError)
+        err = result.as(Facet::ServiceError)
+        err.status.should eq(422)
+        messages = err.details.try(&.map(&.message).join("; ")) || ""
+        messages.should contain("connectivity excludes")
+      end
+    end
   end
 end

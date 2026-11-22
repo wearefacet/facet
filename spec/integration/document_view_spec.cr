@@ -409,5 +409,22 @@ describe "core.DocumentView" do
       data["kind"].as_s.should eq("form")
       data["template"]["type"].as_s.should eq("section")
     end
+
+    it "replaces the stored template on write instead of merging it (F10-02)" do
+      doctype_id = create_test_doctype_id
+      stored = %({"type": "section", "label": "Old", "children": [{"type": "label", "value": "Stale"}]})
+      created = create_view_via_http(doctype_id, "quickView", stored)
+      assert_http_status(created[:resp], 201)
+      view_id = created[:data]["meta"]["id"].as_s
+
+      patch = %({"template": {"type": "label", "value": "ONLY-LABEL"}})
+      resp = call_api(HTTP::Request.new("PATCH", "/Api/core/DocumentView/#{view_id}", headers: HTTP::Headers{"Content-Type" => "application/json"}, body: patch))
+      assert_http_status(resp, 200)
+
+      template = JSON.parse(resp.body)["data"]["template"]
+      template.as_h.keys.sort!.should eq(["type", "value"])
+      template["type"].as_s.should eq("label")
+      template["value"].as_s.should eq("ONLY-LABEL")
+    end
   end
 end

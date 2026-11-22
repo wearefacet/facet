@@ -80,7 +80,7 @@ module Facet
       # `status` filter (body key `status` — QUERY carries no query string).
       private def self.handle_query_list(env)
         status : String? = nil
-        list_req = HTTP::Helpers.query_list_request(env) do |body|
+        list_req = HTTP::Helpers.query_list_request(env, extra_body_keys: CALLS_EXTRA_QUERY_KEYS) do |body|
           status = body.try(&.["status"]?.try(&.as_s?))
         end
         return if list_req.nil?

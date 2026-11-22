@@ -132,6 +132,21 @@ describe "SystemSettings HTTP surface" do
       end
     end
 
+    it "answers the write-gate sentence for the artifact.storage node, not 'not a defined field' (F09-05)" do
+      with_db do |db|
+        admin = role_context(db, "iam.Roles.admin")
+        response = call_api_as(
+          settings_patch_request(%({"artifact": {"storage": {"type": "s3"}}})), admin)
+        assert_http_status(response, 422)
+        details = JSON.parse(response.body)["details"].as_a
+        storage = details.find { |d| d["field"].as_s == "artifact.storage" }
+        storage.should_not be_nil
+        storage.not_nil!["message"].as_s.should contain("Change artifact.storage in the config file and restart")
+        storage.not_nil!["code"].as_s.should eq("invalid_format")
+        details.none? { |d| d["message"].as_s.includes?("is not a defined field") }.should be_true
+      end
+    end
+
     it "answers 404 for a caller without any grant (non-disclosing standard route)" do
       with_db do |db|
         viewer = role_context(db, "iam.Roles.viewer")

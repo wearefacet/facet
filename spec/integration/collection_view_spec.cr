@@ -45,12 +45,21 @@ def cv_create_test_doctype_id : String
     end
     Facet::Doctype::DefinitionStore.cache.clear
     doctype_name = "TCView#{unique_suffix(8)}"
-    defn = Facet::Doctype::DoctypeDefinition.new(
-      doctype: doctype_name,
-      domain: "core",
-      schema_version: 1,
-      aggregate_root: true, search: "{{ display_name }}",
-    )
+    defn = Facet::Doctype::DoctypeDefinition.from_json(JSON::Any.new({
+      "doctype"        => JSON::Any.new(doctype_name),
+      "domain"         => JSON::Any.new("core"),
+      "schema_version" => JSON::Any.new(1_i64),
+      "aggregate_root" => JSON::Any.new(true),
+      "search"         => JSON::Any.new("{{ display_name }}"),
+      "fields"         => JSON::Any.new({
+        "name"   => JSON::Any.new({"type" => JSON::Any.new("string")}),
+        "status" => JSON::Any.new({
+          "type"    => JSON::Any.new("enum"),
+          "values"  => JSON::Any.new([JSON::Any.new({"key" => JSON::Any.new("open"), "label" => JSON::Any.new("Open")})]),
+          "filters" => JSON::Any.new([JSON::Any.new("equality")]),
+        }),
+      }),
+    }.transform_values &.as(JSON::Any)).to_json)
     result = Facet::Document::Create.call(db, "core", "DocType", defn.to_json, Facet::RBAC::AuthContext.system)
     expect_create_success(result).projection.id
   end

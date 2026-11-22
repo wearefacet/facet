@@ -27,6 +27,7 @@ require "./file_mime_check"
 require "./money_currency_check"
 require "./unique_constraint"
 require "./view_template_gate"
+require "./collection_view_gate"
 require "../grants/validator"
 require "../app/grants_validator"
 require "../rbac"
@@ -520,8 +521,9 @@ module Facet
       end
 
       # Authoring-time validation for the view children of `core.DocType`.
-      # `core.CollectionView` — a calendar title template must compile and
-      # reference only the parent doctype's fields (see
+      # `core.CollectionView` — the `config` must be usable by its surface
+      # (see `Document::CollectionViewGate`) and a calendar title template
+      # must compile and reference only the parent doctype's fields (see
       # `CollectionView::TitleTemplate`). `core.DocumentView` — the template
       # tree must pass `ViewTemplateValidator` against the parent doctype
       # definition (see `Document::ViewTemplateGate`). The parent is the
@@ -536,7 +538,8 @@ module Facet
         parent_id : String?,
       ) : Facet::ServiceError?
         if {domain, doc_type} == {"core", "CollectionView"}
-          errors = collection_view_title_template_errors(db, parent_id, document)
+          errors = CollectionViewGate.errors(db, parent_id, document)
+          errors += collection_view_title_template_errors(db, parent_id, document["config"]?)
           return Facet::ServiceError.new(422, "Collection view validation failed", details: errors) unless errors.empty?
         end
 
@@ -549,18 +552,18 @@ module Facet
       end
 
       # Extracts the calendar title template from a `core.CollectionView`
-      # document and validates it against the parent doctype's definition.
-      # Returns an empty array when there is nothing to check (no calendar
-      # config or no template) or when the parent definition cannot be
-      # resolved.
+      # `config` value and validates it against the parent doctype's
+      # definition. Returns an empty array when there is nothing to check (no
+      # calendar config or no template) or when the parent definition cannot
+      # be resolved.
       private def self.collection_view_title_template_errors(
         db : DB::Connection,
         parent_id : String?,
-        document : JSON::Any,
+        config : JSON::Any?,
       ) : Array(ValidationError)
         return [] of ValidationError unless parent_id
 
-        template = document.dig?("config", "calendar", "title_template").try(&.as_s?)
+        template = config.try(&.dig?("calendar", "title_template")).try(&.as_s?)
         return [] of ValidationError unless template
 
         case defn = Doctype::DefinitionStore.fetch!(db, parent_id)

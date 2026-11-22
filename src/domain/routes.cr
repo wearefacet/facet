@@ -92,8 +92,8 @@ module Facet
           unless Facet::RBAC::WriteEnforcer.authorize_create(db, "core", "Domain", auth_ctx)
             next Facet::ServiceError.new(403, CREATE_REQUIRES_ELECTED_ROLE)
           end
-          # The service gate (B-240) also requires a scoped `create
-          # core.Domain` caller to edit the source domain.
+          # The service gate (B-240) also requires the caller to edit the
+          # source domain — the create verdict alone does not open the fork.
           Facet::Domain::Draft.create_from(db, source_id, auth_ctx.account_id, auth_ctx)
         end
         Event::Publisher.flush

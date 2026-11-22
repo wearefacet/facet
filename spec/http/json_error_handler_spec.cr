@@ -117,4 +117,38 @@ describe Facet::HTTP::JsonErrorHandler do
       JSON.parse(response.body)["error"].as_s.should eq("Internal server error")
     end
   end
+
+  # F09-01: a connection-level failure of a backing service answers 503
+  # with the dependency named, never an opaque 500.
+  describe "dependency unavailable" do
+    it "maps a Redis connection failure to 503 naming redis" do
+      response = render_through_error_handler(Socket::ConnectError.new("Connection refused"))
+      response.status_code.should eq(503)
+      response.headers["Content-Type"]?.try(&.starts_with?("application/json")).should be_true
+      response.headers["Cache-Control"].should eq("no-store")
+      body = JSON.parse(response.body)
+      body["error"].as_s.should eq(Facet::HTTP::JsonErrorHandler::SERVICE_UNAVAILABLE_MESSAGE)
+      body["dependency"].as_s.should eq("redis")
+    end
+
+    it "maps an unresolved Redis host (Socket::Addrinfo::Error) to 503 naming redis" do
+      response = render_through_error_handler(Socket::Addrinfo::Error.new("no such host"))
+      response.status_code.should eq(503)
+      JSON.parse(response.body)["dependency"].as_s.should eq("redis")
+    end
+
+    it "maps a PostgreSQL connection refusal to 503 naming postgresql" do
+      response = render_through_error_handler(DB::ConnectionRefused.new)
+      response.status_code.should eq(503)
+      JSON.parse(response.body)["dependency"].as_s.should eq("postgresql")
+    end
+
+    # A generic `Redis::Error` (a protocol/command error, not a connection
+    # failure) must not masquerade as an outage.
+    it "keeps the generic 500 for a non-connection Redis error" do
+      response = render_through_error_handler(Redis::Error.new("WRONGTYPE Operation against a key"))
+      response.status_code.should eq(500)
+      JSON.parse(response.body)["error"].as_s.should eq("Internal server error")
+    end
+  end
 end

@@ -158,7 +158,15 @@ control-plane GETs. MCP, OAuth, and the assistant stay out of the slice
 by decision. Response shapes stay in the backend docs; per-doctype
 structure is read live — `GET /Api/core/Domain` (live domains),
 `GET /Api/core/DocType` (a domain's doctypes), and each doctype's stored
-definition, the same payload `get_schema` serves over MCP. See
+definition, the same payload `get_schema` serves over MCP. Named actions
+are not in the slice either: a declared action runs at
+`POST /Api/:domain/:doctype/:id/:action_name` (the name is one path
+segment, the body is the action's argument object) — see
+[`../backend/http-layer.md`](../backend/http-layer.md) → Document routes
+for the route table. A typo is answered `404` naming both vocabularies —
+`Unknown relation '<x>' — valid relations: …; unknown action '<x>' —
+valid actions: …` — so a caller can tell a child typo from an action typo.
+See
 [`../backend/openapi.md`](../backend/openapi.md) for the slice's scope and
 the drift check, and [`../backend/mcp.md`](../backend/mcp.md) for the
 boundary: MCP is the data plane; schema authoring is REST/UI.

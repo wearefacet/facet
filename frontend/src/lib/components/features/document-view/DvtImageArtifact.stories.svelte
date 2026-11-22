@@ -5,7 +5,7 @@
 	import { defineMeta } from '@storybook/addon-svelte-csf';
 	import { expect, within, waitFor } from 'storybook/test';
 	import DvtImageArtifact from './DvtImageArtifact.svelte';
-	import type { ArtifactGrant } from '$lib/components/primitives/data/FileArtifact.svelte';
+	import type { ArtifactGrant } from '$lib/artifacts.js';
 	import type { DocumentMeta } from '$lib/datasource/types';
 	import type { ImageArtifactNode } from '$lib/template-types';
 

@@ -14,6 +14,7 @@
 	import { toast } from '$lib/toast.svelte.js';
 	import { can } from '$lib/permissions.svelte';
 	import type { ReferenceClickHandler } from '$lib/template-types.js';
+	import { resolveArtifact, type ArtifactGrant } from '$lib/artifacts.js';
 	import type { Column, SortState, ToolbarActionsArgs } from './types.js';
 	import type { DataSource } from '$lib/datasource/interface.js';
 	import type { DataDriver } from '$lib/datasource/driver.js';
@@ -43,6 +44,9 @@
 		onFilterChange,
 		onRowClick,
 		onReferenceClick,
+		/** Artifact metadata fetch for `file` cells. Defaults to the cached
+		 *  `GET /Api/core/artifacts/:id` lookup; stories pass a synthetic one. */
+		fetchArtifact,
 		/** Right-aligned action affordances rendered beside the toolbar's filters. */
 		toolbarActions
 	}: {
@@ -90,6 +94,13 @@
 		 * inside the table are display-only (not clickable).
 		 */
 		onReferenceClick?: ReferenceClickHandler;
+		/**
+		 * Artifact metadata fetch for `file` cells — the dense cell shows the
+		 * filename when the artifact is cached and falls back to the id as the
+		 * tooltip. Defaults to the shared cached `GET /Api/core/artifacts/:id`
+		 * lookup; stories pass a synthetic one.
+		 */
+		fetchArtifact?: (id: string) => Promise<ArtifactGrant>;
 		/** Right-aligned action affordances rendered beside the toolbar's filters.
 		 * The snippet receives the table's current state (columns, the compacted
 		 * filter map the datasource receives, and the sort) so an export action
@@ -640,7 +651,13 @@
 {#snippet defaultCell(item: T, col: Column<T>)}
 	{@const value = (item as Record<string, unknown>)[col.key]}
 	{@const field = fieldFor(col)}
-	<FieldValue {value} fieldType={field?.type ?? null} fieldDef={field} detectIsoDates>
+	<FieldValue
+		{value}
+		fieldType={field?.type ?? null}
+		fieldDef={field}
+		detectIsoDates
+		fetchArtifact={fetchArtifact ?? resolveArtifact}
+	>
 		{#snippet referenceCell(ref, fd)}
 			<Capsule
 				{driver}

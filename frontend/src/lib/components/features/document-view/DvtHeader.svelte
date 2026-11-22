@@ -15,8 +15,11 @@
 	import Badge from '$lib/components/primitives/data/Badge.svelte';
 	import Capsule from '$lib/components/primitives/data/Capsule.svelte';
 	import { cellKind, referenceTokens } from '$lib/components/primitives/data/cellKind.js';
+	import { useCurrencies } from '$lib/components/primitives/data/currencyStore.svelte.js';
+	import { canonicalTicker } from '$lib/components/primitives/data/currencies.js';
+	import { composeMoneyText, formatMoneyAmount } from '$lib/components/primitives/data/format.js';
 	import ArtifactImage from './ArtifactImage.svelte';
-	import type { ArtifactGrant } from '$lib/components/primitives/data/FileArtifact.svelte';
+	import type { ArtifactGrant } from '$lib/artifacts.js';
 	import type { DocumentResponse } from '$lib/datasource/types';
 	import type { DataDriver } from '$lib/datasource/driver.js';
 	import type { DoctypeDef, FieldDef } from '$lib/doctype/types.js';
@@ -265,12 +268,38 @@
 	// - A reference field (scalar or collection) renders one chip per stored
 	//   token. The label hydrates through the shared resolver. While a label
 	//   loads, the id portion shows. Without a driver the stored token shows.
+	// - A money field renders through the same `formatMoneyAmount` +
+	//   `composeMoneyText` pair as the show page (`Money.svelte`), so one
+	//   stored `{value, currency}` pair reads the same on every surface.
 	// - Every other non-string value goes through the shared typed-text
-	//   pipeline (`resolveInterpolated`): money renders "<currency> <value>",
-	//   a secret marker renders empty (the chip is dropped), and any other
-	//   object or array renders as JSON. `String(v)` is never used on an
-	//   object here — it prints the "[object Object]" artifact.
+	//   pipeline (`resolveInterpolated`): a secret marker renders empty (the
+	//   chip is dropped), and any other object or array renders as JSON.
+	//   `String(v)` is never used on an object here — it prints the
+	//   "[object Object]" artifact.
 	// - String, number, and boolean values keep the humanized form.
+
+	const { resolve: resolveCurrency } = useCurrencies();
+
+	/**
+	 * Display text of a money-shaped value, formatted as the show page does.
+	 * Returns `null` when the value is not a money pair. The currency row's
+	 * `digits` and `grouping` drive the amount; an unknown ticker renders the
+	 * bare ticker with 2 digits (the `Money` fallback).
+	 */
+	function moneyChipText(v: object): string | null {
+		const o = v as Record<string, unknown>;
+		if (typeof o['currency'] !== 'string' || o['currency'].length === 0) return null;
+		const raw = o['value'];
+		const amount = typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : raw;
+		if (typeof amount !== 'number' || !Number.isFinite(amount)) return null;
+		const ticker = canonicalTicker(o['currency']);
+		const row = resolveCurrency(ticker);
+		const label = row && row.symbol !== '' ? row.symbol : ticker;
+		return composeMoneyText(
+			label,
+			formatMoneyAmount(amount, { digits: row?.digits ?? 2, grouping: row?.grouping ?? 'standard' })
+		);
+	}
 
 	/** Declared hydration target of a reference-typed chip field. A reference
 	 *  carries the doctype itself; an `array` field whose items are references
@@ -316,6 +345,11 @@
 				continue;
 			}
 			if (typeof v === 'object') {
+				const money = moneyChipText(v);
+				if (money !== null) {
+					out.push({ label: money });
+					continue;
+				}
 				const text = resolveInterpolated(`$${key}`, content);
 				if (text === '') continue;
 				out.push({ label: text });

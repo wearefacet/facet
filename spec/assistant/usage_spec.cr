@@ -98,6 +98,24 @@ describe Facet::Assistant::Usage do
     end
   end
 
+  it "splits estimated tokens out of the total" do
+    with_db do |db|
+      # A reported turn and an estimated turn on the same account.
+      insert_usage(db, "acct_mix", "turn_mix_real", 100, 20)
+      insert_usage(db, "acct_mix", "turn_mix_est", 30, 8, estimated: true)
+
+      totals = Facet::Assistant::Usage.total_for_account(db, "acct_mix")
+      totals.total.should eq(158)
+      totals.estimated_total.should eq(38)
+      # The reported part is the total minus the estimate.
+      (totals.total - totals.estimated_total).should eq(120)
+
+      # An account with only reported rows carries no estimate.
+      insert_usage(db, "acct_real", "turn_real_only", 5, 5)
+      Facet::Assistant::Usage.total_for_account(db, "acct_real").estimated_total.should eq(0)
+    end
+  end
+
   it "writes an explicit recorded_at outside the default clock" do
     with_db do |db|
       backdated = Time.utc - 45.days

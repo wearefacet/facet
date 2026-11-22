@@ -191,6 +191,14 @@ export const domainListCache = register(new SingletonTtlCache<unknown>());
 export const doctypeViewsCache = register(new TtlCache<string, unknown>());
 
 /**
+ * Artifact metadata (`GET /Api/core/artifacts/:id`) — the filename and grant
+ * URL of one stored artifact. Keyed by the bare artifact id. A listing with
+ * many `file` cells reads one entry per distinct artifact, so repeated rows
+ * share one round-trip.
+ */
+export const artifactMetadataCache = register(new TtlCache<string, unknown>());
+
+/**
  * `core.CollectionView` children of a `core.DocType` projection — the saved
  * listing configurations for a doctype. Keyed by the parent `core.DocType`
  * projection id.

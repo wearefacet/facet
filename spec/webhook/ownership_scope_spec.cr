@@ -56,6 +56,22 @@ end
 
 # Creates a webhook the real way — through Document::Create, so the
 # create hook stamps the binding from the caller.
+
+# Grants the `webhook` connectivity channel to a seeded role projection.
+# The production seed gives the editor role no `webhook` channel (QA
+# F07-01); this fixture exercises ownership scoping, so it opens the
+# channel on the role it drives.
+def grant_webhook_channel(db, role_id : String) : Nil
+  content = db.query_one(
+    "SELECT content FROM projections WHERE id = $1 AND deleted_at IS NULL",
+    role_id, as: JSON::Any).as_h
+  content["connectivity"] = JSON::Any.new([JSON::Any.new("webhook")] + (content["connectivity"]?.try(&.as_a?) || [] of JSON::Any))
+  db.exec(
+    "UPDATE projections SET content = $2 WHERE id = $1 AND deleted_at IS NULL",
+    role_id, JSON::Any.new(content).to_json,
+  )
+end
+
 def create_webhook_as(db, ctx : ::Facet::RBAC::AuthContext, doc_id : String) : Nil
   body = %({"label": "Relay #{doc_id}", "url": "https://1.1.1.1/hook", "source_doctype": "core.DocType.sales.Invoice"})
   result = ::Facet::Document::Create.call(db, "core", "Webhook", body, ctx, doc_id: doc_id)
@@ -77,6 +93,7 @@ module Facet
           Facet::Doctype::Seed.ensure_doctype(db, domain, doctype)
         end
         ensure_seed_roles_with_dependencies(db)
+        grant_webhook_channel(db, "iam.Roles.editor")
         Facet::Doctype::DefinitionStore.cache.clear
         seed_webhook_source(db)
       end

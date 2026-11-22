@@ -536,20 +536,12 @@
 			if (!res.ok) {
 				const errBody = await res.json().catch(() => ({}));
 				const message = errBody.error ?? m.builder_draft_failed_status({ status: res.status });
-				// The backend answers 422 when the submitted definition diffs empty.
-				// The stored definition already matches the working copy, so this is
-				// a neutral outcome. Flash success, not a failure.
-				if (
-					res.status === 422 &&
-					typeof message === 'string' &&
-					message.startsWith('No changes detected')
-				) {
-					flash.saved();
-					return;
-				}
 				flash.failed(message);
 				return;
 			}
+			// A no-op save is a success: the backend answers 200 with the
+			// unchanged projection, so the neutral "Saved" flash comes from
+			// the normal path below.
 			patchCachedRegistryEntry(
 				readonly && rawDefPreserved?.migrations
 					? { ...body, migrations: rawDefPreserved.migrations }

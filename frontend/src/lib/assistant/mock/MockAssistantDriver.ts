@@ -74,6 +74,7 @@ export class MockAssistantDriver implements AssistantDriver {
 		// pins a finite budget through the options bag.
 		this.usage = options.usage ?? {
 			total: 0,
+			estimated_total: 0,
 			budget: null,
 			window_start: new Date(Date.now() - 30 * 86_400_000).toISOString(),
 			window_days: 30

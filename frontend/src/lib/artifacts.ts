@@ -27,9 +27,21 @@
  */
 
 import { apiErrorMessage } from '$lib/http.js';
+import { artifactMetadataCache } from '$lib/datasource/clientCache.js';
 import * as m from '$lib/paraglide/messages';
 
 export const ARTIFACT_URN_PREFIX = 'urn:facet:artifact:';
+
+/** Shape returned by `GET /Api/core/artifacts/:id` (filename + grant URL). */
+export interface ArtifactGrant {
+	id: string;
+	filename: string;
+	mime_type?: string;
+	size?: number;
+	sha256?: string;
+	url: string;
+	expires_at?: string;
+}
 
 /** Shape returned by `POST /Api/core/artifacts` (standalone upload). */
 export interface ArtifactUploadResult {
@@ -69,6 +81,36 @@ export function artifactDownloadUrl(id: string): string {
 export function resolveArtifactUrl(url: string): string {
 	const id = parseArtifactUrn(url);
 	return id ? artifactDownloadUrl(id) : url;
+}
+
+/**
+ * Default artifact metadata fetch: `GET /Api/core/artifacts/:id` via
+ * `apiFetch`.
+ */
+async function fetchArtifactGrant(id: string): Promise<ArtifactGrant> {
+	const { apiFetch } = await import('$lib/session.svelte');
+	const res = await apiFetch(`/Api/core/artifacts/${id}`);
+	if (!res.ok) {
+		const body = await res.json().catch(() => ({}) as { error?: string });
+		throw new Error((body as { error?: string }).error ?? `Fetch failed (${res.status})`);
+	}
+	return (await res.json()) as ArtifactGrant;
+}
+
+/**
+ * Resolve the metadata of one artifact (filename, grant URL). The result is
+ * cached for the client-cache TTL and concurrent callers share the in-flight
+ * request, so a listing with many `file` cells reads one entry per distinct
+ * artifact. A failed fetch is not cached.
+ *
+ * `fetcher` overrides the default API call (stories pass a synthetic one).
+ */
+export async function resolveArtifact(
+	id: string,
+	fetcher?: (id: string) => Promise<ArtifactGrant>
+): Promise<ArtifactGrant> {
+	const fetch = fetcher ?? fetchArtifactGrant;
+	return (await artifactMetadataCache.get(id, () => fetch(id))) as ArtifactGrant;
 }
 
 /**

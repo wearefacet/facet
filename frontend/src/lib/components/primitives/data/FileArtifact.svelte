@@ -3,18 +3,8 @@
 
 <script lang="ts">
 	import { Download } from '@lucide/svelte';
+	import { resolveArtifact, type ArtifactGrant } from '$lib/artifacts.js';
 	import '../shared.css';
-
-	/** Shape returned by `GET /Api/core/artifacts/:id` (filename + grant URL). */
-	export interface ArtifactGrant {
-		id: string;
-		filename: string;
-		mime_type?: string;
-		size?: number;
-		sha256?: string;
-		url: string;
-		expires_at?: string;
-	}
 
 	/**
 	 * Read-only render of a `file`-typed doctype field value.
@@ -22,12 +12,15 @@
 	 * The stored value is the bare artifact id (a 26-char ULID). The filename
 	 * is resolved from the backend's artifact metadata
 	 * (`GET /Api/core/artifacts/:id`) on mount so the label reads as a human
-	 * filename rather than an opaque ULID. The download link is a plain
-	 * `<a href="/Api/core/artifacts/:id/download">` — the gateway route mints
-	 * a fresh ephemeral grant and 302-redirects to the signed serve URL on each
-	 * click. No JS on click: no stale cached URL, no client-side grant mint,
-	 * and the link works for shared / app-embedded contexts (`?app=APP_ID` may
-	 * be appended by integrators; `doc/backend/artifact.md` → Download gateway).
+	 * filename rather than an opaque ULID. The lookup goes through
+	 * `resolveArtifact`, which caches the metadata per artifact id — a table
+	 * cell and the show page of the same document share one fetch. The
+	 * download link is a plain `<a href="/Api/core/artifacts/:id/download">` —
+	 * the gateway route mints a fresh ephemeral grant and 302-redirects to the
+	 * signed serve URL on each click. No JS on click: no stale cached URL, no
+	 * client-side grant mint, and the link works for shared / app-embedded
+	 * contexts (`?app=APP_ID` may be appended by integrators;
+	 * `doc/backend/artifact.md` → Download gateway).
 	 *
 	 * Falls back to displaying the bare id as the label when the filename fetch
 	 * fails — the id is still the canonical stored value, and the link still
@@ -42,9 +35,9 @@
 		/**
 		 * Injectable fetch — receives the artifact id and returns the grant
 		 * metadata (used only for the on-mount filename label resolve).
-		 * Defaults to `GET /Api/core/artifacts/:id` via `apiFetch`. Stories
-		 * pass a synthetic fetcher so the play function can assert the label
-		 * without a live backend.
+		 * Defaults to `GET /Api/core/artifacts/:id` via `apiFetch`, cached per
+		 * artifact id. Stories pass a synthetic fetcher so the play function can
+		 * assert the label without a live backend.
 		 */
 		fetchArtifact?: (id: string) => Promise<ArtifactGrant>;
 	} = $props();
@@ -64,8 +57,7 @@
 		const id = artifactId;
 		if (!id) return;
 		let cancelled = false;
-		const fetcher = fetchArtifact ?? defaultFetch;
-		void fetcher(id)
+		void resolveArtifact(id, fetchArtifact)
 			.then((grant) => {
 				if (cancelled) return;
 				cachedFilename = grant.filename;
@@ -78,16 +70,6 @@
 			cancelled = true;
 		};
 	});
-
-	async function defaultFetch(id: string): Promise<ArtifactGrant> {
-		const { apiFetch } = await import('$lib/session.svelte');
-		const res = await apiFetch(`/Api/core/artifacts/${id}`);
-		if (!res.ok) {
-			const body = await res.json().catch(() => ({}) as { error?: string });
-			throw new Error((body as { error?: string }).error ?? `Fetch failed (${res.status})`);
-		}
-		return (await res.json()) as ArtifactGrant;
-	}
 </script>
 
 <a

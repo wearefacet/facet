@@ -183,6 +183,10 @@ export interface TurnSummary {
 export interface AssistantUsage {
 	/** Total tokens billed to the caller inside the current window. */
 	total: number;
+	/** The part of {@link total} the provider never reported on — a
+	 * character-count estimate, not a bill. `total - estimated_total` is the
+	 * reported part. Absent on older payloads — treat as `0`. */
+	estimated_total?: number;
 	/** Effective token budget, or `null` when the account is unlimited. */
 	budget: number | null;
 	/** RFC-3339 UTC start of the current rolling window. */

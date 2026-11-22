@@ -136,6 +136,137 @@ fields:
               type: string
               required: true
               description: "The data type of each element in the array."
+            doctype:
+              type: string
+              title: "Item Target Doctype"
+              description: "The target doctype identifier of a reference item — the qualified 'domain.DocType' form (e.g. 'lab.Partner'). Without this declaration the GET mask drops the target and a GET → PUT round-trip is refused by the data-shape guard."
+            required:
+              type: boolean
+              title: Required
+              description: "When true, each array element must be provided."
+            unique:
+              type: boolean
+              title: Unique
+              description: "When true, array elements must be unique."
+            collection:
+              type: boolean
+              title: Collection
+              description: "When true, each element is itself a collection."
+            title:
+              type: string
+              title: Title
+              description: "Human-readable label for the array item."
+            description:
+              type: string
+              title: Description
+              description: "Detailed description of the array item."
+            owned:
+              type: boolean
+              title: "Owned Reference"
+              description: "When true, a referenced item is owned and cascade-deleted on parent deletion."
+            dangling:
+              type: boolean
+              title: Dangling
+              description: "When true, a referenced item accepts any reference value (no existence or RBAC check)."
+            default:
+              type: any
+              title: "Default Value"
+              description: "Default value applied to each element when absent."
+            min:
+              type: integer
+              title: "Minimum Value"
+              description: "Minimum allowed value or length for each element."
+            max:
+              type: integer
+              title: "Maximum Value"
+              description: "Maximum allowed value or length for each element."
+            pattern:
+              type: string
+              title: "Regex Pattern"
+              description: "Regular expression that string element values must match."
+            pattern_flags:
+              type: string
+              title: "Pattern Flags"
+              description: "Flags for the regex pattern."
+            tags:
+              type: array
+              title: "Sensitivity Tags"
+              description: "Free-form sensitivity labels on the array item."
+              items:
+                type: string
+                title: "Tag"
+            filters:
+              type: array
+              title: "Filter Capabilities"
+              description: "Supported filter capabilities on the array item."
+              items:
+                type: string
+                title: Capability
+            filter:
+              type: object
+              title: "Reference Filter"
+              description: "For a reference item: an optional filter the referenced document must satisfy."
+            on_source_delete:
+              type: enum
+              title: "Behaviour on Source Deletion"
+              description: "For a replicated item: 'keep' retains the last value, 'unset' removes it."
+              default: keep
+              values:
+                - keep
+                - unset
+            compute:
+              type: string
+              title: "Lua Compute Function"
+              description: "The suffix of the Lua export function that computes each element's value."
+            compute_when:
+              type: array
+              title: "Computation Triggers"
+              description: "List of field names whose changes trigger re-computation."
+              items:
+                type: string
+                title: "Trigger Field"
+            replicate:
+              type: object
+              title: "Replication Config"
+              description: "Cross-domain field replication config for each element."
+            accept:
+              type: array
+              title: "Accepted MIME Types"
+              description: "Allow-list of MIME type patterns for file elements."
+              items:
+                type: string
+                title: "MIME pattern"
+            write_only:
+              type: boolean
+              title: "Write Only"
+              description: "When true, each element is accepted in input but stripped before persistence."
+            read_only:
+              type: boolean
+              title: "Read Only"
+              description: "When true, each element is rejected in user input; only the Lua script sets it."
+            mode:
+              type: enum
+              title: "Secret Mode"
+              description: "For secret elements: the storage mode."
+            ttl_seconds:
+              type: integer
+              title: "Secret TTL"
+              description: "For secret elements: the time-to-live in seconds."
+            currency:
+              type: string
+              title: "Currency Code"
+              description: "Currency ticker for money elements."
+            precision:
+              type: integer
+              title: "Precision"
+              description: "Display precision (decimal places) for numeric elements."
+            operators:
+              type: array
+              title: "Operators"
+              description: "Derived read-only operator set (accepted on read, never stored)."
+              items:
+                type: string
+                title: Operator
         properties:
           type: dictionary
           title: "Object Sub-Fields"

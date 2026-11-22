@@ -48,6 +48,14 @@ module Facet
     #
     #   Every other database error keeps the generic JSON 500.
     #
+    # - A connection-level failure of a backing service (Redis,
+    #   PostgreSQL) — `Helpers.dependency_unavailable?` classifies it — → 503
+    #   with the dependency named in the body
+    #   (`{"error": "Service unavailable", "dependency": "redis"}`). Every
+    #   dependency-backed path benefits, so a Redis outage on `/Api/iam/login`
+    #   no longer reads as an opaque 500 (F09-01). Only connection-level
+    #   exception classes match; a programming error keeps the 500.
+    #
     # Anything else is a genuine unexpected exception → JSON 500.
     class JsonErrorHandler < Kemal::Handler
       # Body rendered for the mutation write-conflict 409. The contract is
@@ -55,6 +63,11 @@ module Facet
       # conflict: the losing write never landed, so the caller may re-issue
       # the same request unchanged.
       MUTATION_CONFLICT_MESSAGE = "Concurrent write on this document — retry the request"
+
+      # Body rendered for the dependency-unavailable 503. The `dependency`
+      # key names the failing service, so an operator can tell a dead
+      # dependency from a bad credential without reading the server log.
+      SERVICE_UNAVAILABLE_MESSAGE = "Service unavailable"
 
       def call(env)
         call_next(env)
@@ -98,12 +111,17 @@ module Facet
           # pre-check answers, with the conflicting key named in `details`.
           Helpers::HTTP_LOG.warn { "#{env.request.method} #{env.request.path} → 422 unique field constraint" }
           write_unique_conflict(env, ex)
+        elsif dependency = Helpers.dependency_unavailable?(ex)
+          # The PostgreSQL pool cannot reach its server — a dependency
+          # outage, not a request error. `DB::ConnectionRefused` is not a
+          # `PQ::PQError`, but this branch keeps the classification in one
+          # place; the generic branch below also reaches it.
+          write_dependency_unavailable(env, dependency)
         else
           # An unexpected database failure never names its SQL or constraint
           # in the response body — the class/message/backtrace stay in the
           # server log (`log_unexpected`), the caller gets the generic 500.
-          log_unexpected(env, ex)
-          write_error(env, 500, "Internal server error")
+          handle_unexpected(env, ex)
         end
       rescue ex
         # Several exception types carry no message (crystal-db's pool errors,
@@ -112,8 +130,20 @@ module Facet
         # generic regardless: an unexpected 500 never carries the exception
         # text (it can name SQL, constraints, or internals); the class name
         # and backtrace go to the server log instead.
-        log_unexpected(env, ex)
-        write_error(env, 500, "Internal server error")
+        handle_unexpected(env, ex)
+      end
+
+      # The catch-all outcome: a connection-level failure of a backing
+      # service answers 503 with the dependency named (an ops signal, not an
+      # unexpected bug); anything else logs the unexpected exception and
+      # answers the generic 500.
+      private def handle_unexpected(env, ex : ::Exception) : Nil
+        if dependency = Helpers.dependency_unavailable?(ex)
+          write_dependency_unavailable(env, dependency)
+        else
+          log_unexpected(env, ex)
+          write_error(env, 500, "Internal server error")
+        end
       end
 
       # One ERROR line per unexpected 500 on `facet.http`: the request, the
@@ -135,6 +165,19 @@ module Facet
         env.response.content_type = "application/json"
         Helpers.no_store(env)
         env.response.print({error: message}.to_json)
+      end
+
+      # Renders the dependency-unavailable 503: the generic error envelope
+      # plus the failing dependency's name. Logged at ERROR like every other
+      # 5xx so the outage is visible on `facet.http`.
+      private def write_dependency_unavailable(env, dependency : String) : Nil
+        Helpers::HTTP_LOG.error do
+          "#{env.request.method} #{env.request.path} → 503 #{SERVICE_UNAVAILABLE_MESSAGE} (dependency: #{dependency})"
+        end
+        env.response.status_code = 503
+        env.response.content_type = "application/json"
+        Helpers.no_store(env)
+        env.response.print({error: SERVICE_UNAVAILABLE_MESSAGE, dependency: dependency}.to_json)
       end
 
       # Renders the 422 for a lost unique-index race: the standard error

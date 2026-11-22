@@ -154,13 +154,20 @@ cancel the in-flight turn. Every terminal path completes the `agent_turns`
 row opened at turn start; see [`agent-conversations.md`](agent-conversations.md)
 for the row schema and the status table.
 
-**Usage metering.** The ledger bills every turn that delivered output: a
-turn whose provider reported token counts bills them unestimated, and a
-turn with no report — the common streaming case, since the provider
-request does not ask for usage reports — bills the streamed-chars
-estimate (marked `estimated`). This keeps the role token budget effective
-against providers that report nothing on streamed responses. Terminal
-failures that delivered nothing still bill reported counts only.
+**Usage metering.** The ledger bills every turn that delivered output. One
+rule covers every delivering exit path (success, cancel, cap, truncation):
+a turn whose provider reported positive token counts bills them
+unestimated; a turn with no report (or an all-zero report — a real report
+always carries positive counts) bills a character-count estimate, marked
+`estimated`. The estimate covers both the common streaming case (the
+provider request does not ask for usage reports) and the cancelled turn
+whose final-chunk report an abort never delivered. This keeps the role
+token budget effective against providers that report nothing on streamed
+responses. Terminal failures that delivered nothing still bill reported
+counts only — estimating would overcharge a turn that failed before the
+provider processed the prompt. The usage meter (`GET /Api/assistant/usage`)
+returns `estimated_total` alongside `total`, so the UI can mark a budget
+percentage that is mostly a guess.
 
 **Truncated streams.** A provider stream that closes before any chunk
 carries a `finish_reason` is a truncation, not a success. Two wire shapes

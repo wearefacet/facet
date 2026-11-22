@@ -208,6 +208,7 @@ facet/
 │   │   ├── artifact_refs.cr         # Maintains artifact_references in the mutation txn
 │   │   ├── backrefs.cr              # Backrefs — inverse links query, shared by MCP + HTTP
 │   │   ├── coalesce.cr              # Write-time update coalescing + persist step
+│   │   ├── collection_view_gate.cr  # Write-time CollectionView config gate (per surface)
 │   │   ├── collection_version.cr    # Collection ETag validators (updated_at scopes)
 │   │   ├── compute.cr               # Runs computed (data) fields
 │   │   ├── copy.cr                  # Recursive document copy primitive
@@ -778,6 +779,7 @@ facet/
 │   │   ├── action_spec.cr                    # Document::Action — named actions
 │   │   ├── artifact_refs_spec.cr             # Document::ArtifactRefs — artifact reference scan
 │   │   ├── coalesce_spec.cr                  # Document::Coalesce — write-time coalescing: merge conditions, idx gap, composed diff, rollback to a merged row
+│   │   ├── collection_view_gate_spec.cr      # Document::CollectionViewGate — per-surface config rules, replace-on-write
 │   │   ├── compute_spec.cr                   # Compute — computed field evaluation
 │   │   ├── copy_spec.cr                      # Document::Copy
 │   │   ├── create_spec.cr                    # Document::Create

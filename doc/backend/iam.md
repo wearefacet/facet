@@ -576,7 +576,7 @@ All routes are under `/Api/iam`. State-changing requests require the `X-Requeste
 
 | Method | Path | Handler | Description |
 |---|---|---|---|
-| `POST` | `/Api/iam/login` | `Login.call` | Authenticate with email + password |
+| `POST` | `/Api/iam/login` | `Login.call` | Authenticate with email + password. The session and the throttle state live in Redis, so a Redis outage answers `503` with the dependency named (see [`http-layer.md`](http-layer.md) → Dependency unavailable (503)) instead of an opaque 500 |
 | `POST` | `/Api/iam/challenge` | `Challenge.call` | Complete MFA challenge (TOTP code or single-use backup code) |
 | `POST` | `/Api/iam/mfa/enroll/verify` | `Enroll.verify` | Complete enroll-at-login (public — the one-shot enroll token is the authorization) |
 | `POST` | `/Api/iam/refresh` | `Refresh.call` | Rotate tokens |

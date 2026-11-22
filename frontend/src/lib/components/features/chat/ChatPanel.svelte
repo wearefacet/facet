@@ -706,7 +706,12 @@
 			</ChatScroll>
 			<div class="composer-bar">
 				{#if usage && usage.budget !== null}
-					<UsageMeter used={usage.total} budget={usage.budget} windowDays={usage.window_days} />
+					<UsageMeter
+						used={usage.total}
+						estimated={usage.estimated_total ?? 0}
+						budget={usage.budget}
+						windowDays={usage.window_days}
+					/>
 				{/if}
 				{#if contextHint}
 					<div class="context-chip">

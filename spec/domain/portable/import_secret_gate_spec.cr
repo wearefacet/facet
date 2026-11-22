@@ -12,6 +12,7 @@ require "../../../src/document"
 require "../../../src/mutation/client"
 require "../../../src/rbac"
 require "../../../src/secrets/adoption"
+require "../../../src/secrets/staging"
 
 # Specs for the secret-leaf gate on the portable-domain import door
 # (B-370). A bundled row bypasses the document pipeline, so the type-layer
@@ -191,6 +192,71 @@ describe "Domain::Portable import secret-leaf gate (B-370)" do
       result = Facet::Domain::Portable::Import.call(db, bundle, into: "sgtarget3")
       result.should be_a(Facet::Domain::Portable::Import::Result)
       result.as(Facet::Domain::Portable::Import::Result).documents_created.should eq(1)
+    end
+  end
+
+  # Seeds a live domain whose `Vault` document carries a real secret marker,
+  # so the export has a marker to strip (F09-03). The marker comes from a
+  # staged handle adopted by the document pipeline — the same shape a live
+  # document stores.
+  it "exports a bundle with --omit-secrets that imports on a fresh instance (F09-03)" do
+    with_db do |db|
+      sg_reseed_core(db)
+      domain = "sgstrip"
+
+      Facet::Mutation::Client.create(
+        db, "core", "Domain",
+        doc_id: domain,
+        content: %({"description": "strip test", "color": "#abcdef"}),
+        actioner_id: "system:test",
+      )
+      Facet::Mutation::Client.create(
+        db, "core", "DocType",
+        doc_id: "#{domain}.Vault",
+        content: SG_VAULT_DEFINITION.sub("\"sgdom\"", "\"#{domain}\""),
+        meta: %({"parent_id": "#{domain}"}),
+        actioner_id: "system:test",
+      )
+
+      # Adopt a staged hash into the document, then read back the stored
+      # marker — exactly what a bundle carries.
+      handle = Facet::Secrets::Staging.insert(
+        db, "hash", Facet::Secrets::Codec.hash_payload("s3cret"), domain, "Vault", "api_key", "system:test")
+      created = Facet::Document::Create.call(
+        db, domain, "Vault", %({"name": "v1", "api_key": "#{handle}"}),
+        Facet::RBAC::AuthContext.system)
+      raise "vault seed failed: #{created.inspect}" if created.is_a?(Facet::ServiceError)
+      vault_id = created.as(Facet::Document::Create::Result).projection.id
+
+      stored = db.query_one(
+        "SELECT content FROM projections WHERE domain = $1 AND doc_type = 'Vault' AND id = $2",
+        domain, vault_id, as: JSON::Any)
+      stored["api_key"].as_h?.should_not be_nil
+
+      # Without the flag the bundle carries the marker and the import refuses.
+      carried = Facet::Domain::Portable::Export.call(db, domain, with_documents: true)
+        .as(Facet::Domain::Portable::Export::Result).bundle
+      carried.documents["#{domain}.Vault"].first.entry.content["api_key"].as_h?.should_not be_nil
+      refused = Facet::Domain::Portable::Import.call(db, carried, into: "sgstrip-raw")
+      refused.should be_a(Facet::ServiceError)
+      refused.as(Facet::ServiceError).status.should eq(422)
+
+      # With the flag every marker is nulled and the bundle imports cleanly.
+      bundle = Facet::Domain::Portable::Export.call(db, domain, with_documents: true, omit_secrets: true)
+        .as(Facet::Domain::Portable::Export::Result).bundle
+      bundle.documents["#{domain}.Vault"].first.entry.content["api_key"].raw.should be_nil
+
+      result = Facet::Domain::Portable::Import.call(db, bundle, into: "sgstrip-target")
+      result.should be_a(Facet::Domain::Portable::Import::Result)
+      result.as(Facet::Domain::Portable::Import::Result).documents_created.should eq(1)
+
+      # The field imported unset — the secret state is lost.
+      target_id = bundle.documents["#{domain}.Vault"].first.id
+      content = db.query_one(
+        "SELECT content FROM projections WHERE domain = 'sgstrip-target' AND doc_type = 'Vault' AND id = $1",
+        target_id, as: JSON::Any)
+      content["api_key"].raw.should be_nil
+      db.query_one("SELECT count(*) FROM secrets WHERE domain = 'sgstrip-target'", as: Int64).should eq(0)
     end
   end
 end

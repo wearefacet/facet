@@ -237,6 +237,25 @@
 </Story>
 
 <Story
+	name="FooterCountsRemainingRows"
+	play={async () => {
+		const canvas = within(document.body);
+		// The API reports the matching rows from this page's offset, not a global
+		// total. The footer labels the number for what it is — the rows from
+		// here onward — so a reader does not think rows vanished between pages.
+		await waitFor(() => expect(canvas.getByText(/353 mutations from here/)).toBeVisible());
+		await expect(canvas.queryByText(/total mutations/)).toBeNull();
+		await expect(canvas.getByText(/Page 2/)).toBeVisible();
+	}}
+>
+	{#snippet template()}
+		<div style="min-height: 480px; padding: 16px;">
+			<GlobalAuditTable items={SEED} meta={{ count: 353, more: false }} page={2} />
+		</div>
+	{/snippet}
+</Story>
+
+<Story
 	name="PaginationUsesMoreFlag"
 	play={async () => {
 		pageSpy.mockClear();

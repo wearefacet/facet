@@ -45,6 +45,41 @@ def persist_view_for_check(db, parent_id : String, kind : String, template_json 
   "#{parent_id}.document_view.#{kind}"
 end
 
+# Persists a parent doctype whose fields back the CollectionView capability
+# checks, then returns its qualified id. `fields` is the `fields` object of
+# the definition, as raw JSON.
+def persist_collection_view_parent(db, domain : String, fields : String) : String
+  ensure_domain(db, domain)
+  defn = Facet::Doctype::DoctypeDefinition.from_json(%({
+    "doctype": "Task",
+    "domain": "#{domain}",
+    "schema_version": 1,
+    "aggregate_root": true,
+    "fields": #{fields}
+  }))
+  persist_doctype_for_check(db, defn)
+end
+
+# Persists a `core.CollectionView` child projection for the Check service.
+# `meta.parent_id` is what the collection-view check queries on.
+def persist_collection_view_for_check(
+  db,
+  parent_id : String,
+  name : String,
+  surface : String,
+  config_json : String,
+) : String
+  doc_id = "#{parent_id}.collection_view.#{name.downcase}"
+  Facet::Mutation::Client.create(
+    db, "core", "CollectionView",
+    doc_id: doc_id,
+    content: %({"name": "#{name}", "surface": "#{surface}", "config": #{config_json}}),
+    meta: %({"parent_id": "#{parent_id}"}),
+    actioner_id: "system:test",
+  )
+  doc_id
+end
+
 module Facet::Doctype
   describe Check do
     describe ".call" do
@@ -270,6 +305,35 @@ module Facet::Doctype
           ref_issues[0].field.should eq("customer")
           ref_issues[0].message.should contain("identity.Person")
           ref_issues[0].message.should contain("not a registered doctype")
+        end
+      end
+
+      it "flags an array-of-reference item whose target doctype is not registered, naming the flat PATCH remedy" do
+        with_db do |db|
+          ensure_domain(db, "orders")
+          defn = DoctypeDefinition.from_json(%({
+            "doctype": "Specimen",
+            "domain": "orders",
+            "schema_version": 1,
+            "fields": {
+              "name": {"type": "string", "required": true},
+              "refs": {"type": "array", "items": {"type": "reference", "doctype": "orders.Partner"}}
+            }
+          }))
+          # orders.Partner is NOT registered in this DB
+          doc_id = persist_doctype_for_check(db, defn)
+
+          result = Check.call(db, doc_id)
+          res = result.as(Check::Result)
+          ref_issues = res.issues.select { |i| i.category == :reference }
+          ref_issues.size.should eq(1)
+          ref_issues[0].severity.should eq(:warning)
+          ref_issues[0].field.should eq("refs.items")
+          ref_issues[0].message.should contain("orders.Partner")
+          ref_issues[0].message.should contain("not a registered doctype")
+          # The remedy names the flat authoring PATCH, not a PUT round-trip.
+          ref_issues[0].message.should contain("PATCH /Api/core/DocType/orders.Specimen")
+          ref_issues[0].message.should contain("\"fields\"")
         end
       end
 
@@ -1008,6 +1072,76 @@ module Facet::Doctype
           template_issues.first.field.should eq("template.children.0.field")
           template_issues.first.message.should contain("'form'")
           template_issues.first.message.should contain("missing required 'field'")
+        end
+      end
+    end
+
+    describe "collection views" do
+      it "warns when a kanban group_by cannot serve the equality filter (F10-10)" do
+        with_db do |db|
+          doc_id = persist_collection_view_parent(db, "cvsurf", %({
+            "status": {"type": "enum", "values": [{"key": "draft"}], "filters": ["equality"]},
+            "state": {"type": "enum", "values": [{"key": "open"}]}
+          }))
+          persist_collection_view_for_check(db, doc_id, "Board", "kanban", %({
+            "kanban": {"mode": "values", "group_by": "state"}
+          }))
+
+          res = Check.call(db, doc_id).as(Check::Result)
+          view_warnings = res.issues.select { |i| i.category == :view && i.severity == :warning }
+          view_warnings.size.should eq(1)
+          view_warnings.first.field.should eq("config.kanban.group_by")
+          view_warnings.first.message.should contain("CollectionView 'Board'")
+          view_warnings.first.message.should contain("'state'")
+          view_warnings.first.message.should contain("equality")
+        end
+      end
+
+      it "accepts a kanban group_by that serves the equality filter" do
+        with_db do |db|
+          doc_id = persist_collection_view_parent(db, "cvok", %({
+            "status": {"type": "enum", "values": [{"key": "draft"}], "filters": ["equality"]}
+          }))
+          persist_collection_view_for_check(db, doc_id, "Board", "kanban", %({
+            "kanban": {"mode": "values", "group_by": "status"}
+          }))
+
+          res = Check.call(db, doc_id).as(Check::Result)
+          res.issues.select { |i| i.category == :view && i.severity == :warning }.should be_empty
+        end
+      end
+
+      it "warns when a calendar discriminator cannot serve the window filter (F10-10)" do
+        with_db do |db|
+          doc_id = persist_collection_view_parent(db, "cvcal", %({
+            "started_on": {"type": "date"},
+            "scheduled_on": {"type": "date", "filters": ["comparison"]}
+          }))
+          persist_collection_view_for_check(db, doc_id, "Schedule", "calendar", %({
+            "calendar": {"discriminator": "started_on", "week_start": "monday"}
+          }))
+
+          res = Check.call(db, doc_id).as(Check::Result)
+          view_warnings = res.issues.select { |i| i.category == :view && i.severity == :warning }
+          view_warnings.size.should eq(1)
+          view_warnings.first.field.should eq("config.calendar.discriminator")
+          view_warnings.first.message.should contain("'started_on'")
+          view_warnings.first.message.should contain("gte")
+          view_warnings.first.message.should contain("lte")
+        end
+      end
+
+      it "accepts a calendar discriminator that serves the window filter" do
+        with_db do |db|
+          doc_id = persist_collection_view_parent(db, "cvcalok", %({
+            "scheduled_on": {"type": "date", "filters": ["comparison"]}
+          }))
+          persist_collection_view_for_check(db, doc_id, "Schedule", "calendar", %({
+            "calendar": {"discriminator": "scheduled_on", "week_start": "monday"}
+          }))
+
+          res = Check.call(db, doc_id).as(Check::Result)
+          res.issues.select { |i| i.category == :view && i.severity == :warning }.should be_empty
         end
       end
     end

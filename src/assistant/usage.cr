@@ -12,21 +12,31 @@ module Facet
     # Per-account token usage ledger over the `assistant_usage` table
     # (`db/migrations/0005_assistant.sql`).
     #
-    # One row per billed streaming turn — written by `Stream::Session`
-    # inside the turn-persistence transaction when the turn reports real
-    # token counts. `total_for_account` is the query surface any future
-    # limit check or admin view calls: exact per-account input/output
-    # totals over a `recorded_at` window.
+    # One row per billed turn — written by `Stream::Session` inside the
+    # turn-persistence transaction. `total_for_account` is the query surface
+    # any future limit check or admin view calls: exact per-account
+    # input/output totals over a `recorded_at` window, split by provenance
+    # so a caller can tell a reported count from a character-count
+    # estimate.
     module Usage
-      # Windowed token totals for one account.
-      record Totals, input : Int64, output : Int64, total : Int64
+      # Windowed token totals for one account. `total` is `input + output`
+      # over every row; `estimated_total` is the part of `total` that comes
+      # from rows the provider never reported on (`estimated = true`), so
+      # `total - estimated_total` is the reported (billed) part.
+      record Totals,
+        input : Int64,
+        output : Int64,
+        total : Int64,
+        estimated_total : Int64
 
       # Inserts one ledger row. `id` is a fresh ULID; `recorded_at` defaults
       # to `now()` (UTC) — pass an explicit timestamp to write outside the
       # default (specs use this to place rows inside or outside a query
-      # window). `estimated` marks rows whose counts the provider never
-      # reported on (the anti-siphon estimate for cancelled turns). Callers
-      # run inside their own transaction (the stream session's turn
+      # window). `estimated` marks a row the provider never reported on: the
+      # stream session bills the streamed content and the serialized prompt
+      # as a character-count estimate whenever the delivering turn (success,
+      # cancel, cap, truncation) carries no positive report. Callers run
+      # inside their own transaction (the stream session's turn
       # persistence), so failures roll back with it.
       def self.insert(
         db : DB::Connection,
@@ -91,7 +101,8 @@ module Facet
           <<-SQL,
             SELECT
               COALESCE(SUM(input_tokens), 0)::bigint,
-              COALESCE(SUM(output_tokens), 0)::bigint
+              COALESCE(SUM(output_tokens), 0)::bigint,
+              COALESCE(SUM(input_tokens + output_tokens) FILTER (WHERE estimated), 0)::bigint
             FROM assistant_usage
             WHERE #{clauses.join(" AND ")}
           SQL
@@ -101,7 +112,8 @@ module Facet
         ) do |rs|
           input = rs.read(Int64)
           output = rs.read(Int64)
-          Totals.new(input, output, input + output)
+          estimated_total = rs.read(Int64)
+          Totals.new(input, output, input + output, estimated_total)
         end
       end
     end

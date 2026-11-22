@@ -172,15 +172,25 @@
 	});
 
 	// Sync the input display when the value changes externally (programmatic
-	// set, parent re-render). Do NOT re-sync when `flat` recomputes (e.g.
-	// async results refresh) — that would override the user's typed query.
-	// `previousValue` starts as `null` so the initial value also populates
-	// the input on first render.
+	// set, parent re-render), and when the resolved label for the current value
+	// changes while the input still shows the previous label (a lazily loaded
+	// option list, e.g. the currency registry, resolving after the first
+	// render). Do NOT re-sync when `flat` recomputes while the user has typed a
+	// query — that would override the typed text. `previousValue` starts as
+	// `null` so the initial value also populates the input on first render.
 	let previousValue = $state<string | null>(null);
+	let previousLabel = $state<string | null>(null);
 	$effect(() => {
+		const item = flat.find((o) => o.value === value);
+		const label = item?.label ?? null;
 		if (value !== previousValue) {
 			previousValue = value;
-			const item = flat.find((o) => o.value === value);
+			previousLabel = label;
+			if (item) inputValue = item.label;
+		} else if (label !== previousLabel && inputValue === (previousLabel ?? '')) {
+			// Same value, resolved label changed, and the user has not typed:
+			// refresh the display text to the new label.
+			previousLabel = label;
 			if (item) inputValue = item.label;
 		}
 	});

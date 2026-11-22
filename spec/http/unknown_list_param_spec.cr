@@ -141,6 +141,31 @@ describe "Unknown list parameters (B-169 remainder)" do
     err.message.should contain("Unknown parameter 'bogus'")
   end
 
+  # F07-03: `admitted_keys` narrows the grammar to the keys the route reads.
+  it "from_query strict rejects a grammar key outside admitted_keys" do
+    admitted = Set{"page", "items", "sort", "filters"}
+    err = Facet::HTTP::ListRequest
+      .from_query(URI::Params.parse("select=zzz"), strict: true, admitted_keys: admitted)
+      .as(Facet::ServiceError)
+    err.status.should eq(422)
+    err.message.should contain("Unknown parameter 'select'")
+  end
+
+  it "from_query strict admits the keys inside admitted_keys" do
+    admitted = Set{"page", "items", "sort", "filters"}
+    params = URI::Params.parse("page=2&items=10&sort=-id&filters[doc_type__eq]=Person")
+    Facet::HTTP::ListRequest.from_query(params, strict: true, admitted_keys: admitted)
+      .should be_a(Facet::HTTP::ListRequest)
+  end
+
+  it "from_json strict rejects a grammar key outside admitted_keys" do
+    err = Facet::HTTP::ListRequest
+      .from_json(%({"field": "doc_id"}), strict: true, admitted_keys: Set{"page", "items", "sort", "filters"})
+      .as(Facet::ServiceError)
+    err.status.should eq(422)
+    err.message.should contain("Unknown parameter 'field'")
+  end
+
   it "from_json strict admits the known keys and stays lenient by default" do
     body = %({"page": 1, "items": 10, "sort": ["id"], "filters": {"age__gt": 18}, "select": ["full_name"], "aggregate": "count", "field": "age", "scope": "emea", "deleted": true})
     Facet::HTTP::ListRequest.from_json(body, strict: true).should be_a(Facet::HTTP::ListRequest)
@@ -240,6 +265,29 @@ describe "Unknown list parameters (B-169 remainder)" do
     resp = call_api(HTTP::Request.new("GET", "/Api/Audit?limit=2"))
     assert_http_status(resp, 422)
     JSON.parse(resp.body)["error"].as_s.should contain("Unknown parameter 'limit'")
+  end
+
+  # F07-03: the global audit list reads only `page`, `items`, `sort`, and
+  # `filters`. The grammar keys it drops answer 422 instead of vanishing
+  # into an unfiltered 200.
+  it "answers 422 on the global audit list for a grammar key it does not read" do
+    ulp_seed_person_doctype
+
+    ["field=doc_id:eq:x", "select=zzz", "aggregate=count", "scope=emea", "deleted=true"].each do |qs|
+      resp = call_api(HTTP::Request.new("GET", "/Api/Audit?#{qs}"))
+      assert_http_status(resp, 422)
+      JSON.parse(resp.body)["error"].as_s.should contain("Unknown parameter")
+    end
+  end
+
+  it "answers 422 on the global audit QUERY for a body key it does not read" do
+    ulp_seed_person_doctype
+
+    resp = call_api(HTTP::Request.new("QUERY", "/Api/Audit",
+      headers: HTTP::Headers{"Content-Type" => "application/json"},
+      body: %({"select": ["zzz"]})))
+    assert_http_status(resp, 422)
+    JSON.parse(resp.body)["error"].as_s.should contain("Unknown parameter 'select'")
   end
 
   it "filters the global audit list through the bracket form" do

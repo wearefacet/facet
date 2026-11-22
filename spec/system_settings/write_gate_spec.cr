@@ -187,6 +187,20 @@ describe Facet::SystemSettings::WriteGate do
     it "accepts a null storage type — the document never pins it" do
       errors_for(%({"artifact": {"storage": {"type": null}}})).should be_empty
     end
+
+    it "names the config-file remedy for the intermediate artifact.storage node (F09-05)" do
+      # The definition declares only `artifact.storage.type`; a PATCH on the
+      # intermediate node fails shape validation first. `refusal` carries the
+      # gate's sentence for it, and `Document::Update` swaps it in.
+      error = Facet::SystemSettings::WriteGate.refusal("artifact.storage")
+      error.should_not be_nil
+      error.not_nil!.field.should eq("artifact.storage")
+      error.not_nil!.code.should eq("invalid_format")
+      error.not_nil!.message.should contain("Change artifact.storage in the config file and restart")
+
+      Facet::SystemSettings::WriteGate.refusal("artifact.storage.type").should_not be_nil
+      Facet::SystemSettings::WriteGate.refusal("assistant.model").should be_nil
+    end
   end
 
   describe "localization rules" do

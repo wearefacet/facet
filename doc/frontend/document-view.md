@@ -26,9 +26,10 @@ A stored `reference` value is a URN (`crm.Supplier.01HXYZ…`) or a bare id. Sur
 - **Relation table, leaf reference column.** A column whose key is a single field declared as `reference` (`leafReferenceColumn`) renders a `Capsule` in the cell. The Capsule receives the `driver`, the stored value, and the field's declared target doctype. It hydrates its own label — the same component and states as a `$field` reference in `DvtField` and the schema-aware table. A click fires `onreferenceclick` with `{ domain, doctype, id }`. A blank value renders the em-dash blank. Without a `driver`, the cell falls back to the typed-cell path and shows the raw id.
 - **Header subtitle, pure reference token.** `subtitle: "$supplier"` with a `reference`-typed field renders one hydrated `Capsule` inline. Click-through uses the header's `onreferenceclick` prop.
 - **Header subtitle, mixed string.** `subtitle: "Supplied by $supplier"` resolves each `reference`-typed token to its label inline. Non-reference tokens interpolate as before. The labels come from the shared resolver; while a label loads, the id portion shows (Capsule's provisional behavior).
-- **Header chips.** A chip bound to a `reference` field (scalar or collection) renders one neutral chip per stored token. The label comes from the shared resolver over the header's driver; while a label loads, the id portion shows; without a driver the stored token shows. Other non-string values route through the shared typed-text pipeline (`resolveInterpolated`): money renders `<currency> <value>`, a secret marker drops the chip, and any other object or array renders as JSON.
+- **Header chips.** A chip bound to a `reference` field (scalar or collection) renders one neutral chip per stored token. The label comes from the shared resolver over the header's driver; while a label loads, the id portion shows; without a driver the stored token shows. A chip bound to a `money` field renders through the same `formatMoneyAmount` + `composeMoneyText` pair as the show page (`Money.svelte`), so one stored `{value, currency}` pair reads the same on every surface (the currency row's symbol, digits, and grouping drive it). A secret marker drops the chip, and any other object or array renders as JSON.
 - **Typed-value fallback rows.** The show page and the peek drawer render one row per stored field when the doctype has no view template. Those rows go through `DvtValue`; with a `driver`, a `reference` field renders hydrated `Capsule`s (click-through wired to the surface's reference handler) instead of raw `domain.Type.id` tokens (B-132). A single value renders one capsule. A collection reference (a JSON array value) renders one capsule per token — `DvtValue` passes the same `referenceCell` snippet to `FieldValue` that the table passes (F10-F). Driver-less callers keep the plain-text rendering — the tokens joined with `', '`.
 - **Schema-aware table cells.** The table's default cell renderer shares `FieldValue` and passes a `referenceCell` snippet, so a collection reference renders one `Capsule` per array element — each hydrates its own label through the shared show cache. A cell that joined the array into one comma-joined id fetched `/Api/<domain>/<Doctype>/<token,token>` and 404'd (the capsule's failed state) on every element; `FieldValue` now splits array values into tokens (`referenceTokens` in `cellKind.ts`) and renders one cell per token. An empty array renders the blank dash. The document-view surfaces hydrate collections the same way — `DvtValue` owns the same reference-cell snippet.
+- **Dense `file` cells.** The show page renders a `file` value as a `FileArtifact` capsule labelled with the artifact's filename. The table renders the dense `FileCell` instead: the filename when the artifact metadata is cached, the bare artifact id otherwise, with the id as the tooltip either way. The metadata lookup goes through `resolveArtifact` (`lib/artifacts.ts`), which caches per artifact id (`artifactMetadataCache`) and shares one in-flight request, so a listing with many `file` cells reads one entry per distinct artifact.
 - **Degradation.** The declared types come from the doctype definition (`def` prop). Without a definition or a driver, the subtitle interpolates plainly — the stored value shows. A dotted token (`$contact.name`) never hydrates as a reference; it interpolates.
 
 ### The shared resolver (`referenceLabel.ts`)
@@ -41,6 +42,24 @@ A stored `reference` value is a URN (`crm.Supplier.01HXYZ…`) or a bare id. Sur
 The label rule mirrors `Capsule`: the backend-computed `meta.display_name` first, then the conventional content fields, then the id. The rule lives in `displayLabel` (`documentIdentity.ts`), and the resolver reuses it. A `410` tombstone resolves to the surviving label from the error body. A failed fetch resolves to the stored value and drops the cache entry, so the next render retries.
 
 The cache is a `WeakMap` keyed by driver. One driver instance exists per page load, so the cache is per-page: one fetch per distinct referenced document per page. Concurrent callers share one in-flight promise. The REST driver's `show()` also dedupes and TTL-caches by URL (`documentShowCache`), so repeated capsules for the same document cost one network fetch.
+
+## Money display
+
+Every display surface formats a stored `{ value, currency }` money pair the same way, through `formatMoneyAmount` + `composeMoneyText` (`primitives/data/format.ts`): `Money.svelte` (show page, table, value rows) and the `DvtHeader` money chip. The currency row's `symbol`, `digits`, and `grouping` drive the amount — the amount format does not follow the UI locale, and an unknown ticker renders the bare ticker with 2 digits.
+
+A value whose magnitude rounds to zero renders without a sign: `-0.001` at 2 digits renders `€ 0.00`, not `€ -0.00`. The sign survives `Intl.NumberFormat` rounding, so the formatter drops it when the rounded magnitude is zero.
+
+## Listing column headers
+
+A saved `core.CollectionView` column stores `{ key, label?, width?, editable? }`, and `label` is optional. The view editor resolves `key → title` before it saves; a view written by REST, by an agent, or by an import stores the key alone. `ListView` applies one rule at render time so both doors show the same header (`resolveColumnLabel` in `lib/doctype/columnLabel.ts`):
+
+`label ?? field.title ?? humanize(key)`
+
+The field title comes from the already-loaded doctype definition. A key with no declared title, and a key of a removed field, humanize (`lost_reason` → `Lost Reason`) instead of printing the raw uppercased key.
+
+## Editable relation rows
+
+An editable `relation` node renders the child doctype's `form` template per row. Two lists exist: `rows` (the persisted children from the server) and the staged drafts owned by `relationDrafts` (`lib/doctype/relationDrafts.svelte.ts`). The body renders the drafts, so the section header counts the same list: the visible draft count in editable mode (tombstoned drafts excluded), and the loaded row count otherwise. A create form has no loaded rows, so the header count follows the rows the user adds before the parent document is saved.
 
 ## Malformed relation columns
 
@@ -70,7 +89,8 @@ When the resolved `kind: form` view carries no template, `DocumentForm.svelte` r
 The stories run as tests in the Storybook vitest project (`pnpm vitest run --project storybook <file>`).
 
 - `DvtRelationTable.stories.svelte` covers a stored string-column template (humanized headers, rendered rows) and a reference column (hydrated Capsule label, click-through, em-dash blank, a dotted column beside it).
-- `DvtHeader.stories.svelte` covers the pure-reference subtitle (Capsule + click-through), the mixed string (inline label), the no-driver fallback (plain interpolation), and the chips: a scalar reference chip and a collection reference chip (hydrated labels, no URN tokens), plus a money chip (`EUR 12.50`, no `[object Object]`).
+- `DvtHeader.stories.svelte` covers the pure-reference subtitle (Capsule + click-through), the mixed string (inline label), the no-driver fallback (plain interpolation), and the chips: a scalar reference chip and a collection reference chip (hydrated labels, no URN tokens), plus a money chip (`€ 12.50` — the show page's money pipeline, not the bare ticker, no `[object Object]`).
+- `DvtRelation.stories.svelte` covers the editable section header count (`EditableHeaderCountsDrafts`): the count follows the staged drafts on add and on remove.
 - `DvtValue.stories.svelte` covers the scalar reference capsule (B-132), the no-driver fallbacks (scalar and collection keep plain text), and the collection-reference capsules (one hydrated capsule per stored token).
 - `DvtField.stories.svelte` covers the tag-mask alignment (F10-05): with `visible_tags` narrowed, the masked field renders no row (no label, no dash) while the visible field beside it renders as usual; with the field's tag held, the tagged field renders as usual.
-- `Table.stories.svelte` covers the schema-aware collection-reference cell: one Capsule per element (the pre-fix comma-joined id fetched `/Api/<domain>/<Doctype>/<token,token>` and 404'd), plus the empty-array blank dash.
+- `Table.stories.svelte` covers the schema-aware collection-reference cell: one Capsule per element (the pre-fix comma-joined id fetched `/Api/<domain>/<Doctype>/<token,token>` and 404'd), plus the empty-array blank dash. It also covers the dense `file` cell (`FileCellResolvesFilename`): the label is the artifact filename, and the tooltip keeps the id.

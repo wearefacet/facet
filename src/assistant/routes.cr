@@ -74,12 +74,15 @@ module Facet
       end
 
       # Token-usage meter for the assistant window: the caller's
-      # rolling-window total (`Limits::WINDOW_DAYS`) and effective budget
-      # (`Access.effective_budget`) from one ledger query and one budget
-      # aggregation. `budget: null` means unlimited — the frontend hides
-      # the meter. Authenticated callers only: the system bypass and the
-      # anonymous principal carry no billable account, so they answer 401
-      # like any authenticated-only surface.
+      # rolling-window total (`Limits::WINDOW_DAYS`), the estimated part of
+      # it, and the effective budget (`Access.effective_budget`) from one
+      # ledger query and one budget aggregation. `estimated_total` is the
+      # part of `total` the provider never reported on (a character-count
+      # guess), so the meter can mark the number as an estimate.
+      # `budget: null` means unlimited — the frontend hides the meter.
+      # Authenticated callers only: the system bypass and the anonymous
+      # principal carry no billable account, so they answer 401 like any
+      # authenticated-only surface.
       private def self.handle_usage(env) : Nil
         account_id = billable_account_id(Facet::HTTP::Helpers.auth_context(env))
         unless account_id
@@ -96,10 +99,11 @@ module Facet
         end
 
         Facet::HTTP::Helpers.write_json(env, 200, {
-          total:        result[:totals].total,
-          budget:       result[:budget],
-          window_start: window_start.to_rfc3339,
-          window_days:  Limits::WINDOW_DAYS,
+          total:           result[:totals].total,
+          estimated_total: result[:totals].estimated_total,
+          budget:          result[:budget],
+          window_start:    window_start.to_rfc3339,
+          window_days:     Limits::WINDOW_DAYS,
         })
       end
 

@@ -6,6 +6,7 @@
 	import { expect, within, userEvent, waitFor } from 'storybook/test';
 	import DvtInputFile from './DvtInputFile.svelte';
 	import { sessionBag } from './session-bag.svelte.js';
+	import { artifactMetadataCache } from '$lib/datasource/clientCache.js';
 	import type { DocumentResponse, DocumentMeta } from '$lib/datasource/types';
 	import type { InputFileNode } from '$lib/template-types';
 	import type { DoctypeDef } from '$lib/doctype/types.js';
@@ -155,7 +156,10 @@
 	play={async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		// Read-only mode delegates to `<FileArtifact>`, which resolves the
-		// filename on mount. No uploader surface is rendered.
+		// filename on mount. The metadata cache is shared across stories, so
+		// drop this id's entry to guarantee the mount fetch runs. No uploader
+		// surface is rendered.
+		artifactMetadataCache.invalidate(SYNTHETIC_ID);
 		await waitFor(() => {
 			expect(canvas.getByText('pixel.png')).toBeVisible();
 		});

@@ -111,4 +111,23 @@ describe "GET /Api/_mcp/endpoints" do
       body["endpoints"].as_a.should be_empty
     end
   end
+
+  # F08-03: a held role whose connectivity excludes `mcp` cannot open an
+  # endpoint — the consent gate refuses it later — so the listing omits it.
+  it "omits a held role whose connectivity excludes the mcp channel" do
+    with_db do |db|
+      seed_iam_doctypes(db)
+      create_test_role(db, "editor", [oauth_perm("read", "*.*")])
+      create_test_role(db, "browseronly", [oauth_perm("read", "*.*")], level: 20,
+        connectivity: ["webhook", "api"])
+      account_id = create_test_account(db, roles: ["iam.Roles.editor", "iam.Roles.browseronly"], default_role: "iam.Roles.editor")
+
+      token = sign_session_token_for_endpoints(account_id, "iam.Roles.editor")
+      resp = endpoints_request(token)
+
+      resp.status_code.should eq(200)
+      endpoints = JSON.parse(resp.body)["endpoints"].as_a
+      endpoints.map(&.as_h["role"].as_s).should eq(["iam.Roles.editor"])
+    end
+  end
 end

@@ -563,6 +563,48 @@ describe "IAM HTTP Integration" do
     json["available_roles"].as_a.should be_empty
     json["token"].to_s.should_not be_empty
   end
+
+  # F09-01: with Redis down, the login path (session + throttle state live
+  # there) answers 503 naming the dependency instead of an opaque 500. The
+  # `RedisProxy` points the login path's client at a proxy and pauses it to
+  # simulate the outage without stopping the real server.
+  it "POST /Api/iam/login answers 503 naming redis when Redis is unreachable" do
+    with_db do |db|
+      create_test_account(db)
+    end
+
+    original_config = Facet::Config.instance
+    proxy = RedisProxy.new(original_config.event.url)
+    proxied_url = proxy.start
+    Facet::Config.instance = Facet::Config.new(
+      host: original_config.host,
+      base_url: original_config.base_url,
+      artifact_base_url: original_config.artifact_base_url,
+      artifact_grant_secret: original_config.artifact_grant_secret,
+      event: Facet::Event::Config.new(
+        url: proxied_url,
+        partitions: original_config.event.partitions,
+        maxlen: original_config.event.maxlen,
+        stream: original_config.event.stream,
+      ),
+    )
+    begin
+      proxy.pause
+
+      body = %({"email": "test@example.com", "password": "test-password", "cookie": false})
+      headers = HTTP::Headers{"X-Requested-With" => "XMLHttpRequest"}
+      response = call_api(HTTP::Request.new("POST", "/Api/iam/login", headers: headers, body: body))
+
+      assert_http_status(response, 503)
+      json = JSON.parse(response.body).as_h
+      json["error"].as_s.should eq(Facet::HTTP::JsonErrorHandler::SERVICE_UNAVAILABLE_MESSAGE)
+      json["dependency"].as_s.should eq("redis")
+    ensure
+      proxy.resume
+      proxy.close
+      Facet::Config.instance = original_config
+    end
+  end
 end
 
 # Signs a test access token for the `/Api/iam/me` cookie flow — same

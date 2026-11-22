@@ -216,11 +216,12 @@ private def grant_editorship(db, account_id : String, domain_id : String) : Nil
   ).should be_a(Facet::Document::Create::Result)
 end
 
-# B-240: the draft-from-live route must honour a scoped `create core.Domain`
-# grant — a scoped caller may only fork a source domain it edits. The route
-# enforcer passes `Scoped` (presence-only at create time), so the service
-# gate (`Domain::Editors.authorize_draft_from?`) is the enforcement point.
-describe "POST /Api/core/Domain/:id/draft — scoped create gate (B-240)" do
+# B-240 / F04-01: the draft-from-live route must require the caller to
+# edit the source domain — a scoped grant does not widen it, and a blanket
+# (All) `create core.Domain` grant does not skip it. The route enforcer
+# passes `Scoped`/`All` (presence-only at create time), so the service gate
+# (`Domain::Editors.authorize_draft_from?`) is the enforcement point.
+describe "POST /Api/core/Domain/:id/draft — source-membership gate (B-240)" do
   before_each do
     with_db { |db| seed_live_domain_with_doctype(db) }
     Facet::Event::Publisher.flush
@@ -252,9 +253,22 @@ describe "POST /Api/core/Domain/:id/draft — scoped create gate (B-240)" do
     end
   end
 
-  it "answers 201 for an unrestricted (All) create caller without membership" do
+  it "answers 403 for an unrestricted (All) create caller without membership" do
     with_db do |db|
       ensure_iam_account(db, "acc_anyone")
+
+      # The seeded editor role holds a blanket `create core.Domain`. That
+      # must not let the caller fork a domain it does not edit (F04-01).
+      resp = call_api_as(draft_from_request("hr"), all_create_ctx("acc_anyone"))
+      assert_http_status(resp, 403)
+      JSON.parse(resp.body)["error"].as_s.should eq("Forbidden")
+    end
+  end
+
+  it "answers 201 for an unrestricted (All) create caller who edits the source domain" do
+    with_db do |db|
+      ensure_iam_account(db, "acc_anyone")
+      grant_editorship(db, "acc_anyone", "hr")
 
       resp = call_api_as(draft_from_request("hr"), all_create_ctx("acc_anyone"))
       assert_http_status(resp, 201)

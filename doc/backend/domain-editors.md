@@ -101,6 +101,10 @@ The seeded role splits into two planes:
 blanket — the live app renders forms and nav from definitions everywhere.
 `admin` keeps `*` on `*.*` with no `except` and is unaffected.
 
+The role's `connectivity` list is `[api, assistant]`. It holds no
+`webhook` and no `mcp` channel: only `admin` holds those by seed. See
+Caveats → Webhooks.
+
 ## Membership helpers (`Domain::Editors`)
 
 | Method | Purpose |
@@ -109,7 +113,7 @@ blanket — the live app renders forms and nav from definitions everywhere.
 | `grant(db, domain_id, account_id, actioner_id) : Nil` | Writes one `core.DomainEditor` row through the full create pipeline (guard hook, links, display name, event), audit-attributed to the real creator. Skips non-account actioners (`system`, `system:*`, spec fixtures — they hold no `iam.Account` row) and runs only against a seeded database. Raises on failure so the surrounding domain creation rolls back. |
 | `transfer(db, from_domain, to_domain, actioner_id) : Nil` | Copies live editor rows from one domain to the other, skipping existing (account, target) pairs. Used by publish. |
 | `authorize_doctype_create?(db, target_domain, auth_context) : Bool` | The create-time gate: `All` (wildcard) and system pass; a `Scoped` caller must be a member of the target domain; anything else fails closed. |
-| `authorize_draft_from?(db, source_domain, auth_context) : Bool` | The draft-from gate (`Draft.create_from`): same split — `All` and system pass; a `Scoped` caller must be a member of the source domain; anything else fails closed. |
+| `authorize_draft_from?(db, source_domain, auth_context) : Bool` | The draft-from gate (`Draft.create_from`): the system bypass passes; a preview principal and a caller without `create core.Domain` fail closed; every other caller must be a member of the source domain. The create verdict does not relax the membership check — a blanket `create core.Domain` (the seeded `editor` role) still forks only a domain the account edits. |
 
 ## Where the auto-grant fires
 
@@ -151,7 +155,7 @@ closed with the mechanism each surface supports:
 | Surface | Gate |
 |---|---|
 | `Doctype::Create` (any domain) | Crystal check in `create_doctype_definition`, after `domain_exists?`: when the caller's `create core.DocType` result is `Scoped`, require `Editors.member?` on the target domain. `All` and system pass; `Denied` already failed the enforcer. |
-| Draft from a live domain (`Draft.create_from`, `POST /Api/core/Domain/:id/draft`) | Crystal check at the top of `create_from`: when the caller's `create core.Domain` result is `Scoped`, require `Editors.member?` on the source domain. `All` and system pass; `Denied` already failed the route's enforcer. Internal callers default to the system bypass, the same convention `Publish.call` uses. Closes B-240 — drafting forks the source's definition surface, so a scoped role may only fork a domain it edits. The fresh-draft route (`Draft.create`, no source) stays create-then-own: any caller with `create core.Domain` may open a draft, and the creator becomes its editor in the same transaction. |
+| Draft from a live domain (`Draft.create_from`, `POST /Api/core/Domain/:id/draft`) | Crystal check at the top of `create_from`: the caller must be a member of the source domain. The create verdict does not relax this — `All` (a blanket `create core.Domain`, the seeded `editor` role) and `Scoped` callers alike must hold a `core.DomainEditor` row on the source. The system bypass passes; a preview principal and a `Denied` caller fail closed. Internal callers default to the system bypass, the same convention `Publish.call` uses. Closes B-240 and F04-01 — drafting forks the source's definition surface, so a role may only fork a domain it edits. The fresh-draft route (`Draft.create`, no source) stays create-then-own: any caller with `create core.Domain` may open a draft, and the creator becomes its editor in the same transaction. |
 | `core.DocumentView` create | Lua `create` hook: when `ctx.actor.scopes` contains `domain_editor`, require `ctx.root.parent_doctype ∈ ctx.actor.context_sets.editor_doctypes`; unrestricted callers (scopes absent) and system writers pass. A scoped caller whose context sets did not resolve is denied (fail closed). The nested sidecar route passes its action gate (the scoped `create core.DocType` line prefix-matches the host path), so the hook is the enforcement point for both flat and nested creates. |
 
 The `preview-session` route gates on
@@ -180,7 +184,7 @@ Editors tab.
 |---|---|---|---|
 | `PATCH /Api/core/Domain/:id` | yes | yes | 403 |
 | Draft create (fresh, no source) | yes | yes | yes (any editor) |
-| Draft from live domain | yes | yes | 403 (service gate) |
+| Draft from live domain | yes | yes | 403 (service gate, whatever the create verdict) |
 | Publish (fresh) own draft | yes | yes | n/a |
 | Publish (overwrite) target | yes | yes — must edit target too | 403 |
 | Discard draft (`/drop` on draft) | yes | yes | 403 |
@@ -211,8 +215,12 @@ Editors tab.
   carries them; `admin` and blanket custom roles pass without the row. A
   grant row under any other elected role is inert, and domain writes answer
   `403`.
-- **Webhooks stay blanket.** An editor can still bind a webhook to a
-  doctype in a domain they do not edit.
+- **Webhooks stay blanket in permission shape, not in channel.** The
+  editor role's blanket `create *.*` still covers `core.Webhook` as a
+  permission, but the role's `connectivity` list excludes the `webhook`
+  channel, so the `core.Webhook` create hook refuses an editor with 422.
+  Only `admin` holds the channel by seed. See
+  [`webhook.md`](webhook.md) → connectivity.
 - **Dev databases need `db_reset`.** Seeds are idempotent per doctype;
   changed definitions and the new context sets do not re-apply to existing
   rows.

@@ -95,6 +95,25 @@ Doc-only changes (`**/*.md`, `doc/**`) skip CI. Changes to the workflow files al
 | CLI gates                 | `cli`           | `pnpm lint`, `pnpm check`, `pnpm test` (in `packages/cli/`) |
 | E2E suite                 | weekly + manual | `e2e/run-suite.sh`                                          |
 
+### Run CI locally
+
+[`act`](https://github.com/nektos/act) runs the workflows in Docker on your machine. Use it to reproduce a failing run without pushing. Run a whole job:
+
+```sh
+act workflow_dispatch -j backend-fast     # or frontend-fast, cli, openapi-drift
+act workflow_dispatch -j frontend-full
+```
+
+The repository `.actrc` maps `ubuntu-latest` to `catthehacker/ubuntu:act-latest` (pull it once: `docker pull catthehacker/ubuntu:act-latest`). One setting must live in your **user** config because a project `.actrc` may not set secrets:
+
+```sh
+printf '%s\n' '-s GITHUB_TOKEN=' >> ~/.actrc
+```
+
+That empty token forces an anonymous action clone. `act` otherwise reuses a GitHub token from the environment or the `gh` keyring; a stale or invalid one makes its go-git action fetch fail with `authentication required: Invalid username or token`, and every action clone (`actions/checkout`, `crystal-lang/install-crystal`, ...) dies. Use `act` 0.2.86 or newer — older versions carry known CVEs.
+
+`backend-full` runs the full Crystal suite (`make test`) and needs the `compose.test.yml` stack; it is the same command the workflow runs, so prefer `make test` directly unless you need the job's exact step order.
+
 ## The main loop
 
 Every change follows the loop in [`AGENTS.md`](AGENTS.md): design first, read the concern docs, confirm the plan, implement, run the linter, run the tests, keep the suite green. Nothing is done while a spec fails.

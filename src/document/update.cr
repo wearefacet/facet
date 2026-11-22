@@ -28,6 +28,7 @@ require "./file_mime_check"
 require "./money_currency_check"
 require "./unique_constraint"
 require "./view_template_gate"
+require "./collection_view_gate"
 require "../secrets/adoption"
 require "../grants/validator"
 require "../app/grants_validator"
@@ -43,7 +44,21 @@ module Facet
     # content with JSON Merge Patch semantics (RFC 7386 — a `null` patch
     # value removes the key), computes a JsonDiff, and persists it as an
     # `update` mutation.
+    #
+    # Two view fields opt out of merge semantics and replace on write: the
+    # `template` of a `core.DocumentView` and the `config` of a
+    # `core.CollectionView` (`REPLACE_ON_WRITE_FIELDS`). Both are trees
+    # whose whole content is the payload, so a merge would keep every key
+    # the patch omits as a leftover — the document could only grow. A patch
+    # that carries one of them replaces the stored value outright; every
+    # other field keeps RFC 7386 semantics.
     module Update
+      # The doctype-keyed fields that replace on write instead of merging
+      # (RFC 7386 deep-merge) — `{domain, doc_type} => [field names]`.
+      REPLACE_ON_WRITE_FIELDS = {
+        {"core", "DocumentView"}   => ["template"],
+        {"core", "CollectionView"} => ["config"],
+      }
       record Result,
         projection : Mutation::Client::Projection,
         mutation_id : String
@@ -158,9 +173,11 @@ module Facet
             #    cheap explicit guard it always was.
             next Telemetry.record_error(span, Facet::ServiceError.new(404, "Document #{doc_id} not found")) if projection.deleted_at
 
-            # 6. Deep-merge the patch over the current content
+            # 6. Deep-merge the patch over the current content. The view
+            #    tree fields (`REPLACE_ON_WRITE_FIELDS`) replace instead of
+            #    merging, so a stale `children` / `columns` never survives.
             current = projection.content
-            merged = deep_merge(current, patch)
+            merged = deep_merge(current, patch, replace_keys: replace_on_write_fields(domain, doc_type))
 
             # 6a. Unique constraint check on the merged document. Only fields
             # whose value changed in this update are queried; the target
@@ -536,7 +553,7 @@ module Facet
           allow_system_writes: reentrant,
         )
         unless errors.empty?
-          return Facet::ServiceError.new(422, "Document validation failed", details: errors)
+          return Facet::ServiceError.new(422, "Document validation failed", details: remap_unknown_fields(errors))
         end
 
         # Only the fields being changed in this patch are checked — existing
@@ -547,6 +564,23 @@ module Facet
         return nil if all_errors.empty?
 
         Facet::ServiceError.new(422, "Document validation failed", details: all_errors)
+      end
+
+      # Replaces a plain "is not a defined field" refusal with the write
+      # gate's own sentence when the field belongs to the settings
+      # singleton's deployment-material subtree (`artifact.storage`). That
+      # node is an intermediate schema node — the definition declares only
+      # its leaf (`artifact.storage.type`) — so schema validation answers
+      # before the semantic gate runs, and the operator gets "not a defined
+      # field" for a real deployment setting (F09-05). Every other error
+      # passes unchanged.
+      private def self.remap_unknown_fields(errors : Array(ValidationError)) : Array(ValidationError)
+        errors.map do |error|
+          next error unless error.code == "unknown_field"
+          field = error.field
+          next error if field.nil?
+          Facet::SystemSettings::WriteGate.refusal(field) || error
+        end
       end
 
       # Authoring-time RBAC validation for role and domain documents.
@@ -606,9 +640,9 @@ module Facet
         end
 
         # Authoring-time validation for the view children of `core.DocType`
-        # — the CollectionView calendar title and the DocumentView template
-        # tree. Both re-check the merged content against the parent doctype
-        # definition; see `validate_view_child_definitions?`.
+        # — the CollectionView config + calendar title and the DocumentView
+        # template tree. Both re-check the submitted field against the
+        # parent doctype definition; see `validate_view_child_definitions?`.
         if view_error = validate_view_child_definitions?(db, span, domain, doc_type, merged, projection, patch)
           return view_error
         end
@@ -618,9 +652,10 @@ module Facet
 
       # Authoring-time validation for the view children of `core.DocType`.
       # Dispatches on the doctype:
-      # - `core.CollectionView`: the calendar title template — runs only
-      #   when the patch touches `config`, so a rename of a view whose
-      #   template went stale after a parent-doctype field removal still
+      # - `core.CollectionView`: the `config` against the parent doctype
+      #   (`Document::CollectionViewGate`) plus the calendar title template —
+      #   runs only when the patch touches `config`, so a rename of a view
+      #   whose config went stale after a parent-doctype field removal still
       #   passes (the client renderer tolerates unknown fields, rendering
       #   them empty).
       # - `core.DocumentView`: the template tree — same touch-scoping on
@@ -648,7 +683,9 @@ module Facet
       # Write-time semantic gate for `core.CollectionView` — same shape as
       # `validate_system_settings?`. Runs only when the patch touches the
       # `config` field, so a rename of a view whose template went stale
-      # after a parent-doctype change still passes.
+      # after a parent-doctype change still passes. The gate validates the
+      # SUBMITTED config (replace-on-write, see `REPLACE_ON_WRITE_FIELDS`),
+      # never the merge product.
       private def self.validate_collection_view_config?(
         db : DB::Connection,
         span,
@@ -656,11 +693,15 @@ module Facet
         projection : Mutation::Client::Projection?,
         patch : JSON::Any?,
       ) : Facet::ServiceError?
-        config_touched = patch.try(&.as_h?).try(&.has_key?("config")) || false
-        return nil unless config_touched
+        submitted = patch.try(&.as_h?).try(&.["config"]?)
+        return nil unless submitted
 
         parent_id = projection.try(&.meta.as_h?).try(&.["parent_id"]?).try(&.as_s?)
-        errors = collection_view_title_template_errors(db, parent_id, merged)
+        # The surface may arrive in the same patch or come from the stored
+        # content; either way it is not part of the replaced tree.
+        surface = patch.try(&.as_h?).try(&.["surface"]?).try(&.as_s?) || merged["surface"]?.try(&.as_s?)
+        errors = CollectionViewGate.errors(db, parent_id, submitted, surface)
+        errors += collection_view_title_template_errors(db, parent_id, submitted)
         return nil if errors.empty?
 
         rbac_failure(span, "Collection view validation failed", errors)
@@ -670,8 +711,10 @@ module Facet
       # `validate_collection_view_config?`. Runs only when the patch touches
       # the `template` field, so a rename of a view whose template went stale
       # after a parent-doctype field removal still passes (the client
-      # renderer tolerates unknown bindings, rendering them empty). The
-      # `:error` issues answer 422; warnings stay report-only (see
+      # renderer tolerates unknown bindings, rendering them empty). The gate
+      # validates the SUBMITTED template (replace-on-write, see
+      # `REPLACE_ON_WRITE_FIELDS`), never the merge product. The `:error`
+      # issues answer 422; warnings stay report-only (see
       # `Document::ViewTemplateGate`).
       private def self.validate_document_view_template?(
         db : DB::Connection,
@@ -680,29 +723,29 @@ module Facet
         projection : Mutation::Client::Projection?,
         patch : JSON::Any?,
       ) : Facet::ServiceError?
-        template_touched = patch.try(&.as_h?).try(&.has_key?("template")) || false
-        return nil unless template_touched
+        submitted = patch.try(&.as_h?).try(&.["template"]?)
+        return nil unless submitted
 
         parent_id = projection.try(&.meta.as_h?).try(&.["parent_id"]?).try(&.as_s?)
-        errors = ViewTemplateGate.errors(db, parent_id, merged)
+        errors = ViewTemplateGate.template_errors(db, parent_id, submitted)
         return nil if errors.empty?
 
         rbac_failure(span, "Document view validation failed", errors)
       end
 
       # Extracts the calendar title template from a `core.CollectionView`
-      # document and validates it against the parent doctype's definition.
-      # Returns an empty array when there is nothing to check (no calendar
-      # config or no template) or when the parent definition cannot be
-      # resolved. Shared by the create and update dispatches.
+      # `config` value and validates it against the parent doctype's
+      # definition. Returns an empty array when there is nothing to check (no
+      # calendar config or no template) or when the parent definition cannot
+      # be resolved. Shared by the create and update dispatches.
       private def self.collection_view_title_template_errors(
         db : DB::Connection,
         parent_id : String?,
-        document : JSON::Any,
+        config : JSON::Any?,
       ) : Array(ValidationError)
         return [] of ValidationError unless parent_id
 
-        template = document.dig?("config", "calendar", "title_template").try(&.as_s?)
+        template = config.try(&.dig?("calendar", "title_template")).try(&.as_s?)
         return [] of ValidationError unless template
 
         case defn = Doctype::DefinitionStore.fetch!(db, parent_id)
@@ -936,14 +979,20 @@ module Facet
       # (RFC 7386): a `null` value in the patch REMOVES the key from the
       # merged document. Nested objects merge recursively (with the same
       # null-removal rule); arrays and primitives from the patch replace
-      # base values outright.
+      # base values outright. A key listed in `replace_keys` replaces the
+      # base value outright instead of merging (`null` still removes it) —
+      # the view tree fields of `REPLACE_ON_WRITE_FIELDS`.
       #
       # A removed key produces an `unset` entry in the JsonDiff (the key
       # disappears from the stored content), so a patch of `{"field": null}`
       # is the one way — and the standard way — to clear a field. A patch
       # nulling a required field never reaches the merge: patch validation
       # rejects it first (`required`).
-      private def self.deep_merge(base : JSON::Any, patch : JSON::Any) : JSON::Any
+      private def self.deep_merge(
+        base : JSON::Any,
+        patch : JSON::Any,
+        replace_keys : Array(String) = [] of String,
+      ) : JSON::Any
         base_h = base.as_h?
         patch_h = patch.as_h?
 
@@ -955,6 +1004,9 @@ module Facet
           # RFC 7386: a null patch value removes the member
           if value.raw.nil?
             merged.delete(key)
+          elsif replace_keys.includes?(key)
+            # Replace-on-write: the submitted value is the whole payload.
+            merged[key] = value
           elsif (existing = merged[key]?) && value.as_h?
             # Recursive merge for nested objects
             merged[key] = deep_merge(existing, value)
@@ -964,6 +1016,12 @@ module Facet
         end
 
         JSON::Any.new(merged)
+      end
+
+      # The replace-on-write field names of the target doctype, empty for
+      # every doctype that keeps merge semantics everywhere.
+      private def self.replace_on_write_fields(domain : String, doc_type : String) : Array(String)
+        REPLACE_ON_WRITE_FIELDS[{domain, doc_type}]? || [] of String
       end
 
       # State-machine guard for draft domains.

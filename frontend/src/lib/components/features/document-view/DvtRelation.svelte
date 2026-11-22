@@ -324,6 +324,15 @@
 		values: () => values
 	});
 
+	/** Count shown in the section header. The body renders the staged drafts
+	 *  in editable mode and the loaded rows otherwise, so the header counts the
+	 *  same list: a create form has no loaded rows, and the count must follow
+	 *  the rows the user adds. Tombstoned drafts are not visible, so they do
+	 *  not count. */
+	const visibleRowCount = $derived(
+		isEditable ? relationDrafts.drafts.filter((d) => !d.deleted).length : (rows?.length ?? 0)
+	);
+
 	/** Build the fake document the inner `DocumentViewTemplate` reads for one
 	 *  draft row. */
 	function rowDocument(draft: ChildDraft): DocumentResponse {
@@ -442,7 +451,7 @@
 		{#if loading || templatesLoading}
 			<span class="dvt-relation-status" aria-live="polite">…</span>
 		{:else if rows !== null}
-			<span class="dvt-relation-status">{rows.length}</span>
+			<span class="dvt-relation-status">{visibleRowCount}</span>
 		{/if}
 		{#if isEditable && !malformedSource}
 			<button

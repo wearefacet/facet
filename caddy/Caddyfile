@@ -7,6 +7,8 @@
 #                                  ├─ /.well-known/*    → Kemal backend
 #                                  ├─ /A/*              → Kemal backend (artifact streaming)
 #                                  ├─ /Ws               → Kemal backend (WebSocket)
+#                                  ├─ /healthcheck, /metrics → 404 (reserved probe
+#                                  │   names, never the SPA — F07-05)
 #                                  └─ everything else   → SvelteKit dev server ([::1]:5173)
 #
 #   https://*.apps.localhost:3443  ─── everything       → Kemal backend
@@ -93,21 +95,35 @@ https://facet.localhost:{$HTTPS_PORT:3443} {
 		reverse_proxy {$BACKEND_URL:http://127.0.0.1:3000}
 	}
 
-	# A lowercase twin of a backend namespace is a domain id, not a backend
-	# route (/api, /oauth, /a, /ws, /edge, /healthcheck — not /auth, the
-	# reserved lowercase exception). An API-only client that sends a method
-	# other than GET, HEAD, or OPTIONS to one gets a clear 404 from the
-	# edge; the frontend would answer with a CSRF 403 or a login redirect.
-	# GET and HEAD fall through: a browser GET to /{domain}/{doctype} is a
-	# legal page. OPTIONS falls through too, so CORS preflights do not
-	# change.
+	# A lowercase twin of a backend namespace is usually a domain id, not a
+	# backend route (/api, /oauth, /a, /ws, /edge — not /auth, the reserved
+	# lowercase exception). An API-only client that sends a method other
+	# than GET, HEAD, or OPTIONS to one gets a clear 404 from the edge; the
+	# frontend would answer with a CSRF 403 or a login redirect. GET and
+	# HEAD fall through: a browser GET to /{domain}/{doctype} is a legal
+	# page. OPTIONS falls through too, so CORS preflights do not change. The
+	# probe names are handled below.
 	@lowercase_namespace_twin {
-		path_regexp ^/(api|oauth|a|ws|edge|healthcheck)(/|$)
+		path_regexp ^/(api|oauth|a|ws|edge)(/|$)
 		not method GET HEAD OPTIONS
 	}
 	handle @lowercase_namespace_twin {
 		header Content-Type application/json
-		respond `{"error":"Unknown route. Backend namespaces are case-sensitive: /Api, /OAuth, /A, /Ws, /Edge, /Healthcheck. A lowercase first segment is a domain id."}` 404
+		respond `{"error":"Unknown route. Backend namespaces are case-sensitive: /Api, /OAuth, /A, /Ws, /Edge. A lowercase first segment is a domain id."}` 404
+	}
+
+	# The probe names are not domain ids, so their lowercase twin never
+	# falls through — for ANY method. The readiness probe is /Healthcheck
+	# (capital H); a monitor that typoes it must fail loudly. Letting GET
+	# reach the SPA answers 303 -> /Login -> 200 HTML, which a
+	# redirect-following monitor reads as healthy while the backend is down
+	# (F07-05). /metrics is not routed to the backend at all; scrape the
+	# backend origin. 404 is the answer for a reserved probe name the edge
+	# does not serve.
+	@lowercase_probe path_regexp ^/(healthcheck|metrics)(/|$)
+	handle @lowercase_probe {
+		header Content-Type application/json
+		respond `{"error":"Unknown route. The readiness probe is /Healthcheck (capital H); /metrics is scraped on the backend origin, not through the edge. A lowercase first segment is a domain id."}` 404
 	}
 	handle /.well-known/* {
 		reverse_proxy {$BACKEND_URL:http://127.0.0.1:3000}

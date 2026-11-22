@@ -24,7 +24,12 @@ require "json"
 private def build_doctype_raw(name : String, fields : Hash(String, String)) : JSON::Any
   fields_json = {} of String => JSON::Any
   fields.each do |k, type|
-    fields_json[k] = JSON.parse(%({"type":"#{type}"}))
+    # The calendar discriminator must serve the window filter (`gte` +
+    # `lte`) — see `Document::CollectionViewGate` — so the date field
+    # declares the `comparison` capability.
+    raw = %({"type":"#{type}"})
+    raw = %({"type":"#{type}","filters":["comparison"]}) if type == "date"
+    fields_json[k] = JSON.parse(raw)
   end
   JSON::Any.new({
     "doctype"        => JSON::Any.new(name),
@@ -127,11 +132,14 @@ describe "CollectionView title template write gate" do
     parent_id = create_parent_doctype("GateDealD", {"name" => "string", "due" => "date"})
     doc_id = created_id(create_view(parent_id, "ConfigEdit", "{{ name }}"))
 
-    result = update_view(doc_id, %({"config": {"calendar": {"title_template": "{{ ghost }}"}}}))
+    # `config` replaces on write (F10-02), so the patch carries the whole
+    # calendar block — the discriminator included — with the bad template.
+    patch = %({"config": {"calendar": {"discriminator": "due", "title_template": "{{ ghost }}"}}})
+    result = update_view(doc_id, patch)
     case result
     when Facet::ServiceError
       result.status.should eq(422)
-      result.details.not_nil!.first.code.should eq("template")
+      result.details.not_nil!.any? { |e| e.code == "template" }.should be_true
     else
       fail "expected the update to be rejected"
     end

@@ -109,6 +109,42 @@ module Facet
         Util::PgError.sqlstate(ex) == STATEMENT_TIMEOUT_SQLSTATE
       end
 
+      # ── Dependency-unavailable classification ───────────────────────────
+
+      # The dependencies a request path can find down, keyed by the name the
+      # 503 body carries. The healthcheck reports the same names.
+      DEPENDENCIES = {"redis" => "redis", "postgresql" => "postgresql"}
+
+      # The dependency an exception says is down, or nil — the `503`
+      # classification. Only connection-level exception classes match, so a
+      # programming error never maps to a dependency status:
+      #
+      # - `Socket::ConnectError` — a refused connection (the Redis client
+      #   dials a `TCPSocket`, so an unreachable Redis surfaces here).
+      # - `Socket::Addrinfo::Error` — an unresolved host (a `redis://` URL
+      #   whose host does not resolve).
+      # - `DB::ConnectionRefused` — the PostgreSQL pool cannot reach its
+      #   server.
+      #
+      # `Redis::Error` is deliberately NOT matched: it is the base class of
+      # every Redis protocol and command error, so a malformed command would
+      # masquerade as an outage. The Redis paths here (sessions, login
+      # throttle, codes) build their commands from constants, so a
+      # connection-level failure is the only realistic failure they raise.
+      #
+      # The two socket classes are not Redis-specific, but the only outbound
+      # socket dials on a request path are Redis (the event publisher is
+      # fail-silent and the mailer is out of band), so naming `redis` is the
+      # correct attribution for them.
+      def dependency_unavailable?(ex : Exception) : String?
+        case ex
+        when ::Socket::ConnectError, ::Socket::Addrinfo::Error
+          DEPENDENCIES["redis"]
+        when ::DB::ConnectionRefused
+          DEPENDENCIES["postgresql"]
+        end
+      end
+
       # ── JSON error responses ──────────────────────────────────────────────
 
       # Stamps `Cache-Control: no-store` on an error response. 404 and 410
@@ -406,8 +442,10 @@ module Facet
       private def resolve_updated_doctype_projection(env, mutation_id : String) : String
         # For Doctype::Update we don't have the projection at hand — we need
         # to fetch it from the mutation_id. But that's complex; instead we
-        # return a simpler response. The fresh mutation id is the projection's
+        # return a simpler response. The mutation id is the projection's
         # new `state`, so it doubles as the single-document ETag validator.
+        # An unchanged re-save carries the row's current `state` — the same
+        # validator the preceding GET served, so a client sees no change.
         Caching.set_etag_header(env, mutation_id)
         env.response.status_code = 200
         env.response.content_type = "application/json"
