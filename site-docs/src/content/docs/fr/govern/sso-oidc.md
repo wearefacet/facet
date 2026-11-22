@@ -26,9 +26,9 @@ changement est audité et réversible.
 ## Avant de commencer
 
 - **Le droit.** Il vous faut les droits `create` et `update` sur
-  `iam.OIDCProvider`. Le rôle `admin` créé par l’initialisation les porteà ;
+  `iam.OIDCProvider`. Le rôle `admin` créé par l’initialisation les porte ;
   le rôle `editor` a le doctype retranché de ses attributions.
-- **Les détails du fournisseur.** Rassemblez auprès de votre fournisseurà :
+- **Les détails du fournisseur.** Rassemblez auprès de votre fournisseur :
   l’URL de l’issuer, le client id, et le client secret.
 - **L’adresse de retour.** Positionnez-la chez votre fournisseur sur
   `https://<your-host>/auth/oidc/<name>/callback`.
@@ -38,7 +38,7 @@ changement est audité et réversible.
 ### 1. Créer le document fournisseur
 
 Ouvrez **Configurer → Plateforme → Fournisseurs d’identité** et
-sélectionnez **Ajouter un fournisseur**. Renseignez les champsà :
+sélectionnez **Ajouter un fournisseur**. Renseignez les champs :
 
 | Champ            | Contient                                        | Règles                                                                                                                        |
 | ----------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -46,14 +46,14 @@ sélectionnez **Ajouter un fournisseur**. Renseignez les champsà :
 | `label`           | Le texte du bouton de connexion                   | Par défaut, le nom.                                                                                                               |
 | `issuer`          | L’URL issuer du fournisseur                       | Doit être une URL `https` absolue. Le `http` simple n’est accepté que sur un hôte loopback, pour un faux fournisseur de développement. |
 | `client_id`       | Le client id OIDC chez le fournisseur             | Venant de l’enregistrement client de votre fournisseur.                                                                           |
-| `client_secret`   | Le secret du client confidentiel                  | Stocké dans le magasin de secrets. Le formulaire le dépose hors bandeà ; les documents ne portent qu’un marqueur. Plus jamais affiché. |
+| `client_secret`   | Le secret du client confidentiel                  | Stocké dans le magasin de secrets. Le formulaire le dépose hors bande ; les documents ne portent qu’un marqueur. Plus jamais affiché. |
 | `domains`         | Liste d’autorisation de domaines de courriel      | Entrées en minuscules, par exemple `example.tld`. Vide signifie connexion par lien seulement.                                      |
 | `auto_provision`  | Créer des comptes pour les personnes inconnues    | Quand `true`, `default_role` est obligatoire.                                                                                     |
 | `default_role`    | Le rôle des comptes provisionnés                  | Appliqué à la création seulement.                                                                                                 |
 | `scopes`          | Les scopes OIDC à demander                        | Par défaut `openid`, `email`, `profile`.                                                                                          |
 | `enabled`         | L’interrupteur par fournisseur                    | Un fournisseur désactivé refuse comme un nom inconnu.                                                                             |
 
-Vous pouvez aussi créer le fournisseur par l’API de documentà :
+Vous pouvez aussi créer le fournisseur par l’API de document :
 
 ```sh
 curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
@@ -78,7 +78,7 @@ le corps du document.
 
 Ouvrez la page de connexion dans une fenêtre privée. Sous le formulaire de
 mot de passe, Facet montre un bouton **Continuer avec** par fournisseur
-activé. La liste des boutons vient d’une lecture publiqueà :
+activé. La liste des boutons vient d’une lecture publique :
 
 ```sh
 curl "https://facet.localhost:3443/Api/iam/oidc/providers"
@@ -90,13 +90,13 @@ serveur.
 
 ### 3. Décider qui reçoit un compte
 
-Deux chemins font entrer une personne inconnueà :
+Deux chemins font entrer une personne inconnue :
 
 - **Le rattachement.** Le fournisseur renvoie un courriel vérifié dont le
   domaine est dans la liste d’autorisation, et un compte avec ce courriel
   existe. Facet rattache l’identité à ce compte et connecte la personne. La
   clé de jointure est la paire nom du fournisseur et sujet côté
-  fournisseur, jamais le courrielà ; un changement de courriel chez le
+  fournisseur, jamais le courriel ; un changement de courriel chez le
   fournisseur ne peut donc pas s’emparer du compte.
 - **Le provisionnement à la volée (JIT).** L’identité est inconnue, le
   courriel est vérifié et dans la liste d’autorisation, et
@@ -105,16 +105,16 @@ Deux chemins font entrer une personne inconnueà :
   tableau `federated_identities` du compte.
 
   Les comptes de service ne se fédèrent jamais. Un compte `suspended` ou
-  `disabled` refuseà ; la raison reste dans le journal d’audit.
+  `disabled` refuse ; la raison reste dans le journal d’audit.
 
   La vérification MFA locale ne s’applique pas sur ce chemin. Le
-  fournisseur est le facteur de référenceà ; voir
+  fournisseur est le facteur de référence ; voir
   [Imposer le MFA](/fr/govern/enforcing-mfa/) pour le chemin par mot de
   passe.
 
 ### 4. Lire la piste d’audit
 
-Trois événements atterrissent dans le journal des connexionsà :
+Trois événements atterrissent dans le journal des connexions :
 
 | Événement          | Écrit quand                                                          |
 | -------------------- | ---------------------------------------------------------------------- |
@@ -123,13 +123,13 @@ Trois événements atterrissent dans le journal des connexionsà :
 | `oidc_denied`        | N’importe quel refus. Les détails portent la raison lisible par machine. |
 
 Voir [Auditer l’activité](/fr/govern/auditing-activity/) pour lire le
-journal. Le navigateur ne voit toujours qu’une erreur génériqueà ; la raison
+journal. Le navigateur ne voit toujours qu’une erreur générique ; la raison
 ne l’atteint jamais.
 
 ### 5. Exiger le SSO
 
 Ouvrez **Configurer → Plateforme → Paramètres**, chapitre Sécurité, et
-réglez **Mode d’authentification**. Les deux modesà :
+réglez **Mode d’authentification**. Les deux modes :
 
 | Mode                  | Comportement                                                                                                                                            |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -137,7 +137,7 @@ réglez **Mode d’authentification**. Les deux modesà :
 | `oidc_only`            | La route du mot de passe refuse avec `403` et écrit un événement `password_login_denied`. La réinitialisation du mot de passe et l’amorçage du premier identifiant refusent avec `422`. La page de connexion cache le formulaire de mot de passe et le lien de réinitialisation. |
 
 La barrière d’écriture refuse un enregistrement qui met `oidc_only` alors
-qu’aucun fournisseur activé n’existeà ; un enregistrement ne peut donc pas
+qu’aucun fournisseur activé n’existe ; un enregistrement ne peut donc pas
 fermer tous les chemins de connexion.
 
 :::caution
@@ -149,7 +149,7 @@ de secours, ou prévoyez la commande de récupération ci-dessous.
 ### 6. Se remettre d’un verrouillage
 
 Quand le seul fournisseur activé est mort et qu’aucune session ne survit,
-lancez sur l’hôte du serveurà :
+lancez sur l’hôte du serveur :
 
 ```sh
 facet auth:mode hybrid
@@ -164,7 +164,7 @@ aussitôt, sans redémarrage.
 
 ### La connexion revient à la page de connexion avec une erreur générique
 
-Le journal d’audit garde la raison sous `oidc_denied`. Causes courantesà :
+Le journal d’audit garde la raison sous `oidc_denied`. Causes courantes :
 un client secret faux, un issuer faux, une adresse de retour qui ne
 correspond pas, ou un fournisseur désactivé.
 
@@ -175,7 +175,7 @@ refuse sur chaque chemin.
 
 ### Un nouveau membre ne reçoit pas de compte
 
-Le JIT demande les quatre conditionsà :
+Le JIT demande les quatre conditions :
 
 1. Une identité inconnue.
 2. Un courriel vérifié.
@@ -207,5 +207,5 @@ lire la liste publique des fournisseurs. Vérifiez
   s’applique pas sur ce chemin.
 - [Auditer l’activité](/fr/govern/auditing-activity/) — le journal des
   connexions.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [oidc.md](https://github.com/wearefacet/facet/blob/main/doc/backend/oidc.md).

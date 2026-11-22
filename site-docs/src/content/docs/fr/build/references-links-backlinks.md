@@ -8,7 +8,7 @@ sidebar:
 verified_at: fd345fe3
 ---
 
-Les documents pointent vers d’autres documents. Un champ `reference` porte un lien typé, une référence de collection en porte plusieurs, et un champ `longtext` peut contenir des liens dans du markdown. Facet indexe chaque lien. Chaque page de document peut donc montrer aussi l’inverseà : quels documents pointent vers lui.
+Les documents pointent vers d’autres documents. Un champ `reference` porte un lien typé, une référence de collection en porte plusieurs, et un champ `longtext` peut contenir des liens dans du markdown. Facet indexe chaque lien. Chaque page de document peut donc montrer aussi l’inverse : quels documents pointent vers lui.
 
 ## Quand l’utiliser
 
@@ -16,7 +16,7 @@ Utilisez des champs référence quand un enregistrement en désigne un autre san
 
 ## Avant de commencer
 
-- **Une cible qualifiée.** La cible d’une référence est toujours un identifiant de doctype qualifiéà : `domain.Doctype`, par exemple `iam.Account`. Un nom seul est refusé, et toutes les valeurs d’un tel champ échouent.
+- **Une cible qualifiée.** La cible d’une référence est toujours un identifiant de doctype qualifié : `domain.Doctype`, par exemple `iam.Account`. Un nom seul est refusé, et toutes les valeurs d’un tel champ échouent.
 - **Un droit de lecture sur la cible.** Les utilisateurs ont besoin d’un accès en lecture au doctype cible pour résoudre ses références.
 
 ## Étapes
@@ -63,7 +63,7 @@ Ajoutez `collection: true` pour porter un tableau de références. Facet vérifi
 
 ### 5. Insérer des liens dans le texte long
 
-Un champ `longtext` accepte des liens markdown vers des documents. Les deux formes ci-dessous produisent un lien sur la page et comptent comme un lien dans l’indexà :
+Un champ `longtext` accepte des liens markdown vers des documents. Les deux formes ci-dessous produisent un lien sur la page et comptent comme un lien dans l’index :
 
 ```markdown
 Checked with [Marie Dubois](urn:facet:iam:Account:01JCATPMKP4N82GVG2J7K4MHZZ).
@@ -71,7 +71,7 @@ Checked with [Marie Dubois](urn:facet:iam:Account:01JCATPMKP4N82GVG2J7K4MHZZ).
 Follow-up for [Acme Corp](crm.Company.01HQ2F5WX8K4M3PZC6NRB9TJVA).
 ```
 
-Les deux formes comptentà : un token `urn:facet:` n’importe où dans le texte, et un lien markdown dont l’adresse est un document. Une adresse à points tapée comme du texte, sans être un lien, ne compte pas.
+Les deux formes comptent : un token `urn:facet:` n’importe où dans le texte, et un lien markdown dont l’adresse est un document. Une adresse à points tapée comme du texte, sans être un lien, ne compte pas.
 
 ## Exemple
 
@@ -87,7 +87,7 @@ La définition ci-dessous relie un employé à un compte et à un responsable da
 }
 ```
 
-Sur chaque page de document, la section **Référencé par** liste les documents qui pointent vers lui, avec le doctype en étiquette. Avant une suppression, Facet prévientà : `N document(s) reference it — deleting it leaves those links dangling`. La suppression n’est jamais bloquée.
+Sur chaque page de document, la section **Référencé par** liste les documents qui pointent vers lui, avec le doctype en étiquette. Avant une suppression, Facet prévient : `N document(s) reference it — deleting it leaves those links dangling`. La suppression n’est jamais bloquée.
 
 ## Dépannage
 

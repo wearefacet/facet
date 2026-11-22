@@ -32,25 +32,25 @@ Chaque boîte porte le nom du doctype et sa couleur. Un doctype avec une couleur
 | Flèche | Signification |
 | --- | --- |
 | Ligne pleine avec un losange plein | Composition : le losange se trouve sur le parent, et l’enfant ne peut exister sans lui. |
-| Ligne pointillée avec une flèche ouverte | Référenceà : un doctype pointe vers un autre et reste indépendant. |
+| Ligne pointillée avec une flèche ouverte | Référence : un doctype pointe vers un autre et reste indépendant. |
 
-Les boîtes se placent d’abord sur deux colonnesà : les racines d’agrégat à gauche, leurs enfants regroupés à droite. Une racine avec beaucoup d’enfants tire son groupe vers le bas.
+Les boîtes se placent d’abord sur deux colonnes : les racines d’agrégat à gauche, leurs enfants regroupés à droite. Une racine avec beaucoup d’enfants tire son groupe vers le bas.
 
 ### 3. Déplacez les boîtes
 
-Faites glisser une boîte où vous voulez. Les flèches suivent. Au moment où vous la déposez, Facet enregistre la position pour tout le domaineà : toute personne qui consulte ce domaine voit votre disposition.
+Faites glisser une boîte où vous voulez. Les flèches suivent. Au moment où vous la déposez, Facet enregistre la position pour tout le domaine : toute personne qui consulte ce domaine voit votre disposition.
 
 :::caution
-La disposition est partagée, pas personnelle. Deux personnes qui rangent les boîtes en même temps s’écrasent l’une l’autreà ; le dernier enregistrement gagne.
+La disposition est partagée, pas personnelle. Deux personnes qui rangent les boîtes en même temps s’écrasent l’une l’autre ; le dernier enregistrement gagne.
 :::
 
 ### 4. Ouvrez un doctype
 
-Sélectionnez une boîte. Facet la met en surbrillance et ouvre la page du doctype, où vous modifiez ses champs et ses relations. Ajoutez un doctype via l’éditeur de doctypesà ; l’image l’intègre dès le prochain affichage.
+Sélectionnez une boîte. Facet la met en surbrillance et ouvre la page du doctype, où vous modifiez ses champs et ses relations. Ajoutez un doctype via l’éditeur de doctypes ; l’image l’intègre dès le prochain affichage.
 
 ## Exemple
 
-Un domaine `helpdesk` porte deux racines d’agrégat. `Ticket` a un enfant `Comment` et une référence vers `Account`. `Account` n’a aucune relation. L’image se présente ainsià :
+Un domaine `helpdesk` porte deux racines d’agrégat. `Ticket` a un enfant `Comment` et une référence vers `Account`. `Account` n’a aucune relation. L’image se présente ainsi :
 
 <!-- d2
 ticket: Ticket
@@ -65,7 +65,7 @@ ticket -> account: reference {style: {stroke-dash: 3}}
 <img class="d2-diagram__img d2-diagram__dark" src="/diagrams/bcce1090-dark.svg" alt="Diagram" loading="lazy" />
 </div>
 
-La flèche pleine vers `Comment` porte le losange plein côté `Ticket` : le commentaire fait partie du ticket, et supprimer le ticket supprime ses commentaires. La flèche pointillée vers `Account` porte la flèche ouverteà : le ticket pointe vers le compte, et les deux fonctionnent l’un sans l’autre.
+La flèche pleine vers `Comment` porte le losange plein côté `Ticket` : le commentaire fait partie du ticket, et supprimer le ticket supprime ses commentaires. La flèche pointillée vers `Account` porte la flèche ouverte : le ticket pointe vers le compte, et les deux fonctionnent l’un sans l’autre.
 
 ## Dépannage
 
@@ -75,7 +75,7 @@ Seuls les doctypes de ce domaine apparaissent. Un doctype d’un autre domaine s
 
 **Ma disposition a disparu.**
 
-Un collègue a enregistré une nouvelle disposition, ou le domaine a été republié. Rangez de nouveauà ; l’enregistrement est rapide.
+Un collègue a enregistré une nouvelle disposition, ou le domaine a été republié. Rangez de nouveau ; l’enregistrement est rapide.
 
 **Une relation n’a pas de flèche.**
 
@@ -83,7 +83,7 @@ Seules la composition et les références dans le même domaine se dessinent. Un
 
 **L’image ne correspond pas à mes définitions.**
 
-Rechargez l’onglet. L’image lit les définitions enregistréesà ; vos modifications non enregistrées dans l’éditeur restent invisibles.
+Rechargez l’onglet. L’image lit les définitions enregistrées ; vos modifications non enregistrées dans l’éditeur restent invisibles.
 
 ## Voir aussi
 

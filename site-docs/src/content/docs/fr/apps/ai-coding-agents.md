@@ -11,19 +11,19 @@ verified_at: a77c6171
 Un agent de code peut construire une app Facet à partir de ce site. Chaque
 page existe dans un format que les agents consomment, et la documentation
 suit des règles qui rendent fiable ce que l’agent produit. Vous pointez
-l’agent vers les bonnes pagesà ; les pages font le reste.
+l’agent vers les bonnes pages ; les pages font le reste.
 
-> **Pour les agentsà :** Commencez par récupérer `https://docs.facet.example/llms.txt` —
-> il indexe les deux jeux de textes. Un seul sujetà : récupérez la copie de la
+> **Pour les agents :** Commencez par récupérer `https://docs.facet.example/llms.txt` —
+> il indexe les deux jeux de textes. Un seul sujet : récupérez la copie de la
 > page à `https://docs.facet.example/<path>.md` — par exemple
 > `/apps/rest-api.md` — markdown octet pour octet, front-matter conservé.
-> Plusieurs sectionsà : `/llms-small.txt` (compact) ou `/llms-full.txt` (toutes
+> Plusieurs sections : `/llms-small.txt` (compact) ou `/llms-full.txt` (toutes
 > les pages anglaises dans un seul fichier). Les blocs de code de ce site sont
-> complets et exécutables — copiez-lesà ; n’inventez aucun appel.
+> complets et exécutables — copiez-les ; n’inventez aucun appel.
 
 ## Quand l’utiliser
 
-Consultez cette page quandà :
+Consultez cette page quand :
 
 - Vous construisez une app Facet avec un agent de code.
 - L’agent invente des endpoints ou des paramètres.
@@ -31,8 +31,8 @@ Consultez cette page quandà :
 
 ## Avant de commencer
 
-La construction du site sert chaque page deux foisà : la version rendue, et le
-markdown brut. Le jeu lisible par une machineà :
+La construction du site sert chaque page deux fois : la version rendue, et le
+markdown brut. Le jeu lisible par une machine :
 
 | Adresse | Contenu |
 | --- | --- |
@@ -41,12 +41,12 @@ markdown brut. Le jeu lisible par une machineà :
 | `/llms-full.txt` | Le texte complet de chaque page anglaise dans un seul fichier |
 | `/<path>.md` | Une page en markdown brut — par exemple `/apps/rest-api.md` |
 
-La copie `.md` est identique octet pour octetà : le front-matter (`audience`,
+La copie `.md` est identique octet pour octet : le front-matter (`audience`,
 `features`, `verified_at`) reste en place, et un diagramme reste un commentaire
 HTML qui porte sa source D2, à côté de l’image rendue. Le bouton
 "Copy as markdown" de chaque page récupère la même copie. Les exemples
 ci-dessous utilisent `https://docs.facet.example`, le placeholder de la
-configuration du dépôtà ; utilisez l’adresse de la documentation de votre
+configuration du dépôt ; utilisez l’adresse de la documentation de votre
 déploiement.
 
 ## Étapes
@@ -78,13 +78,13 @@ copie de la page.
 ### Pourquoi les agents réussissent bien sur ce site
 
 La documentation suit des règles d’écriture qui rendent fiable ce que l’agent
-produità :
+produit :
 
 - Chaque bloc de code est complet et exécutable. Aucune élision `...` :
   l’agent peut coller un bloc tel quel.
 - Chaque page de `/apps/` ouvre avec un encadré **Pour les agents** :
   endpoints, clés, et séquence d’appels minimale en texte brut.
-- Les tables portent les données de référenceà : filtres, erreurs, limites.
+- Les tables portent les données de référence : filtres, erreurs, limites.
 - Chaque page enseigne une tâche. Une récupération ciblée vaut mieux qu’une
   large.
 
@@ -101,10 +101,10 @@ produità :
 
 L’assistant de construction de domaines embarque des fichiers de skills pour
 LLM. Ils enseignent l’écriture des doctypes, des vues et des fixtures. Ce
-corpus sert uniquement à l’assistant de construction intégré à l’appà : aucune
+corpus sert uniquement à l’assistant de construction intégré à l’app : aucune
 route REST, aucun outil MCP, aucun export ne l’expose à un agent externe. Un
 agent externe construit les domaines à partir de la documentation REST à la
-placeà :
+place :
 
 - [domain-builder-skills.md](https://github.com/wearefacet/facet/blob/main/doc/backend/domain-builder-skills.md)
   — le corpus de skills et la limite de sa portée.
@@ -115,18 +115,18 @@ placeà :
 
 ## Exemple
 
-Une session de récupération complèteà :
+Une session de récupération complète :
 
 ```sh
-# Une seule petite requêteà : l’index des jeux de textes.
+# Une seule petite requête : l’index des jeux de textes.
 curl -sL https://docs.facet.example/llms.txt
 
-# Un seul sujetà : la copie markdown brute d’une page.
+# Un seul sujet : la copie markdown brute d’une page.
 curl -sL https://docs.facet.example/apps/rest-api.md
 ```
 
 La même récupération en TypeScript. Elle place le texte de la page dans le
-contexte de l’agentà :
+contexte de l’agent :
 
 ```ts
 async function loadFacetPage(path: string): Promise<string> {
@@ -172,5 +172,5 @@ Récupérez de nouveau les pages qui traitent ce doctype.
 
   l’exécution.
 - [Référence](/fr/reference/) — la référence d’API lisible par machine.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [domain-builder-skills.md](https://github.com/wearefacet/facet/blob/main/doc/backend/domain-builder-skills.md).

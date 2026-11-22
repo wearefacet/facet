@@ -48,7 +48,7 @@ N’ajoutez pas sur l’enfant un champ référence qui pointerait vers le paren
 
 ### 4. Créer le parent avec ses enfants en un appel
 
-Envoyez un corps en deux blocsà : `$content` pour les champs du parent et `$children` pour les enfants imbriqués. Facet crée tout dans une seule transaction. Si un enfant échoue à la validation, rien n’est écrit.
+Envoyez un corps en deux blocs : `$content` pour les champs du parent et `$children` pour les enfants imbriqués. Facet crée tout dans une seule transaction. Si un enfant échoue à la validation, rien n’est écrit.
 
 ### 5. S’appuyer sur les règles de composition
 
@@ -97,7 +97,7 @@ Les deux définitions ci-dessous déclarent une racine `projects.Project` et son
 }
 ```
 
-Un appel crée le projet et sa première tâcheà :
+Un appel crée le projet et sa première tâche :
 
 ```sh
 curl -k -X POST "https://facet.localhost:3443/Api/projects/Project" \
@@ -129,7 +129,7 @@ C’est impossible. Une copie rattache l’enfant au parent copié, jamais à l�
 
 ### Supprimer un enfant ne supprime pas le parent
 
-Exact. La cascade ne va que vers le basà : supprimer le parent retire ses enfants.
+Exact. La cascade ne va que vers le bas : supprimer le parent retire ses enfants.
 
 ## Voir aussi
 

@@ -26,7 +26,7 @@ de changements enregistrés. Sélectionnez « Retour au document » pour reven
 ### 2. Lisez une entrée de changement
 
 La frise chronologique liste chaque changement, du plus récent au plus
-ancien. Chaque ligne montreà :
+ancien. Chaque ligne montre :
 
 | Partie | Ce qu’elle montre |
 | --- | --- |
@@ -36,13 +36,13 @@ ancien. Chaque ligne montreà :
 | Acteur | Le compte ou le système qui a fait le changement. |
 | Quand | L’heure, relative à maintenant. |
 
-Sélectionnez une ligne. Le panneau de détail montre quatre lignesà :
+Sélectionnez une ligne. Le panneau de détail montre quatre lignes :
 
 - **Quoi** — l’action, le document, et sa version à ce changement, par exemple
   v3.
-- **Qui** — l’acteur, avec une pastille qui nomme la cause. Exemplesà :
+- **Qui** — l’acteur, avec une pastille qui nomme la cause. Exemples :
   « via Assistant », « via Rollback ». Une édition simple montre le
-  canalà ; une session de navigateur s’affiche comme `facet`.
+  canal ; une session de navigateur s’affiche comme `facet`.
 - **Quand** — la date et l’heure complètes dans votre fuseau horaire, plus
   l’heure relative.
 - **Réf** — l’identifiant du changement avec un bouton de copie, et le nombre
@@ -120,7 +120,7 @@ l’action. Si un document échoue à la vérification, Facet ne change rien.
 ## Exemple
 
 Sélectionnez un changement, et l’adresse de la page se met à jour. Envoyez
-l’adresse à un collègue. Le collègue ouvre le même changementà :
+l’adresse à un collègue. Le collègue ouvre le même changement :
 
 ```
 /crm/Company/01JCATPMKP4N82GVG2J7K4MHZZ/history?mutation=01HRR7X9QK3V5T2W8Y4Z6A0BCD

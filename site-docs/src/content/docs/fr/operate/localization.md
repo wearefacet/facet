@@ -29,7 +29,7 @@ Réglez la localisation quand :
 - Les langues autorisées sont `en` et `fr`.
 - Le fuseau horaire par défaut doit être un nom IANA chargeable, par exemple
   `Europe/Paris`.
-- Les deux clés sont à chaudà : une surcharge à l’exécution s’applique
+- Les deux clés sont à chaud : une surcharge à l’exécution s’applique
   sans redémarrage, alors qu’un changement dans le fichier de configuration en
   demande un.
 
@@ -44,7 +44,7 @@ localization:
 ```
 
 La section est facultative. Les valeurs par défaut sont `UTC` et `en`. Le
-chargement valide les deuxà : un fuseau horaire que le runtime ne peut pas
+chargement valide les deux : un fuseau horaire que le runtime ne peut pas
 charger, ou une langue hors de la liste autorisée, fait échouer le démarrage.
 
 ### 2. Surcharger les valeurs par défaut à l’exécution
@@ -66,12 +66,12 @@ curl -k -X PATCH -H "Authorization: Bearer $FACET_API_KEY" \
 
 ### 3. Comprendre la chaîne
 
-Chaque clé de compte se résout dans cet ordreà :
+Chaque clé de compte se résout dans cet ordre :
 
 1. La valeur propre du compte, réglée sur la page Paramètres de l’application.
-2. La valeur par défaut du serveurà : la surcharge des paramètres, puis le
+2. La valeur par défaut du serveur : la surcharge des paramètres, puis le
    fichier de configuration, puis la valeur par défaut intégrée.
-3. La valeur statiqueà : `UTC` pour le fuseau horaire, `en` pour la langue.
+3. La valeur statique : `UTC` pour le fuseau horaire, `en` pour la langue.
 
 La correspondance est `core.timezone` → `localization.default_timezone`, et
 `core.language` → `localization.default_language`. La valeur propre d’un
@@ -94,18 +94,18 @@ Les utilisateurs ouvrent la page **Paramètres** de l’application :
 ### 5. Savoir ce qui en dépend
 
 - Les dates et heures s’affichent dans le fuseau horaire d’affichage du
-  compteà : tableaux, vues d’audit, sélecteurs de date et heure, et exports
+  compte : tableaux, vues d’audit, sélecteurs de date et heure, et exports
   CSV.
 - Les valeurs `date` et `dateperiod` sont des dates de calendrier. Elles
   s’affichent telles qu’écrites et ne passent jamais par une conversion de
   fuseau horaire.
-- Le cookie de langue d’interface reflète la langue du compteà : le choix
+- Le cookie de langue d’interface reflète la langue du compte : le choix
   survit aux rechargements et aux connexions.
 
 ## Exemple
 
 Réglez les valeurs par défaut de l’instance pour un bureau à Paris, puis
-vérifiez les valeurs effectivesà :
+vérifiez les valeurs effectives :
 
 ```yaml
 localization:
@@ -113,7 +113,7 @@ localization:
   default_language: en
 ```
 
-Ou surchargez les mêmes valeurs à l’exécution, sans redémarrageà :
+Ou surchargez les mêmes valeurs à l’exécution, sans redémarrage :
 
 ```sh
 curl -k -X PATCH -H "Authorization: Bearer $FACET_API_KEY" \
@@ -156,6 +156,6 @@ défaut du serveur ne comble qu’une valeur vide.
   et le fonctionnement des surcharges.
 - [Fichiers de configuration](/fr/operate/configuration-files/) — le fichier
   qui porte les valeurs par défaut.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [settings.md](https://github.com/wearefacet/facet/blob/main/doc/frontend/settings.md),
   [system-settings.md](https://github.com/wearefacet/facet/blob/main/doc/backend/system-settings.md).

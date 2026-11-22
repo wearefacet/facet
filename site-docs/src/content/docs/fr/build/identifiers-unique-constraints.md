@@ -8,11 +8,11 @@ sidebar:
 verified_at: fd345fe3
 ---
 
-Par défaut, Facet nomme chaque document avec un ULIDà: un identifiant long,
+Par défaut, Facet nomme chaque document avec un ULID : un identifiant long,
 triable et opaque. Beaucoup d’enregistrements se lisent mieux avec un numéro
 que l’on peut prononcer à voix haute, comme `INV-2026-0001`. Un bloc
 `identifier` sur le doctype génère de tels numéros. Les règles d’unicité sur
-les champs servent un second butà : deux documents ne peuvent pas porter la
+les champs servent un second but : deux documents ne peuvent pas porter la
 même valeur.
 
 ## Quand l’utiliser
@@ -39,7 +39,7 @@ avec la même adresse de courriel.
 | `{year}` | L’année en cours, par exemple `2026`. |
 | `{month}` | Le mois en cours, par exemple `06`. |
 | `{day}` | Le jour en cours, par exemple `15`. |
-| autre texte | Texte littéral, copié tel quelà : `INV-`, `-`, `TKT-`. |
+| autre texte | Texte littéral, copié tel quel : `INV-`, `-`, `TKT-`. |
 
 Le modèle exige au moins un groupe `#`, et un groupe compte au plus 18
 chiffres. Quand l’année ou le mois change, le compteur repart à zéro et la
@@ -61,7 +61,7 @@ fournit pas.
 ### 3. Ajouter des champs uniques
 
 Mettez `unique: true` sur tout champ dont la valeur doit différer d’un
-document à l’autre. Facet vérifie la règle à chaque create et updateà : une
+document à l’autre. Facet vérifie la règle à chaque create et update : une
 valeur vide sur un document et une valeur absente sur un autre n’entrent pas
 en collision.
 
@@ -92,7 +92,7 @@ en collision.
 
 Les trois premières créations produisent les ids `INV-2026-0001`,
 `INV-2026-0002` et `INV-2026-0003`. Le 1er janvier, la numérotation repart de
-`INV-2027-0001`. Le numéro est l’id du documentà : les pages l’affichent et
+`INV-2027-0001`. Le numéro est l’id du document : les pages l’affichent et
 les utilisateurs peuvent retrouver un document par son numéro (le filtre
 `id__match`).
 
@@ -106,7 +106,7 @@ chiffres, par exemple `######`.
 
 ### Une écriture répond `422` avec une erreur d’unicité
 
-Un autre document du même doctype porte déj à cette valeur. Trouvez-le en
+Un autre document du même doctype porte déjà cette valeur. Trouvez-le en
 filtrant la liste sur le champ, puis changez la valeur ou corrigez le
 doublon.
 
@@ -124,7 +124,7 @@ bloc en place.
 ### Deux doctypes remettent leur compteur à zéro à des moments différents
 
 Chaque modèle porte ses propres variables de temps. Un modèle avec `{month}`
-repart chaque moisà ; un modèle avec seulement `{year}` repart chaque année.
+repart chaque mois ; un modèle avec seulement `{year}` repart chaque année.
 
 ## Voir aussi
 

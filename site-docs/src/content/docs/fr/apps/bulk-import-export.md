@@ -9,23 +9,23 @@ verified_at: a77c6171
 ---
 
 Ces routes font sortir les documents d’un doctype de Facet, puis les y
-renvoient, en CSV ou en JSON. Un export tourne sur un instantanéà : il lit un
+renvoient, en CSV ou en JSON. Un export tourne sur un instantané : il lit un
 seul point dans le temps. Un import tourne dans une seule transaction :
 toutes les lignes arrivent, ou aucune.
 
-> **Pour les agentsà :** Exportà : `POST /Api/<domain>/<doctype>/export?format=csv`
+> **Pour les agents :** Export : `POST /Api/<domain>/<doctype>/export?format=csv`
 > répond `202 {job_id, status_url}`. Interrogez
 > `GET /Api/<domain>/<doctype>/import_export/<job_id>`, puis téléchargez depuis
 > `GET /Api/<domain>/<doctype>/import_export/<job_id>/download` ; `wait=true`
-> renvoie le fichier directement. Importà : `POST /Api/<domain>/<doctype>/import`
-> avec le corps CSV ou JSONà; un `422` nomme la ligne et le problème. L’upsert
-> se base sur la colonne `id` ; une seule transactionà ; la première ligne en
+> renvoie le fichier directement. Import : `POST /Api/<domain>/<doctype>/import`
+> avec le corps CSV ou JSON ; un `422` nomme la ligne et le problème. L’upsert
+> se base sur la colonne `id` ; une seule transaction ; la première ligne en
 > échec annule tout. Les POST exigent `X-Requested-With` pour les sessions par
 > cookie.
 
 ## Quand l’utiliser
 
-Utilisez les routes d’import/export quandà :
+Utilisez les routes d’import/export quand :
 
 - Vous déplacez un doctype vers une instance Facet, ou hors d’elle.
 - Vous remettez une vue tableur d’un doctype à quelqu’un qui n’utilise pas
@@ -46,9 +46,9 @@ Utilisez les routes d’import/export quandà :
 | Méthode | Route | Objectif |
 | --- | --- | --- |
 | `POST` | `/Api/<domain>/<doctype>/export` | Exporter un doctype entier. `format=csv\|json` est requis. `wait=true` et les filtres de liste sont facultatifs. |
-| `POST` | `/Api/<domain>/<doctype>/export_view` | Exporter la vue tableau actuelle. Corps JSONà: `{columns, sort, filters, timezone}`. |
+| `POST` | `/Api/<domain>/<doctype>/export_view` | Exporter la vue tableau actuelle. Corps JSON : `{columns, sort, filters, timezone}`. |
 | `POST` | `/Api/<domain>/<doctype>/import` | Importer un fichier CSV ou JSON. L’analyse structurelle tourne à la mise en file. |
-| `GET` | `/Api/<domain>/<doctype>/import_export/<job_id>` | Statut du jobà : `{id, status, error, result}`. |
+| `GET` | `/Api/<domain>/<doctype>/import_export/<job_id>` | Statut du job : `{id, status, error, result}`. |
 | `GET` | `/Api/<domain>/<doctype>/import_export/<job_id>/download` | Le fichier résultat. Exports réussis seulement. |
 
 ## Étapes
@@ -72,7 +72,7 @@ La réponse est `202` :
 
 Interrogez la route de statut jusqu’à ce que `status` vaille `succeeded` ou
 `failed`. Téléchargez ensuite le fichier depuis la route de téléchargement.
-Avec `wait=true`, l’appel bloque jusqu’à la fin du jobà : en cas de succès la
+Avec `wait=true`, l’appel bloque jusqu’à la fin du job : en cas de succès la
 réponse est le fichier lui-même, en cas d’échec c’est `500` avec
 `{"job_id", "error"}`.
 
@@ -105,7 +105,7 @@ fichier échoue sur les cellules sans zone.
 ### 3. Importer un fichier
 
 La route prend le format d’un paramètre `format=`, sinon du `Content-Type`,
-sinon de la forme du corpsà : un `[` en tête se lit comme du JSON.
+sinon de la forme du corps : un `[` en tête se lit comme du JSON.
 
 ```sh
 curl -s -X POST "https://facet.company.tld/Api/crm/Company/import" \
@@ -118,24 +118,24 @@ curl -s -X POST "https://facet.company.tld/Api/crm/Company/import" \
 La réponse est `202` avec `{"job_id", "row_count", "status_url"}`.
 
 L’analyse structurelle tourne avant le job. Un fichier mal formé répond `422`
-et nomme la ligneà :
+et nomme la ligne :
 
 ```json
 { "error": "row 2: has 3 cells but the header declares 2 columns" }
 ```
 
 Mauvais guillemets, colonne d’en-tête inconnue, nombre de cellules qui ne
-correspond pas à l’en-têteà : tout échoue ici. Un problème au niveau d’une
+correspond pas à l’en-tête : tout échoue ici. Un problème au niveau d’une
 cellule, par exemple une valeur monétaire invalide à la ligne 900, apparaît
 plutôt dans le résultat du job.
 
 ## Exemple
 
-Un aller-retour completà : exportez avec `wait=true`, ré-importez le fichier,
-interrogez le jobà :
+Un aller-retour complet : exportez avec `wait=true`, ré-importez le fichier,
+interrogez le job :
 
 ```sh
-# 1. Exportez et attendezà : l’appel renvoie le fichier CSV directement.
+# 1. Exportez et attendez : l’appel renvoie le fichier CSV directement.
 curl -s -X POST "https://facet.company.tld/Api/crm/Company/export?format=csv&wait=true" \
   -H "Authorization: Bearer $FACET_TOKEN" \
   -H "X-Requested-With: XMLHttpRequest" \
@@ -153,7 +153,7 @@ curl -s "https://facet.company.tld/Api/crm/Company/import_export/01JBK2M4N6P8R0T
   -H "Authorization: Bearer $FACET_TOKEN"
 ```
 
-Un job d’export réussi rapporteà :
+Un job d’export réussi rapporte :
 
 ```json
 {
@@ -170,7 +170,7 @@ Un job d’export réussi rapporteà :
   ligne ne persiste.
 - **L’échec nomme la ligne.** Le rapport porte `{row, field, message}`.
 - **Upsert sur la colonne `id`.** Un id vivant met le document à jour. Un id
-  correspondant à un document supprimé (tombstone) est ignoréà ; un import ne
+  correspondant à un document supprimé (tombstone) est ignoré ; un import ne
   ressuscite jamais un document supprimé. Un id absent en crée un.
 - **Les deux droits sont nécessaires.** La première ligne que votre rôle ne
   peut pas écrire fait échouer le fichier.
@@ -200,7 +200,7 @@ Un job d’export réussi rapporteà :
 | Monétaire | `USD 1.0` — le préfixe de devise est requis à l’import. |
 | Booléen | `true` / `false`. |
 | Référence | Id qualifié, par exemple `crm.Company.abc`. |
-| Fichier | L’id d’artifact seulementà ; les octets ne bougent pas. |
+| Fichier | L’id d’artifact seulement ; les octets ne bougent pas. |
 | Cellule vide | Se décode en `null` ; elle vide le champ à la mise à jour. |
 | Colonne absente | Laisse le champ intact. |
 | Texte commençant par `=`, `+`, `-`, `@`, ou une tabulation | S’exporte avec un `'` en tête — le garde-fou anti-formule. Le décodage retire un `'` de tête. |
@@ -214,13 +214,13 @@ les morceaux.
 
 **La mise en file répond `422` et nomme une ligne.**
 
-L’analyse structurelle a échouéà : problème de guillemets, colonne d’en-tête
+L’analyse structurelle a échoué : problème de guillemets, colonne d’en-tête
 inconnue, ou nombre de cellules qui ne correspond pas à l’en-tête. Corrigez
 cette ligne et soumettez de nouveau.
 
 **Le job échoue sur un champ `money`.**
 
-Une cellule monétaire exige le préfixe de deviseà : `USD 1.0`, pas `1.0`.
+Une cellule monétaire exige le préfixe de devise : `USD 1.0`, pas `1.0`.
 
 **Certaines lignes sont `skipped`.**
 
@@ -240,5 +240,5 @@ Le fichier résultat a été purgé après la fenêtre de rétention — voir
   résultat est stocké et relu.
 - [Rétention](/fr/govern/retention/) — la fenêtre qui borne un lien de
   téléchargement.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [import-export.md](https://github.com/wearefacet/facet/blob/main/doc/backend/import-export.md).

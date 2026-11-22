@@ -9,7 +9,7 @@ verified_at: f1409cdc
 ---
 
 Utilisez cette page pour une revue de sécurité ou un audit. Elle résume le
-modèle de gouvernanceà : identité, permissions, lectures sans divulgation,
+modèle de gouvernance : identité, permissions, lectures sans divulgation,
 audit, secrets, et localisation des données.
 
 ## Identité
@@ -35,7 +35,7 @@ audit, secrets, et localisation des données.
 
 Les rôles sont des documents (`iam.Roles`). Chaque rôle porte un niveau de 0
 à 100 et une liste de lignes de permission. Une ligne de permission a cette
-formeà :
+forme :
 
 ```json
 {
@@ -52,7 +52,7 @@ formeà :
   `$global`, ou l’un des vôtres). Une liste donne les lignes qui répondent à
 
   l’un d’eux.
-- `except` — des chemins soustraits de la ligne. Facultatifà : une ligne sans
+- `except` — des chemins soustraits de la ligne. Facultatif : une ligne sans
   lui atteint tous les chemins que son `on` couvre.
 
 Les contrôleurs appliquent ces règles dans la couche de données — dans
@@ -64,7 +64,7 @@ PostgreSQL, pas dans votre application :
   en SQL. Une liste ne renvoie que les lignes que le rôle peut voir.
 - **Les étiquettes de champs.** Elles cachent les champs invisibles en
   lecture et refusent de les écrire.
-- **Pas de pouvoir au-dessus du sien.** Règles d’autorité des rôlesà : un
+- **Pas de pouvoir au-dessus du sien.** Règles d’autorité des rôles : un
   appelant ne peut pas attribuer un rôle au-dessus de son niveau, ni modifier
   un compte au-dessus de son niveau, ni élargir un rôle au-del à de ses
   propres pouvoirs.
@@ -78,7 +78,7 @@ PostgreSQL, pas dans votre application :
 
 ## Lectures sans divulgation
 
-Le contrôle d’accès ne doit pas révéler quels documents existentà :
+Le contrôle d’accès ne doit pas révéler quels documents existent :
 
 - Une lecture individuelle refusée répond le même `404` qu’un document
   manquant.
@@ -90,7 +90,7 @@ Le contrôle d’accès ne doit pas révéler quels documents existentà :
 ## Audit
 
 - **Chaque écriture est enregistrée.** Le journal des mutations enregistre
-  chaque create, update, delete et instantanéà : l’acteur, le canal (session,
+  chaque create, update, delete et instantané : l’acteur, le canal (session,
   app OAuth, clé d’API, MCP), l’application, le changement, l’heure et la
   chaîne de cause.
 - **Historique par document, ou sur toute l’organisation.** Lisez l’historique
@@ -133,7 +133,7 @@ Le contrôle d’accès ne doit pas révéler quels documents existentà :
 
 :::tip
 Emmenez cette page à la revue de sécurité. Chaque section correspond à un
-document de conception dans le dépôtà ; votre auditeur lit le contrat
+document de conception dans le dépôt ; votre auditeur lit le contrat
 d’implémentation, pas un résumé.
 :::
 
@@ -141,4 +141,4 @@ d’implémentation, pas un résumé.
 
 - [Architecture en un coup d’œil](/fr/start/architecture/) — où le contrôle se situe dans le chemin d’une requête.
 - [Gouverner l’accès](/fr/govern/) — les guides admin pour les comptes, les rôles et le SSO.
-- Internes sur GitHubà : [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md), [iam.md](https://github.com/wearefacet/facet/blob/main/doc/backend/iam.md), [audit.md](https://github.com/wearefacet/facet/blob/main/doc/backend/audit.md), [secrets.md](https://github.com/wearefacet/facet/blob/main/doc/backend/secrets.md).
+- Internes sur GitHub : [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md), [iam.md](https://github.com/wearefacet/facet/blob/main/doc/backend/iam.md), [audit.md](https://github.com/wearefacet/facet/blob/main/doc/backend/audit.md), [secrets.md](https://github.com/wearefacet/facet/blob/main/doc/backend/secrets.md).

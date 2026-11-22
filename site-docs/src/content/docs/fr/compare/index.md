@@ -13,9 +13,9 @@ moyenne taille mettent vraiment sur leur liste restreinte. Chaque page dit où
 l’alternative gagne et où Facet gagne, pour décider en voyant les deux camps
 en face.
 
-L’idée derrière chaque pageà : **les apps sont jetables désormaisà ;
+L’idée derrière chaque page : **les apps sont jetables désormais ;
 vos données ne le sont pas.** L’IA construit un outil métier en quelques
-heures. Ce qui reste difficile, c’est tout ce qui entoure l’outilà : qui
+heures. Ce qui reste difficile, c’est tout ce qui entoure l’outil : qui
 voit quoi, qui a changé quoi, les sauvegardes, les fichiers, l’hébergement, le
 déploiement. C’est cette part que Facet prend en charge, une fois, pour chaque
 app que vous construisez. Commencez par
@@ -23,12 +23,12 @@ app que vous construisez. Commencez par
 les autres pages déclinent la même question.
 
 L’adoption suit la même forme. Vous commencez par un domaine (une tranche du
-métierà : les clients, le matériel ou le recrutement) et vous tirez déjà
+métier : les clients, le matériel ou le recrutement) et vous tirez déjà
 de la valeur de cette seule pièce. Le domaine suivant coûte moins que le
-premierà : comptes, rôles, journal d’audit, fichiers et hébergement sont
-déj à en place, et chaque app et chaque chemin d’accès les partage. Domaine
+premier : comptes, rôles, journal d’audit, fichiers et hébergement sont
+déjà en place, et chaque app et chaque chemin d’accès les partage. Domaine
 après domaine, un foyer gouverné remplace un éparpillement d’outils et de
-tableurs. Le nom porte le modèleà : chaque domaine est une facette de
+tableurs. Le nom porte le modèle : chaque domaine est une facette de
 votre métier, et Facet les tient ensemble.
 
 ## Les pages
@@ -58,13 +58,13 @@ remise, sans taxe et sans dépassement d’usage.
 
 | Option | Modèle de tarification | 50 utilisateurs (USD / mois) | Non inclus à ce palier |
 | --- | --- | --- | --- |
-| Airtable, offre Business | Par siège éditeur | $2,250 : 50 éditeurs à $45, facturés annuellement | Journal d’audit, permissions par champ, résidence des données dans l’UEà: tout est sur Enterprise Scale |
-| Notion, offre Business | Par membre | $1,000 : 50 membres à $20, facturés annuellement | Journal d’audit et résidence des donnéesà : les deux sur Enterprise |
-| Retool, offre Business | Par builder + par utilisateur interne | $925 : 5 builders à $50 plus 45 utilisateurs internes à $15, facturés annuellement | Auto-hébergement et SSOà: les deux sur Enterprise |
+| Airtable, offre Business | Par siège éditeur | $2,250 : 50 éditeurs à $45, facturés annuellement | Journal d’audit, permissions par champ, résidence des données dans l’UE : tout est sur Enterprise Scale |
+| Notion, offre Business | Par membre | $1,000 : 50 membres à $20, facturés annuellement | Journal d’audit et résidence des données : les deux sur Enterprise |
+| Retool, offre Business | Par builder + par utilisateur interne | $925 : 5 builders à $50 plus 45 utilisateurs internes à $15, facturés annuellement | Auto-hébergement et SSO : les deux sur Enterprise |
 | Odoo, offre Standard (US) | Par utilisateur | $1,555 : 50 utilisateurs à $31.10 après la première année ($24.90 la première année) | Studio, API externe, modules personnalisés, multi-sociétés : tout est sur l’offre Custom |
-| Supabase, offre Pro | Forfait de base + usage | $25, plus calcul, stockage, egress et dépassements d’utilisateurs actifs | Modèle de rôles, piste d’audit, interface d’administration, hébergement d’appà : tout est à construire |
-| Firebase, offre Blaze | Par opération | Varie avec l’usageà ; les alertes de budget vous préviennent mais ne bloquent pas l’usage | Pas d’option d’auto-hébergement |
-| **Facet, auto-hébergé** | **Pas de licence** | **$0 de licence**, à 50 utilisateurs comme à 500. Vous payez le serveur (environ $20 à $60 par mois pour une petite équipe), le stockage de fichiers, et votre usage IA. Un petit serveur (2 vCPU et 2–4 Go de RAM) suffit pour un petit déploiement ; quelques centaines d’utilisateurs demandent un serveur plus grand ou des workers séparés | Graphiques intégrés, moteur de workflow inter-domaines et modules préconstruits ne sont pas encore là ; chaque domaine demande du temps de modélisation. Facet est en bêta |
+| Supabase, offre Pro | Forfait de base + usage | $25, plus calcul, stockage, egress et dépassements d’utilisateurs actifs | Modèle de rôles, piste d’audit, interface d’administration, hébergement d’app : tout est à construire |
+| Firebase, offre Blaze | Par opération | Varie avec l’usage ; les alertes de budget vous préviennent mais ne bloquent pas l’usage | Pas d’option d’auto-hébergement |
+| **Facet, auto-hébergé** | **Pas de licence** | **$0 de licence**, à 50 utilisateurs comme à 500. Vous payez le serveur (environ $20 à $60 par mois pour une petite équipe), le stockage de fichiers, et votre usage IA. Un petit serveur (2 vCPU et 2–4 Go de RAM) suffit pour un petit déploiement ; quelques centaines d’utilisateurs demandent un serveur plus grand ou des workers séparés | Graphiques intégrés, moteur de workflow inter-domaines et modules préconstruits ne sont pas encore l ; chaque domaine demande du temps de modélisation. Facet est en bêta |
 
 Sur la ligne de Facet, rien n’est réservé à un palier supérieur. Le journal
 d’audit, les permissions par ligne et par champ, le choix de l’emplacement des

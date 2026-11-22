@@ -10,7 +10,7 @@ verified_at: fd345fe3
 
 Une ligne de permission atteint un doctype entier, ou seulement les lignes
 qui répondent à une condition. Un périmètre de lignes nomme cette condition.
-Le doctype déclare ses périmètres une foisà ; un rôle s’y réfère par alias et
+Le doctype déclare ses périmètres une fois ; un rôle s’y réfère par alias et
 n’écrit jamais ses propres prédicats.
 
 :::note[Cette page est une moitié d’une paire]
@@ -43,7 +43,7 @@ deux moitiés ensemble.
 ### Où vivent les périmètres
 
 La définition du doctype porte les périmètres sous `scopes`. Chaque entrée
-est un filtre `where` sur les champs propres au doctypeà :
+est un filtre `where` sur les champs propres au doctype :
 
 ```yaml
 # définition production.Project
@@ -74,15 +74,15 @@ prédicat à eux sur une ligne de permission. La grammaire de `where` :
 | `"$organizational_unit"` | Le chemin en arborescence du compte agissant, par exemple `/engineering/backend/`.                                                                  |
 
 Une clé `where` peut porter un suffixe d’opérateur, comme les filtres de
-listeà : `priority__gte`, `title__starts_with`, `price__between`. Une clé nue
+liste : `priority__gte`, `title__starts_with`, `price__between`. Une clé nue
 signifie égal. Un champ accepte exactement les opérateurs que ses capacités
-`filters` déclarées permettent. Deux clés réservées existentà : `$parent_id`
+`filters` déclarées permettent. Deux clés réservées existent : `$parent_id`
 lit le lien parent, et `$doc_id` lit l’id de la ligne. Toutes deux ne
 prennent que `eq` ou `ne`.
 
 ### Ce que dit une ligne de permission
 
-Lisez chaque ligne avec son effetà :
+Lisez chaque ligne avec son effet :
 
 ```json
 {"action": "read", "on": "production.Project", "scope": ["$mine", "$global"]}
@@ -103,7 +103,7 @@ autre.
 ```
 
 Cette ligne laisse un membre lire chaque projet. `$all` est la forme
-explicite sans restrictionà ; omettre `scope` veut dire la même chose. Dans
+explicite sans restriction ; omettre `scope` veut dire la même chose. Dans
 un tableau, `$all` ramène toute la ligne à l’absence de restriction.
 
 ### Comment Facet applique un périmètre
@@ -128,7 +128,7 @@ un tableau, `$all` ramène toute la ligne à l’absence de restriction.
   que l’appelant voit déjà. Un nom inconnu répond `422`.
 - **Les requêtes sans identifiant.** Elles tournent sous le rôle
   `anonymous`. `$self` se résout à la valeur littérale `anonymous`, qui ne
-  correspond à aucun compteà ; les périmètres `$self` restent donc inertes.
+  correspond à aucun compte ; les périmètres `$self` restent donc inertes.
   `$organizational_unit` se résout au chemin racine `/`.
 
 :::caution[L’alias doit exister sur le doctype cible]
@@ -191,7 +191,7 @@ domaine, une sur le doctype — puis une ligne de rôle nomme le périmètre.
   membre porte une référence `account` vers `iam.Account`. Un doctype
   `TeamMember` dédié convient ici, parce qu’une appartenance est une ligne
   qui a sa propre vie, et qu’un compte peut siéger dans plusieurs équipes.
-- **Project → Team** est une référenceà : `Project.team` pointe vers
+- **Project → Team** est une référence : `Project.team` pointe vers
   `projects.Team`.
 
 <!-- d2
@@ -261,5 +261,5 @@ appartient.
   resserrer au niveau des champs de la même façon.
 - [Comment Facet vérifie les permissions](/fr/concepts/authorization-enforcement/) —
   où siègent les contrôleurs.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md).

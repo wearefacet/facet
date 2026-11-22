@@ -18,7 +18,7 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 | AI-02 | Domain-builder assistant | [L’assistant de construction de domaines](/fr/build/domain-builder-assistant/) |
 | AI-03 | Per-app assistant | [Intégrer l’assistant](/fr/apps/chat-embed/) |
 | AI-04 | Agent tool catalogue | [Outils pour agents](/fr/apps/agent-tools/), [L’IA sous les droits de l’appelant](/fr/concepts/ai-under-callers-rights/), [Outils d’agent](/fr/reference/agent-tools/) |
-| AI-05 | MCP resource server | [MCPà: connecter des agents](/fr/apps/mcp-agents/) |
+| AI-05 | MCP resource server | [MCP : connecter des agents](/fr/apps/mcp-agents/) |
 | AI-06 | Skill corpus | [Outils pour agents](/fr/apps/agent-tools/), [Bâtir des apps avec un agent de code](/fr/apps/ai-coding-agents/), [L’assistant de construction de domaines](/fr/build/domain-builder-assistant/) |
 | AI-07 | Usage ledger and limits | [Gouverner l’assistant](/fr/govern/governing-assistant/), [Configurer l’assistant](/fr/operate/assistant-config/) |
 | AI-08 | Assistant configuration | [Gouverner l’assistant](/fr/govern/governing-assistant/), [Configurer l’assistant](/fr/operate/assistant-config/) |
@@ -29,10 +29,10 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 | ID | Fonctionnalité | Pages |
 | --- | --- | --- |
 | APP-01 | App registry | [Comment fonctionnent les apps sur Facet](/fr/apps/how-apps-work/), [Enregistrer une app](/fr/apps/registering-app/) |
-| APP-02 | OAuth 2.1 authorization server | [Connexion utilisateurà : OAuth 2.1 + PKCE](/fr/apps/oauth-login/) |
+| APP-02 | OAuth 2.1 authorization server | [Connexion utilisateur : OAuth 2.1 + PKCE](/fr/apps/oauth-login/) |
 | APP-03 | DPoP proof binding | [Liaison DPoP des tokens](/fr/apps/dpop/) |
-| APP-04 | Dynamic client registration | [MCPà: connecter des agents](/fr/apps/mcp-agents/) |
-| APP-05 | Consent screen | [Connexion utilisateurà : OAuth 2.1 + PKCE](/fr/apps/oauth-login/) |
+| APP-04 | Dynamic client registration | [MCP : connecter des agents](/fr/apps/mcp-agents/) |
+| APP-05 | Consent screen | [Connexion utilisateur : OAuth 2.1 + PKCE](/fr/apps/oauth-login/) |
 | APP-06 | App hosting | [Déployer votre frontend](/fr/apps/hosting-deploy/), [Déployer avec des conteneurs](/fr/operate/containers-tls/), [Déployer en production](/fr/operate/production/) |
 | APP-07 | App API keys and service accounts | [Comptes de service pour les apps backend](/fr/apps/service-accounts/) |
 | APP-08 | CORS for registered origins | [CORS et origines autorisées](/fr/apps/cors-origins/) |
@@ -138,7 +138,7 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 | FE-18 | Import and export UI | [Importer et exporter des données](/fr/workspace/import-export/) |
 | FE-19 | Welcome tour | — |
 | FE-20 | Internationalization | [Localisation](/fr/operate/localization/) |
-| FE-21 | OAuth consent page | [Connexion utilisateurà : OAuth 2.1 + PKCE](/fr/apps/oauth-login/) |
+| FE-21 | OAuth consent page | [Connexion utilisateur : OAuth 2.1 + PKCE](/fr/apps/oauth-login/) |
 | FE-22 | Assistant chat UI | [Utiliser l’assistant](/fr/workspace/assistant/) |
 
 ## IAM — identity and authentication
@@ -167,7 +167,7 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 | PLT-01 | YAML config | [Fichiers de configuration](/fr/operate/configuration-files/), [Clés du fichier de configuration](/fr/reference/config-keys/), [Installer pour le développement](/fr/start/install/) |
 | PLT-02 | System settings | [Imposer le MFA](/fr/govern/enforcing-mfa/), [Paramètres système](/fr/operate/system-settings/), [Clés de réglage système](/fr/reference/system-settings-keys/) |
 | PLT-03 | Secret store | [Champs secrets et en écriture seule](/fr/build/secret-write-only-fields/) |
-| PLT-04 | Artifact store | [Téléverser et servir des fichiers](/fr/apps/files/), [Fichiers et artifacts dans les champs](/fr/build/files-artifacts/), [Stockage de fichiersà : local ou S3](/fr/operate/file-storage/) |
+| PLT-04 | Artifact store | [Téléverser et servir des fichiers](/fr/apps/files/), [Fichiers et artifacts dans les champs](/fr/build/files-artifacts/), [Stockage de fichiers : local ou S3](/fr/operate/file-storage/) |
 | PLT-05 | Managed indexes | [Index gérés](/fr/operate/indexes/) |
 | PLT-06 | Health probes | [Health checks, métriques, tracing, logs](/fr/operate/health-metrics-logs/), [Sondes et métriques](/fr/reference/health-metrics-names/) |
 | PLT-07 | Metrics | [Health checks, métriques, tracing, logs](/fr/operate/health-metrics-logs/), [Sondes et métriques](/fr/reference/health-metrics-names/) |
@@ -193,7 +193,7 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 | RBC-05 | Row scopes | [Les périmètres de lignes](/fr/govern/row-scopes/), [Sécurité et gouvernance](/fr/start/security-governance/) |
 | RBC-06 | Write enforcement | [Application des autorisations](/fr/concepts/authorization-enforcement/), [Syntaxe des lignes de permission](/fr/reference/permission-syntax/), [Sécurité et gouvernance](/fr/start/security-governance/) |
 | RBC-07 | Role authority guard | [Rôles, niveaux et garde-fou](/fr/concepts/roles-levels-authority/), [Rôles et lignes de permission](/fr/govern/roles-permission-lines/), [Sécurité et gouvernance](/fr/start/security-governance/) |
-| RBC-08 | App grants | [Comment fonctionnent les apps sur Facet](/fr/apps/how-apps-work/), [Appsà : attributions ∩ rôles](/fr/concepts/apps-grants-roles/), [La portée des apps (attributions)](/fr/govern/app-grants/), [Sécurité et gouvernance](/fr/start/security-governance/) |
+| RBC-08 | App grants | [Comment fonctionnent les apps sur Facet](/fr/apps/how-apps-work/), [Apps : attributions ∩ rôles](/fr/concepts/apps-grants-roles/), [La portée des apps (attributions)](/fr/govern/app-grants/), [Sécurité et gouvernance](/fr/start/security-governance/) |
 | RBC-09 | Metadata gate | [Application des autorisations](/fr/concepts/authorization-enforcement/), [Sécurité et gouvernance](/fr/start/security-governance/) |
 | RBC-10 | Auth contexts | [Contextes d’authentification](/fr/concepts/auth-contexts/), [Architecture en un coup d’œil](/fr/start/architecture/), [Sécurité et gouvernance](/fr/start/security-governance/) |
 | RBC-11 | Permission manifest | [Dimensionner l’UI avec le manifeste](/fr/apps/permission-manifest/), [Sécurité et gouvernance](/fr/start/security-governance/) |

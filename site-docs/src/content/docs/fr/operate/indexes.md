@@ -17,7 +17,7 @@ relancer les rares échecs.
 
 ## Quand l’utiliser
 
-Consultez la page des index quandà :
+Consultez la page des index quand :
 
 - vous vérifiez la santé des index après un changement de schéma ou un
   import de domaine,
@@ -38,16 +38,16 @@ Consultez la page des index quandà :
 ### 1. Lire l’état des index
 
 Ouvrez la page d’état des index sous **Configurer → Plateforme**, ou
-appelez la routeà :
+appelez la route :
 
 ```sh
 curl -s -H "Authorization: Bearer $FACET_API_KEY" \
   "https://facet.localhost:3443/Api/Indexes?filters[status__eq]=error&filters[domain__eq]=hr"
 ```
 
-Chaque ligne décrit un index géréà : `id`, `domain`, `doc_type`,
+Chaque ligne décrit un index géré : `id`, `domain`, `doc_type`,
 `field_name`, `index_type`, `index_name`, `status`, `error_message`,
-`created_at` et `updated_at`. Cycle de vie des étatsà :
+`created_at` et `updated_at`. Cycle de vie des états :
 
 <!-- d2
 pending: pending
@@ -70,8 +70,8 @@ error -> dropped
 - `error` — la construction a échoué. `error_message` porte la raison.
 - `dropped` — le champ ne demande plus l’index.
 
-Champs filtrablesà : `domain`, `doc_type`, `status`, `field_name`.
-Triablesà : le même ensemble plus `index_type`, `created_at`,
+Champs filtrables : `domain`, `doc_type`, `status`, `field_name`.
+Triables : le même ensemble plus `index_type`, `created_at`,
 `updated_at`.
 
 ### 2. Relancer les constructions en échec
@@ -81,7 +81,7 @@ facet index:retry --domain hr --dry-run   # affiche le plan, n’exécute rien
 facet index:retry --domain hr             # exécute les relances
 ```
 
-La commande relance deux familles de lignesà :
+La commande relance deux familles de lignes :
 
 - les lignes en état `error`, et
 - les lignes `pending` sans mise à jour depuis plus de 10 minutes — la
@@ -89,7 +89,7 @@ La commande relance deux familles de lignesà :
 
   Une ligne `pending` récente appartient à une construction en cours dans
   le serveur actif@NBSP;; la commande ne la touche jamais. Chaque ligne est
-  revérifiée par rapport à la définition actuelle du doctypeà : un
+  revérifiée par rapport à la définition actuelle du doctype : un
   index toujours demandé est reconstruit@NBSP;; un champ qui n’existe plus
   voit sa ligne supprimée. Les lignes sont indépendantes — un échec
   n’arrête pas les autres. La commande sort avec `0` quand chaque
@@ -101,13 +101,13 @@ La commande relance deux familles de lignesà :
 
 Le planificateur lit les capacités `filters` déclarées sur chaque champ —
 `equality`, `comparison`, `text_search`, `interval`, `membership`,
-`currency`. Une capacité correspond à une famille d’indexà :
+`currency`. Une capacité correspond à une famille d’index :
 
 | Capacité déclarée | Index créé |
 | --- | --- |
 | `equality` ou `comparison` sur un champ scalaire | Un B-tree |
 | `text_search` seul | Un GIN trigram |
-| `equality` / `comparison` plus `text_search` | Deux indexà : un B-tree et un GIN trigram |
+| `equality` / `comparison` plus `text_search` | Deux index : un B-tree et un GIN trigram |
 | `membership` sur un champ `array` | Un GIN JSONB |
 | `interval` sur `period` / `dateperiod` | Un index d’intervalle GiST |
 
@@ -117,7 +117,7 @@ ses capacités déclarées. Les champs calculés, en écriture seule, en lecture
 seule et objets libres ne prennent aucun index.
 
 Chaque index géré est partiel. Sa clause `WHERE` le borne à un domaine, un
-doctype et les lignes vivantes, si bien que chaque index reste petità :
+doctype et les lignes vivantes, si bien que chaque index reste petit :
 
 ```sql
 WHERE domain = 'hr' AND doc_type = 'Employee' AND deleted_at IS NULL
@@ -130,23 +130,23 @@ en arrière-plan, si bien que l’enregistrement du doctype réussit toujours.
 Un verrou consultatif global sérialise tout le DDL géré entre fibres et
 entre processus, ce qui évite l’interblocage que deux constructions
 simultanées rencontreraient sinon. Les interblocages résiduels sont
-réessayés avec un délai croissantà : 3 tentatives à l’exécution, 5
+réessayés avec un délai croissant : 3 tentatives à l’exécution, 5
 dans `index:retry`.
 
 ## Exemple
 
 Après un import de domaine volumineux, un index a échoué.
-Rétablissez-leà :
+Rétablissez-le :
 
 ```sh
-# Qu’est-ce qui a échouéà?
+# Qu’est-ce qui a échoué ?
 curl -s -H "Authorization: Bearer $FACET_API_KEY" \
   "https://facet.localhost:3443/Api/Indexes?filters[status__eq]=error"
 
-# Lisez error_message sur la ligne, puis planifiez la relanceà :
+# Lisez error_message sur la ligne, puis planifiez la relance :
 facet index:retry --domain crm --dry-run
 
-# Exécutez, puis vérifiez que la ligne est activeà :
+# Exécutez, puis vérifiez que la ligne est active :
 facet index:retry --domain crm
 ```
 
@@ -195,6 +195,6 @@ construction démarre.
   de schéma qui déclenchent des constructions.
 - [Amorçage et tâches CLI](/fr/operate/bootstrap-cli/) — la surface CLI
   autour de `index:retry`.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [index-management.md](https://github.com/wearefacet/facet/blob/main/doc/backend/index-management.md),
   [cli.md](https://github.com/wearefacet/facet/blob/main/doc/backend/cli.md).

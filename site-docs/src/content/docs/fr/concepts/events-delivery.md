@@ -51,7 +51,7 @@ mises à jour en direct vers les navigateurs.
 **La livraison est au plus une fois, par conception.** Les consommateurs
 lisent avec `no_ack`, et aucun code n’acquitte un message. Une publication ou
 une distribution en échec est abandonnée avec une seule ligne de log.
-PostgreSQL porte l’état durableà ; Redis est un bus de réactions, pas un
+PostgreSQL porte l’état durable ; Redis est un bus de réactions, pas un
 registre.
 
 **La perte reste visible.** Les compteurs `event_loss` sur `GET /Healthcheck`
@@ -94,7 +94,7 @@ comme un signal, pas comme un registre. L’état durable reste dans PostgreSQL.
 **Ce que coûte la livraison au plus une fois.** L’approche achète la
 simplicité et le débit. Elle renonce à la livraison garantie. Un consommateur
 doit tolérer la perte, ou prévoir un chemin de réparation, comme le
-réconciliateur des webhooks. La réplication tolère la perteà : ses handlers
+réconciliateur des webhooks. La réplication tolère la perte : ses handlers
 recalculent à partir de l’état durable, et un rejeu converge.
 
 ## Voir aussi
@@ -106,5 +106,5 @@ recalculent à partir de l’état durable, et un rejeu converge.
 - [Exploitation](/fr/operate/) — healthcheck, Redis et jobs au quotidien.
 - [Déployer en production](/fr/operate/production/) — les sondes et le
   dimensionnement de Redis pour un déploiement réel.
-- Internes sur GitHubà : [event.md](https://github.com/wearefacet/facet/blob/main/doc/backend/event.md),
+- Internes sur GitHub : [event.md](https://github.com/wearefacet/facet/blob/main/doc/backend/event.md),
   [cron.md](https://github.com/wearefacet/facet/blob/main/doc/backend/cron.md).

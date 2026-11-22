@@ -1,6 +1,6 @@
 ---
 title: Référence
-description: "Les détails exactsà : API, CLI, types de champs, opérateurs de filtre, modèles, schémas et clés."
+description: "Les détails exacts : API, CLI, types de champs, opérateurs de filtre, modèles, schémas et clés."
 audience: [evaluator]
 features: []
 sidebar:
@@ -12,7 +12,7 @@ Utilisez cette section quand vous cherchez un détail exact, pas un parcours
 guidé. Elle regroupe l’API REST, les commandes CLI, les types de champs, les
 opérateurs de filtre, la syntaxe des modèles, les schémas et les clés de
 configuration. Les pages sont générées depuis le code source quand c’est
-possible — ne modifiez jamais une page générée à la mainà ; lancez sa cible
+possible — ne modifiez jamais une page générée à la main ; lancez sa cible
 `make gen-docs-<name>`.
 
 ## Dans cette section

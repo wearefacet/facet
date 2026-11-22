@@ -1,5 +1,5 @@
 ---
-title: "Stockage de fichiersà : local ou S3"
+title: "Stockage de fichiers : local ou S3"
 description: Stockez les fichiers téléversés dans un répertoire local ou un bucket S3, et exécutez les tâches d’entretien du stockage.
 audience: [operator]
 features: [PLT-04]
@@ -9,22 +9,22 @@ verified_at: 008dd880
 ---
 
 Chaque fichier téléversé se trouve dans un seul magasin d’objets. PostgreSQL
-détient les métadonnées et les règles d’accèsà ; le magasin stocke les
-octets. Vous choisissez le backend au démarrageà : un répertoire local ou
+détient les métadonnées et les règles d’accès ; le magasin stocke les
+octets. Vous choisissez le backend au démarrage : un répertoire local ou
 un bucket S3. Les services compatibles S3, comme MinIO, R2 et Backblaze,
 fonctionnent via le réglage `endpoint`.
 
 ## Quand l’utiliser
 
-Installez ou entretenez le stockage dans ces casà :
+Installez ou entretenez le stockage dans ces cas :
 
-- vous configurez le stockage de fichiers pour une nouvelle installationà ;
-- vous opérez la rotation du secret de signature des artefactsà ;
+- vous configurez le stockage de fichiers pour une nouvelle installation ;
+- vous opérez la rotation du secret de signature des artefacts ;
 - vous nettoyez les fichiers sans propriétaire ou les objets orphelins.
 
 ## Avant de commencer
 
-- Deux clés de premier niveau sont requisesà : `artifact_base_url` et
+- Deux clés de premier niveau sont requises : `artifact_base_url` et
   `artifact_grant_secret`. Sans elles, le démarrage échoue.
 - `artifact_base_url` est l’origine qui sert les octets en flux. Les
   navigateurs y reçoivent des URL signées qui portent le droit d’accès. En
@@ -93,7 +93,7 @@ nettoyage — voir [Paramètres système](/fr/operate/system-settings/).
 
 Quiconque détient `artifact_grant_secret` peut émettre des liens de
 téléchargement valides pour chaque artefact. Opérez la rotation avec la clé du
-secret précédentà :
+secret précédent :
 
 ```yaml
 artifact_grant_secret: !env ARTIFACT_GRANT_SECRET
@@ -124,7 +124,7 @@ détail des commandes.
 ## Exemple
 
 Une configuration S3 complète pour un environnement. Les identifiants viennent
-de l’environnement, pas du fichierà :
+de l’environnement, pas du fichier :
 
 ```yaml
 artifact_base_url: "https://cdn.example.tld"
@@ -191,6 +191,6 @@ la couche d’étiquettes.
   depuis la surface applicative.
 - [Rétention : ce qui est conservé, et pour combien de temps](/fr/govern/retention/) —
   la fenêtre de nettoyage parmi les autres fenêtres.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [artifact.md](https://github.com/wearefacet/facet/blob/main/doc/backend/artifact.md),
   [config.md](https://github.com/wearefacet/facet/blob/main/doc/backend/config.md).

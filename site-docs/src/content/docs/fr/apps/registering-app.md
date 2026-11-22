@@ -8,13 +8,13 @@ sidebar:
 verified_at: a77c6171
 ---
 
-Chaque app commence comme un enregistrementà : un document `app.App`.
+Chaque app commence comme un enregistrement : un document `app.App`.
 L’enregistrement nomme le type de client, les adresses de redirection et le
 plafond d’attributions. Vous passez par l’assistant du tableau de bord, ou
 par l’API REST quand vous scriptez la configuration. Dans les deux cas,
 l’app devient utilisable quand son `status` passe à `active`.
 
-> **Pour les agentsà :** créez l’app avec `POST /Api/app/App`. Le corps JSON
+> **Pour les agents :** créez l’app avec `POST /Api/app/App`. Le corps JSON
 > porte `slug`, `name`, `client_type`, `redirect_uris`, `allowed_origins`
 > et `grants` ; envoyez un cookie de session et
 > `X-Requested-With: XMLHttpRequest`. La création répond `201` avec le
@@ -27,7 +27,7 @@ l’app devient utilisable quand son `status` passe à `active`.
 
 ## Quand l’utiliser
 
-Utilisez cette page quandà :
+Utilisez cette page quand :
 
 - Vous ajoutez une nouvelle app à Facet.
 - Vous devez choisir entre un enregistrement public, confidentiel ou
@@ -53,7 +53,7 @@ Utilisez cette page quandà :
   backend. Le backend agit via un compte de service et une clé API propre
  à l’app — voir [Apps backend](/fr/apps/service-accounts/).
 - **Headless** — définit `no_launcher: true`. Elle n’apparaît jamais dans
-  le tableau de bordà ; on y accède via son client. Un outil en ligne de
+  le tableau de bord ; on y accède via son client. Un outil en ligne de
   commande qui ne déploie jamais de builds définit aussi `no_asset: true`.
 
   Les types public et confidentiel apparaissent dans le lanceur du tableau
@@ -63,8 +63,8 @@ Utilisez cette page quandà :
 ### 2. Enregistrer dans le tableau de bord
 
 Ouvrez **Configurer → Applications** et lancez l’assistant. Choisissez une
-forme de départà : une app web que vous hébergez se connecte via le
-navigateurà ; une app backend se connecte avec une clé API. L’étape Création
+forme de départ : une app web que vous hébergez se connecte via le
+navigateur ; une app backend se connecte avec une clé API. L’étape Création
 recueille le nom, les origines autorisées et les adresses de redirection.
 
 L’étape Autorisations liste chaque doctype par domaine. Choisissez un
@@ -73,7 +73,7 @@ une app backend. Les actions nommées que déclare un doctype apparaissent
 comme capacités supplémentaires.
 
 La publication passe le `status` à `active`. Une app web reçoit son
-`client_id`. Une app confidentielle émet une clé APIà; la clé brute ne
+`client_id`. Une app confidentielle émet une clé API ; la clé brute ne
 s’affiche qu’une seule fois.
 
 ### 3. Ou enregistrer via l’API REST
@@ -81,7 +81,7 @@ s’affiche qu’une seule fois.
 Connectez-vous comme opérateur et gardez les cookies de session dans
 `cookies.txt` — la séquence complète figure sous
 [Apps backend](/fr/apps/service-accounts/). Créez ensuite le document
-d’appà :
+d’app :
 
 ```sh
 curl -s -b cookies.txt -X POST https://facet.company.tld/Api/app/App \
@@ -103,7 +103,7 @@ curl -s -b cookies.txt -X POST https://facet.company.tld/Api/app/App \
 ```
 
 La création répond `201` avec le document stocké. Le hook de création a
-déj à écrit `client_id` :
+déjà écrit `client_id` :
 
 ```json
 {
@@ -137,7 +137,7 @@ déj à écrit `client_id` :
 ```
 
 Publiez quand l’app est prête. Une app a besoin de `status: active` avant
-que les connexions fonctionnentà :
+que les connexions fonctionnent :
 
 ```sh
 curl -s -b cookies.txt -X PATCH \
@@ -150,7 +150,7 @@ curl -s -b cookies.txt -X PATCH \
 :::note[Règles des URI de redirection]
 Chaque entrée est une URI `http(s)` absolue, sans fragment, sans query et
 sans userinfo. `https` est valide sur n’importe quel hôte. `http` n’est
-valide que sur les hôtes de bouclageà : `localhost`, tout sous-domaine
+valide que sur les hôtes de bouclage : `localhost`, tout sous-domaine
 `*.localhost`, `127.0.0.1`, et `::1`. Un port `*` n’est valide que sur une
 entrée `http` de bouclage. À la requête, l’URI présentée doit correspondre
 exactement, sauf qu’une entrée avec port `*` correspond à n’importe quel
@@ -159,8 +159,8 @@ port.
 
 ## Exemple
 
-Le script d’initialisation livre un enregistrement fourni avec Facetà :
-`facet-cli`, la CLI de dev. C’est un exemple headless completà :
+Le script d’initialisation livre un enregistrement fourni avec Facet :
+`facet-cli`, la CLI de dev. C’est un exemple headless complet :
 
 ```json
 {
@@ -191,10 +191,10 @@ Le script d’initialisation livre un enregistrement fourni avec Facetà :
 }
 ```
 
-La CLI se lie à un port local éphémèreà ; chaque entrée de redirection
+La CLI se lie à un port local éphémère ; chaque entrée de redirection
 épingle donc un port `*` sur un hôte de bouclage. Les attributions portent
 `deploy` sur `app.App` parce que la CLI déploie des builds. Aucun rôle de
-service n’existeà : le rôle élu vient de l’écran de consentement.
+service n’existe : le rôle élu vient de l’écran de consentement.
 
 ## Dépannage
 
@@ -205,7 +205,7 @@ place — une entrée par doctype.
 
 **Une entrée de redirection échoue à la validation avec `422`.**
 
-Vérifiez la note ci-dessusà : `https` partout, `http` en bouclage seulement,
+Vérifiez la note ci-dessus : `https` partout, `http` en bouclage seulement,
 `*` seulement comme port sur une entrée `http` de bouclage, pas de fragment
 ni de query.
 
@@ -222,7 +222,7 @@ Le hook de création est le seul à écrire ce champ. Ne l’envoyez pas.
 **Un tableau `grants` vide se relit sous forme `{}`.**
 
 Une particularité du hook de création en Lua, au passage aller-retour. Le
-comportement est équivalentà : les deux formes donnent une itération vide.
+comportement est équivalent : les deux formes donnent une itération vide.
 
 ## Voir aussi
 
@@ -230,9 +230,9 @@ comportement est équivalentà : les deux formes donnent une itération vide.
   modèle sur lequel repose l’enregistrement.
 - [CORS et origines autorisées](/fr/apps/cors-origins/) — enregistrez les
   origines navigateur.
-- [Connexion utilisateurà : OAuth 2.1 + PKCE](/fr/apps/oauth-login/) — la
+- [Connexion utilisateur : OAuth 2.1 + PKCE](/fr/apps/oauth-login/) — la
   connexion que l’enregistrement rend possible.
 - [Maîtrer la portée des apps (attributions)](/fr/govern/app-grants/) —
   l’éditeur des attributions.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [app-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/app-system.md).

@@ -25,7 +25,7 @@ qu’une clé meurt à son prochain usage dès que ses conditions changent.
   `connectivity` doit porter le canal `api`. Voir
   [Rôles et lignes de permission](/fr/govern/roles-permission-lines/).
 - **Le compte.** Facet destine les comptes de service à porter des clés. Un
-  compte de service ne peut pas se connecter par mot de passeà ; une clé est
+  compte de service ne peut pas se connecter par mot de passe ; une clé est
   donc sa seule porte. Voir
   [Gérer les comptes](/fr/govern/accounts-lifecycle/).
 
@@ -40,7 +40,7 @@ curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
   "https://facet.localhost:3443/Api/iam/keys"
 ```
 
-Le corps porteà :
+Le corps porte :
 
 | Champ         | Règle                                                                    |
 | ------------- | -------------------------------------------------------------------------- |
@@ -48,7 +48,7 @@ Le corps porteà :
 | `role`        | Obligatoire, l’id de rôle qualifié, par exemple `iam.Roles.editor`.         |
 | `expires_at`  | Facultatif, un datetime ISO-8601 futur. Facet le normalise en UTC.          |
 
-La réponse montre la clé brute exactement une foisà :
+La réponse montre la clé brute exactement une fois :
 
 ```json
 {
@@ -59,9 +59,9 @@ La réponse montre la clé brute exactement une foisà :
 }
 ```
 
-`key` est le token brutà : `fct_` suivi de 26 caractères. Copiez-le
+`key` est le token brut : `fct_` suivi de 26 caractères. Copiez-le
 maintenant. Le stockage ne garde que son hachage SHA-256 et un préfixe
-d’affichageà ; aucun chemin de lecture ne peut le renvoyer.
+d’affichage ; aucun chemin de lecture ne peut le renvoyer.
 
 La création répond `422` quand le rôle ne vous est pas affecté ou quand la
 `connectivity` du rôle exclut `api`.
@@ -115,7 +115,7 @@ un `404` nu qui ne dit pas lequel.
 | La `connectivity` du rôle porte `api`    | Le canal a été retiré du rôle.                        |
 
 Chaque échec répond le même `401` nu. Il ne dit pas quelle vérification a
-échoué. L’effetà : révoquer une clé, désaffecter son rôle, désactiver son
+échoué. L’effet : révoquer une clé, désaffecter son rôle, désactiver son
 compte, ou retirer le canal `api` tue la clé à son prochain usage.
 
 `last_used_at` se met à jour au plus une fois par minute par clé. Un client
@@ -127,7 +127,7 @@ Chaque mutation écrite par une clé porte l’id de ligne de la clé dans la
 colonne `api_key` du journal des mutations. Une vue d’audit peut la joindre
 au nom de la clé et à son préfixe d’affichage, et répondre à « quelle clé a
 écrit ce changement ». Le cycle de vie écrit aussi deux événements dans le
-journal des connexionsà : `api_key_created` et `api_key_revoked`. Voir
+journal des connexions : `api_key_created` et `api_key_revoked`. Voir
 [Auditer l’activité](/fr/govern/auditing-activity/).
 
 ### Les clés possédées par une app
@@ -146,13 +146,13 @@ modèle d’attribution.
 Parcourez le tableau de vérifications ci-dessus. Le `401` nu ne nomme pas
 la cause, par conception.
 
-1. Vérifiez d’abord la route de listeà : `revoked_at` et `expires_at` sont
+1. Vérifiez d’abord la route de liste : `revoked_at` et `expires_at` sont
    les cas courants.
 2. Puis vérifiez le statut du compte et l’affectation du rôle.
 
 ### La création répond `422` à propos du canal `api`
 
-Par exempleà : `422 The role's connectivity excludes the 'api' channel.`
+Par exemple : `422 The role's connectivity excludes the 'api' channel.`
 
 Activez le canal `api` sur l’onglet Détails du rôle, ou épinglez un rôle
 qui le porte déjà. Le rôle doit aussi vous être affecté.
@@ -182,5 +182,5 @@ revérifiez.
   clés dans les journaux.
 - [Contextes d’authentification](/fr/concepts/auth-contexts/) — comment une
   clé se résout à un rôle.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [iam.md](https://github.com/wearefacet/facet/blob/main/doc/backend/iam.md).

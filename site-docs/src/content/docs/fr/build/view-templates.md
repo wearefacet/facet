@@ -8,7 +8,7 @@ sidebar:
 verified_at: fd345fe3
 ---
 
-Un doctype décide de l’allure de ses pages document. Un modèle de vue est un petit arbre de mise en page stocké sur le doctype. Facet le rend sur la page détail, le formulaire et le tiroir d’aperçu. Sans modèle, chaque surface retombe sur une mise en page génériqueà : une ligne par champ.
+Un doctype décide de l’allure de ses pages document. Un modèle de vue est un petit arbre de mise en page stocké sur le doctype. Facet le rend sur la page détail, le formulaire et le tiroir d’aperçu. Sans modèle, chaque surface retombe sur une mise en page générique : une ligne par champ.
 
 ## Quand l’utiliser
 
@@ -36,33 +36,33 @@ Chaque modèle porte un `kind`. Un modèle par `kind` :
 | `card` | La carte sur un tableau kanban. |
 | `inline` | Une ligne dans une table de relations éditable. |
 
-Un nouveau doctype démarre sans modèle. Chaque surface utilise alors la mise en page génériqueà ; un modèle reste facultatif pour chaque `kind`.
+Un nouveau doctype démarre sans modèle. Chaque surface utilise alors la mise en page générique ; un modèle reste facultatif pour chaque `kind`.
 
 ### 2. Construisez la mise en page avec des nœuds
 
-Un modèle est un arbre de nœuds. Chaque nœud porte un `type` et quelques propriétés. Les nœuds les plus utilisésà :
+Un modèle est un arbre de nœuds. Chaque nœud porte un `type` et quelques propriétés. Les nœuds les plus utilisés :
 
 | Nœud | Rôle |
 | --- | --- |
 | `section` | Un groupe de lignes avec libellé. |
-| `header` | L’en-tête de pageà : pastille de statut, pastilles, sous-titre, logo. |
+| `header` | L’en-tête de page : pastille de statut, pastilles, sous-titre, logo. |
 | `field` | Une ligne de valeur avec libellé. Écrivez la valeur sous la forme `$field_name`. |
 | `markdown` | Un champ texte long, rendu en markdown. |
 | `grid`, `row`, `col` | Conteneurs de mise en page. Un `grid` prend des fractions comme `3 1`. |
-| `tabs` | Des zones à ongletsà ; chaque `tab` porte des enfants. |
-| `sidebar` | La colonne de droite d’une page détailà ; placez-y `record-meta` pour la provenance. |
+| `tabs` | Des zones à onglets ; chaque `tab` porte des enfants. |
+| `sidebar` | La colonne de droite d’une page détail ; placez-y `record-meta` pour la provenance. |
 | `relation` | Une table de documents enfants ou liés, avec des `columns`. |
-| `input` | Un contrôle de formulaireà ; il choisit le contrôle d’après le type déclaré du champ. |
+| `input` | Un contrôle de formulaire ; il choisit le contrôle d’après le type déclaré du champ. |
 
 D’autres nœuds existent pour les conditions (`if`), les données imbriquées (`object`, `array`, `dict`), les liens (`link`, `email`), les images (`image-artifact`) et les contrôles forcés (`input-text`, `input-money`).
 
 ### 3. Enregistrez et vérifiez
 
-Enregistrez le modèle. Facet le valide contre le doctypeà : un `input` lié à un champ inconnu ou à un champ en lecture seule est une erreurà ; un `kind` `view`, `form` ou `quickView` manquant ne donne qu’une remarque, car la mise en page générique le couvre. Lancez la vérification pour voir le rapport. Voir [Vérifier un domaine avant publication](/fr/build/checking-before-publish/).
+Enregistrez le modèle. Facet le valide contre le doctype : un `input` lié à un champ inconnu ou à un champ en lecture seule est une erreur ; un `kind` `view`, `form` ou `quickView` manquant ne donne qu’une remarque, car la mise en page générique le couvre. Lancez la vérification pour voir le rapport. Voir [Vérifier un domaine avant publication](/fr/build/checking-before-publish/).
 
 ## Exemple
 
-Un doctype `helpdesk.Ticket` porte les champs `title` (string), `status` (enumà : open, closed), `priority` (enum), `due_date` (date), `description` (longtext) et `owner_id` (reference). Ce modèle complet est celui du `kind` `view` du doctypeà :
+Un doctype `helpdesk.Ticket` porte les champs `title` (string), `status` (enum : open, closed), `priority` (enum), `due_date` (date), `description` (longtext) et `owner_id` (reference). Ce modèle complet est celui du `kind` `view` du doctype :
 
 ```yaml
 content:
@@ -102,7 +102,7 @@ meta:
   parent_id: helpdesk.Ticket
 ```
 
-Un document stockeà :
+Un document stocke :
 
 ```json
 {
@@ -115,7 +115,7 @@ Un document stockeà :
 }
 ```
 
-La page détail rend alorsà : un en-tête avec la pastille de statut dans la couleur de l’enum, la priorité à côté, et le sous-titre **Owned by** avec le libellé du compte référencéà ; la description en markdown rendu sous **Details**, avec **Due date** à côtéà ; et une colonne **Owner** avec le libellé du compte et un lien vers l’historique. Les valeurs de référence ne s’affichent jamais comme des ids bruts.
+La page détail rend alors : un en-tête avec la pastille de statut dans la couleur de l’enum, la priorité à côté, et le sous-titre **Owned by** avec le libellé du compte référencé ; la description en markdown rendu sous **Details**, avec **Due date** à côté ; et une colonne **Owner** avec le libellé du compte et un lien vers l’historique. Les valeurs de référence ne s’affichent jamais comme des ids bruts.
 
 ## Dépannage
 

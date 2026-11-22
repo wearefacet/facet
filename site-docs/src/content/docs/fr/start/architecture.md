@@ -46,7 +46,7 @@ bus -> consumers
 
 ### 1. Les appelants
 
-Trois sortes d’appelants partagent la même APIà:
+Trois sortes d’appelants partagent la même API :
 
 | Appelant                                       | Comment il se connecte                                                          | Ce qu’il obtient                                          |
 | ---------------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------- |
@@ -79,7 +79,7 @@ pareil sur chaque canal.
 ### 4. Les contrôleurs
 
 Les contrôleurs de lecture et d’écriture traduisent les permissions du rôle en
-vérifications en base de donnéesà :
+vérifications en base de données :
 
 - Une permission nomme une action, un chemin de doctype et un périmètre de
   lignes facultatif.
@@ -101,16 +101,16 @@ fenêtre de rétention par une seule ligne d’instantané.
 ### 6. Les projections
 
 Un déclencheur PostgreSQL applique chaque mutation à la table `projections`,
-qui garde l’état courantà : le contenu, le nom d’affichage, le texte de
+qui garde l’état courant : le contenu, le nom d’affichage, le texte de
 recherche et les liens entrants. Les lectures ne relisent jamais le journal.
 Elles lisent les projections, avec les prédicats de périmètre du rôle
-appliqués. Chaque ligne stocke l’id de sa dernière mutationà ; cette valeur
+appliqués. Chaque ligne stocke l’id de sa dernière mutation ; cette valeur
 sert d’ETag (jeton de concurrence) pour les écritures optimistes.
 
 ### 7. Le bus d’événements
 
 Après le commit en base, le chemin d’écriture publie des événements sur Redis
-Streams. Les consommateurs réagissentà : les hooks de domaine exécutent du
+Streams. Les consommateurs réagissent : les hooks de domaine exécutent du
 Lua, les webhooks livrent des enveloppes signées, la réplication copie des
 champs entre domaines, et le pont WebSocket pousse les mises à jour en direct
 aux navigateurs. La livraison est au plus une fois, par conception. Les
@@ -122,7 +122,7 @@ l’identité de la réaction, et laissent leurs propres lignes d’audit.
 ## Vérifiez vous-même
 
 Le document OpenAPI servi décrit la surface de l’API v1. Il demande un
-appelant connecté, comme toute lecture du plan de contrôleà :
+appelant connecté, comme toute lecture du plan de contrôle :
 
 ```sh
 curl -sS -H "Authorization: Bearer $FACET_TOKEN" \
@@ -131,7 +131,7 @@ curl -sS -H "Authorization: Bearer $FACET_TOKEN" \
 
 :::tip
 Donnez cette page plus le document OpenAPI à un agent. Le schéma nomme les
-sautsà ; le contexte d’authentification et le journal des mutations expliquent
+sauts ; le contexte d’authentification et le journal des mutations expliquent
 pourquoi un agent ne peut ni contourner les droits ni perdre sa piste d’audit.
 :::
 
@@ -140,4 +140,4 @@ pourquoi un agent ne peut ni contourner les droits ni perdre sa piste d’audit.
 - [Sécurité et gouvernance](/fr/start/security-governance/) — les règles de contrôle en détail.
 - [Qu’est-ce que Facet](/fr/start/what-is-facet/) — l’histoire du produit derrière ce schéma.
 - [Glossaire](/fr/start/glossary/) — les termes employés ci-dessus.
-- Internes sur GitHubà : [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md), [mutation.md](https://github.com/wearefacet/facet/blob/main/doc/backend/mutation.md), [event.md](https://github.com/wearefacet/facet/blob/main/doc/backend/event.md).
+- Internes sur GitHub : [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md), [mutation.md](https://github.com/wearefacet/facet/blob/main/doc/backend/mutation.md), [event.md](https://github.com/wearefacet/facet/blob/main/doc/backend/event.md).

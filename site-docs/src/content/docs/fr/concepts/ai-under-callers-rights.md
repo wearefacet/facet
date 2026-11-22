@@ -74,19 +74,19 @@ compte de l’appelant. Les écritures de l’assistant portent une cause
 Les écritures via MCP portent la même cause `request` qu’une requête directe.
 Rien de ce qu’un agent fait n’échappe à l’audit.
 
-**Pourquoi pas un compte de service IA séparéà?** Un tel compte aurait besoin
+**Pourquoi pas un compte de service IA séparé ?** Un tel compte aurait besoin
 de droits larges pour servir chaque appelant. Ses permissions s’écarteraient
 du modèle de rôles. Ses lignes d’audit nommeraient le service, pas la personne
 qui a demandé. Sous les droits de l’appelant, révoquer un rôle coupe aussi
 l’assistant. Chaque action remonte au compte qui l’a provoquée. Le même modèle
-sert les appsà : l’assistant par app tourne sous le contexte d’authentification
+sert les apps : l’assistant par app tourne sous le contexte d’authentification
 de l’app appelante, plafonné par son attribution.
 
 :::note
 L’assistant de construction de domaines est l’exception. Il modifie des
 définitions de doctypes dans un domaine de brouillon sous un principal de
 niveau système, chaque outil d’écriture restant limité à ce brouillon. Ses
-lectures portent plus loinà ; ses écritures restent dans le brouillon.
+lectures portent plus loin ; ses écritures restent dans le brouillon.
 :::
 
 **Le prix est la symétrie.** Le même prompt renvoie des résultats différents
@@ -105,5 +105,5 @@ accès.
   attribution.
 - [Sécurité et gouvernance](/fr/start/security-governance/) — rôles,
   attributions et audit en une seule image.
-- Internes sur GitHubà : [agent-tools.md](https://github.com/wearefacet/facet/blob/main/doc/backend/agent-tools.md),
+- Internes sur GitHub : [agent-tools.md](https://github.com/wearefacet/facet/blob/main/doc/backend/agent-tools.md),
   [workspace-assistant.md](https://github.com/wearefacet/facet/blob/main/doc/backend/workspace-assistant.md).

@@ -10,26 +10,26 @@ verified_at: a77c6171
 
 L’API de documents est du HTTP et du JSON simples. Une seule enveloppe sert
 chaque lecture et chaque écriture, et une seule grammaire de filtre sert
-chaque liste. Cette page présente les structuresà : corps de création et de
+chaque liste. Cette page présente les structures : corps de création et de
 mise à jour, filtres de liste, agrégations, entity tags (ETags) et erreurs.
 Le contrat lisible par la machine se trouve dans la
 [Référence de l’API REST](/fr/reference/rest-api/).
 
-> **Pour les agentsà :** Authà : `Authorization: Bearer fct_…` (clé statique) ou
+> **Pour les agents :** Auth : `Authorization: Bearer fct_…` (clé statique) ou
 > `Authorization: DPoP <token>` plus un en-tête de preuve `DPoP` (token
-> d’app). Séquenceà : `POST /Api/crm/Company` avec les champs au premier niveau
+> d’app). Séquence : `POST /Api/crm/Company` avec les champs au premier niveau
 > du corps JSON (`201`, enveloppe `{data, meta}`) →
 > `GET /Api/crm/Company/<id>` (gardez l’`ETag`) → renvoyez-le en
 > `If-None-Match: "<etag>"` pour un `304` →
 > `GET /Api/crm/Company?items=50&filters[status__eq]=active&sort=-updated_at`
-> → `PATCH` (merge patchà ; `null` retire une clé) → `DELETE` (`204`). Les
+> → `PATCH` (merge patch ; `null` retire une clé) → `DELETE` (`204`). Les
 > échecs de validation sont des `422` avec
 > `{error, details:[{field, message, code, params?}]}`. Un document caché ou
 > manquant répond `404` ; un document supprimé répond `410`.
 
 ## Quand l’utiliser
 
-Utilisez l’API brute quandà :
+Utilisez l’API brute quand :
 
 - Vous appelez Facet depuis un langage sans SDK.
 - Vous voulez un contrôle direct sur les filtres, la pagination ou les
@@ -44,7 +44,7 @@ pagination, erreurs typées.
 - Une instance Facet en fonctionnement et un identifiant avec une attribution
   de lecture sur le doctype visé. Les créations et les mises à jour exigent
   `write` ; la suppression exige `delete`.
-- Trois identifiants fonctionnent sur chaque routeà :
+- Trois identifiants fonctionnent sur chaque route :
   - `Authorization: Bearer fct_…` — une clé d’API statique
     ([Comptes de service et clés d’API](/fr/apps/service-accounts/)).
   - `Authorization: DPoP <token>` avec une preuve fraîche dans l’en-tête
@@ -53,7 +53,7 @@ pagination, erreurs typées.
 - Une écriture avec session cookie doit porter
   `X-Requested-With: XMLHttpRequest`. Une requête Bearer ou DPoP sans cookie
   de session en est exempte.
-- Les chemins portent d’abord un domaine en minusculesà : `/Api/crm/Company`.
+- Les chemins portent d’abord un domaine en minuscules : `/Api/crm/Company`.
   Un premier segment en majuscules (`/OAuth`, `/Ws`) désigne une route
   d’infrastructure, jamais un domaine.
 
@@ -71,7 +71,7 @@ curl "https://facet.example.com/Api/crm/Company/01JD8W2G7Q5M2X9K4T6VBNR8D" \
 
 La réponse est une enveloppe `{ data, meta }`. `data` porte les champs que le
 doctype déclare. `meta` porte les métadonnées système et n’est jamais
-inscriptibleà :
+inscriptible :
 
 ```json
 {
@@ -94,7 +94,7 @@ inscriptibleà :
 | `mid`                        | ULID de la dernière mutation appliquée au document. |
 | `domain`, `doc_type`         | L’id du domaine et le nom du doctype. |
 | `version`, `schema_version`  | La version du document et la version du schéma du doctype. |
-| `display_name`               | Libellé humain issu du modèle du doctypeà ; `null` quand le doctype n’en déclare pas. |
+| `display_name`               | Libellé humain issu du modèle du doctype ; `null` quand le doctype n’en déclare pas. |
 | `created_at`, `updated_at`   | Horodatages en UTC. |
 
 ### 2. Créez un document
@@ -122,7 +122,7 @@ wrapper ne nomme aucun champ du doctype, donc il échoue avec `422` :
 Pour créer un parent avec ses enfants en un appel, envoyez `$content` et
 `$children`. L’appel est une seule transaction : l’échec d’un enfant annule
 tout l’appel. Les clés de `$children` sont des noms de relation sur le
-doctypeà :
+doctype :
 
 ```sh
 curl -X POST "https://facet.example.com/Api/crm/Company" \
@@ -133,7 +133,7 @@ curl -X POST "https://facet.example.com/Api/crm/Company" \
 ```
 
 La réponse porte une clé `children` en plus, groupée par nom de relation.
-Chaque entrée porte la même forme `{ data, meta }` que le parentà :
+Chaque entrée porte la même forme `{ data, meta }` que le parent :
 
 ```json
 { "children": { "memberships": [
@@ -143,7 +143,7 @@ Chaque entrée porte la même forme `{ data, meta }` que le parentà :
 ### 3. Mettez à jour et supprimez
 
 `PATCH` envoie un JSON merge patch (RFC 7386). Une valeur `null` retire une
-clé du documentà ; le journal des mutations enregistre le retrait comme une
+clé du document ; le journal des mutations enregistre le retrait comme une
 entrée `unset` :
 
 ```sh
@@ -153,11 +153,11 @@ curl -X PATCH "https://facet.example.com/Api/crm/Company/01JD8W2G7Q5M2X9K4T6VBNR
 ```
 
 La réponse est `200` avec l’enveloppe mise à jour. Les routes de documents
-n’acceptent que PATCHà: un `PUT` répond `405` avec un en-tête `Allow`, car
+n’acceptent que PATCH : un `PUT` répond `405` avec un en-tête `Allow`, car
 `PUT` est réservé à la rédaction des définitions sur `core.DocType`.
 
 `DELETE` applique une suppression douce au document et répond `204` sans
-corps. Le document devient une pierre tombaleà ; un appel de restauration le
+corps. Le document devient une pierre tombale ; un appel de restauration le
 ramène (voir `410` sous [Erreurs](#erreurs)).
 
 ### 4. Listez et filtrez
@@ -196,15 +196,15 @@ Les clés de filtre sont des paires `field__operator` :
 | `__gt`, `__gte`, `__lt`, `__lte`           | Comparaison. |
 | `__match`                                  | Contient la sous-chaîne, sans tenir compte de la casse. |
 | `__starts_with`                            | Commence par la valeur, sans tenir compte de la casse. |
-| `__between`                                | Intervalle inclusifà ; la valeur est un tableau à deux éléments. |
-| `__in`                                     | Appartenanceà ; la valeur est un tableau d’au plus 100 entrées. |
+| `__between`                                | Intervalle inclusif ; la valeur est un tableau à deux éléments. |
+| `__in`                                     | Appartenance ; la valeur est un tableau d’au plus 100 entrées. |
 | `__currency`                               | Montant monétaire dans une devise. |
 | `__contains`, `__overlaps`, `__within`     | Tests d’intervalle sur les champs `period` et `dateperiod`. |
 | `search` (clé nue, sans suffixe)           | Correspondance de sous-chaîne sur le corpus de recherche du document. |
 
 Chaque doctype accepte aussi les cibles système `id`, `created_at`,
 `updated_at` et `deleted_at`. Les valeurs de tableau sur la query string
-voyagent encodées en JSONà:
+voyagent encodées en JSON :
 `filters[value__between]=%5B%22USD%202500%22%2C%22USD%201000%22%5D`. Les
 entrées de tri prennent un préfixe `-` pour l’ordre décroissant. Les types
 numériques (integer, money, duration) se trient comme des nombres, pas comme
@@ -227,7 +227,7 @@ curl "https://facet.example.com/Api/crm/Company?aggregate=count&filters[status__
 `integer`, `duration` ou `money` de premier niveau. Un agrégat de champ porte
 sur l’ensemble filtré complet, sans plafond. Un champ money renvoie un sac
 avec une entrée par devise présente, jamais un total unique toutes devises
-confonduesà ; les montants sont des chaînes décimalesà :
+confondues ; les montants sont des chaînes décimales :
 
 ```sh
 curl "https://facet.example.com/Api/crm/Deal?aggregate=sum&field=value" \
@@ -240,14 +240,14 @@ curl "https://facet.example.com/Api/crm/Deal?aggregate=sum&field=value" \
 
 Un ensemble vide répond `value: 0` pour `sum`, `value: null` pour `avg`, `min`
 et `max`, et `value: {}` pour un champ money. `meta.count` compte les lignes
-correspondantesà ; les lignes qui omettent le champ comptent quand même.
+correspondantes ; les lignes qui omettent le champ comptent quand même.
 
 ### 6. Mettez les lectures en cache avec les ETags
 
 Chaque lecture émet un `ETag` fort. Sur un document seul, le tag est l’ULID de
 sa dernière mutation. Sur une collection, le tag combine le rôle, la requête
 et la version du doctype. Renvoyez le tag dans `If-None-Match`, et le serveur
-répond `304 Not Modified` quand rien n’a changéà :
+répond `304 Not Modified` quand rien n’a changé :
 
 ```http
 GET /Api/crm/Company/01JD8W2G7Q5M2X9K4T6VBNR8D
@@ -266,7 +266,7 @@ périmé ne reçoive jamais un faux `304`.
 ### 7. Envoyez les paramètres de liste dans un corps QUERY
 
 La méthode `QUERY` (RFC 10008) porte les paramètres de liste dans un corps
-JSON uniquement. Préférez-la pour les nouveaux clientsà ; `GET` garde la fusion
+JSON uniquement. Préférez-la pour les nouveaux clients ; `GET` garde la fusion
 du corps et de la query string pour la compatibilité ascendante, et la query
 string l’emporte en cas de collision :
 
@@ -278,7 +278,7 @@ curl -X QUERY "https://facet.example.com/Api/crm/Company" \
 
 Tout paramètre de query string sur une requête `QUERY` répond `422`. Un corps
 avec un `Content-Type` non JSON répond `415`. Un corps vide signifie les
-valeurs par défautà : page 1, 100 éléments, tri `id`. Les réponses portent
+valeurs par défaut : page 1, 100 éléments, tri `id`. Les réponses portent
 `Accept-Query: application/json`, pour qu’un client puisse découvrir le format
 depuis toute réponse de liste.
 
@@ -287,11 +287,11 @@ depuis toute réponse de liste.
 | Statut | Signification |
 | ------ | ------------- |
 | `422`  | La validation a échoué, ou un nom de filtre, de tri, de select ou de paramètre est faux. |
-| `403`  | Refus de classeà : l’identifiant ne porte aucune permission sur le doctype. |
+| `403`  | Refus de classe : l’identifiant ne porte aucune permission sur le doctype. |
 | `404`  | Sans divulgation : un document manquant et un document caché sont indiscernables. |
-| `405`  | Méthode non autoriséeà ; l’en-tête `Allow` nomme les méthodes acceptées. |
+| `405`  | Méthode non autorisée ; l’en-tête `Allow` nomme les méthodes acceptées. |
 | `409`  | Écriture concurrente sur le document. Réémettez la même requête. |
-| `410`  | Pierre tombaleà : le document est supprimé. |
+| `410`  | Pierre tombale : le document est supprimé. |
 | `415`  | Un `Content-Type` non JSON sur une requête qui porte un corps. |
 
 Un corps `422` porte une entrée par champ en échec. Chaque entrée contient
@@ -302,7 +302,7 @@ complet). Une écriture concurrente répond
 L’écriture perdante n’a jamais atterri, donc une nouvelle écriture prend le
 prochain emplacement libre.
 
-Une lecture d’une pierre tombale répond `410` avec le libellé survivantà :
+Une lecture d’une pierre tombale répond `410` avec le libellé survivant :
 
 ```json
 { "error": "Document 01JD8W2G7Q5M2X9K4T6VBNR8D was deleted", "display_name": "Acme", "deleted_at": "2026-01-01T12:00:00Z" }
@@ -374,5 +374,5 @@ niveau du corps JSON.
   que l’identifiant peut tenter.
 - [Référence de l’API REST](/fr/reference/rest-api/) — le contrat lisible par
   la machine.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [http-layer.md](https://github.com/wearefacet/facet/blob/main/doc/backend/http-layer.md).

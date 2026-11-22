@@ -1,5 +1,5 @@
 ---
-title: "MCPà: connecter des agents"
+title: "MCP : connecter des agents"
 description: Connectez un agent externe à Facet via MCP sous un rôle épinglé unique.
 audience: [developer]
 features: [AI-05, APP-04]
@@ -10,10 +10,10 @@ verified_at: a77c6171
 
 Facet est un serveur Model Context Protocol (MCP). Un agent externe se connecte
 sous un rôle épinglé unique et agit sur les documents avec ce rôle. Facet est
-le serveur de ressourcesà : il valide les tokens émis par ses propres endpoints
+le serveur de ressources : il valide les tokens émis par ses propres endpoints
 `/OAuth/*` et n’en émet aucun lui-même.
 
-> **Pour les agentsà :** `POST /Api/_mcp/<role_slug>` — JSON-RPC 2.0, avec
+> **Pour les agents :** `POST /Api/_mcp/<role_slug>` — JSON-RPC 2.0, avec
 > `Authorization: Bearer <token>`. Prenez l’URL telle quelle depuis
 > `GET /Api/_mcp/endpoints` ; ne la déduisez jamais de votre propre origine.
 > Un premier appel sans token répond `401` plus un défi `WWW-Authenticate` qui
@@ -25,20 +25,20 @@ le serveur de ressourcesà : il valide les tokens émis par ses propres endpoin
 
 ## Quand l’utiliser
 
-Connectez un agent externe via MCP quandà :
+Connectez un agent externe via MCP quand :
 
-- vous pilotez Facet depuis un agent externe via MCPà;
-- vous voulez le RBAC par rôle sans enregistrement d’appà ;
+- vous pilotez Facet depuis un agent externe via MCP ;
+- vous voulez le RBAC par rôle sans enregistrement d’app ;
 - vous voulez que l’audit montre un rôle épinglé unique par session.
 
 ## Avant de commencer
 
 - Le compte détient le rôle, et la `connectivity` du rôle liste le canal `mcp`.
-- MCP n’est pas une appà : pas de document d’enregistrement, pas de plafond
+- MCP n’est pas une app : pas de document d’enregistrement, pas de plafond
   d’attribution. Le rôle reste la seule limite.
 - Il vous faut l’URL du endpoint. `GET /Api/_mcp/endpoints` (session
   navigateur, token d’app ou clé API) répond avec une URL par rôle détenu,
-  triée par id de rôleà :
+  triée par id de rôle :
 
 ```json
 {
@@ -49,7 +49,7 @@ Connectez un agent externe via MCP quandà :
 ```
 
 - Utilisez l’URL telle quelle. Le `aud` du token doit lui correspondre
-  exactementà ; une URL déduite de votre propre origine échoue.
+  exactement ; une URL déduite de votre propre origine échoue.
 
 ## Étapes
 
@@ -81,7 +81,7 @@ dans `authorization_servers`, et `"bearer_methods_supported": ["header"]`.
 ### 2. Enregistrer le client
 
 `POST /OAuth/register` implémente l’enregistrement dynamique de client de la
-RFC 7591. Il est sans étatà : Facet fabrique un id de client public opaque et ne
+RFC 7591. Il est sans état : Facet fabrique un id de client public opaque et ne
 garde aucune trace. L’écran de consentement et PKCE portent la sécurité.
 
 ```sh
@@ -95,11 +95,11 @@ La réponse porte le `client_id` — un id de client public opaque, sans secret.
 ### 3. Autoriser avec le paramètre resource
 
 Envoyez le navigateur du compte vers `GET /OAuth/authorize`. Emportez les
-paramètres PKCE de [Connexion utilisateur](/fr/apps/oauth-login/), plusà :
+paramètres PKCE de [Connexion utilisateur](/fr/apps/oauth-login/), plus :
 
 | Paramètre | Valeur |
 | --- | --- |
-| `resource` | l’identifiant MCP par rôleà : `https://<host>/Api/_mcp/<role_slug>` |
+| `resource` | l’identifiant MCP par rôle : `https://<host>/Api/_mcp/<role_slug>` |
 | `role` | l’id de rôle qualifié, par exemple `iam.Roles.editor` |
 
 L’écran de consentement épingle ce rôle. Il refuse un rôle que le compte ne
@@ -117,10 +117,10 @@ claim `app`.
 ### 5. Appeler la surface de tools
 
 JSON-RPC 2.0 passe par `POST /Api/_mcp/<role_slug>`. Une requête porte un seul
-appelà ; la réponse est une seule réponse. Commencez par `initialize` ; le
+appel ; la réponse est une seule réponse. Commencez par `initialize` ; le
 serveur répond avec sa version de protocole et le rôle épinglé. Puis envoyez
 `notifications/initialized` — il n’attend aucune réponse. Listez les tools du
-rôleà :
+rôle :
 
 ```json
 {
@@ -154,7 +154,7 @@ La réponse liste les tools avec `name`, `description` et `inputSchema` — voir
 
 Envoyez `grant_type=refresh_token` en POST vers `/OAuth/token`. Une session
 MCP revalide le compte, le rôle détenu et le canal `mcp` du rôle. Un rôle qui
-perd le canal perd ses sessions au prochain refreshà ; un token d’accès vivant
+perd le canal perd ses sessions au prochain refresh ; un token d’accès vivant
 reste valable jusqu’à la fin de son TTL.
 
 ## Explication
@@ -162,31 +162,31 @@ reste valable jusqu’à la fin de son TTL.
 ### Le modèle
 
 - **L’URL épingle le rôle.** Un `:role_slug` sert une seule session. Pas de
-  changement en cours de sessionà ; un autre rôle signifie une autre URL.
+  changement en cours de session ; un autre rôle signifie une autre URL.
 - **Les ids de rôles sont qualifiés.** Le paramètre `role` et le slug d’URL
   portent `iam.Roles.admin` ; les noms nus restent ambigus entre domaines.
-- **MCP n’est pas une app.** Aucune intersection d’attributions ne s’appliqueà ;
+- **MCP n’est pas une app.** Aucune intersection d’attributions ne s’applique ;
   le RBAC simple du rôle tourne, exactement comme en REST.
 - **Aucun principal système.** La répartition refuse d’emblée un contexte
   système.
 - **MCP est un plan de données.** Les tools agissent sur les documents des
-  doctypes enregistrésà ; la conception de schémas reste en REST et dans
+  doctypes enregistrés ; la conception de schémas reste en REST et dans
   l’assistant du builder.
 
 ### Limites
 
-Le bloc optionnel `mcp:` dans `config.{env}.yml` fixe les plafondsà :
+Le bloc optionnel `mcp:` dans `config.{env}.yml` fixe les plafonds :
 
 | Clé | Défaut | Bornes |
 | --- | --- | --- |
-| `max_concurrency_per_sid` | 4 | traitements en cours par sessionà ; au-del à du plafond, les requêtes attendent |
+| `max_concurrency_per_sid` | 4 | traitements en cours par session ; au-del à du plafond, les requêtes attendent |
 | `max_result_rows` | 200 | lignes qu’un tool de liste renvoie |
 | `max_response_bytes` | 1048576 | octets de l’enveloppe de résultat d’un tool |
 | `max_batch_ops` | 25 | opérations dans un appel `batch` |
 
 La durée d’une requête suit le timeout d’instruction partagé
 (`database.statement_timeout_ms`) ; il n’y a pas de pool MCP séparé. Les
-fichiers ne passent jamais par JSON-RPCà: `request_artifact_upload` fabrique
+fichiers ne passent jamais par JSON-RPC : `request_artifact_upload` fabrique
 une URL d’upload signée à usage unique — voir
 [Agent tools](/fr/apps/agent-tools/) et
 [Téléverser et servir des fichiers](/fr/apps/files/).
@@ -222,7 +222,7 @@ démarrez le parcours.
 
 **`400 invalid_request` signale la forme du rôle.**
 
-Le paramètre `role` de l’autorisation porte un nom nu. Envoyez l’id qualifiéà :
+Le paramètre `role` de l’autorisation porte un nom nu. Envoyez l’id qualifié :
 `iam.Roles.admin`, pas `admin`.
 
 **L’écran de consentement refuse la connexion.**
@@ -232,7 +232,7 @@ Les deux refus portent `access_denied`.
 
 **Le token passe en MCP, et REST le refuse.**
 
-Par conception. Le `aud` du token nomme la surface MCPà; REST le refuse, et le
+Par conception. Le `aud` du token nomme la surface MCP ; REST le refuse, et le
 répertoire des endpoints aussi. Utilisez une session, un token d’app ou une
 clé API.
 
@@ -244,7 +244,7 @@ suivant.
 ## Voir aussi
 
 - [Agent tools](/fr/apps/agent-tools/) — le catalogue que ces routes servent.
-- [Fonctionnement des apps sur Facet](/fr/apps/how-apps-work/) — le modèle d’appà ; MCP n’est pas une app.
+- [Fonctionnement des apps sur Facet](/fr/apps/how-apps-work/) — le modèle d’app ; MCP n’est pas une app.
 - [Gouverner l’assistant](/fr/govern/governing-assistant/) — il expose le même catalogue.
 - [L’IA sous les droits de l’appelant](/fr/concepts/ai-under-callers-rights/) — le modèle de droits.
-- Internes sur GitHubà : [mcp.md](https://github.com/wearefacet/facet/blob/main/doc/backend/mcp.md).
+- Internes sur GitHub : [mcp.md](https://github.com/wearefacet/facet/blob/main/doc/backend/mcp.md).

@@ -8,7 +8,7 @@ sidebar:
 verified_at: 008dd880
 ---
 
-Deux fenêtres bornent les données stockées dans le magasin de documentsà :
+Deux fenêtres bornent les données stockées dans le magasin de documents :
 le journal de l’historique des modifications et le contenu des documents
 supprimés. Deux passes cron les élaguent une fois par jour. Vous réglez les
 fenêtres dans `config.{env}.yml`, et vous pouvez les surcharger à l’exécution.
@@ -17,7 +17,7 @@ Le modèle complet — chaque classe de données et sa fenêtre — se trouve da
 
 ## Quand l’utiliser
 
-Ajustez la rétention quandà :
+Ajustez la rétention quand :
 
 - Vous fixez ou changez `mutations.retention_days` ou
   `tombstone.content_retention_days`.
@@ -26,7 +26,7 @@ Ajustez la rétention quandà :
 
 ## Avant de commencer
 
-- Une fenêtre de `0` conserve toutà : la passe ne fait rien, et le retour
+- Une fenêtre de `0` conserve tout : la passe ne fait rien, et le retour
   arrière atteint tout l’historique.
 - La profondeur du retour arrière égale la fenêtre des mutations. Les lignes
   que le compactage a fondues ne reviennent pas — voir
@@ -77,11 +77,11 @@ La passe de compactage, `mutations.compaction` à 03:45, remplace chaque
 mutation plus ancienne que la fenêtre par une seule ligne d’instantané
 synthétique par document. Le document lui-même ne change jamais, et aucun
 événement n’est émis. Un document en tombstone garde toujours son delete final
-et la ligne qui le précèdeà : une restauration reste donc possible.
+et la ligne qui le précède : une restauration reste donc possible.
 
 La passe d’élagage, `tombstone.content_prune` à 04:15, efface le contenu
 `content`, `links` et `search` des tombstones au-del à de la fenêtre, par lots
-bornés. Le libellé resteà : les vues d’audit peuvent toujours nommer la
+bornés. Le libellé reste : les vues d’audit peuvent toujours nommer la
 ligne supprimée.
 
 ### 4. Connaître les cas limites
@@ -101,7 +101,7 @@ ligne supprimée.
 ## Exemple
 
 Surchargez une fenêtre d’historique de 90 jours à l’exécution, puis rendez-la
-au fichierà :
+au fichier :
 
 ```sh
 curl -k -X PATCH -H "Authorization: Bearer $FACET_API_KEY" \
@@ -124,7 +124,7 @@ La cible est plus ancienne que la fenêtre. Voir
 
 **La table des mutations grossit sans fin.**
 
-La fenêtre vaut `0` : la passe ne fait rien. C’est un choix valableà :
+La fenêtre vaut `0` : la passe ne fait rien. C’est un choix valable :
 la profondeur du retour arrière devient l’historique complet. Fixez une
 fenêtre pour relancer l’élagage.
 
@@ -148,7 +148,7 @@ voir [Paramètres système](/fr/operate/system-settings/).
 ## Voir aussi
 
 - [La rétention : quoi et combien de temps](/fr/govern/retention/) — le
-  modèleà : chaque classe de données et sa fenêtre.
+  modèle : chaque classe de données et sa fenêtre.
 - [Revenir en arrière](/fr/govern/rolling-back/) — la limite de profondeur que
   la fenêtre crée.
 - [Le journal des mutations](/fr/concepts/mutation-log/) — ce que le journal
@@ -157,6 +157,6 @@ voir [Paramètres système](/fr/operate/system-settings/).
   surcharges à l’exécution.
 - [Tâches en arrière-plan et cron](/fr/operate/jobs-cron/) — les calendriers
   et la règle de rétention des tâches.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [mutation.md](https://github.com/wearefacet/facet/blob/main/doc/backend/mutation.md),
   [audit.md](https://github.com/wearefacet/facet/blob/main/doc/backend/audit.md).

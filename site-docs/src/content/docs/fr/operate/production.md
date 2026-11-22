@@ -8,7 +8,7 @@ sidebar:
 verified_at: f1409cdc
 ---
 
-En production, tout passe par Docker Composeà : PostgreSQL, Redis, le
+En production, tout passe par Docker Compose : PostgreSQL, Redis, le
 backend, le frontend, et une terminaison TLS Caddy. Aucune chaîne d’outils
 locale n’est nécessaire.
 
@@ -18,7 +18,7 @@ Docker avec Compose. Rien d’autre.
 
 ## Étapes
 
-1. Clonez ce dépôt et créez le fichier d’environnementà :
+1. Clonez ce dépôt et créez le fichier d’environnement :
 
    ```sh
    cp docker/.env.example docker/.env
@@ -27,7 +27,7 @@ Docker avec Compose. Rien d’autre.
    Remplissez les valeurs — nom d’hôte public, relais SMTP, secrets. Le
    fichier documente chaque clé.
 
-2. Construisez et démarrez la pileà :
+2. Construisez et démarrez la pile :
 
    ```sh
    docker compose -f docker/compose.prod.yml up -d --build
@@ -36,7 +36,7 @@ Docker avec Compose. Rien d’autre.
    Le point d’entrée du backend applique les migrations et initialise le
    schéma de base à chaque démarrage. Aucune étape manuelle pour le schéma.
 
-3. Créez le premier administrateurà :
+3. Créez le premier administrateur :
 
    ```sh
    docker compose -f docker/compose.prod.yml exec backend facet seed:admin ops@your-company.tld
@@ -45,7 +45,7 @@ Docker avec Compose. Rien d’autre.
    La commande affiche un mot de passe à usage unique. Il ne s’affiche
    qu’une seule fois — notez-le dans un gestionnaire de mots de passe.
 
-4. Ouvrez `https://<your-hostname>` (par défautà :
+4. Ouvrez `https://<your-hostname>` (par défaut :
    `https://facet.localhost:3443`), connectez-vous avec le mot de passe à
 
    usage unique, puis définissez un vrai mot de passe quand c’est demandé.
@@ -68,7 +68,7 @@ Docker avec Compose. Rien d’autre.
   fuseau de sa session.
 - **Redis est obligatoire.** Le bus d’événements, les sessions, les codes
   OAuth, et les rate limits l’utilisent. PostgreSQL porte l’état
-  durableà ; Redis est le bus de réaction.
+  durable ; Redis est le bus de réaction.
 
 ## Références
 
@@ -80,4 +80,4 @@ Docker avec Compose. Rien d’autre.
   l’étape 3.
 - [Migrations de base de données](/fr/operate/migrations/) — ce que le
   point d’entrée exécute au démarrage.
-- Guides opératoires dans le dépôtà : [first-deployment.md](https://github.com/wearefacet/facet/blob/main/doc/ops/first-deployment.md), [container-images.md](https://github.com/wearefacet/facet/blob/main/doc/ops/container-images.md).
+- Guides opératoires dans le dépôt : [first-deployment.md](https://github.com/wearefacet/facet/blob/main/doc/ops/first-deployment.md), [container-images.md](https://github.com/wearefacet/facet/blob/main/doc/ops/container-images.md).

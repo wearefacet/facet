@@ -25,13 +25,13 @@ votre travail quotidien.
 ## La page d’accueil
 
 Ouvrez `https://facet.localhost:3443/` (ou l’adresse de votre instance) et
-connectez-vous. La page d’accueil montre, de haut en basà :
+connectez-vous. La page d’accueil montre, de haut en bas :
 
 | Partie | Ce qu’elle montre |
 | --- | --- |
 | Salutation | Votre prénom, et le rôle sous lequel vous travaillez, par exemple Administrateur. |
 | Surfaces clés | Des liens vers Builder, Domaines, Paramètres et Applications. Un lien que votre rôle n’autorise pas reste caché. |
-| Applications | Une carte par application que votre organisation fait tournerà ; la section se cache quand il n’y en a pas. Une carte que votre rôle ne peut pas ouvrir affiche une mention de verrou. |
+| Applications | Une carte par application que votre organisation fait tourner ; la section se cache quand il n’y en a pas. Une carte que votre rôle ne peut pas ouvrir affiche une mention de verrou. |
 | Brouillons en cours | Les brouillons de domaines sur lesquels vous ou votre équipe travaillez, avec une coche quand ils sont prêts à publier. |
 | Domaines | Une carte par domaine que vous pouvez lire, par exemple crm ou hr. |
 
@@ -41,7 +41,7 @@ Sélectionnez une carte de domaine pour ouvrir son tableau de bord.
 Quand votre rôle peut créer des doctypes, la section Domaines affiche un petit
 bouton plus sur chaque carte de domaine. Il ouvre la boîte de dialogue
 « Nouveau doctype ». Brouillons et réglages de domaine vivent dans le
-Builderà ; voir [Construire des domaines](/fr/build/).
+Builder ; voir [Construire des domaines](/fr/build/).
 :::
 
 Quand votre compte ne peut lire aucun domaine, la section Domaines affiche
@@ -50,7 +50,7 @@ plutôt une carte de premier démarrage. Elle propose « Nouveau domaine » et
 
 ## Le tableau de bord du domaine
 
-Le tableau de bord du domaine à `/{domaine}` (par exemple `/crm`) afficheà :
+Le tableau de bord du domaine à `/{domaine}` (par exemple `/crm`) affiche :
 
 | Section | Ce qu’elle montre |
 | --- | --- |
@@ -74,7 +74,7 @@ Connectez-vous, sélectionnez une carte de domaine, puis une vue épinglée. La
 liste s’ouvre avec cette vue active. C’est le chemin le plus court vers votre
 travail quotidien.
 
-### 2. Revenez à un enregistrement déj à travaillé
+### 2. Revenez à un enregistrement déjà travaillé
 
 Ouvrez le tableau de bord du domaine et sélectionnez une puce sous
 « Consultés récemment ». L’enregistrement s’ouvre. Chaque puce montre le nom de
@@ -95,7 +95,7 @@ Au-del à de six doctypes, la liste montre les six premiers et un bouton
 
 ## Exemple
 
-Un chemin quotidien dans un domaine commercialà :
+Un chemin quotidien dans un domaine commercial :
 
 ```
 /                     sélectionnez la carte crm
@@ -108,12 +108,12 @@ Un chemin quotidien dans un domaine commercialà :
 ### Une carte de domaine manque
 
 Votre rôle ne lit pas ce domaine. Demandez à votre administrateur. Un brouillon
-sur lequel un collègue travaille encore reste dehors aussià ; un domaine
+sur lequel un collègue travaille encore reste dehors aussi ; un domaine
 publié s’affiche toujours.
 
 ### La section Vues épinglées est vide
 
-Vous n’avez encore épinglé aucune vue. La section dità : « Épinglez une
+Vous n’avez encore épinglé aucune vue. La section dit : « Épinglez une
 vue et elle apparaîtra ici. »
 
 1. Ouvrez une liste.
@@ -123,7 +123,7 @@ vue et elle apparaîtra ici. »
 ### La section Consultés récemment est vide
 
 Vous n’avez encore ouvert aucun enregistrement dans ce domaine, ou votre
-navigateur a effacé son stockage. La section dità : « Les documents que
+navigateur a effacé son stockage. La section dit : « Les documents que
 vous ouvrez apparaîtront ici. »
 
 ### Un décompte affiche un tiret au lieu d’un nombre

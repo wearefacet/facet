@@ -11,24 +11,24 @@ verified_at: fd345fe3
 Un script de cycle de vie s’exécute dans chaque écriture d’un doctype. Il peut
 vérifier le document et refuser l’écriture, ou remplir et corriger des champs
 avant que Facet ne les stocke. Le script fait partie de la définition du
-doctypeà : vos règles voyagent avec le modèle et s’appliquent sur chaque
+doctype : vos règles voyagent avec le modèle et s’appliquent sur chaque
 chemin, l’app, l’API et les agents.
 
 ## Quand l’utiliser
 
 Ajoutez un script quand une règle dépasse ce que les contraintes de champ
-exprimentà : une date interdite dans le futur, un responsable imposé depuis
+expriment : une date interdite dans le futur, un responsable imposé depuis
 l’appelant, un enregistrement fermé aux modifications dans un état donné.
 Gardez les règles simples de format dans les contraintes de champ, et les
 droits sur les lignes dans les rôles.
 
 ## Avant de commencer
 
-- **Lua.** Vous écrivez du Lua. Le script suit un unique motif de moduleà : il
+- **Lua.** Vous écrivez du Lua. Le script suit un unique motif de module : il
   définit des fonctions et les renvoie dans une table.
 - **Un script compilable.** Une erreur de syntaxe bloque l’enregistrement du
-  doctypeà : Facet compile le script au moment de l’enregistrement.
-- **Pas de valeurs secrètes.** Un script ne voit jamais les valeurs secrètesà ;
+  doctype : Facet compile le script au moment de l’enregistrement.
+- **Pas de valeurs secrètes.** Un script ne voit jamais les valeurs secrètes ;
   un champ `secret` ne porte ici que son marqueur.
 
 ## Étapes
@@ -44,16 +44,16 @@ droits sur les lignes dans les rôles.
 | `export.<action>(ctx, args)` | Sur une action nommée, puis `update` s’exécute | Vérifier, refuser et modifier `ctx.root` |
 
 Chaque fonction reçoit une table de contexte. Les membres que vous utilisez le
-plusà :
+plus :
 
 | Membre | Signification |
 | --- | --- |
 | `ctx.root` | Le contenu du document. Modifiez-le en place. |
-| `ctx.patch` | Sur un update simpleà : les champs envoyés par l’appelant. |
+| `ctx.patch` | Sur un update simple : les champs envoyés par l’appelant. |
 | `ctx.changed` | Sur une action : les champs posés par l’action. |
 | `ctx.error(msg)` | Recueille un refus. L’écriture échoue alors avec `422`. |
 | `ctx.now` | L’heure UTC courante, en texte ISO 8601. |
-| `ctx.actor` | L’appelantà : `id`, `role_id`, `scope`, `system`. Absent pour les exécutions systèmeà ; vérifiez d’abord `ctx.actor == nil`. |
+| `ctx.actor` | L’appelant : `id`, `role_id`, `scope`, `system`. Absent pour les exécutions système ; vérifiez d’abord `ctx.actor == nil`. |
 
 ### 2. Écrire le garde-fou
 
@@ -68,13 +68,13 @@ avec `ctx.error` quand un état est incorrect.
 ### 4. Attacher le script
 
 La définition porte le code source dans son champ `script`. Dans l’éditeur de
-doctypes, vous modifiez le script directementà ; Facet le compile à
+doctypes, vous modifiez le script directement ; Facet le compile à
 
 l’enregistrement et signale les erreurs avec les numéros de ligne.
 
 ## Exemple
 
-Le script complet ci-dessous protège un enregistrement d’employéà : pas de
+Le script complet ci-dessous protège un enregistrement d’employé : pas de
 dates d’embauche dans le futur, un responsable imposé depuis le périmètre de
 l’appelant, et aucune modification d’un enregistrement clôturé.
 
@@ -114,7 +114,7 @@ Une écriture refusée répond `422` et porte votre message. Rien n’est stock�
 ### Chaque écriture répond `422` avec une erreur de script
 
 Le script a levé une erreur en dehors de vos appels `ctx.error`. Le message
-nomme la ligne. Une cause fréquente est un champ nilà : vérifiez avant de
+nomme la ligne. Une cause fréquente est un champ nil : vérifiez avant de
 comparer, comme le fait l’exemple avec `hire_date`.
 
 ### L’écriture répond avec la limite d’instructions

@@ -72,15 +72,15 @@ effectif, et le début de la fenêtre.
 
 ### 3. Nommer l’assistant et écrire les instructions de la maison
 
-Ouvrez **Configurer → Plateforme → Paramètres** et réglezà :
+Ouvrez **Configurer → Plateforme → Paramètres** et réglez :
 
 - `assistant.name` — le nom d’affichage sur chaque surface de l’assistant.
-  Défautà : `Assistant`.
+  Défaut : `Assistant`.
 - `assistant.system_prompt` — les instructions personnalisées. Facet les
   incorpore à chaque nouvelle conversation sous un en-tête
   `## Custom instructions`.
 
-  Ou réglez les deux par l’APIà:
+  Ou réglez les deux par l’API :
 
 ```sh
 curl -k -X PATCH -H "Authorization: Bearer $FACET_API_KEY" \
@@ -92,7 +92,7 @@ curl -k -X PATCH -H "Authorization: Bearer $FACET_API_KEY" \
 :::note[Les instructions atteignent les nouvelles conversations]
 Une conversation incorpore son prompt à la création. Un changement de
 réglages ne réécrit pas les conversations existantes. Un changement de
-modèle ou de point d’entrée, sià : les conversations existantes basculent à
+modèle ou de point d’entrée, si : les conversations existantes basculent à
 
 leur prochain tour.
 :::
@@ -112,7 +112,7 @@ conversations existantes à leur prochain tour.
 
 ### 5. Gouverner l’assistant dans une app
 
-Une surface d’app demande deux interrupteurs allumés en même tempsà :
+Une surface d’app demande deux interrupteurs allumés en même temps :
 
 - le champ `assistant_enabled` de l’app, éteint par défaut, et
 - le canal `assistant` du rôle actif.
@@ -125,7 +125,7 @@ instructions propres à l’app.
 
 ### La disponibilité
 
-Deux barrières décident de la disponibilitéà :
+Deux barrières décident de la disponibilité :
 
 1. **La barrière du rôle.** La liste `connectivity` du rôle actif porte
    `assistant`. Facet lit le contenu du rôle en direct, à chaque requête.
@@ -139,7 +139,7 @@ jamais l’assistant.
 ### Le registre d’usage
 
 Chaque tour en streaming d’un compte facturable écrit une ligne de
-registreà : le modèle, les tokens d’entrée et de sortie, et si le décompte
+registre : le modèle, les tokens d’entrée et de sortie, et si le décompte
 est une estimation. La vérification de limite tourne avant chaque tour. Elle
 compare le total glissant de 30 jours au budget effectif. Un budget
 illimité saute la vérification.
@@ -148,12 +148,12 @@ La rétention du registre est la clé de configuration
 `assistant.usage_retention_days`. Le défaut `0` garde chaque ligne. Si vous
 fixez une fenêtre, gardez-la à 30 jours ou plus, pour que la purge ne
 puisse pas effacer des lignes que la vérification de budget lit encore.
-Les budgets bornent chaque compteà ; ils ne se mettent pas en commun entre
+Les budgets bornent chaque compte ; ils ne se mettent pas en commun entre
 comptes, et ils comptent des tokens, pas de l’argent.
 
 ### L’assistant ne porte aucun droit
 
-Chaque appel d’outil hérite de l’identité de l’appelantà : le rôle élu, les
+Chaque appel d’outil hérite de l’identité de l’appelant : le rôle élu, les
 périmètres de lignes, les étiquettes de champs, et l’attribution de l’app
 quand il y en a une. Un document que l’appelant ne peut pas lire est
 invisible pour l’assistant. Voir
@@ -168,7 +168,7 @@ voir [Auditer l’activité](/fr/govern/auditing-activity/).
 ### Un membre ne voit pas d’assistant
 
 La liste de canaux du rôle actif ne contient pas `assistant`. Vérifiez le
-rôle éluà : un seul rôle est actif par requête, et les rôles ne fusionnent
+rôle élu : un seul rôle est actif par requête, et les rôles ne fusionnent
 jamais.
 
 ### Chaque tour répond `429`
@@ -199,6 +199,6 @@ d’écriture par défaut est réservé aux admins.
   se trouve `connectivity`.
 - [La portée des apps (attributions)](/fr/govern/app-grants/) — les
   interrupteurs côté app.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [assistant.md](https://github.com/wearefacet/facet/blob/main/doc/backend/assistant.md),
   [system-settings.md](https://github.com/wearefacet/facet/blob/main/doc/backend/system-settings.md).

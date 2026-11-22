@@ -1,5 +1,5 @@
 ---
-title: "Connexion utilisateurà : OAuth 2.1 + PKCE"
+title: "Connexion utilisateur : OAuth 2.1 + PKCE"
 description: Exécutez le flux complet de connexion par code d’autorisation + PKCE et traitez ses erreurs.
 audience: [developer]
 features: [APP-02, APP-05, FE-21]
@@ -14,21 +14,21 @@ L’app envoie le navigateur vers `/OAuth/authorize`, le compte se connecte et
 élit un rôle, puis Facet redirige vers l’app avec un code à usage unique que
 celle-ci échange contre un token d’accès et un refresh token.
 
-> **Pour les agentsà :** client public, sans secret. Fabriquez `code_verifier`
+> **Pour les agents :** client public, sans secret. Fabriquez `code_verifier`
 > (base64url aléatoire, 43 à 128 caractères) et
 > `code_challenge = base64url(SHA-256(verifier))` ; gardez `verifier` et
 > `state` dans `sessionStorage`. Naviguez vers `GET /OAuth/authorize` avec
 > `response_type=code`, `client_id`, `redirect_uri`, `code_challenge`,
 > `code_challenge_method=S256`, `state`. Au callback, vérifiez `state`, puis
-> POSTez vers `/OAuth/token`, encodé en formulaireà : `grant_type=authorization_code`,
-> `code`, `client_id`, `redirect_uri`, `code_verifier`. Réponseà :
-> `access_token`, `token_type`, `expires_in`, `refresh_token`. Refreshà :
+> POSTez vers `/OAuth/token`, encodé en formulaire : `grant_type=authorization_code`,
+> `code`, `client_id`, `redirect_uri`, `code_verifier`. Réponse :
+> `access_token`, `token_type`, `expires_in`, `refresh_token`. Refresh :
 > `grant_type=refresh_token` avec le même `client_id` ; gardez 10 secondes
 > entre deux refresh, sinon vous recevez `429 slow_down`.
 
 ## Quand l’utiliser
 
-Utilisez cette page quandà :
+Utilisez cette page quand :
 
 - vous construisez une app web ou native qui connecte un compte via l’écran de
   consentement,
@@ -88,12 +88,12 @@ token -> calls
 Fabriquez un `code_verifier` : une chaîne base64url aléatoire de 43 à 128
 caractères (RFC 7636) ; le client de référence en utilise 64. Calculez
 `code_challenge = base64url(SHA-256(code_verifier))`. La méthode `S256` est la
-seule acceptéeà ; `plain` est refusée. Rangez `code_verifier` et `state` dans
+seule acceptée ; `plain` est refusée. Rangez `code_verifier` et `state` dans
 `sessionStorage` — le callback doit les retrouver.
 
 ### 2. Envoyer le navigateur vers le point de terminaison d’autorisation
 
-Naviguez vers `GET /OAuth/authorize` avec ces paramètresà :
+Naviguez vers `GET /OAuth/authorize` avec ces paramètres :
 
 | Paramètre | Valeur |
 | --- | --- |
@@ -105,17 +105,17 @@ Naviguez vers `GET /OAuth/authorize` avec ces paramètresà :
 | `state` | une valeur aléatoire que l’app vérifie au callback |
 
 Sans session navigateur, le point de terminaison répond `302` vers
-`/Login?redirectTo=…` avec l’URL d’autorisation passée en paramètreà ; la page
+`/Login?redirectTo=…` avec l’URL d’autorisation passée en paramètre ; la page
 de connexion renvoie le navigateur vers l’URL d’autorisation après la
 connexion. Avec une session, le point de terminaison redirige le navigateur
 vers la route `/OAuthConsent`. L’écran de consentement s’affiche toujours — le
-compte élit exactement un rôle pour l’appà ; il n’existe pas de consentement
+compte élit exactement un rôle pour l’app ; il n’existe pas de consentement
 silencieux.
 
 ### 3. Traiter le callback
 
 Facet redirige vers `redirect_uri` avec `code` et `state` dans la requête.
-Comparez `state` avec la valeur enregistrée par l’app avant la redirectionà ;
+Comparez `state` avec la valeur enregistrée par l’app avant la redirection ;
 une différence signifie que la redirection ne vient pas de cette connexion.
 
 ### 4. Échanger le code au point de terminaison de token
@@ -134,19 +134,19 @@ La réponse porte `access_token` (le JWT de l’app, signé avec ES256),
 `token_type` (`"DPoP"` quand l’échange a porté une preuve DPoP, `"Bearer"`
 sinon), `expires_in` (durée de vie du token d’accès en secondes —
 `iam.jwt.access_token_ttl`, `900` par défaut) et `refresh_token`. Le token
-n’est pas renouveléà : quand `expires_in` est écoulé, appelez le grant de
+n’est pas renouvelé : quand `expires_in` est écoulé, appelez le grant de
 refresh à l’étape 6 avant le prochain appel d’API. Il n’y a pas de membre
 `scope` — Facet ne déclare aucun vocabulaire de scopes. Ajoutez un en-tête
 `DPoP` à l’échange pour lier le token à une clé — voir
 [Liaison de token DPoP](/fr/apps/dpop/). Le grant `authorization_code` compte
-30 échanges par `client_id` et par IP par fenêtre de 5 minutesà ; les refresh
+30 échanges par `client_id` et par IP par fenêtre de 5 minutes ; les refresh
 sont exemptés.
 
 ### 5. Appeler l’API avec le token d’accès
 
 Envoyez le token dans `Authorization: Bearer <access_token>`, ou avec le
 schéma `DPoP` quand le token est lié. Le token est un JWT ES256 avec ces
-claimsà :
+claims :
 
 | Claim | Valeur |
 | --- | --- |
@@ -168,9 +168,9 @@ Content-Type: application/x-www-form-urlencoded
 grant_type=refresh_token&refresh_token=REFRESH_TOKEN&client_id=CLIENT_ID
 ```
 
-Le refresh token est lié au clientà : un `client_id` manquant ou différent
+Le refresh token est lié au client : un `client_id` manquant ou différent
 répond `401 invalid_grant` et laisse la session intacte. Chaque refresh relit
-l’état réel — compte, rôle, statut de l’app et attributionà ; un contrôle en
+l’état réel — compte, rôle, statut de l’app et attribution ; un contrôle en
 échec révoque la session. Un refresh moins de 10 secondes après le précédent
 répond `429 {"error": "slow_down"}` — attendez, puis réessayez. La réponse
 porte un `access_token` frais et un nouveau `refresh_token`.
@@ -269,13 +269,13 @@ fonctionnel
 
 ## Dépannage
 
-Chaque erreur est un corps JSONà: `{"error": "<code>", "error_description": "<detail>"}`.
+Chaque erreur est un corps JSON : `{"error": "<code>", "error_description": "<detail>"}`.
 
 | Erreur | Où | Cause |
 | --- | --- | --- |
 | `invalid_request` | authorize, token | un paramètre est manquant ou mal formé |
 | `access_denied` | authorize | le compte a refusé le consentement, ou le POST d’élection portait une valeur `role` mal formée |
-| `invalid_grant` | token | mauvais `code_verifier` ; le code a expiré (TTL de 60 secondes) ; le code a déj à été consomméà ; l’app a été désactivée ou une attribution s’est resserrée entre l’autorisation et l’échangeà ; `client_id` faux ou manquant au refreshà ; réutilisation d’un refresh token |
+| `invalid_grant` | token | mauvais `code_verifier` ; le code a expiré (TTL de 60 secondes) ; le code a déjà été consommé ; l’app a été désactivée ou une attribution s’est resserrée entre l’autorisation et l’échange ; `client_id` faux ou manquant au refresh ; réutilisation d’un refresh token |
 | `slow_down` | token, refresh | `429` — un refresh moins de 10 secondes après le précédent |
 | `unknown_client` | `GET /OAuth/client-info` | `404` — slug inconnu, ou l’app n’est pas active |
 
@@ -289,7 +289,7 @@ la main qui poste `role_id` reçoit `access_denied`.
 
 **Une `redirect_uri` qui ne correspond pas produit une page d’erreur, jamais
 une redirection.** Facet refuse de rediriger vers une cible non validée.
-Vérifiez l’adresse enregistréeà ; la correspondance est exacte en dehors de la
+Vérifiez l’adresse enregistrée ; la correspondance est exacte en dehors de la
 règle de port http loopback.
 
 **`state` qui ne correspond pas après la redirection.** `sessionStorage` a
@@ -298,7 +298,7 @@ partage pas. Gardez la tentative dans l’onglet qui a lancé la connexion.
 
 **`invalid_grant` sur un code que vous croyez correct.** Le code est à usage
 unique et expire après 60 secondes. Un gestionnaire de callback qui s’exécute
-deux fois envoie un second échangeà ; seul le premier réussit.
+deux fois envoie un second échange ; seul le premier réussit.
 
 **Chaque appel d’API répond `401` après que le token a fonctionné un moment.**
 Le token d’accès a dépassé sa durée de vie `expires_in`. Renouvelez-le, puis
@@ -313,7 +313,7 @@ répond `slow_down` — attendez, puis réessayez.
   refresh.
 - [Enregistrer une app](/fr/apps/registering-app/) — id client, adresses de
   redirection, origines.
-- [Appsà : attributions ∩ rôles](/fr/concepts/apps-grants-roles/) — le rôle élu
+- [Apps : attributions ∩ rôles](/fr/concepts/apps-grants-roles/) — le rôle élu
   et les attributions bornent chaque requête.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [oauth.md](https://github.com/wearefacet/facet/blob/main/doc/backend/oauth.md).

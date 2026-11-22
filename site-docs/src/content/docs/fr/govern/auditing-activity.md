@@ -44,7 +44,7 @@ diff.
 ### 2. Fondre les documents enfants dans la chronologie
 
 Ajoutez `?include=children` pour replier l’historique des enfants de
-composition dans la chronologie du parentà :
+composition dans la chronologie du parent :
 
 ```sh
 curl -k -H "Authorization: Bearer $FACET_API_KEY" \
@@ -59,7 +59,7 @@ branche disparaît.
 ### 3. Chercher dans toute l’organisation
 
 Le journal global liste chaque mutation. Les filtres voyagent dans la forme
-crochetsà :
+crochets :
 
 ```sh
 curl -k -H "Authorization: Bearer $FACET_API_KEY" \
@@ -70,7 +70,7 @@ La réponse liste chaque delete du domaine `hr`, avec un nombre plafonné de
 lignes et un indicateur `more` pour la pagination. Une clé de requête nue comme
 `?doc_type=Invoice` répond `422` — la grammaire n’admet que la forme
 crochets. Les scripts peuvent envoyer la méthode HTTP `QUERY` à la place,
-avec les paramètres de liste dans un corps JSONà:
+avec les paramètres de liste dans un corps JSON :
 `{"filters": {"action__eq": "delete"}}`. Sous cette forme, tout paramètre
 de chaîne de requête répond `422`.
 
@@ -87,7 +87,7 @@ administrateur peut aussi ramener un document en arrière — voir
 
 Les événements de connexion sont des documents du doctype `iam.LoginEvent`.
 Un rôle avec des droits de lecture dessus les liste par l’API de document
-standardà :
+standard :
 
 ```sh
 curl -k -H "Authorization: Bearer $FACET_API_KEY" \
@@ -143,7 +143,7 @@ requête renvoie le cluster.
 | `app_api_key`   | Une clé d’API possédée par une app                  |
 | `api_key`       | Une clé d’API statique                              |
 | `mcp`           | Une session d’agent MCP                             |
-| `internal`      | Travail du systèmeà : passes de cron, compactage, déclencheurs |
+| `internal`      | Travail du système : passes de cron, compactage, déclencheurs |
 
 ### Le caviardage
 
@@ -157,7 +157,7 @@ Les lignes `iam.LoginEvent` enregistrent chaque événement d’authentification
 connexion, déconnexion, refresh, réutilisation de refresh, verrouillage,
 enrôlement et changements MFA, réinitialisation de mot de passe,
 invitations, consentements accordés, révocations de clés d’API et de
-sessions, connexions OIDC, et refus. Une limite importe aux relecteursà :
+sessions, connexions OIDC, et refus. Une limite importe aux relecteurs :
 les tentatives de mot de passe échouées isolées ne sont pas journalisées,
 seul le verrouillage l’est. Le journal du backend porte chaque tentative
 échouée avec l’id du compte et l’adresse du client.
@@ -195,5 +195,5 @@ lignes plus anciennes se replient en un instantané par document — voir
   les lignes.
 - [Historique et annulation](/fr/workspace/history-undo/) — la surface par
   document dans l’app.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [audit.md](https://github.com/wearefacet/facet/blob/main/doc/backend/audit.md).

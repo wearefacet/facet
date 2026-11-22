@@ -12,10 +12,10 @@ Une app navigateur appelle Facet depuis sa propre origine. Le navigateur
 bloque l’appel tant que Facet ne nomme pas cette origine dans ses en-têtes
 Cross-Origin Resource Sharing (CORS). Vous enregistrez les origines sur le
 document de l’app, et Facet les reflète sur l’endpoint de token et sur toute
-la surface `/Api/*`. La liste d’origines est active immédiatementà : une
+la surface `/Api/*`. La liste d’origines est active immédiatement : une
 modification prend effet à la requête suivante.
 
-> **Pour les agentsà :** Placez des origines nues dans `allowed_origins`
+> **Pour les agents :** Placez des origines nues dans `allowed_origins`
 > sur `app.App` — par exemple `https://app.company.tld` et des origines de
 > dev comme `http://localhost:5173`. Modifiez avec `PATCH /Api/app/App/{id}`
 > (cookie de session plus `X-Requested-With: XMLHttpRequest`). Vérifiez avec
@@ -26,7 +26,7 @@ modification prend effet à la requête suivante.
 
 ## Quand l’utiliser
 
-Consultez cette page quandà :
+Consultez cette page quand :
 
 - Un `fetch` navigateur échoue parce que la réponse ne porte aucun en-tête
   CORS.
@@ -45,7 +45,7 @@ Consultez cette page quandà :
 
 ### 1. Listez les origines
 
-Chaque entrée est une origine nueà : schéma, hôte et port facultatif.
+Chaque entrée est une origine nue : schéma, hôte et port facultatif.
 Enregistrez chaque origine depuis laquelle l’app navigateur est servie.
 Incluez les hôtes de production et les hôtes de dev, par exemple
 `http://localhost:5173`.
@@ -65,7 +65,7 @@ curl -s -c cookies.txt -X POST https://facet.company.tld/Api/iam/login \
   -d '{"email": "admin@company.tld", "password": "op-secret"}'
 ```
 
-Puis définissez la liste d’originesà :
+Puis définissez la liste d’origines :
 
 ```sh
 curl -s -b cookies.txt -X PATCH \
@@ -77,7 +77,7 @@ curl -s -b cookies.txt -X PATCH \
 
 ### 3. Vérifiez avec une requête preflight
 
-Envoyez une requête preflight et vérifiez l’en-tête renvoyé en échoà :
+Envoyez une requête preflight et vérifiez l’en-tête renvoyé en écho :
 
 ```sh
 curl -s -i -X OPTIONS https://facet.company.tld/Api/crm/Company \
@@ -87,7 +87,7 @@ curl -s -i -X OPTIONS https://facet.company.tld/Api/crm/Company \
   | grep -i access-control-allow-origin
 ```
 
-Une origine enregistrée répond avec sa propre adresseà :
+Une origine enregistrée répond avec sa propre adresse :
 
 ```sh
 Access-Control-Allow-Origin: https://deal-board.company.tld
@@ -103,7 +103,7 @@ fonctionne sur l’endpoint de token, `/OAuth/token`.
 Le gestionnaire CORS reflète les origines enregistrées sur `/OAuth/*` et
 `/Api/*`, pour les réponses preflight comme pour les réponses réelles. Il
 s’exécute avant la vérification d’authentification dans la chaîne de
-gestionnairesà ; une requête preflight n’a donc pas besoin
+gestionnaires ; une requête preflight n’a donc pas besoin
 d’authentification. Facet renvoie en écho l’en-tête `Origin` de la requête
 seulement s’il figure dans `allowed_origins` d’au moins une app `active`.
 
@@ -175,9 +175,9 @@ active — voir [Temps réel avec WebSockets](/fr/apps/websockets/).
 
 - [Enregistrer une app](/fr/apps/registering-app/) — où se définissent les
   origines.
-- [Connexion utilisateurà : OAuth 2.1 + PKCE](/fr/apps/oauth-login/) —
+- [Connexion utilisateur : OAuth 2.1 + PKCE](/fr/apps/oauth-login/) —
   le flux que les origines déverrouillent.
 - [Temps réel avec WebSockets](/fr/apps/websockets/) — la vérification
   d’origine de `/Ws`.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [oauth.md](https://github.com/wearefacet/facet/blob/main/doc/backend/oauth.md).

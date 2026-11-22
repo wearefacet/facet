@@ -11,18 +11,18 @@ verified_at: a77c6171
 DPoP (Demonstrating Proof-of-Possession, RFC 9449) lie le token d’une app à
 
 une paire de clés. Des octets de token volés ne suffisent pas à appeler
-l’APIà: chaque appel porte une preuve fraîche et signée. La liaison est
+l’API : chaque appel porte une preuve fraîche et signée. La liaison est
 facultative à la connexion — un échange sans en-tête `DPoP` donne un bearer
-token ordinaire. Un token lié refuse tout par défaut à l’APIà: chaque
+token ordinaire. Un token lié refuse tout par défaut à l’API : chaque
 présentation incorrecte répond `401`.
 
-> **Pour les agentsà :** Créez une paire de clés ECDSA P-256 avant la
-> redirectionà ; gardez la JWK privée pendant toute la session. Forgez
+> **Pour les agents :** Créez une paire de clés ECDSA P-256 avant la
+> redirection ; gardez la JWK privée pendant toute la session. Forgez
 > un JWT de preuve — en-tête `typ: "dpop+jwt"`, `alg: "ES256"`, `jwk` avec
-> les seuls membres publicsà ; payload `jti` (neuf), `htm`, `htu`,
+> les seuls membres publics ; payload `jti` (neuf), `htm`, `htu`,
 > `iat`, sans `ath` — et envoyez-le dans l’en-tête `DPoP` sur
 > `POST /OAuth/token`. La réponse porte alors `token_type: "DPoP"` et le
-> token embarque `cnf.jkt`. À chaque appel d’APIà:
+> token embarque `cnf.jkt`. À chaque appel d’API :
 > `Authorization: DPoP <access_token>` plus une preuve fraîche avec
 > `ath = base64url(SHA-256(access_token))`. Signez `htu` comme l’origine
 > configurée plus le chemin — jamais la barre d’adresse, jamais avec une
@@ -38,17 +38,17 @@ présentation incorrecte répond `401`.
   dans une négociation WebSocket — voir [Temps réel avec
   WebSockets](/fr/apps/websockets/).
 
-  Pour une app bearer non liée, sautez cette pageà ; l’échange n’envoie
+  Pour une app bearer non liée, sautez cette page ; l’échange n’envoie
   aucun en-tête `DPoP`.
 
 ## Avant de commencer
 
-- Exécutez d’abord le flux de connexion — voir [Connexion utilisateurà :
+- Exécutez d’abord le flux de connexion — voir [Connexion utilisateur :
   OAuth 2.1 + PKCE](/fr/apps/oauth-login/).
 - Générez la paire de clés avant la redirection, et conservez le matériel
   privé pendant tout l’aller-retour. Le client de référence stocke les deux
   JWK dans `sessionStorage`.
-- Une clé perdue donne un `401` sans indice. Aucun recours n’existeà :
+- Une clé perdue donne un `401` sans indice. Aucun recours n’existe :
   générez une nouvelle clé et recommencez une connexion.
 
 ## Étapes
@@ -56,7 +56,7 @@ présentation incorrecte répond `401`.
 ### 1. Générez une clé et gardez-la pendant toute la connexion
 
 Utilisez une paire de clés ECDSA P-256 par connexion. Gardez la JWK privée
-dans le navigateurà ; Facet ne la voit jamais. Chaque en-tête de preuve
+dans le navigateur ; Facet ne la voit jamais. Chaque en-tête de preuve
 ne porte que les membres publics `kty`, `crv`, `x`, `y` — un membre privé
 comme `d` invalide la preuve.
 
@@ -79,7 +79,7 @@ code une seconde fois.
 ### 3. Rafraîchissez une session liée avec la même clé
 
 Chaque refresh d’une session liée exige une preuve fraîche avec la même
-cléà : `jti`, `htm: "POST"`, l’URL du token, `iat`, et pas de `ath`.
+clé : `jti`, `htm: "POST"`, l’URL du token, `iat`, et pas de `ath`.
 Une preuve absente, une clé différente ou une preuve rejouée révoque la
 session et répond `invalid_grant`.
 
@@ -87,24 +87,24 @@ session et répond `invalid_grant`.
 
 Envoyez le token lié avec le schéma `DPoP`, plus une preuve fraîche à chaque
 requête. Le serveur compare `htu` et ignore les parties query et fragment,
-donc la chaîne de requête n’entre jamais dans la preuveà :
+donc la chaîne de requête n’entre jamais dans la preuve :
 
 ```http
 GET /Api/crm/Company?per_page=1
 → proof htu: https://facet.example.tld/Api/crm/Company
 ```
 
-Le contrat de la preuve, claim par claimà :
+Le contrat de la preuve, claim par claim :
 
 | Claim | Endpoint de token | Refresh | Appel d’API | Violation |
 | --- | --- | --- | --- | --- |
-| `jti` | requis, non vide | requis | requis, neuf à chaque requête | attribution : `400` ; APIà: `401` |
-| `htm` | `POST` | `POST` | la méthode de la requête | divergenceà : erreur |
-| `htu` | l’URL du token | l’URL du token | chemin de la requête, sans query ni fragment | divergenceà : erreur, nomme les deux URLs |
-| `iat` | dans la fenêtre de décalage | dans la fenêtre de décalage | dans la fenêtre de décalage | hors fenêtreà : erreur |
-| `ath` | doit être absent | doit être absent | requisà : `base64url(SHA-256(access_token))` | faux ou inattenduà : erreur |
+| `jti` | requis, non vide | requis | requis, neuf à chaque requête | attribution : `400` ; API : `401` |
+| `htm` | `POST` | `POST` | la méthode de la requête | divergence : erreur |
+| `htu` | l’URL du token | l’URL du token | chemin de la requête, sans query ni fragment | divergence : erreur, nomme les deux URLs |
+| `iat` | dans la fenêtre de décalage | dans la fenêtre de décalage | dans la fenêtre de décalage | hors fenêtre : erreur |
+| `ath` | doit être absent | doit être absent | requis : `base64url(SHA-256(access_token))` | faux ou inattendu : erreur |
 
-Les valeurs de `jti` servent une seule foisà ; le serveur met en cache
+Les valeurs de `jti` servent une seule fois ; le serveur met en cache
 les valeurs acceptées, donc une preuve rejouée répond `401`. La fenêtre
 `iat` accepte 10 secondes dans le futur et 30 secondes dans le passé
 (valeurs par défaut). Aux attributions de token et de refresh, un échec de
@@ -117,7 +117,7 @@ un rejeu. À l’API, chaque échec donne le même `401`.
 Le serveur reconstruit `htu` à partir de la seule origine publique
 configurée. Il ne lit jamais les en-têtes `X-Forwarded-*`. Une preuve dont
 le `htu` diffère par le schéma, l’hôte ou le port répond `400` à l’endpoint
-de token et `401` à l’API, avec un message qui nomme les deux URLsà :
+de token et `401` à l’API, avec un message qui nomme les deux URLs :
 `DPoP htu mismatch: expected https://facet.example.tld/OAuth/token, got http://facet.example.tld:8080/OAuth/token`.
 
 :::caution
@@ -130,7 +130,7 @@ chaque client DPoP.
 ### 6. Sachez ce qui refuse par défaut
 
 Trois présentations échouent par conception, et chaque autre échec DPoP
-répond le même corpsà :
+répond le même corps :
 
 | Présentation | Réponse |
 | --- | --- |
@@ -260,10 +260,10 @@ sans query ni fragment.
 Générez une nouvelle clé et recommencez la connexion.
 
 **`401` sur un appel qui marchait avant.** Un `jti` rejoué — le même objet
-de preuve a servi deux fois. Forgez une preuve fraîche par requêteà ;
+de preuve a servi deux fois. Forgez une preuve fraîche par requête ;
 ne réutilisez jamais une chaîne de preuve.
 
-**`401` avec un token lié valide.** Une vérification a échouéà : `ath`
+**`401` avec un token lié valide.** Une vérification a échoué : `ath`
 absent, `htm` ou `htu` faux, décalage expiré, ou schéma `Bearer`. Le corps
 ne dit pas laquelle — revérifiez les claims de la preuve contre le tableau
 ci-dessus.
@@ -273,11 +273,11 @@ Abandonnez le schéma `DPoP`, ou reconnectez-vous avec une preuve à l’échang
 
 ## Voir aussi
 
-- [Connexion utilisateurà : OAuth 2.1 + PKCE](/fr/apps/oauth-login/) —
+- [Connexion utilisateur : OAuth 2.1 + PKCE](/fr/apps/oauth-login/) —
   le flux de connexion que cette page lie par DPoP.
 - [Le SDK TypeScript (`@facetapp/sdk`)](/fr/apps/typescript-sdk/) — le client
   du SDK et sa connexion `oauthBrowser`.
 - [Temps réel avec WebSockets](/fr/apps/websockets/) — un token lié ne
   voyage pas dans la négociation.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [oauth.md](https://github.com/wearefacet/facet/blob/main/doc/backend/oauth.md).

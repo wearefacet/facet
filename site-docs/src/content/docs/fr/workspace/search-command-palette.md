@@ -20,7 +20,7 @@ enregistrements. Cette page montre les deux usages.
 Appuyez sur `Ctrl+K`. Sur macOS, appuyez sur `Cmd+K`. Vous pouvez aussi
 sélectionner la zone de recherche dans la barre supérieure.
 
-La palette montre jusqu’à quatre groupesà : **Naviguer**, **Récents**,
+La palette montre jusqu’à quatre groupes : **Naviguer**, **Récents**,
 **Enregistrements** et **Actions**. Un groupe sans entrée reste caché.
 
 :::tip
@@ -62,7 +62,7 @@ nouveau dans le domaine courant.
 
 ### 4. Lancez une commande
 
-Le groupe **Actions** liste des commandes. Exemplesà : ouvrir le Builder,
+Le groupe **Actions** liste des commandes. Exemples : ouvrir le Builder,
 ouvrir Configurer, afficher les raccourcis clavier, replier la barre latérale.
 Les commandes suivent les mêmes droits que la barre latérale. Une commande que
 votre rôle n’autorise pas n’apparaît pas.

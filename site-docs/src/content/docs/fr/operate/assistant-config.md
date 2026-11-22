@@ -10,7 +10,7 @@ verified_at: 008dd880
 
 L’assistant dialogue avec n’importe quelle API compatible OpenAI. En tant
 qu’opérateur, vous choisissez l’endpoint, le modèle et le comportement des
-tours. Les clés de connexion sont à chaudà : dès que vous enregistrez
+tours. Les clés de connexion sont à chaud : dès que vous enregistrez
 les paramètres, chaque conversation bascule vers la nouvelle connexion à
 
 son tour suivant. Qui peut ouvrir l’assistant et combien chaque compte peut
@@ -19,7 +19,7 @@ dépenser relèvent des rôles — voir
 
 ## Quand l’utiliser
 
-Configurez l’assistant quandà :
+Configurez l’assistant quand :
 
 - vous connectez un fournisseur pour la première fois,
 - vous changez de modèle ou d’endpoint,
@@ -59,7 +59,7 @@ assistant:
 | --- | --- | --- |
 | `assistant.name` | `Assistant` | Le nom affiché sur chaque surface de l’assistant. |
 | `assistant.api_endpoint` | `https://api.openai.com/v1` | L’endpoint compatible OpenAI. |
-| `assistant.api_key` | aucune | La clé du fournisseur. Un champ secretà ; la valeur est stockée scellée quand elle est épinglée. |
+| `assistant.api_key` | aucune | La clé du fournisseur. Un champ secret ; la valeur est stockée scellée quand elle est épinglée. |
 | `assistant.model` | `gpt-4o` | L’identifiant du modèle. |
 | `assistant.system_prompt` | aucune | Instructions générales pour chaque nouvelle conversation. |
 | `assistant.max_tokens` | aucune | Plafond de tokens de complétion par tour. |
@@ -67,14 +67,14 @@ assistant:
 | `assistant.max_history` | aucune | Tours conservés en contexte. Illimité si non défini. |
 | `assistant.auto_execute_tools` | `true` | Résout automatiquement les appels d’outils enregistrés. |
 
-Le contrôle à l’écriture borne les valeursà : température entre 0,0 et
+Le contrôle à l’écriture borne les valeurs : température entre 0,0 et
 2,0, `max_tokens` supérieur à 0, `max_history` supérieur ou égal à 0.
 
 ### 2. Savoir quand un changement atteint les conversations
 
 La connexion est résolue à chaque début de tour. Un changement de modèle
 ou d’endpoint déplace les conversations existantes à leur tour suivant. Le
-prompt système est différentà : chaque conversation fige son prompt à
+prompt système est différent : chaque conversation fige son prompt à
 
 la création, donc un changement de prompt n’atteint que les conversations
 créées ensuite.
@@ -89,7 +89,7 @@ production.
 
 ### 3. Régler les paramètres réservés au fichier
 
-Ces clés se fixent au démarrage et restent réservées au fichierà :
+Ces clés se fixent au démarrage et restent réservées au fichier :
 
 ```yaml
 assistant:
@@ -110,7 +110,7 @@ assistant:
 
 ### 4. Borner le registre de consommation
 
-Chaque tour qui a produit une sortie écrit une ligne de registreà : le
+Chaque tour qui a produit une sortie écrit une ligne de registre : le
 modèle, les tokens d’entrée et de sortie, et si le compte est une
 estimation. Les budgets de rôles se comparent à une fenêtre glissante de
 30 jours sur ce registre.
@@ -130,15 +130,15 @@ effectif et le début de la fenêtre.
 
 Un processus qui meurt en plein tour laisse sa ligne de tour à l’état
 `running`. Le balayage tourne sur `turn_sweep_cron`, trouve les tours
-`running` plus vieux que `turn_timeout_seconds` et les fermeà : statut
+`running` plus vieux que `turn_timeout_seconds` et les ferme : statut
 `error` avec le message `interrupted`. Le client voit l’état terminal à sa
-prochaine lecture. La passe est idempotenteà : elle ne touche jamais
-une ligne déj à terminale.
+prochaine lecture. La passe est idempotente : elle ne touche jamais
+une ligne déjà terminale.
 
 ## Exemple
 
 Une section `assistant:` complète pour une passerelle auto-hébergée
-compatible OpenAIà:
+compatible OpenAI :
 
 ```yaml
 assistant:
@@ -196,6 +196,6 @@ ressaisissez `assistant.api_key` sur la page des paramètres.
   la mécanique d’épinglage.
 - [L’IA sous les droits de l’appelant](/fr/concepts/ai-under-callers-rights/) —
   pourquoi l’assistant ne détient aucun droit propre.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [assistant.md](https://github.com/wearefacet/facet/blob/main/doc/backend/assistant.md),
   [system-settings.md](https://github.com/wearefacet/facet/blob/main/doc/backend/system-settings.md).

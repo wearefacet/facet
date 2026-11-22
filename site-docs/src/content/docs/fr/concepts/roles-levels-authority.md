@@ -91,7 +91,7 @@ changement.
 **Le compromis.** Le garde-fou empêche un appelant d’élever sa propre
 autorité. Le prix, c’est la friction. Abaisser un compte élevé ou élargir un
 rôle exige un administrateur à un niveau supérieur. Les rôles ne s’imbriquent
-pas et n’héritent pas. Le niveau classe les rôlesà ; il ne propage pas les
+pas et n’héritent pas. Le niveau classe les rôles ; il ne propage pas les
 droits. Chaque rôle liste la totalité de ses propres permissions.
 
 ## Voir aussi
@@ -99,4 +99,4 @@ droits. Chaque rôle liste la totalité de ses propres permissions.
 - [Gouverner l’accès](/fr/govern/) — modifiez les rôles et les comptes au quotidien.
 - [Application des autorisations](/fr/concepts/authorization-enforcement/) — comment les lignes de permission deviennent des vérifications en lecture et en écriture.
 - [Contextes d’authentification](/fr/concepts/auth-contexts/) — comment le rôle élu voyage avec chaque requête.
-- Internes sur GitHubà : [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md).
+- Internes sur GitHub : [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md).

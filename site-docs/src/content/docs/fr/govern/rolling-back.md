@@ -11,7 +11,7 @@ verified_at: fd345fe3
 Un retour arrière rejoue l’historique des changements d’un document
 jusqu’à une mutation choisie, et enregistre le résultat comme un nouvel
 instantané. Une restauration ramène un document supprimé. Les deux écrivent
-de nouvelles lignes d’historiqueà ; rien n’est effacé.
+de nouvelles lignes d’historique ; rien n’est effacé.
 
 ## Quand l’utiliser
 
@@ -38,7 +38,7 @@ revenir. Un id mal formé répond `422` avant que le service ne tourne.
 
 ### 2. Ramener le document en arrière
 
-La route du document prend la cible dans le corpsà :
+La route du document prend la cible dans le corps :
 
 ```sh
 curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
@@ -47,8 +47,8 @@ curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
   "https://facet.localhost:3443/Api/production/Project/01HXQ5M2X9K4T6VBNR8D3Q5M2X/rollback"
 ```
 
-Le corps porte `mutation_id`, l’id du changement cibleà ; l’URL porte l’id
-du document. La réponse est le document dans son état ramené en arrièreà :
+Le corps porte `mutation_id`, l’id du changement cible ; l’URL porte l’id
+du document. La réponse est le document dans son état ramené en arrière :
 
 ```json
 {
@@ -73,7 +73,7 @@ du document. La réponse est le document dans son état ramené en arrièreà :
 ```
 
 `meta.mid` est la nouvelle mutation d’instantané. `cascade_restored` liste
-les enfants qu’une restauration a ramenésà ; un retour arrière simple
+les enfants qu’une restauration a ramenés ; un retour arrière simple
 renvoie un tableau vide. La route globale
 `POST /Api/Audit/<mutation id>/rollback` fait la même chose depuis le seul
 journal global. Son corps `404` nomme la fenêtre de base, parce que la
@@ -81,7 +81,7 @@ route ne connaît pas le doctype cible.
 
 ### 3. Restaurer un document supprimé
 
-La route de restauration résout la cible toute seule. Le corps est videà :
+La route de restauration résout la cible toute seule. Le corps est vide :
 
 ```sh
 curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
@@ -95,7 +95,7 @@ curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
 | `404`   | Le document n’a pas d’historique à restaurer.                      |
 | `409`   | Le document n’est pas supprimé. Rechargez plutôt que de réessayer. |
 | `403`   | Votre rôle n’a pas `update` sur le document.                       |
-| `422`   | Historique dégénéréà : une suppression sans changement avant elle.  |
+| `422`   | Historique dégénéré : une suppression sans changement avant elle.  |
 
 ## Explication
 
@@ -112,9 +112,9 @@ si bien que la piste d’audit relie l’instantané à la cible exacte.
 - **La profondeur du retour arrière égale la fenêtre de rétention.** La
   passe de compactage remplace les lignes plus anciennes par un instantané
   par document. Une cible plus ancienne que la fenêtre répond `404`. Le
-  corps nomme la fenêtre effectiveà : les routes document, enfant et
-  restauration nomment la fenêtre pour ce doctypeà ; la route globale nomme
-  la fenêtre de baseà ; une fenêtre de `0` signifie l’historique complet.
+  corps nomme la fenêtre effective : les routes document, enfant et
+  restauration nomment la fenêtre pour ce doctype ; la route globale nomme
+  la fenêtre de base ; une fenêtre de `0` signifie l’historique complet.
 - **Un retour arrière vers une suppression restaure le document.** La cible
   se résout au changement immédiatement avant la suppression. L’instantané
   efface le marqueur de suppression, et le document est de nouveau vivant.
@@ -125,7 +125,7 @@ si bien que la piste d’audit relie l’instantané à la cible exacte.
 
 Une restauration ramène aussi les enfants de composition que la suppression
 annulée avait retirés. La pré-vérification contrôle chaque enfant avant
-toute écritureà ; un seul refus avorte toute la restauration. Chaque enfant
+toute écriture ; un seul refus avorte toute la restauration. Chaque enfant
 reçoit sa propre mutation d’instantané. La réponse les liste dans
 `cascade_restored` :
 
@@ -192,5 +192,5 @@ Le document est vivant. Rechargez-le plutôt que de réessayer.
   fenêtre.
 - [Le journal des mutations](/fr/concepts/mutation-log/) — ce qu’est une
   ligne d’instantané.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [audit.md](https://github.com/wearefacet/facet/blob/main/doc/backend/audit.md).

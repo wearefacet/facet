@@ -15,7 +15,7 @@ connectent, pour dimensionner un déploiement avant de le lancer.
 
 ## Quand l’utiliser
 
-Utilisez cette page quandà :
+Utilisez cette page quand :
 
 - Vous planifiez un hôte ou une pile de conteneurs pour Facet.
 - Vous choisissez entre une base unique et un cluster routé.
@@ -61,9 +61,9 @@ backend -> redis
 <img class="d2-diagram__img d2-diagram__dark" src="/diagrams/5a512ccc-dark.svg" alt="Diagram" loading="lazy" />
 </div>
 
-La pile de conteneurs fait tourner cinq servicesà :
+La pile de conteneurs fait tourner cinq services :
 
-| Service | Image | Exposé au réseauà? |
+| Service | Image | Exposé au réseau ? |
 | --- | --- | --- |
 | `postgres` | `pgvector/pgvector:0.8.0-pg17` | Non |
 | `redis` | `redis:7` | Non |
@@ -83,7 +83,7 @@ chaque écriture partagent ce pool. La plupart des installations s’arrêtent l
 
 Une installation plus grande peut répartir la charge avec la table de routage
 facultative `database.cluster`. Chaque entrée nomme une base physique et les
-ressources qu’elle sertà :
+ressources qu’elle sert :
 
 - Une ressource est un id de domaine, une étiquette de sous-système préfixée
   par `$`, ou `*`.
@@ -97,7 +97,7 @@ ressources qu’elle sertà :
   une isolation de pool sans seconde base.
 
   `database.statement_timeout_ms` s’applique à chaque connexion poolée du
-  processus serveur. Les points d’entrée CLI n’ont pas de timeoutà : un
+  processus serveur. Les points d’entrée CLI n’ont pas de timeout : un
   DDL long ne peut pas être annulé.
 
 ## Étapes
@@ -120,7 +120,7 @@ ressources qu’elle sertà :
 
 Une table de routage de cluster avec une base principale et un petit pool de
 masse. Les deux entrées partagent la même URL, donc le pool de masse n’est
-qu’une isolation de poolà :
+qu’une isolation de pool :
 
 ```yaml
 database:
@@ -177,7 +177,7 @@ lecture garde deux connexions pendant toute sa durée.
   atteint la base.
 - [Architecture en un coup d’œil](/fr/start/architecture/) — les concepts
   derrière les services.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [container-images.md](https://github.com/wearefacet/facet/blob/main/doc/ops/container-images.md),
   [first-deployment.md](https://github.com/wearefacet/facet/blob/main/doc/ops/first-deployment.md),
   [config.md](https://github.com/wearefacet/facet/blob/main/doc/backend/config.md).

@@ -86,7 +86,7 @@ notification.
 
 ### Aucune notification n’arrive
 
-1. Vérifiez d’abord la préférenceà : « Mes paramètres » →
+1. Vérifiez d’abord la préférence : « Mes paramètres » →
    « Notifications » → « Notifications dans l’application ». Quand elle est
    éteinte, la cloche est cachée.
 2. Vérifiez la source. Vous recevez une mention seulement quand quelqu’un vous
@@ -99,7 +99,7 @@ jusqu’à une minute, ou rechargez la page.
 
 ### Tous les boutons d’action sont éteints
 
-Une action a déj à tourné sur cette notification. La ligne affiche
+Une action a déjà tourné sur cette notification. La ligne affiche
 « Action effectuée ».
 
 ### Une action échoue

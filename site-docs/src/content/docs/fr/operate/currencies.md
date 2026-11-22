@@ -15,7 +15,7 @@ Le backend stocke les deux et vérifie le ticker à chaque écriture.
 
 ## Quand l’utiliser
 
-Travaillez sur les devises quandà :
+Travaillez sur les devises quand :
 
 - vous ajoutez ou retirez une devise du sélecteur,
 - vous définissez un champ monétaire sur un doctype,
@@ -26,7 +26,7 @@ Travaillez sur les devises quandà :
 - Le domaine `core` est masqué dans la barre latérale de l’espace de
   travail. L’espace Configurer est le chemin d’accès.
 - `facet seed:core` initialise les lignes de devises. La commande est
-  idempotenteà : la relancer ne change rien.
+  idempotente : la relancer ne change rien.
 
 ## Étapes
 
@@ -41,7 +41,7 @@ modèles de vue pré-créés.
 
 L’initialisation livre les devises ISO-4217 en circulation. Six lignes
 démarrent actives — `CHF`, `CNY`, `EUR`, `GBP`, `JPY` et `USD` — et toutes
-les autres lignes arrivent inactives. Une ligne porte ces champsà :
+les autres lignes arrivent inactives. Une ligne porte ces champs :
 
 | Champ | Signification | Exemple |
 | --- | --- | --- |
@@ -51,10 +51,10 @@ les autres lignes arrivent inactives. Une ligne porte ces champsà :
 | `digits` | Décimales de la sous-unité, de 0 à 4. Défaut `2`. | `2` |
 | `active` | Met le ticker dans les flux de création quand `true`. | `true` |
 | `favorite` | Épingle la ligne en haut du sélecteur de devises. | `false` |
-| `grouping` | Groupement d’affichageà : `standard` (milliers) ou `lakhs` (12,34,567). | `standard` |
+| `grouping` | Groupement d’affichage : `standard` (milliers) ou `lakhs` (12,34,567). | `standard` |
 
 Passez `active` à `false` pour retirer une devise sans la supprimer. Un
-ticker inactif reste connuà : les documents qui le portent continuent
+ticker inactif reste connu : les documents qui le portent continuent
 de fonctionner.
 
 ### 3. Savoir comment le registre se propage
@@ -70,7 +70,7 @@ la première écriture. Si une diffusion se perd, une limite de péremption —
 
 ### 4. Suivre les règles d’écriture
 
-Un contrôle vérifie les valeurs monétaires sur chaque chemin d’écritureà :
+Un contrôle vérifie les valeurs monétaires sur chaque chemin d’écriture :
 
 | Chemin | Règle |
 | --- | --- |
@@ -84,7 +84,7 @@ schéma.
 
 ### 5. Stocker et filtrer les valeurs monétaires
 
-Une valeur monétaire est un objet JSONà:
+Une valeur monétaire est un objet JSON :
 
 ```json
 { "value": "123.42", "currency": "USD" }
@@ -93,13 +93,13 @@ Une valeur monétaire est un objet JSONà:
 `value` est une chaîne. Le backend l’interprète comme un décimal exact,
 jamais comme un flottant, et la précision survit.
 
-Un filtre monétaire accepte deux formesà : `USD 1000` compare cette
+Un filtre monétaire accepte deux formes : `USD 1000` compare cette
 seule devise, et un `1000` nu compare toutes les devises.
 
 ## Exemple
 
 Créez une devise avec l’API, puis déclarez un champ monétaire qui
-l’utiliseà :
+l’utilise :
 
 ```sh
 curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
@@ -108,11 +108,11 @@ curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
   "https://facet.localhost:3443/Api/core/Currency"
 ```
 
-Le champ `ticker` est unique sur tout le doctypeà : un ticker déjà
+Le champ `ticker` est unique sur tout le doctype : un ticker déjà
 porté par une ligne existante répond `422` avec une erreur de validation
 `unique`.
 
-La déclaration du champ dans le doctypeà :
+La déclaration du champ dans le doctype :
 
 ```json
 {
@@ -121,9 +121,9 @@ La déclaration du champ dans le doctypeà :
 ```
 
 Le `currency` du champ est un indice d’affichage et une valeur par
-défautà : une écriture qui omet le membre de devise est complétée avec
+défaut : une écriture qui omet le membre de devise est complétée avec
 lui. La valeur stockée porte toujours son propre ticker. Filtrez le
-doctype par montantà :
+doctype par montant :
 
 ```sh
 curl -s -H "Authorization: Bearer $FACET_API_KEY" \
@@ -141,7 +141,7 @@ passe.
 **Le sélecteur n’affiche pas une devise.**
 
 La ligne est inactive, ou le registre ne s’est pas encore reconstruit.
-Activez la ligne et enregistrez un documentà ; la prochaine écriture
+Activez la ligne et enregistrez un document ; la prochaine écriture
 reconstruit le registre.
 
 **Un import échoue sur une devise.**
@@ -162,5 +162,5 @@ Les devises ne viennent pas de la configuration. Ce sont des documents
   chemin d’import qui ignore le contrôle de devise active.
 - [Paramètres système](/fr/operate/system-settings/) — la couche
   d’exécution au-dessus du fichier de configuration.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [util-money.md](https://github.com/wearefacet/facet/blob/main/doc/backend/util-money.md).

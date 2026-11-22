@@ -27,13 +27,13 @@ forme de POST HTTP.
 - **Le canal `webhook`.** Votre rôle doit porter le canal de connectivité
   `webhook` ; un rôle limité au navigateur ne peut pas créer de webhooks.
 - **La page.** Trouvez-la sous **Paramètres → Webhooks**. Vous gérez les
-  webhooks que vous avez créésà ; un administrateur voit tout.
+  webhooks que vous avez créés ; un administrateur voit tout.
 
 ## Étapes
 
 ### 1. Créez le webhook
 
-Sélectionnez **Créer un webhook** puis renseignezà :
+Sélectionnez **Créer un webhook** puis renseignez :
 
 | Champ | Signification |
 | --- | --- |
@@ -43,14 +43,14 @@ Sélectionnez **Créer un webhook** puis renseignezà :
 | Événements | Laissez vide pour tous, ou nommez ceux que vous voulez. |
 
 Facet génère un secret de signature et lie le webhook à votre compte. La liaison
-est définitiveà : le webhook reste le vôtre.
+est définitive : le webhook reste le vôtre.
 
 ### 2. Vérifiez la signature
 
 Chaque livraison porte l’en-tête `X-Facet-Signature: sha256=<hex>`. La valeur
 hexadécimale est le HMAC-SHA256 du corps brut exact, calculée avec votre secret
 comme clé. Vérifiez-la avant de faire confiance à un payload — cet exemple
-utilise Node.jsà :
+utilise Node.js :
 
 ```js
 import { createHmac, timingSafeEqual } from 'node:crypto';
@@ -66,7 +66,7 @@ sur ces octets exacts.
 
 ### 3. Lisez le payload
 
-Le corps est une enveloppe JSON. Les champs principauxà :
+Le corps est une enveloppe JSON. Les champs principaux :
 
 | Champ | Signification |
 | --- | --- |
@@ -77,7 +77,7 @@ Le corps est une enveloppe JSON. Les champs principauxà :
 | `mutation_id`, `emitted_at` | L’identité du changement et son heure. |
 | `delivery_id` | Unique par livraison. |
 
-Facet ajoute des en-têtes sur lesquels vous pouvez routerà : `X-Facet-Event`,
+Facet ajoute des en-têtes sur lesquels vous pouvez router : `X-Facet-Event`,
 `X-Facet-Delivery` et `X-Facet-Mutation-Id`. Voir la
 [référence des payloads de webhook](/fr/reference/webhook-payloads/).
 
@@ -92,7 +92,7 @@ lire la réponse. Vous pouvez rejouer à la main un appel du journal.
 Les livraisons peuvent se répéter. Une passe de réparation renvoie les
 événements manqués à l’intérieur d’une fenêtre récente, et les nouvelles
 tentatives peuvent partir deux fois après un timeout. Rendez votre récepteur
-idempotentà : dédupez sur `mutation_id` et `delivery_id`.
+idempotent : dédupez sur `mutation_id` et `delivery_id`.
 :::
 
 ### 5. Désactivez au lieu de supprimer
@@ -128,15 +128,15 @@ corps par POST vers `https://hooks.example.com/facet` :
 
 Le récepteur vérifie la signature, récupère l’entreprise par son `doc_id`, et
 répond `200`. Toute autre réponse compte comme un échec et lance la série de
-nouvelles tentativesà : 10 secondes, puis 1 minute, 5 minutes, 30 minutes et
+nouvelles tentatives : 10 secondes, puis 1 minute, 5 minutes, 30 minutes et
 2 heures.
 
 ## Dépannage
 
 **Rien n’arrive.**
 
-Vérifiez, dans l’ordreà : le webhook est activéà ; le doctype source correspondà ;
-l’événement est dans la listeà ; le rôle lié peut toujours lire le doctype. Le
+Vérifiez, dans l’ordre : le webhook est activé ; le doctype source correspond ;
+l’événement est dans la liste ; le rôle lié peut toujours lire le doctype. Le
 journal des appels affiche un motif d’omission quand un garde-fou refuse une
 livraison.
 

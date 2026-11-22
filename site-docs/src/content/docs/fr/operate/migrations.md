@@ -9,7 +9,7 @@ verified_at: 008dd880
 ---
 
 Le binaire porte son propre schéma. Chaque fichier de migration est lu à la
-compilation et embarqué dans le binaireà ; un binaire déployé n’a donc
+compilation et embarqué dans le binaire ; un binaire déployé n’a donc
 pas besoin de l’arborescence `db/` sur le disque. Le moteur applique les
 migrations en attente dans l’ordre des noms de fichiers et consigne les
 fichiers appliqués dans une table `_migrations`. Un fichier de migration
@@ -17,7 +17,7 @@ modifié ou ajouté exige une recompilation.
 
 ## Quand l’utiliser
 
-Vous aurez affaire aux migrations dans trois casà :
+Vous aurez affaire aux migrations dans trois cas :
 
 - vous mettez une installation à niveau vers une nouvelle version,
 - vous devez annuler une migration,
@@ -27,10 +27,10 @@ Vous aurez affaire aux migrations dans trois casà :
 
 - `DATABASE_URL` pointe vers la base cible.
 - Prenez un instantané de la base avant d’annuler une migration. Une
-  annulation exécute du DDLà; seul un instantané permet ensuite de le
+  annulation exécute du DDL ; seul un instantané permet ensuite de le
   défaire.
-- Sachez distinguer les deux chaînes d’amorçageà : `migrate` plus
-  `seed:core` est sûr partoutà ; `db_reset` détruit la base de données.
+- Sachez distinguer les deux chaînes d’amorçage : `migrate` plus
+  `seed:core` est sûr partout ; `db_reset` détruit la base de données.
 
 ## Étapes
 
@@ -42,7 +42,7 @@ facet migrate
 
 Le moteur trie les fichiers en attente par nom, applique la section
 `-- UP` de chacun, puis consigne le fichier dans `_migrations`. Les
-fichiers déj à appliqués sont ignorésà : la commande est idempotente. Au
+fichiers déjà appliqués sont ignorés : la commande est idempotente. Au
 démarrage, le point d’entrée du conteneur lance
 `facet migrate && facet seed:core` : trois tentatives de migration,
 puis l’initialisation, puis le serveur démarre.
@@ -65,7 +65,7 @@ facet migrate:down 0008       # annule tout ce qui a été appliqué après 0008
 facet migrate:down --yes      # passe la demande de confirmation
 ```
 
-Règlesà :
+Règles :
 
 - La cible accepte le nom de fichier complet ou son préfixe numérique
   `NNNN`.
@@ -73,7 +73,7 @@ Règlesà :
   Chaque annulation exécute la section `-- DOWN` du fichier et supprime sa
   ligne de `_migrations` dans une seule transaction.
 - La commande affiche le plan et demande confirmation. Elle refuse de poser
-  la question quand stdin n’est pas un terminalà : les appels scriptés
+  la question quand stdin n’est pas un terminal : les appels scriptés
   passent `--yes`.
 - Le plan est validé avant toute exécution. Une cible inconnue, une cible
   non appliquée ou une migration sans section `-- DOWN` exploitable
@@ -85,7 +85,7 @@ Règlesà :
 
 Après la première mise en production, le dossier `db/migrations/` n’accepte
 que les ajouts. Ne modifiez, ne renumérotez et ne fusionnez jamais une
-migration qu’une base installée a déj à appliquée. La table `_migrations`
+migration qu’une base installée a déjà appliquée. La table `_migrations`
 conserve les noms des fichiers appliqués. Un fichier modifié désynchronise
 chaque base déployée de l’historique du dépôt, et un binaire recompilé
 embarque alors un SQL en désaccord avec son propre historique.
@@ -108,14 +108,14 @@ attaché. Deux couches fixent le fuseau de la session :
 Une session hors UTC ne corrompt pas les lectures, mais elle fausse les
 écritures. Les valeurs par défaut de `now()` et les conversions
 `text::timestamp` enregistrent l’heure locale, et PostgreSQL abandonne le
-décalage sans avertissement. Fixez le fuseau sur chaque client externeà :
+décalage sans avertissement. Fixez le fuseau sur chaque client externe :
 `psql`, les outils de BI et les scripts ponctuels.
 :::
 
 ## Exemple
 
 Une mise à niveau d’une version à la suivante sur une installation en
-conteneursà :
+conteneurs :
 
 ```sh
 docker compose -f docker/compose.prod.yml pull
@@ -128,7 +128,7 @@ Aucune étape de schéma manuelle n’existe. Si le démarrage signale un échec
 de migration après trois tentatives, lisez les logs du backend et corrigez
 la cause avant de réessayer.
 
-L’équivalent en passant par les sourcesà :
+L’équivalent en passant par les sources :
 
 ```sh
 make build_release
@@ -140,7 +140,7 @@ facet migrate && facet seed:core
 
 **`migrate:down` s’interrompt sans rien changer.**
 
-La validation du plan a refusé la cibleà : nom de fichier inconnu,
+La validation du plan a refusé la cible : nom de fichier inconnu,
 cible non appliquée, ou section `-- DOWN` inexploitable. Rien n’a été
 modifié.
 
@@ -157,7 +157,7 @@ d’un instantané ou d’une réimportation.
 
 **Le démarrage du conteneur échoue à l’étape de migration.**
 
-Le point d’entrée a tenté trois fois. Lisez les logs du backendà : une
+Le point d’entrée a tenté trois fois. Lisez les logs du backend : une
 migration verrouillée, un problème de permissions ou une base injoignable
 en sont les causes habituelles.
 
@@ -173,6 +173,6 @@ en sont les causes habituelles.
   documents, un mécanisme distinct de l’annulation des migrations.
 - [Faire évoluer un schéma](/fr/build/evolving-schema/) — le flux côté
   auteur pour les changements de doctypes.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [migrations.md](https://github.com/wearefacet/facet/blob/main/doc/backend/migrations.md),
   [cli.md](https://github.com/wearefacet/facet/blob/main/doc/backend/cli.md).

@@ -1,6 +1,6 @@
 ---
 title: Vues de collection
-description: "Ajoutez à la page de liste d’un doctype des vues enregistréesà : tableau, kanban et calendrier."
+description: "Ajoutez à la page de liste d’un doctype des vues enregistrées : tableau, kanban et calendrier."
 audience: [author]
 features: [DOM-21]
 sidebar:
@@ -8,7 +8,7 @@ sidebar:
 verified_at: f1409cdc
 ---
 
-Une page de liste affiche un onglet par vue enregistrée. Chaque vue porte un nom et une surfaceà : un tableau avec des colonnes choisies, un kanban avec des couloirs, ou un calendrier posé sur des dates. Les vues sont des documents du doctype, donc vous décidez quels onglets chaque utilisateur voit.
+Une page de liste affiche un onglet par vue enregistrée. Chaque vue porte un nom et une surface : un tableau avec des colonnes choisies, un kanban avec des couloirs, ou un calendrier posé sur des dates. Les vues sont des documents du doctype, donc vous décidez quels onglets chaque utilisateur voit.
 
 ## Quand l’utiliser
 
@@ -53,11 +53,11 @@ Une vue ne peut plus basculer ensuite entre personnelle et générale. Créez un
 
 ### 5. Enregistrez, partagez, épinglez
 
-Enregistrez la vue. Son onglet apparaît au-dessus du tableau, et le lien de la barre d’adresse ouvre directement cette vue. Vous pouvez épingler un onglet pour l’avoir sous la mainà ; l’épinglage reste une préférence personnelle et fonctionne aussi pour les vues générales.
+Enregistrez la vue. Son onglet apparaît au-dessus du tableau, et le lien de la barre d’adresse ouvre directement cette vue. Vous pouvez épingler un onglet pour l’avoir sous la main ; l’épinglage reste une préférence personnelle et fonctionne aussi pour les vues générales.
 
 ## Exemple
 
-Un doctype `crm.Deal` porte une vue tableau générale nommée **All Deals**. Voici sa configuration complèteà :
+Un doctype `crm.Deal` porte une vue tableau générale nommée **All Deals**. Voici sa configuration complète :
 
 ```yaml
 content:
@@ -102,7 +102,7 @@ meta:
 
 ## Ce que vous obtenez d’office
 
-Chaque doctype est livré avec une vue tableau générale nommée **All Records**. Facet la crée avec le doctype et la remplit avec les huit premiers champs scalaires. Les colonnes booléennes sont créées éditables en ligne, sauf celles en `read_only` et `write_only`. Ce réglage de départ est un indice, pas une permission : le tableau n’affiche l’interrupteur que pour un lecteur qui détient `update` sur le doctype. Sans ce droit, la même cellule affiche simplement vrai ou faux. Vous pouvez modifier ou supprimer cette vue comme une autreà ; Facet ne la reconstruit pas après un changement de la liste des champs. Une publication ne touche jamais les vues de collection, et une fusion de bundle met à jour les vues générales par nom, mais ne supprime jamais une vue qui n’existe que sur la cible.
+Chaque doctype est livré avec une vue tableau générale nommée **All Records**. Facet la crée avec le doctype et la remplit avec les huit premiers champs scalaires. Les colonnes booléennes sont créées éditables en ligne, sauf celles en `read_only` et `write_only`. Ce réglage de départ est un indice, pas une permission : le tableau n’affiche l’interrupteur que pour un lecteur qui détient `update` sur le doctype. Sans ce droit, la même cellule affiche simplement vrai ou faux. Vous pouvez modifier ou supprimer cette vue comme une autre ; Facet ne la reconstruit pas après un changement de la liste des champs. Une publication ne touche jamais les vues de collection, et une fusion de bundle met à jour les vues générales par nom, mais ne supprime jamais une vue qui n’existe que sur la cible.
 
 ## Dépannage
 
@@ -116,7 +116,7 @@ Le champ discriminateur n’est ni un champ date, ni un datetime, ni un period, 
 
 **Un couloir de kanban reste vide.**
 
-Le filtre du couloir ne correspond à aucune ligne. Comparez les valeurs du filtre avec celles stockéesà ; un filtre money exige la devise, par exemple `"USD 25000"`.
+Le filtre du couloir ne correspond à aucune ligne. Comparez les valeurs du filtre avec celles stockées ; un filtre money exige la devise, par exemple `"USD 25000"`.
 
 ## Voir aussi
 

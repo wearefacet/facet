@@ -19,13 +19,13 @@ savoir ce que contient ce contexte, et ce que coûte l’unique rôle élu.
 | --- | --- | --- |
 | SPA navigateur (single-page application) | Cookie de session, après connexion | Le compte et le rôle élu |
 | Application OAuth (un protocole ouvert de délégation) | Token d’application, émis après le consentement de l’utilisateur et l’élection d’un rôle | Le compte, le rôle élu, l’attribution de l’application |
-| Agent MCP (Model Context Protocol) | Token bearerà ; l’URL épingle le rôle | Le compte et le rôle épinglé |
-| Clé d’API | Clé statique (`fct_…`) ; la clé épingle un compte et un rôle | Le compte et le rôle de la cléà ; les clés détenues par une application portent aussi l’attribution |
+| Agent MCP (Model Context Protocol) | Token bearer ; l’URL épingle le rôle | Le compte et le rôle épinglé |
+| Clé d’API | Clé statique (`fct_…`) ; la clé épingle un compte et un rôle | Le compte et le rôle de la clé ; les clés détenues par une application portent aussi l’attribution |
 
 **Un contexte par requête.** Chaque requête aboutit à exactement un contexte
 d’authentification. Le contexte porte l’appelant et exactement un rôle élu.
 Pour un appel d’application, il porte aussi l’attribution de l’application.
-Les rôles ne fusionnent jamaisà : un compte peut porter trois rôles et n’agir,
+Les rôles ne fusionnent jamais : un compte peut porter trois rôles et n’agir,
 pour une requête donnée, que sous l’un d’eux. Une requête s’authentifie par
 un seul canal, et le contexte enregistre lequel. Le journal des mutations
 reporte ce canal dans chaque ligne d’audit.
@@ -34,7 +34,7 @@ reporte ce canal dans chaque ligne d’audit.
 contrôleurs vérifient l’attribution avant les permissions propres au rôle.
 La portée effective est l’intersection : ce que le rôle permet et ce que
 l’attribution nomme. À chaque requête, Facet relit l’attribution depuis le
-contenu réel de l’applicationà ; restreindre une attribution prend donc effet
+contenu réel de l’application ; restreindre une attribution prend donc effet
 à l’appel suivant, sans nouveau token. Une clé d’API détenue par une
 application suit la même règle.
 
@@ -63,8 +63,8 @@ toujours `401`. La requête ne bascule jamais sur `anonymous`.
 :::
 
 **Le compromis.** Un rôle élu unique interdit l’agrégation de privilèges. Un
-appelant ne peut pas porter deux rôles à la foisà ; élargir sa portée demande
-donc un changement délibéréà : le navigateur propose « Changer de rôle », un
+appelant ne peut pas porter deux rôles à la fois ; élargir sa portée demande
+donc un changement délibéré : le navigateur propose « Changer de rôle », un
 consentement OAuth élit un rôle par session, et une URL MCP épingle son rôle
 pour toute la session.
 
@@ -73,6 +73,6 @@ pour toute la session.
 - [Sécurité et gouvernance](/fr/start/security-governance/) — le modèle de permissions résumé pour les auditeurs.
 - [Construire des applications](/fr/apps/) — enregistrez une application et faites élire un rôle à ses utilisateurs.
 - [Application des autorisations](/fr/concepts/authorization-enforcement/) — comment les contrôleurs traduisent les permissions en SQL.
-- [Applicationsà : attributions ∩ rôles](/fr/concepts/apps-grants-roles/) — le plafond de l’attribution en détail.
+- [Applications : attributions ∩ rôles](/fr/concepts/apps-grants-roles/) — le plafond de l’attribution en détail.
 - [Référence](/fr/reference/) — la forme des endpoints, y compris l’endpoint d’identité.
-- Internes sur GitHubà : [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md), [oauth.md](https://github.com/wearefacet/facet/blob/main/doc/backend/oauth.md), [iam.md](https://github.com/wearefacet/facet/blob/main/doc/backend/iam.md).
+- Internes sur GitHub : [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md), [oauth.md](https://github.com/wearefacet/facet/blob/main/doc/backend/oauth.md), [iam.md](https://github.com/wearefacet/facet/blob/main/doc/backend/iam.md).

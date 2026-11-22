@@ -14,7 +14,7 @@ Les entrées se classent d’après le terme anglais, celui que le code et l’A
 emploient.
 
 **Auth context (contexte d’authentification)** — l’ensemble identité et droits
-pour une requêteà : qui appelle, l’unique rôle élu, et l’attribution de
+pour une requête : qui appelle, l’unique rôle élu, et l’attribution de
 l’application quand une app appelle.
 → [Architecture en un coup d’œil](/fr/start/architecture/)
 
@@ -31,7 +31,7 @@ celui-ci. La page détail les liste sous « Référencé par ».
 périmètres de lignes.
 → [Concevoir des doctypes](/fr/build/designing-doctypes/)
 
-**Document** — un enregistrementà : un document JSON avec un id unique, un état
+**Document** — un enregistrement : un document JSON avec un id unique, un état
 courant, et l’historique complet des changements.
 → [Concevoir des doctypes](/fr/build/designing-doctypes/)
 
@@ -48,19 +48,19 @@ application dit ce qu’une app externe peut faire. Une attribution de domaine
 laisse un domaine lire des ressources nommées d’un autre domaine.
 → [Sécurité et gouvernance](/fr/start/security-governance/)
 
-**Mutation** — une ligne ajoutée au journalà : qui a changé quel document,
+**Mutation** — une ligne ajoutée au journal : qui a changé quel document,
 comment, quand, et pourquoi. Create, update, delete et instantané sont des
 mutations.
 → [Architecture en un coup d’œil](/fr/start/architecture/)
 
-**Permission line (ligne de permission)** — une règle dans un rôleà : une
+**Permission line (ligne de permission)** — une règle dans un rôle : une
 action, un chemin de doctype, et des périmètres de lignes et des exceptions
 facultatifs.
 → [Sécurité et gouvernance](/fr/start/security-governance/)
 
-**Projection** — l’état courant d’un documentà : le contenu, le nom
+**Projection** — l’état courant d’un document : le contenu, le nom
 d’affichage, le texte de recherche et les liens entrants. Les lectures
-passent par les projectionsà ; le journal garde l’historique.
+passent par les projections ; le journal garde l’historique.
 → [Architecture en un coup d’œil](/fr/start/architecture/)
 
 **Scope (périmètre)** — un prédicat de lignes nommé sur un doctype, comme
@@ -79,7 +79,7 @@ un champ quand l’étiquette correspond.
 → [Sécurité et gouvernance](/fr/start/security-governance/)
 
 **View template (modèle de vue)** — un modèle enregistré qui définit le rendu
-de la page détail d’un doctypeà : l’en-tête, les onglets, les champs et les
+de la page détail d’un doctype : l’en-tête, les onglets, les champs et les
 tables de relations.
 → [document-view doc on GitHub](https://github.com/wearefacet/facet/blob/main/doc/frontend/document-view.md)
 

@@ -17,7 +17,7 @@ logiciel supplémentaire.
 
 ## Quand l’utiliser
 
-Lisez cette page quandà :
+Lisez cette page quand :
 
 - vous voulez savoir quelles tâches tournent en arrière-plan, et quand,
 - un job échoue ou reste `running`, et vous devez le récupérer,
@@ -29,7 +29,7 @@ Lisez cette page quandà :
 - Chaque clé `jobs:` et chaque planification cron se lient au démarrage.
   Toute modification exige un redémarrage.
 - Le worker tourne dans chaque instance du backend. Deux workers ne
-  prennent jamais la même ligneà : la réclamation verrouille les
+  prennent jamais la même ligne : la réclamation verrouille les
   lignes avec `FOR UPDATE SKIP LOCKED`.
 - Le worker maintient une clé de vivacité Redis par instance. Le balayage
   des baux la lit pour détecter un worker mort.
@@ -40,7 +40,7 @@ Lisez cette page quandà :
 
 Une ligne de `background_jobs` est une unité de travail. La ligne n’est pas
 un document et n’a pas de journal d’événements. Elle traverse quatre
-étatsà :
+états :
 
 <!-- d2
 pending: pending
@@ -70,7 +70,7 @@ running -> pending: retry
 
 ### 2. Connaître les types de jobs
 
-Le serveur enregistre un handler par typeà :
+Le serveur enregistre un handler par type :
 
 | Type | Ce qu’il fait |
 | --- | --- |
@@ -88,7 +88,7 @@ ses propres limites dès l’ajout en file.
 
 ### 3. Régler la file
 
-La section `jobs:` facultative porte les réglages de la fileà :
+La section `jobs:` facultative porte les réglages de la file :
 
 | Clé | Valeur par défaut | Signification |
 | --- | --- | --- |
@@ -102,7 +102,7 @@ La section `jobs:` facultative porte les réglages de la fileà :
 
 ### 4. Connaître la reprise après crash
 
-Deux détecteurs transforment un crash en reprise propreà :
+Deux détecteurs transforment un crash en reprise propre :
 
 - Le balayage des baux tourne à chaque `sweep_interval_s`. Il remet en file
   les lignes `running` dont le bail a expiré ou dont l’instance
@@ -149,7 +149,7 @@ sa ligne et la commande sort en code 1 : le serveur refuse aussi de
 démarrer sur la même erreur.
 
 :::tip
-Les planifications se répartissent volontairement sur la nuità :
+Les planifications se répartissent volontairement sur la nuit :
 compactage à 03:45, élagage des tombstones à 04:15, élagage de l’usage à
 
 04:30, élagage des secrets à 04:45. Gardez cet espacement quand vous en
@@ -159,7 +159,7 @@ déplacez un.
 ## Exemple
 
 Un fragment de configuration complet. Il montre les valeurs par défaut de
-la file et chaque planification cron avec sa valeur par défautà :
+la file et chaque planification cron avec sa valeur par défaut :
 
 ```yaml
 jobs:
@@ -199,7 +199,7 @@ event:
 
 **Un job reste `running` plus longtemps que prévu.**
 
-Le handler tourne peut-être encoreà : les types de jobs longs portent
+Le handler tourne peut-être encore : les types de jobs longs portent
 un bail de 3600 secondes. Sinon, le worker est mort. Le balayage remet la
 ligne en file au premier tick qui suit l’expiration du bail. Attendez un
 `sweep_interval_s` après `lease_ttl_s`.
@@ -238,6 +238,6 @@ avoir modifié le fichier.
   file porte.
 - [Événements et garanties de livraison](/fr/concepts/events-delivery/) —
   le bus que le contrôle de retard cron surveille.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [jobs.md](https://github.com/wearefacet/facet/blob/main/doc/backend/jobs.md),
   [cron.md](https://github.com/wearefacet/facet/blob/main/doc/backend/cron.md).

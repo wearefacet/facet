@@ -35,7 +35,7 @@ compare. Tous deux sont des modèles Jinja2 que Facet rend à chaque
 ### 1. Écrire le modèle du nom d’affichage
 
 Ajoutez une clé `display_name` à la définition du doctype. La valeur est
-un modèle Jinja2. Restez courtà : Facet coupe le résultat à 255 caractères.
+un modèle Jinja2. Restez court : Facet coupe le résultat à 255 caractères.
 Un doctype de personnes peut porter
 `display_name: "{{ first_name }} {{ last_name }}"`.
 
@@ -69,20 +69,20 @@ d’affichage et le texte de recherche de chaque document existant. Voir
 | `{{ display_name }}` | Le nom d’affichage de ce document. Modèles de recherche seulement. |
 
 Les modèles sont rendus par un moteur Jinja2. Les filtres courants
-fonctionnentà ; celui dont vous avez le plus besoin est `join`, qui
+fonctionnent ; celui dont vous avez le plus besoin est `join`, qui
 transforme un tableau en texte lisible. Voir la
 [Référence du contexte Jinja2](/fr/reference/jinja2-context/).
 
-Règles de renduà :
+Règles de rendu :
 
 | Type de valeur | Rendu |
 | --- | --- |
 | Champ référence | Le nom d’affichage enregistré du document référencé. Une référence non résolue affiche le nom du doctype cible. Une référence de collection affiche sa première entrée. |
-| Champ monétaire | La devise et le montantà : `USD 120000`. |
+| Champ monétaire | La devise et le montant : `USD 120000`. |
 | Champ facultatif absent | Texte vide. Le rendu n’échoue jamais sur des données manquantes. |
 | Champ tableau | Style Python : `['a', 'b']`. Passez par un filtre pour une sortie lisible. |
 
-Deux limites surprennent en pratiqueà :
+Deux limites surprennent en pratique :
 
 - **L’`id` du document n’est pas une variable.** `{{ id }}` fait échouer
   l’enregistrement. Déclarez un champ chaîne pour un code lisible par un
@@ -96,14 +96,14 @@ Deux limites surprennent en pratiqueà :
 Un doctype `hr.Person` déclare les champs `first_name`, `last_name`,
 `email`, `tags` (tableau de chaînes) et `manager_id` (référence à
 
-`hr.Person`). La définition porteà :
+`hr.Person`). La définition porte :
 
 ```yaml
 display_name: "{{ first_name }} {{ last_name }}"
 search: "{{ first_name }} {{ last_name }} {{ email }} {{ tags | join(', ') }}"
 ```
 
-Un document contientà :
+Un document contient :
 
 ```json
 {
@@ -115,13 +115,13 @@ Un document contientà :
 }
 ```
 
-Le nom d’affichage enregistré està :
+Le nom d’affichage enregistré est :
 
 ```text
 Ada Lovelace
 ```
 
-Le texte de recherche enregistré està :
+Le texte de recherche enregistré est :
 
 ```text
 Ada Lovelace ada@facet.local crm, vip
@@ -133,12 +133,12 @@ porterait `['crm', 'vip']` dans son texte de recherche.
 ## Le comportement sans modèle
 
 Un doctype peut ne déclarer aucune des deux clés. L’outil de vérification
-signale alors ce que fait l’interfaceà :
+signale alors ce que fait l’interface :
 
 - **Sans `display_name`.** Les noms d’affichage retombent sur le premier
   des champs `name`, `title` ou `label`, puis sur l’id brut du document.
 - **Sans modèle `search`.** Le texte de recherche est le nom d’affichage
-  regroupé. Un terme de recherche le trouve encoreà ; la recherche
+  regroupé. Un terme de recherche le trouve encore ; la recherche
   inter-doctypes ignore le doctype.
 - **Aucune clé.** Un terme de recherche ne trouve que l’id du document,
   et la vérification émet un avertissement. Déclarez au moins une clé.
@@ -152,8 +152,8 @@ document — souvent une paire d’accolades perdue. Corrigez l’expression.
 
 **Un enregistrement échoue avec une erreur de modèle.**
 
-Le modèle compile mais échoue au renduà : un filtre mal orthographié, un
-type erroné ou une expression invalide. L’écriture est refuséeà ; rien
+Le modèle compile mais échoue au rendu : un filtre mal orthographié, un
+type erroné ou une expression invalide. L’écriture est refusée ; rien
 n’est stocké. Corrigez le modèle et enregistrez de nouveau.
 
 **Les listes affichent encore l’ancien nom après un changement de

@@ -25,13 +25,13 @@ borne, et où vous réglez la fenêtre.
 
 | Classe de données    | Ce qui est gardé                                                                                       | Combien de temps                                                                                      |
 | --------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Documents             | L’état courant de chaque document vivant.                                                                | Tant que le document vit. Une suppression fait un tombstoneà ; elle ne retire pas la ligne.                |
+| Documents             | L’état courant de chaque document vivant.                                                                | Tant que le document vit. Une suppression fait un tombstone ; elle ne retire pas la ligne.                |
 | Mutations             | Le journal complet des changements de chaque document.                                                    | `mutations.retention_days`, 180 par défaut. `0` garde tout. Les lignes plus anciennes se replient en une ligne d’instantané par document. |
 | Mises à jour fusionnées | Les mises à jour du même acteur et du même canal, à l’intérieur de `mutations.coalesce_window_minutes` (3 par défaut), se replient en une ligne. | La ligne repliée remplace l’ancienne. L’ancien id répond `404` à l’intérieur de la fenêtre. |
 | Tombstones            | Un document supprimé garde son contenu, ses liens, et son texte de recherche. Le libellé et les métadonnées restent. | La purge efface le payload après `tombstone.content_retention_days`, 30 par défaut. `0` le garde pour toujours. |
-| Événements            | Chaque flux Redis garde les événements récents pour les réactions.                                        | Élagué à `event.maxlen`, 1 000 000 entrées par shard par défaut. La livraison est au plus une foisà ; PostgreSQL porte l’état durable. |
+| Événements            | Chaque flux Redis garde les événements récents pour les réactions.                                        | Élagué à `event.maxlen`, 1 000 000 entrées par shard par défaut. La livraison est au plus une fois ; PostgreSQL porte l’état durable. |
 | Jobs et appels webhook | Les lignes de jobs d’arrière-plan finis et les lignes d’appels webhook.                                   | `jobs.retention_days`, 30 par défaut.                                                                     |
-| Sessions et tokens    | Sessions de refresh, tokens d’accès, défis MFA, liens d’identifiant.                                      | Session de refreshà : 14 jours. Token d’accèsà : 15 minutes. Défi MFAà: 5 minutes. Liens d’identifiantà : 24 heures. La déconnexion efface la session. |
+| Sessions et tokens    | Sessions de refresh, tokens d’accès, défis MFA, liens d’identifiant.                                      | Session de refresh : 14 jours. Token d’accès : 15 minutes. Défi MFA : 5 minutes. Liens d’identifiant : 24 heures. La déconnexion efface la session. |
 | Fichiers              | Les octets téléversés et leurs métadonnées.                                                               | Conservés tant qu’un document vivant les possède. Les fichiers sans propriétaire sont purgés après `artifact.prune_after_days`, 30 par défaut, quand aucune référence récente ne les nomme. `0` garde tout. |
 | Événements de connexion | Les documents `iam.LoginEvent` enregistrent chaque événement d’authentification.                        | Ils suivent les fenêtres de document et de mutation ci-dessus.                                            |
 
@@ -55,7 +55,7 @@ l’état final.
 
 **Tombstones.** Le payload conservé laisse Facet vérifier les périmètres de
 lignes sur les événements de suppression. Le payload ne fuit jamais dans
-les listes, les résultats de recherche, ou les instantanésà : chaque filtre
+les listes, les résultats de recherche, ou les instantanés : chaque filtre
 de liste ne vise que les lignes vivantes. Le libellé reste, si bien que les
 vues d’audit peuvent nommer un document supprimé.
 
@@ -160,6 +160,6 @@ ligne la plus récente porte le changement composé.
   concepts.
 - [Déployer en production](/fr/operate/production/) — où se trouve le
   fichier de configuration.
-- Internes sur GitHubà :
+- Internes sur GitHub :
   [mutation.md](https://github.com/wearefacet/facet/blob/main/doc/backend/mutation.md),
   [event.md](https://github.com/wearefacet/facet/blob/main/doc/backend/event.md).
