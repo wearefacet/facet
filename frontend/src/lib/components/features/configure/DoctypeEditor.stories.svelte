@@ -386,13 +386,10 @@
 				input.includes('/Api/core/DocType/') &&
 				init?.method === 'PUT'
 			) {
-				return new Response(
-					JSON.stringify({ mid: 'unchanged-mid' }),
-					{
-						status: 200,
-						headers: { 'Content-Type': 'application/json' }
-					}
-				);
+				return new Response(JSON.stringify({ mid: 'unchanged-mid' }), {
+					status: 200,
+					headers: { 'Content-Type': 'application/json' }
+				});
 			}
 			return originalFetch.call(window, input, init);
 		};

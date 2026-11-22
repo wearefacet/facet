@@ -272,7 +272,9 @@
 							{/if}
 
 							<Dialog.Title class="welcome-title">{steps[step].title}</Dialog.Title>
-							<Dialog.Description class="welcome-body">{steps[step].body}</Dialog.Description>
+							<Dialog.Description class="welcome-body" tabindex={0}>
+								{steps[step].body}
+							</Dialog.Description>
 						</div>
 					{/key}
 
