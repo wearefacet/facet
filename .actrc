@@ -1,0 +1,20 @@
+# Local GitHub Actions runner config (`act`).
+#
+# Usage:  act workflow_dispatch -j backend-fast
+#
+# One prerequisite lives in your USER config, not here: `-s GITHUB_TOKEN=`
+# in `~/.actrc`. `act` reuses a GitHub token from the environment or the
+# `gh` keyring, and a stale or invalid one makes its go-git action fetch
+# fail with "authentication required: Invalid username or token" — every
+# action clone (`actions/checkout`, `crystal-lang/install-crystal`, ...)
+# then dies. An empty token forces anonymous clone, which works for the
+# public actions this repository uses. A project `.actrc` may not set
+# secrets, so the line must sit in `~/.actrc`:
+#
+#   printf '%s\n' '-s GITHUB_TOKEN=' >> ~/.actrc
+#
+# Ubuntu image: `catthehacker/ubuntu:act-latest` carries the tools the
+# jobs need. Pull it once with:
+#   docker pull catthehacker/ubuntu:act-latest
+
+-P ubuntu-latest=catthehacker/ubuntu:act-latest
