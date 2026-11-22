@@ -1017,6 +1017,37 @@ module Facet
       end
     end
 
+    describe "assistant null keys" do
+      # The `!env?` collapse (Util::YamlInclude) rewrites an unset variable
+      # to an explicit YAML null — the key is present, the value nil. The
+      # shipped production example renders `api_endpoint` / `model` exactly
+      # this way when the FACET_AI_* variables are unset, so a null must
+      # fall back to the default, not fail the boot with a nil cast.
+      it "falls back to defaults when api_endpoint and model are explicit nulls" do
+        cfg = Config.from_yaml_node(build_yaml_config(<<-YAML
+          assistant:
+            api_endpoint:
+            api_key:
+            model:
+          YAML
+        ))
+        cfg.assistant.api_endpoint.should eq("https://api.openai.com/v1")
+        cfg.assistant.model.should eq("gpt-4o")
+        cfg.assistant.api_key.should be_nil
+      end
+
+      it "keeps values that are present" do
+        cfg = Config.from_yaml_node(build_yaml_config(<<-YAML
+          assistant:
+            api_endpoint: "https://llm.example.tld/v1"
+            model: "claude-sonnet"
+          YAML
+        ))
+        cfg.assistant.api_endpoint.should eq("https://llm.example.tld/v1")
+        cfg.assistant.model.should eq("claude-sonnet")
+      end
+    end
+
     describe "empty sub-sections" do
       it "treats empty iam sub-sections like absent ones" do
         cfg = Config.from_yaml_node(build_yaml_config("iam:\n  jwt:\n  mfa:\n  auth:"))
