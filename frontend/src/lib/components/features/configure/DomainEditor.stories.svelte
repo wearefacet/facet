@@ -308,9 +308,10 @@
 	args={{ domain: 'core', registry: createMockDriver(), tab: 'grants' }}
 	play={async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
-		// Core holds no grants (system domain — the reads are skipped), and
-		// the seeded editor context sets still render.
-		await expect(canvas.getByText(/No issued grants/)).toBeInTheDocument();
+		// Core holds no grants (the mock driver seeds none), and the seeded
+		// editor context sets still render. The grants load is async even for
+		// a system domain, so wait for the empty state.
+		await waitFor(() => expect(canvas.getByText(/No issued grants/)).toBeInTheDocument());
 		await expect(canvas.getByText('$editor_domains')).toBeInTheDocument();
 		await expect(canvas.getByText('$editor_doctypes')).toBeInTheDocument();
 		await expect(canvas.getByText('$editor_draft_domains')).toBeInTheDocument();
@@ -323,7 +324,9 @@
 	play={async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		// The iam domain document is bare — both empty-state cards render.
-		await expect(canvas.getByText(/No issued grants/)).toBeInTheDocument();
+		// The grants load is async even for a system domain, so wait for the
+		// first empty state before asserting the second.
+		await waitFor(() => expect(canvas.getByText(/No issued grants/)).toBeInTheDocument());
 		await expect(canvas.getByText(/No context sets/)).toBeInTheDocument();
 	}}
 />
