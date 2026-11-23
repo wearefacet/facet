@@ -278,11 +278,29 @@ The floating window both mounts share:
 | `onclose`  | `() => void` | —                                    | Close (X) button handler.                                     |
 | `children` | `Snippet`    | —                                    | The window body — a `ChatPanel` mount.                        |
 
-The shell owns the window chrome and behaviours: drag by the header, edge/corner resize (top / left / top-left), collapse to a title bar, maximize to the viewport, and persistence in `sessionStorage` — collapsed, maximized, and window size under `facet.assistant.*` (position is deliberately not persisted; see `assistantWindowState.ts`). The window is `position: fixed` with a bottom-right default inset and `z-index: 1000`.
+The shell owns the window chrome and behaviours: drag by the header, edge/corner resize (top / left / top-left), collapse to a movable title bar, maximize to the viewport, and persistence in `sessionStorage` under `facet.assistant.*` — collapsed, maximized, window size, and the collapsed bar's position and width (the expanded window's position is deliberately session-local; see `assistantWindowState.ts`). The window is `position: fixed` with a bottom-right default inset and `z-index: 1000`.
 
 Collapse hides the body with `display: none` only — the body stays mounted, so the hosted `ChatPanel` keeps its state across minimize + restore: selected conversation, loaded turns, composer text, and a live stream. Close (X) removes the window, so the host loses that state again.
 
-Collapse wins over maximize: minimizing a maximized window docks the title bar at the bottom edge, and expanding again returns to the maximized box. Maximize and restore always show the full window — a click never leaves the title bar over an empty box. The floating window covers page content by design (QA B-369, accepted 2026-11-13): collapse, move, or close the window to reach the controls beneath it.
+Collapse wins over maximize: minimizing a maximized window shows the title bar, and expanding again returns to the maximized box. Maximize and restore always show the full window — a click never leaves the title bar over an empty box. The floating window covers page content by design (QA B-369, accepted 2026-11-13): collapse, move, or close the window to reach the controls beneath it.
+
+#### Window states — move, resize, persistence
+
+Each window state allows its own set of moves. The rendered geometry always stays inside the viewport:
+
+| State         | Move                            | Resize                               | Persists                                                      |
+| ------------- | ------------------------------- | ------------------------------------ | ------------------------------------------------------------- |
+| Floating      | Header drag                     | Top / left / top-left corner handles | Size only (`width`, `height`). The position is session-local. |
+| Collapsed bar | Header drag                     | Left-edge width handle only          | Bar position (`bar-x`, `bar-y`) and bar width (`bar-width`).  |
+| Maximized     | No — pinned to the viewport gap | No                                   | The `maximized` flag.                                         |
+
+Rules:
+
+- The collapsed bar is a movable strip, not a fixed dock element. It keeps its 40 px height at any position.
+- The bar starts at the bottom edge, at the floating window's x and width. Once the user moves or resizes it, the bar stores its own geometry and reopens there. The first collapse inherits the floating window's x; a later drag of the expanded window does not move the bar.
+- The bar width has a 200 px floor (`BAR_WIDTH_MIN`) and no fixed ceiling — the render clamps against the live viewport, so a bar saved on a large screen never opens off-screen on a small one.
+- The bar keys live in the same session storage as the other window keys. They reset when the session ends.
+- The expanded window's position stays session-local by decision. A new session resets it to the default inset.
 
 ### `WorkspaceAssistant`
 
@@ -373,7 +391,7 @@ A typical integration:
 - Part order mirrors the stream: a stored assistant message's `reasoning` field leads, then text, then tool calls in order.
 - `preview_view` and `show_documents` rebuild from the persisted `tool_calls[].arguments`; the ack result narrows a `show_documents` part to the ids the backend accepted.
 - `list_documents` and `aggregate_documents` keep no persisted arguments (only UI tools carry them) — the `rows` / `stats` parts rebuild from the persisted tool-result envelope instead.
-- Failed calls (`Error executing tool …`) and unparseable results fall back to the plain `tool_call` bar.
+- Failed calls (the `Error executing tool …` prefix, or an `{"ok":false…}` envelope) and unparseable results fall back to the plain `tool_call` bar.
 - A cancelled turn renders its partial content above a `> Cancelled.` marker, matching the live-stream notice. The flag comes from the row's `status === 'cancelled'` (the backend's turn lifecycle column), not from the legacy `error` value.
 - A terminal `error` turn renders the user bubble plus a plain `> Error: …` segment.
 - A `capped` turn (the backend hit the tool-loop iteration limit) renders like `error`: the trace rebuilds from the row's `response_messages`, with the raw cap message as the error line. The turn itself replays server-side — the next ask continues from the committed work.

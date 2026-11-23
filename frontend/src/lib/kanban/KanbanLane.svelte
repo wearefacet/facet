@@ -150,13 +150,16 @@
 		flex-shrink: 0;
 	}
 
+	/* The stack fills the lane below the header. The lane height caps the
+	   stack, and a tall stack scrolls inside the lane. */
 	.kb-cards {
 		padding: 10px;
 		display: flex;
 		flex-direction: column;
 		gap: 9px;
+		flex: 1;
+		min-height: 0;
 		overflow-y: auto;
-		max-height: 560px;
 	}
 
 	.kb-placeholder {

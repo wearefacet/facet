@@ -148,7 +148,7 @@ module Facet::Assistant::DomainBuilder
     # ── Registration ──────────────────────────────────────────────────────
 
     describe ".register" do
-      it "registers all 16 tools and none are left out" do
+      it "registers every tool in TOOL_NAMES and none are left out" do
         with_db do |db|
           context = make_domain_builder_context(db)
           agent = build_domain_builder_agent(db, context)
@@ -283,6 +283,20 @@ module Facet::Assistant::DomainBuilder
           result = call_domain_builder_tool(agent, "create_doctype", {} of String => JSON::Any)
           result["ok"].as_bool.should be_false
           result["error"].as_s.should contain("Missing 'definition'")
+        end
+      end
+
+      it "create_doctype missing-argument error asks for a complete re-emit" do
+        with_db do |db|
+          context = make_domain_builder_context(db)
+          agent = build_domain_builder_agent(db, context)
+
+          result = call_domain_builder_tool(agent, "create_doctype", {} of String => JSON::Any)
+          result["ok"].as_bool.should be_false
+          # The message states that the call arrived without the argument
+          # and asks the caller to send the complete tool call again.
+          result["error"].as_s.should contain("the previous call reached the server without it")
+          result["error"].as_s.should contain("Re-emit the complete tool call")
         end
       end
 
@@ -551,6 +565,50 @@ module Facet::Assistant::DomainBuilder
           # `issues` is an array — its contents vary based on cross-doctype
           # state, so we only assert the key exists.
           result["data"].as_h.has_key?("issues").should be_true
+        end
+      end
+    end
+
+    # ── check_domain ─────────────────────────────────────────────────────
+
+    describe "check_domain" do
+      it "returns the draft domain, its domain_issues and its doctypes" do
+        with_db do |db|
+          context = make_domain_builder_context(db)
+          agent = build_domain_builder_agent(db, context)
+
+          doctype_id = seed_doctype_in_draft(db, context.draft_domain, "Widget")
+
+          result = call_domain_builder_tool(agent, "check_domain", {} of String => JSON::Any)
+          result["ok"].as_bool.should be_true
+          result["data"]["domain"].as_s.should eq(context.draft_domain)
+          # `domain_issues` is an array — its contents vary based on
+          # cross-doctype state, so we only assert the key exists.
+          result["data"].as_h.has_key?("domain_issues").should be_true
+          # The fresh draft holds exactly one doctype — the seeded one.
+          doctypes = result["data"]["doctypes"].as_a
+          doctypes.size.should eq(1)
+          doctypes[0]["doctype_id"].as_s.should eq(doctype_id)
+          doctypes[0].as_h.has_key?("issue_count").should be_true
+          doctypes[0].as_h.has_key?("issues").should be_true
+          doctypes[0].as_h.has_key?("notices").should be_true
+        end
+      end
+
+      it "reports a missing draft domain instead of raising" do
+        with_db do |db|
+          # A context whose draft_domain points at no projection. The read
+          # tools register without the draft guard, so the tool — not the
+          # registrar — must surface the 404 as an error payload.
+          context = Facet::Assistant::DomainBuilder::Context.new(draft_domain: "ghost-domain")
+          agent = build_domain_builder_agent(db, context)
+
+          # The draft guard skipped the write tools for this context.
+          agent.registered_tool_callback("create_doctype").should be_nil
+
+          result = call_domain_builder_tool(agent, "check_domain", {} of String => JSON::Any)
+          result["ok"].as_bool.should be_false
+          result["error"].as_s.should contain("not found")
         end
       end
     end

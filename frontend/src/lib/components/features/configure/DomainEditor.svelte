@@ -292,12 +292,9 @@
 	);
 
 	async function loadGrants() {
-		if (isSystemDomain(domain)) {
-			issuedGrants = [];
-			heldGrants = [];
-			grantsError = undefined;
-			return;
-		}
+		// No system-domain early return: the publish ticket flow files grants
+		// into any live producer. So core, iam, and app can hold issued and
+		// held grants too.
 		grantsLoading = true;
 		grantsError = undefined;
 		try {

@@ -85,10 +85,10 @@ describe "Domain Builder Conversation Routes" do
         row.should eq("true")
       end
 
-      # All 25 tool names are persisted on the conversation's enabled_tools.
+      # All 26 tool names are persisted on the conversation's enabled_tools.
       tools = data["enabled_tools"].as_a.map(&.as_s)
       tools.sort!
-      tools.size.should eq(25)
+      tools.size.should eq(26)
       tools.should contain("create_doctype")
       tools.should contain("read_skill")
       tools.should contain("delete_document_view")

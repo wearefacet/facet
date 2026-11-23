@@ -332,4 +332,22 @@ describe('reconstructTurns — preview_view replay', () => {
 			{ type: 'preview', preview: { spec: { kind: 'document', template }, status: 'error' } }
 		]);
 	});
+
+	it('marks the preview as error when the result envelope is ok:false', () => {
+		const out = reconstructTurns(request, [
+			response[0],
+			{
+				role: 'tool',
+				tool_call_id: 'tc1',
+				name: 'preview_view',
+				content: JSON.stringify({ ok: false, error: "Missing 'template' argument" })
+			}
+		]);
+		const seg = out[1];
+		if (seg.kind !== 'agent') throw new Error('expected agent');
+		expect(seg.parts).toEqual([
+			{ type: 'text', content: 'Here is the preview.' },
+			{ type: 'preview', preview: { spec: { kind: 'document', template }, status: 'error' } }
+		]);
+	});
 });

@@ -205,6 +205,15 @@
 	function ticketState(ticket: GrantTicket): string {
 		return ticket.active ? m.configure_grants_state_active() : m.configure_grants_state_awaiting();
 	}
+
+	/** The kind line must agree with the state chip: a filed and active
+		ticket means the producer's acceptance already happened. */
+	function ticketKind(ticket: GrantTicket): string {
+		if (!ticket.filed) return m.configure_publish_ticket_merged();
+		return ticket.active
+			? m.configure_publish_ticket_filed_active()
+			: m.configure_publish_ticket_filed();
+	}
 </script>
 
 <Dialog.Root bind:open>
@@ -239,11 +248,7 @@
 								<span class="sp"></span>
 								<span class="ticket-state" class:ok={ticket.active}>{ticketState(ticket)}</span>
 							</div>
-							<p class="ticket-kind">
-								{ticket.filed
-									? m.configure_publish_ticket_filed()
-									: m.configure_publish_ticket_merged()}
-							</p>
+							<p class="ticket-kind">{ticketKind(ticket)}</p>
 							<ul class="edge-list">
 								{#each ticket.edges as edge (edge.doctype)}
 									<li class="edge mono">{edge.doctype}: {edge.tags.join(', ')}</li>

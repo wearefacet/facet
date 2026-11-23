@@ -38,7 +38,11 @@ import { resolve } from '$app/paths';
 import { buildNavModel, domainProjectionToNavDomain } from '$lib/navModel';
 import { DocumentDataDriver } from '$lib/datasource/DocumentDriver';
 import { prependDraft, rebuildDraftNav, setDraftNav } from '$lib/navState.svelte';
-import { domainListCache, documentShowCache } from '$lib/datasource/clientCache.js';
+import {
+	domainListCache,
+	doctypeRegistryCache,
+	documentShowCache
+} from '$lib/datasource/clientCache.js';
 import { getPermissions } from '$lib/permissions.svelte';
 import {
 	setPreviewSession,
@@ -328,6 +332,13 @@ export async function publishDraft(
 			undefined,
 			documents
 		);
+		// The publish turned the draft into a live domain. The domain list and
+		// the doctype registry caches still hold the pre-publish state — drop
+		// them here, on both return paths, so the drafts list, the sidebar,
+		// and the published list re-fetch. WS delivery can lose events, so
+		// local freshness must not wait for the burst.
+		domainListCache.invalidate();
+		doctypeRegistryCache.invalidate();
 		if (result.grant_tickets.length > 0) {
 			return {
 				status: 'published',
@@ -346,6 +357,9 @@ export async function publishDraft(
 		// up only when the burst's invalidations re-run the layout load. Land
 		// on the builder overview instead.
 		await goto(resolve('/Builder'));
+		// Re-run the load functions so the builder landing shows the
+		// post-publish state — the same local catch-up as `discardDraft`.
+		await invalidateAll();
 		return { status: 'published', report: null };
 	} catch (err) {
 		// A 409 means the target name is already in use. The store never

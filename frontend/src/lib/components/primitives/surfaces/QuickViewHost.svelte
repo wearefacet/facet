@@ -514,7 +514,8 @@
 				     period, and dateperiod values render instead of being dropped
 				     (B-102). The driver routes reference values through Capsule so
 				     they show the target's display name, not the raw id token
-				     (B-132). Objects and arrays fall back to JSON text. -->
+				     (B-132). Objects, object-item arrays, and definition-less
+				     arrays fall back to JSON text. -->
 				<dl class="qv-fields">
 					{#each Object.entries(selectedDoc.data) as [key, value] (key)}
 						{@const fd = fieldDefFor(activeDef, key)}

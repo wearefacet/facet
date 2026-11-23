@@ -284,8 +284,8 @@ The domain builder is the first specialised assistant mode: it runs inside a dra
 - `src/assistant/domain_builder/auth.cr` — `Auth` module (system-tier `AuthContext` for the assistant).
 - `src/assistant/domain_builder/system_prompt.cr` — `SystemPrompt` builder (interpolates draft domain, target name, description).
 - `src/assistant/domain_builder/skills.cr` — `Skills` loader (reads `.md` skill files from `src/assistant/domain_builder/skills/`).
-- `src/assistant/domain_builder/tools.cr` — `Registrar` module (registers all 25 tools onto an `Agent`).
-- `src/assistant/domain_builder/tools/read_tools.cr` — 12 read-only tool callbacks.
+- `src/assistant/domain_builder/tools.cr` — `Registrar` module (registers all 26 tools onto an `Agent`).
+- `src/assistant/domain_builder/tools/read_tools.cr` — 13 read-only tool callbacks.
 - `src/assistant/domain_builder/tools/write_tools.cr` — 11 draft-scoped write tool callbacks.
 - `src/assistant/domain_builder/tools/ui_tools.cr` — 2 frontend-rendered UI tool callbacks.
 - `src/assistant/domain_builder/routes.cr` — HTTP route for conversation creation.
@@ -315,7 +315,7 @@ The streaming endpoint is the same `POST /Api/assistant/conversations/:id/stream
 
 `DomainBuilder::SystemPrompt.build` embeds `system_prompt.md` at compile time and substitutes the session context (draft domain, target name, description) at the end. The template carries a capability map — what the builder can write (draft-scoped), what it can read (any domain), what it cannot do (publish the draft, edit grants or context sets) — the full 16-skill list, and the create → check → update → re-check workflow with the collection-view steps. `spec/assistant/domain_builder/system_prompt_spec.cr` pins the prompt's skill list against `Skills.names` — a new skill file without a prompt entry fails the suite. The user-language block and the operator's custom-instructions block append after the session context — language first, custom instructions last (see [Custom instructions](#custom-instructions) and [Language](#language)).
 
-### Tools (25)
+### Tools (26)
 
 All tool callbacks return a JSON string in the shared `Facet::Assistant::Tools` envelope (`src/assistant/tools.cr`). Success: `{"ok":true,"data":...}`. Error: `{"ok":false,"error":"...","details":[...]}`.
 
@@ -333,7 +333,8 @@ All tool callbacks return a JSON string in the shared `Facet::Assistant::Tools` 
 | `get_document_view` | read | Read a `core.DocumentView` template by doc_id (draft-scoped). |
 | `list_collection_views` | read | List `core.CollectionView` summary rows for a draft doctype. |
 | `get_collection_view` | read | Read a `core.CollectionView` by doc_id (draft-scoped). |
-| `check_doctype` | read | `Doctype::Check.call`, returns issues array. Includes view checks: template validation of the doctype's `core.DocumentView` children (warnings) and missing standard view kinds (`view`, `form`, `quickView`, `inline`, `card` — informational notices, not counted as issues). |
+| `check_doctype` | read | `Doctype::Check.call`, returns issues array. Includes view checks: template validation of the doctype's `core.DocumentView` children (warnings), config validation of its `core.CollectionView` children through `Document::CollectionViewGate.validate` (warnings), and missing standard view kinds (`view`, `form`, `quickView`, `inline`, `card` — informational notices, not counted as issues). |
+| `check_domain` | read | `Domain::Check.call` on the conversation's draft domain — no arguments. Returns `{domain, domain_issues, doctypes}`: domain-level issues (no doctypes, invalid hooks), per-doctype issues and notices, and publish-gate diagnostics (including the schema-version bump warning) for drafts with a `source_domain`. |
 | `read_skill` | read | Returns a skill `.md` body by name. |
 | `create_doctype` | draft | `Doctype::Create.call` with draft guard on `definition.domain`. |
 | `update_doctype` | draft | `Doctype::Update.call` with draft guard on existing projection. |

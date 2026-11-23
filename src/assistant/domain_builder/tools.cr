@@ -51,6 +51,7 @@ module Facet
           "list_collection_views",
           "get_collection_view",
           "check_doctype",
+          "check_domain",
           "read_skill",
           # Write — doctype definitions
           "create_doctype",
@@ -99,6 +100,7 @@ module Facet
           register_list_collection_views(agent, db, context)
           register_get_collection_view(agent, db, context)
           register_check_doctype(agent, db)
+          register_check_domain(agent, db, context)
           register_read_skill(agent)
           register_ui_tools(agent)
 
@@ -240,13 +242,16 @@ module Facet
         end
 
         # Reads a required object/array tool argument. Same contract as
-        # `req_s` but returns the raw `JSON::Any`.
+        # `req_s` but returns the raw `JSON::Any`. The missing-argument
+        # error states that the call reached the server without the
+        # argument and asks the caller to re-emit the complete tool call —
+        # the server keeps no argument state between calls.
         private macro req_any(key)
           %value = args[{{key}}]?
           if %value.nil?
             %keys = args.keys
             %received = %keys.empty? ? "none" : %keys.join(", ")
-            next Tools.error("Missing '{{key.id}}' argument (received: #{%received})")
+            next Tools.error("Missing '{{key.id}}' argument — the previous call reached the server without it (received: #{%received}). Re-emit the complete tool call, including '{{key.id}}'.")
           end
           %value
         end

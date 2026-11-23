@@ -97,7 +97,7 @@ export function reconstructTurns(
 		}
 		for (const tc of msg.tool_calls ?? []) {
 			const resultMsg = toolResults.get(tc.id);
-			const failed = resultMsg?.content?.startsWith('Error executing tool') ?? false;
+			const failed = isFailedToolResult(resultMsg?.content);
 			if (tc.name === 'preview_view') {
 				// UI tool — rebuild the preview card from the persisted arguments
 				// so historical sessions keep showing the preview.
@@ -174,6 +174,16 @@ function workspaceResultPart(name: string, resultJson: string | undefined): Agen
 	return null;
 }
 
+/**
+ * A failed tool result reaches the transcript in two shapes: the backend
+ * error prefix, or a JSON envelope that starts with `{"ok":false` — the
+ * registry and UI tools report failure through that envelope.
+ */
+function isFailedToolResult(content: string | undefined): boolean {
+	if (!content) return false;
+	return content.startsWith('Error executing tool') || content.startsWith('{"ok":false');
+}
+
 function toolCallEntryFromRef(ref: ToolCallRef, resultMsg?: AgentMessage): ToolCallEntry {
 	const detail = parseArgsDetail(ref.arguments);
 	let result: string | undefined;
@@ -181,7 +191,7 @@ function toolCallEntryFromRef(ref: ToolCallRef, resultMsg?: AgentMessage): ToolC
 
 	if (resultMsg) {
 		const content = resultMsg.content ?? '';
-		if (content.startsWith('Error executing tool')) {
+		if (isFailedToolResult(content)) {
 			status = 'error';
 		}
 		result = content;

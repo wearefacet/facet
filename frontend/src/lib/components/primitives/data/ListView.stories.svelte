@@ -5,6 +5,8 @@
 	import { defineMeta } from '@storybook/addon-svelte-csf';
 	import ListView from './ListView.svelte';
 	import CanFixture from '$lib/components/features/admin/CanFixture.svelte';
+	import ConfirmDialog from '$lib/components/primitives/surfaces/ConfirmDialog.svelte';
+	import * as m from '$lib/paraglide/messages';
 	import { createMockDriver } from '$lib/datasource/mock-seed.js';
 	import { MockDataSource } from '$lib/datasource/MockDataSource.js';
 	import { parseDoctypeDef, type DoctypeDef } from '$lib/doctype/types.js';
@@ -12,7 +14,7 @@
 	import Table from '$lib/table/Table.svelte';
 	import type { Column } from '$lib/table/types.js';
 	import type { DataDriver, Domain } from '$lib/datasource/driver.js';
-	import type { DataSource } from '$lib/datasource/interface.js';
+	import type { DataSource, DocumentRef } from '$lib/datasource/interface.js';
 
 	// ── F10-06 fixture: a saved column without a `label` ──────────────────────
 	//
@@ -122,6 +124,73 @@
 	}
 
 	const countedDriver = countingDriverOf(driver, listingCalls);
+
+	// ── DeleteView fixture ──────────────────────────────────────────────
+	//
+	// Mock mutations are synchronous and stay in the driver instance, so the
+	// delete flow gets its own driver (same isolation as `trashDriver`). The
+	// wrapper also bridges two mock gaps so the play can assert the real
+	// backend behaviour:
+	// 1. The mock's child list keeps tombstones; the backend serves live rows
+	//    only (`deleted_at IS NULL`). The wrapper drops the ids recorded
+	//    deleted, so the deleted tab really vanishes from the refetch.
+	// 2. The play must see the delete reach the driver — deletes are logged.
+	const viewDeleteLog: string[] = [];
+
+	function deleteTestDriverOf(base: DataDriver): DataDriver {
+		// Wrap one child collection: drop tombstoned rows from `list()`.
+		function wrapChild<C>(rel: string, child: DataSource<C>): DataSource<C> {
+			return {
+				list: async (params) => {
+					const res = await child.list(params);
+					return {
+						...res,
+						data: res.data.filter((row) => !viewDeleteLog.includes(row.meta.id))
+					};
+				},
+				create: (content) => child.create(content),
+				doc: (id) => wrapRef(id, child.doc(id))
+			};
+		}
+		// Wrap one document ref: record `delete`, delegate everything else.
+		function wrapRef<T>(id: string, ref: DocumentRef<T>): DocumentRef<T> {
+			return {
+				show: () => ref.show(),
+				update: (diff) => ref.update(diff),
+				delete: async () => {
+					viewDeleteLog.push(id);
+					await ref.delete();
+				},
+				action: (name, args) => ref.action(name, args),
+				invalidate: () => ref.invalidate(),
+				history: (params) => ref.history(params),
+				rollback: (mutationId) => ref.rollback(mutationId),
+				restore: () => ref.restore(),
+				backrefs: (params) => ref.backrefs(params),
+				children: <C,>(rel: string) => wrapChild(rel, ref.children<C>(rel)),
+				sidecars: <C,>(segment: string) => ref.sidecars<C>(segment)
+			};
+		}
+		function wrapDomain(name: string): Domain {
+			const domain = base.domain(name);
+			return {
+				doctype<T>(docName: string, seedData?: T[]): DataSource<T> {
+					const ds = domain.doctype<T>(docName, seedData);
+					return {
+						list: (params) => ds.list(params),
+						create: (content) => ds.create(content),
+						doc: (id) => wrapRef(id, ds.doc(id))
+					};
+				}
+			};
+		}
+		return {
+			getDoctypeDefinition: (qualifiedName) => base.getDoctypeDefinition(qualifiedName),
+			domain: wrapDomain
+		};
+	}
+
+	const deleteDriver = deleteTestDriverOf(createMockDriver());
 </script>
 
 <script lang="ts">
@@ -493,9 +562,10 @@
 	play={async ({ canvasElement }) => {
 		await sleep(400);
 		const canvas = within(canvasElement);
-		// With no manifest, `can()` is fail-closed: neither action is shown.
+		// With no manifest, `can()` is fail-closed: no view action is shown.
 		await expect(canvas.queryByRole('button', { name: 'Create a new view' })).toBeNull();
 		await expect(canvas.queryByRole('button', { name: 'Edit current view' })).toBeNull();
+		await expect(canvas.queryByRole('button', { name: m.list_view_delete() })).toBeNull();
 		// …but the tabs and table still render.
 		await expect(canvas.getByRole('tab', { name: 'All Deals' })).toBeVisible();
 	}}
@@ -762,6 +832,73 @@
 						</div>
 					{/snippet}
 				</ListView>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<!--
+DeleteView: the tab-strip delete affordance. Opens the shared confirm
+dialog — the app mounts the host in the root layout, so the story mounts
+its own `<ConfirmDialog />`. Cancel keeps the view. Confirm soft-deletes
+the CollectionView child, the strip refetches, and the tab disappears.
+-->
+<Story
+	name="DeleteView"
+	play={async ({ canvasElement }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+		// The strip opens on a real saved view, so the delete control shows.
+		const activeTab = canvas.getByRole('tab', { selected: true });
+		const activeName = activeTab.textContent?.trim() ?? '';
+		const deleteBtn = canvas.getByRole('button', { name: m.list_view_delete() });
+		await expect(deleteBtn).toBeVisible();
+
+		// Cancel path: the dialog opens, Cancel closes it, nothing deletes.
+		await fireEvent.click(deleteBtn);
+		const dialog = await waitFor(() => {
+			const el = within(document.body).getByRole('dialog');
+			expect(el).toBeVisible();
+			return el;
+		});
+		// The copy names the view the user is about to remove.
+		await expect(
+			within(dialog).getByRole('heading', {
+				name: m.list_view_delete_confirm_title({ name: activeName })
+			})
+		).toBeVisible();
+		await expect(within(dialog).getByText(m.list_view_delete_confirm_body())).toBeVisible();
+		await fireEvent.click(within(dialog).getByRole('button', { name: m.common_cancel() }));
+		await waitFor(() => expect(within(document.body).queryByRole('dialog')).toBeNull());
+		await expect(canvas.getByRole('tab', { name: activeName })).toBeVisible();
+		const deletesBefore = viewDeleteLog.length;
+
+		// Confirm path: the delete fires, the strip refetches, the tab goes.
+		await fireEvent.click(canvas.getByRole('button', { name: m.list_view_delete() }));
+		const confirmDialog = await waitFor(() => within(document.body).getByRole('dialog'));
+		await fireEvent.click(within(confirmDialog).getByRole('button', { name: m.common_delete() }));
+		await waitFor(() => expect(canvas.queryByRole('tab', { name: activeName })).toBeNull());
+		// The remaining tabs stay, and the strip serves the new active view.
+		await expect(canvas.getByRole('tab', { name: 'Open' })).toBeVisible();
+		await expect(canvas.getByRole('button', { name: m.list_view_delete() })).toBeVisible();
+		expect(viewDeleteLog.length).toBe(deletesBefore + 1);
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={adminManifest}>
+			<div
+				style="position: relative; width: 100%; height: 80vh; min-height: 500px; overflow: hidden; padding: 24px;"
+			>
+				<ListView
+					driver={deleteDriver}
+					doctype={dealDef}
+					parentDocId="crm.Deal"
+					pageSize={25}
+					viewerId="iam.Account.viewer"
+				/>
+				<!-- The confirm host lives in the root layout in the app; the
+		     story must mount it explicitly or confirm() never renders. -->
+				<ConfirmDialog />
 			</div>
 		</CanFixture>
 	{/snippet}

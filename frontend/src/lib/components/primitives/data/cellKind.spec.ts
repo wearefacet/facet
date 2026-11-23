@@ -65,16 +65,33 @@ describe('cellKind', () => {
 		expect(cellKind('array', def)).toBe('reference');
 	});
 
-	it('keeps plain arrays and array-of-string items on the text kind', () => {
-		const strings: FieldDef = {
-			key: 'tags',
+	it('maps arrays with primitive items to the array kind', () => {
+		// One chip per item. The cap and the `+N` overflow chip live in the
+		// renderer; the kind only routes.
+		const itemTypes = ['string', 'integer', 'enum'] as const;
+		for (const itemType of itemTypes) {
+			const def: FieldDef = {
+				key: 'tags',
+				type: 'array',
+				items: { key: '(items)', type: itemType }
+			};
+			expect(cellKind('array', def)).toBe('array');
+		}
+	});
+
+	it('keeps object-item and definition-less arrays on the text kind', () => {
+		// Object items have no chip form, and without an item definition the
+		// renderer cannot know the item shape — both keep the JSON-text
+		// fallback.
+		const objects: FieldDef = {
+			key: 'rows',
 			type: 'array',
-			items: { key: '(items)', type: 'string' }
+			items: { key: '(items)', type: 'object' }
 		};
-		expect(cellKind('array', strings)).toBe('text');
+		expect(cellKind('array', objects)).toBe('text');
+		expect(cellKind('array', { key: 'tags', type: 'array' })).toBe('text');
 		expect(cellKind('array', null)).toBe('text');
 		expect(cellKind('array')).toBe('text');
-		expect(cellKind('array', { key: 'tags', type: 'array' })).toBe('text');
 	});
 });
 

@@ -170,9 +170,13 @@ module Facet
         end
 
         # Denial helper: audit event + generic error. The browser never
-        # sees `reason` — it only lands in the LoginEvent details.
-        private def self.deny(db : DB::Connection, account_id : String, reason : String) : Facet::ServiceError
-          Helpers.write_login_event(db, account_id, "oidc_denied", reason)
+        # sees `reason` — it only lands in the LoginEvent details. Every
+        # caller holds no resolved account: the subject is the synthetic
+        # `system:oidc` principal or the raw IdP `sub`, so the event keeps
+        # the `system` actioner.
+        private def self.deny(db : DB::Connection, audit_subject : String, reason : String) : Facet::ServiceError
+          Helpers.write_login_event(db, audit_subject, "oidc_denied", reason,
+            subject_resolved: false)
           Facet::ServiceError.new(401, "Login denied")
         end
 

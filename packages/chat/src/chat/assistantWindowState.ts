@@ -5,9 +5,11 @@
  * Assistant window persistence for the chat package.
  *
  * The floating assistant is a collapsible window; its state persists in
- * session storage. Position is NOT persisted — the window resets to its
- * default inset each session to avoid drift bugs (off-screen after a
- * monitor change, etc.).
+ * session storage. The expanded window keeps its position session-local —
+ * it resets to its default inset each session to avoid drift bugs
+ * (off-screen after a monitor change, etc.). The collapsed bar persists
+ * its position and width instead, so the bar reopens where the user left
+ * it.
  *
  * Keys are package-owned (`facet.assistant.app.*`) so they can never collide
  * with the main application's own assistant (`facet.assistant.*`): both can
@@ -20,6 +22,9 @@ const STORAGE_KEY_MAXIMIZED = 'facet.assistant.app.maximized';
 const STORAGE_KEY_RAIL_WIDTH = 'facet.assistant.app.rail-width';
 const STORAGE_KEY_WIDTH = 'facet.assistant.app.width';
 const STORAGE_KEY_HEIGHT = 'facet.assistant.app.height';
+const STORAGE_KEY_BAR_X = 'facet.assistant.app.bar-x';
+const STORAGE_KEY_BAR_Y = 'facet.assistant.app.bar-y';
+const STORAGE_KEY_BAR_WIDTH = 'facet.assistant.app.bar-width';
 
 /**
  * Reads a boolean from sessionStorage. SSR-safe (no `window` on the
@@ -75,6 +80,23 @@ function writeNumber(key: string, value: number): void {
 		window.sessionStorage.setItem(key, String(value));
 	} catch {
 		/* swallow */
+	}
+}
+
+/**
+ * Reads a stored number that may be unset. Returns `null` when the key is
+ * absent or the stored value is not a finite number — the caller then
+ * keeps its computed default. SSR-safe and access-safe.
+ */
+function readNumberOrNull(key: string): number | null {
+	if (typeof window === 'undefined') return null;
+	try {
+		const v = window.sessionStorage.getItem(key);
+		if (v === null) return null;
+		const n = Number(v);
+		return Number.isFinite(n) ? n : null;
+	} catch {
+		return null;
 	}
 }
 
@@ -147,6 +169,45 @@ export function writeAssistantHeight(value: number): void {
 	writeNumber(STORAGE_KEY_HEIGHT, value);
 }
 
+/** Collapsed-bar geometry (px). The bar keeps the 40 px header height; only
+ * its position and width move. WIDTH_MIN keeps the title and the header
+ * buttons readable; there is no fixed maximum — the component clamps the
+ * rendered geometry against the live viewport. */
+export const BAR_WIDTH_MIN = 200;
+
+/**
+ * Reads the persisted collapsed-bar position axis. `null` = unset — the
+ * bar then starts docked at the bottom edge, at the floating window's x.
+ */
+export function readAssistantBarX(): number | null {
+	return readNumberOrNull(STORAGE_KEY_BAR_X);
+}
+
+export function writeAssistantBarX(value: number): void {
+	writeNumber(STORAGE_KEY_BAR_X, value);
+}
+
+export function readAssistantBarY(): number | null {
+	return readNumberOrNull(STORAGE_KEY_BAR_Y);
+}
+
+export function writeAssistantBarY(value: number): void {
+	writeNumber(STORAGE_KEY_BAR_Y, value);
+}
+
+/** Reads the persisted collapsed-bar width. `null` = unset — the bar then
+ * inherits the floating window's width. A stored width clamps up to
+ * `BAR_WIDTH_MIN`, so a corrupt value never shrinks the bar unreadable. */
+export function readAssistantBarWidth(): number | null {
+	const v = readNumberOrNull(STORAGE_KEY_BAR_WIDTH);
+	if (v === null) return null;
+	return Math.max(BAR_WIDTH_MIN, v);
+}
+
+export function writeAssistantBarWidth(value: number): void {
+	writeNumber(STORAGE_KEY_BAR_WIDTH, value);
+}
+
 /** Removes every persisted assistant key. Tests call this before mounting an
  * element so a suite never inherits window state from an earlier run. */
 export function clearAssistantStorage(): void {
@@ -157,7 +218,10 @@ export function clearAssistantStorage(): void {
 		STORAGE_KEY_MAXIMIZED,
 		STORAGE_KEY_RAIL_WIDTH,
 		STORAGE_KEY_WIDTH,
-		STORAGE_KEY_HEIGHT
+		STORAGE_KEY_HEIGHT,
+		STORAGE_KEY_BAR_X,
+		STORAGE_KEY_BAR_Y,
+		STORAGE_KEY_BAR_WIDTH
 	]) {
 		try {
 			window.sessionStorage.removeItem(key);

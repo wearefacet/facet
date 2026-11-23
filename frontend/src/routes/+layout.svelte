@@ -41,6 +41,7 @@
 	import type { PublishDoctypeOption } from '$lib/components/features/configure/PublishDialog.svelte';
 	import type { PublishDocumentsSelection } from '$lib/datasource/domainCheck.js';
 	import { getCount, loadForDomain } from '$lib/navCounts.svelte';
+	import { doctypeViewsCache } from '$lib/datasource/clientCache.js';
 	import { DocumentDataDriver } from '$lib/datasource/DocumentDriver';
 	import { getActiveRole, getAvailableRoles } from '$lib/role.svelte';
 	import { switchActiveRole } from '$lib/auth.svelte';
@@ -556,6 +557,9 @@
 	// re-run the effect (unsubscribe → resubscribe churn) every time the
 	// handler rebuilds the nav model.
 	function handleWsModelChange() {
+		// A live frame carries no doctype identity, so drop every cached view
+		// template list. The loads re-run below and re-fetch.
+		doctypeViewsCache.clear();
 		noteWsInvalidation(invalidateAll());
 		rebuildDraftNav();
 	}

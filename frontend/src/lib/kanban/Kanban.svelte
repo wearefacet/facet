@@ -220,13 +220,18 @@
 		display: grid;
 		grid-auto-flow: column;
 		grid-auto-columns: 288px;
+		/* One lane row. The row fills the board height when the board has
+		   a height. Tall card stacks then scroll inside their lane. */
+		grid-auto-rows: minmax(0, 1fr);
 		gap: 14px;
 		overflow-x: auto;
 		/* The board mounts inside the bordered listview container — inset it
 		   so lanes never fuse with the container edges (14px matches the
 		   lane gap and the calendar's horizontal rhythm). */
 		padding: 14px;
-		align-items: start;
+		/* Fill chain: the kanban list-view host gives this board its height. */
+		flex: 1;
+		min-height: 0;
 	}
 
 	.kb-empty {

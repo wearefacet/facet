@@ -49,7 +49,11 @@
 			.then((r) => {
 				registry = r;
 				loadError = undefined;
-				return loadDoctypeViewsWithIds(driver, qualified);
+				// Fresh fetch: a cached list may be older than an external write
+				// (a second tab, the assistant). This effect re-runs on route
+				// entry and whenever the loads re-run (`invalidateAll()`), so
+				// each run shows the templates as stored now.
+				return loadDoctypeViewsWithIds(driver, qualified, { fresh: true });
 			})
 			.then((v) => {
 				views = v.templates as Partial<Record<ViewKind, TemplateNode | null>>;

@@ -12,6 +12,7 @@
 	import UrlLink from './UrlLink.svelte';
 	import FileArtifact from './FileArtifact.svelte';
 	import FileCell from './FileCell.svelte';
+	import Tag from './Tag.svelte';
 	import type { ArtifactGrant } from '$lib/artifacts.js';
 	import { asSecretMarker, humanize } from '$lib/doctype/types.js';
 	import type { FieldDef, FieldType, MoneyValue } from '$lib/doctype/types.js';
@@ -38,6 +39,11 @@
 	 * the same token array, so it renders through the reference kind too —
 	 * the item definition carries the target doctype.
 	 *
+	 * An `array` field with primitive `items` (`string` / `integer` /
+	 * `enum`) renders one chip per item. Items past `arrayChipsMax` collapse
+	 * into one `+N` chip. Object-item and definition-less arrays keep the
+	 * JSON-text fallback.
+	 *
 	 * Consumers own their special hooks through snippet props:
 	 * `booleanCell` (the table's inline boolean toggle), `referenceCell`
 	 * (the table's reference capsule, rendered once per token), `enumCell`
@@ -54,6 +60,7 @@
 		fallback = '',
 		precision,
 		detectIsoDates = false,
+		arrayChipsMax = 3,
 		booleanCell,
 		enumCell,
 		referenceCell,
@@ -76,6 +83,11 @@
 		 * this on; typed surfaces keep raw text.
 		 */
 		detectIsoDates?: boolean;
+		/**
+		 * Chip cap for the `array` kind. Items past the cap collapse into one
+		 * `+N` chip. The default fits a dense table cell.
+		 */
+		arrayChipsMax?: number;
 		/** Consumer-owned boolean cell. Receives the non-blank value. */
 		booleanCell?: Snippet<[unknown]>;
 		/** Consumer-owned enum cell. Receives the non-blank value. */
@@ -142,6 +154,33 @@
 		return entry?.color;
 	}
 
+	/**
+	 * Label for one array-item chip. An enum item shows its declared label,
+	 * the same text the scalar `enum` kind renders. An object item
+	 * stringifies — a chip never prints `[object Object]`.
+	 */
+	function arrayItemLabel(item: unknown): string {
+		if (item !== null && typeof item === 'object') return JSON.stringify(item);
+		const text = String(item);
+		const itemDef = fieldDef?.items;
+		if (itemDef?.type === 'enum' && itemDef.values) {
+			const entry = itemDef.values.find((e) => e.key === text);
+			return entry?.label ?? humanize(text);
+		}
+		return text;
+	}
+
+	/**
+	 * Chip labels for one `array` value. Blank elements drop — an empty chip
+	 * reads as broken data. A non-array value yields no labels.
+	 */
+	function arrayChipLabels(v: unknown): string[] {
+		if (!Array.isArray(v)) return [];
+		return v
+			.filter((item) => item !== null && item !== undefined && item !== '')
+			.map((item) => arrayItemLabel(item));
+	}
+
 	const kind = $derived(cellKind(fieldType, fieldDef));
 	const enumTint = $derived(enumColorFor(fieldDef, value));
 	// Reference tokens: one per element for a collection reference (a JSON
@@ -186,6 +225,25 @@
 		{/each}
 	{:else}
 		<span class="fv-text">{refTokens.join(', ')}</span>
+	{/if}
+{:else if kind === 'array'}
+	{#if !Array.isArray(value)}
+		<!-- Malformed value on an array field — keep the JSON-text fallback. -->
+		<span class="fv-text">{plainTextValue(value)}</span>
+	{:else}
+		{@const labels = arrayChipLabels(value)}
+		{#if labels.length === 0}
+			<span class="fv-blank">—</span>
+		{:else}
+			<span class="fv-array">
+				{#each labels.slice(0, arrayChipsMax) as label, i (i)}
+					<Tag {label} />
+				{/each}
+				{#if labels.length > arrayChipsMax}
+					<Tag label={`+${labels.length - arrayChipsMax}`} />
+				{/if}
+			</span>
+		{/if}
 	{/if}
 {:else if kind === 'money'}
 	{@const mv = asMoney(value)}
@@ -258,6 +316,14 @@
 	.fv-text {
 		font-size: 13px;
 		color: var(--text);
+	}
+
+	/* Array items — one chip per item, the table tag look. */
+	.fv-array {
+		display: inline-flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 4px;
 	}
 
 	/* Data is mono — numbers and dates carry the mono face. */

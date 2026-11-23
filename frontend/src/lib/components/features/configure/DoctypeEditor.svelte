@@ -26,7 +26,6 @@
 	import { parseExportedSymbols } from '$lib/doctype/lua-symbols.js';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { untrack } from 'svelte';
 	import { apiFetch } from '$lib/session.svelte';
 	import { setSearchParams } from '$lib/utils/searchParams.js';
 	import { createSaveFlash } from '$lib/utils/saveFlash.svelte.js';
@@ -138,21 +137,21 @@
 		selectedFieldRef = undefined;
 	});
 
-	// ── Tab state ──────────────────────────────────────────────
+	// ── Tab state ──────────────────────────────────────────
 	//
-	// The active tab is a prop derived from the URL (e.g. /Builder/_abc/Company/logic).
-	// Tab switches navigate via `goto` so the URL reflects the user's location and
-	// browser back/forward works. We hold a local copy so the UI updates
-	// optimistically on click — `goto` is a no-op in Storybook, and even in the
-	// app it resolves asynchronously; local state keeps the switch instant.
-	// The effect below resyncs whenever the URL-driven prop changes (real
-	// navigation, back/forward, deep-link load).
-
-	// `activeTab` is a writable derived over the URL-driven `tab` prop: it
-	// reads the prop until `selectTab` assigns an optimistic override, and a
-	// real navigation (back/forward, deep-link) drops the override. (The old
-	// `$state` + sync `$effect` pair tripped `svelte/prefer-writable-derived`.)
-	let activeTab = $derived(untrack(() => tab));
+	// The active tab comes from the URL (e.g. /Builder/_abc/Company/logic).
+	// Tab switches navigate via `goto`, so the URL shows the user's location
+	// and browser back/forward works. `selectTab` assigns an optimistic
+	// override so the switch is instant — `goto` resolves asynchronously, and
+	// it is a no-op in Storybook. `activeTab` is a writable derived over the
+	// prop: the override holds until the prop changes, so a real navigation
+	// (back/forward, deep link) follows the URL again.
+	//
+	// Do not wrap the prop read in `untrack`. A `$derived` with no tracked
+	// dependency evaluates once and then never again — the editor would keep
+	// its mount-time value and ignore every later prop change. That freeze
+	// is what kept the view-template maps below stale.
+	let activeTab = $derived(tab);
 
 	/** Presentation fields (label, plural label, icon, color, description) are
 	 *  editable when the doctype is not readonly (Builder) or when the host
@@ -342,11 +341,13 @@
 	const actionCount = $derived(doctypeDef?.actions.length ?? 0);
 
 	// The stored `core.DocumentView` templates and their child ids. The route
-	// load seeds them; a save in the Views tab writes the new maps back through
-	// these writable deriveds, so the tab badge (and the next tab open) reflect
-	// the write without a reload — a tab switch does not re-run the layout load.
-	let views = $derived(untrack(() => viewsProp));
-	let viewIds = $derived(untrack(() => viewIdsProp));
+	// load seeds them, and it re-runs on route entry and on `invalidateAll()`,
+	// so an external write (second tab, assistant) reaches the mounted editor
+	// without a reload. A save in the Views tab writes the new maps back
+	// through these writable deriveds; that override holds until the next prop
+	// change, which then carries the server truth.
+	let views = $derived(viewsProp);
+	let viewIds = $derived(viewIdsProp);
 
 	/** Take the Views tab's post-save maps: they are the new source of truth
 	 *  for the badge and for the tab's own props. */

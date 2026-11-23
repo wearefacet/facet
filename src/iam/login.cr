@@ -66,9 +66,13 @@ module Facet
         # refusal lands in the audit log. The browser sees the plain error
         # body — the machine-readable reason rides the flat `meta` key.
         if Policy.oidc_only?(db)
+          # No account resolved — the subject is the synthetic
+          # `system:password` principal, so the event keeps the `system`
+          # actioner.
           Helpers.write_login_event(db, "system:password",
             "password_login_denied",
-            "Password login refused under auth mode 'oidc_only' (email: #{normalized_email(email)})")
+            "Password login refused under auth mode 'oidc_only' (email: #{normalized_email(email)})",
+            subject_resolved: false)
           return Facet::ServiceError.new(403, "Password login is disabled",
             meta: {"reason" => "auth_mode"})
         end

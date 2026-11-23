@@ -185,8 +185,9 @@
 
 <!--
 	The kanban listing surface: one `list()` call per lane, cards rendered
-	through the doctype's `card` view template. Stories are wrapped in a
-	sized container so the horizontal lane scroll has room to lay out.
+	through the doctype's `card` view template. Each story wraps the board
+	in a fixed-height flex column. This mirrors the list-view fill in the
+	app, so each lane fits the board and tall stacks scroll in their lane.
 -->
 
 <Story
@@ -220,7 +221,9 @@
 	}}
 >
 	{#snippet template(args)}
-		<div style="padding: 24px; min-height: 720px; background: var(--ground);">
+		<div
+			style="padding: 24px; height: 720px; display: flex; flex-direction: column; background: var(--ground);"
+		>
 			<Kanban {driver} doctype={dealDef} config={args.config} />
 		</div>
 	{/snippet}
@@ -259,7 +262,9 @@
 	}}
 >
 	{#snippet template(args)}
-		<div style="padding: 24px; min-height: 720px; background: var(--ground);">
+		<div
+			style="padding: 24px; height: 720px; display: flex; flex-direction: column; background: var(--ground);"
+		>
 			<Kanban {driver} doctype={dealDef} config={args.config} />
 		</div>
 	{/snippet}
@@ -279,7 +284,9 @@
 	}}
 >
 	{#snippet template(args)}
-		<div style="padding: 24px; min-height: 720px; background: var(--ground);">
+		<div
+			style="padding: 24px; height: 720px; display: flex; flex-direction: column; background: var(--ground);"
+		>
 			<Kanban {driver} doctype={dealDef} config={args.config} />
 		</div>
 	{/snippet}
@@ -304,7 +311,9 @@
 	}}
 >
 	{#snippet template(args)}
-		<div style="padding: 24px; min-height: 720px; background: var(--ground);">
+		<div
+			style="padding: 24px; height: 720px; display: flex; flex-direction: column; background: var(--ground);"
+		>
 			<Kanban {driver} doctype={dealDef} config={args.config} />
 		</div>
 	{/snippet}
@@ -329,7 +338,9 @@
 	}}
 >
 	{#snippet template(args)}
-		<div style="padding: 24px; min-height: 720px; background: var(--ground);">
+		<div
+			style="padding: 24px; height: 720px; display: flex; flex-direction: column; background: var(--ground);"
+		>
 			<Kanban driver={args.driver} doctype={args.doctype} config={args.config} />
 		</div>
 	{/snippet}
@@ -347,7 +358,9 @@
 	}}
 >
 	{#snippet template(args)}
-		<div style="padding: 24px; min-height: 720px; background: var(--ground);">
+		<div
+			style="padding: 24px; height: 720px; display: flex; flex-direction: column; background: var(--ground);"
+		>
 			<Kanban {driver} doctype={dealDef} config={args.config} onCardClick={args.onCardClick} />
 		</div>
 	{/snippet}
@@ -370,7 +383,9 @@
 	}}
 >
 	{#snippet template(args)}
-		<div style="padding: 24px; min-height: 720px; background: var(--ground);">
+		<div
+			style="padding: 24px; height: 720px; display: flex; flex-direction: column; background: var(--ground);"
+		>
 			<Kanban driver={args.driver} doctype={args.doctype} config={args.config} />
 		</div>
 	{/snippet}
@@ -400,7 +415,9 @@
 	}}
 >
 	{#snippet template(args)}
-		<div style="padding: 24px; min-height: 720px; background: var(--ground);">
+		<div
+			style="padding: 24px; height: 720px; display: flex; flex-direction: column; background: var(--ground);"
+		>
 			<Kanban driver={args.driver} doctype={args.doctype} config={args.config} />
 		</div>
 	{/snippet}

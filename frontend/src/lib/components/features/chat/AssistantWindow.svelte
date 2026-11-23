@@ -15,6 +15,13 @@
 		writeAssistantWidth,
 		readAssistantHeight,
 		writeAssistantHeight,
+		readAssistantBarX,
+		writeAssistantBarX,
+		readAssistantBarY,
+		writeAssistantBarY,
+		readAssistantBarWidth,
+		writeAssistantBarWidth,
+		BAR_WIDTH_MIN,
 		WIN_WIDTH_MIN,
 		WIN_HEIGHT_MIN
 	} from './assistantWindowState.js';
@@ -32,10 +39,10 @@
 	 *
 	 * Per the configure UX brief addendum: the assistant is a floating,
 	 * collapsible window; open/collapse state persists in local session
-	 * storage (position does not, to avoid monitor-/resize-induced drift).
-	 * The window is `position: fixed` with a bottom-right default inset.
-	 * Dragging the header updates local position state for the duration of
-	 * the open session; the position resets on the next open.
+	 * storage. The expanded window keeps its position session-local (to
+	 * avoid monitor-/resize-induced drift); the collapsed bar persists its
+	 * position and width, so it reopens where the user left it. The window
+	 * is `position: fixed` with a bottom-right default inset.
 	 */
 
 	let {
@@ -113,9 +120,15 @@
 		collapsed = false;
 	}
 
-	// Drag state — local $state per session (position not persisted).
+	// Drag state. The expanded window's position is session-local; the
+	// collapsed bar keeps its own persisted position (-1 = still unset —
+	// the bar then sits docked at the bottom edge, at the window's x).
 	const HEADER_HEIGHT = 40;
 	let pos = $state({ x: -1, y: -1 });
+	let barPos = $state({
+		x: readAssistantBarX() ?? -1,
+		y: readAssistantBarY() ?? -1
+	});
 	let dragging = $state(false);
 	let dragOffset = $state({ x: 0, y: 0 });
 
@@ -136,6 +149,9 @@
 	// window always fits the viewport and stays above the usable minimum.
 	let winWidth = $state(readAssistantWidth());
 	let winHeight = $state(readAssistantHeight());
+	// Collapsed-bar width. `null` = unset — the bar inherits the window
+	// width until the user resizes it; then it persists its own value.
+	let barWidth = $state<number | null>(readAssistantBarWidth());
 
 	// svelte-ignore state_referenced_locally — intentional initial seeding.
 	let lastWinWidth = winWidth;
@@ -151,6 +167,35 @@
 		if (winHeight !== lastWinHeight) {
 			lastWinHeight = winHeight;
 			writeAssistantHeight(winHeight);
+		}
+	});
+
+	// Collapsed-bar position persists. The writes guard on a changed value,
+	// so the seeded sentinel never stores a computed default — the bar
+	// position lands in storage only after the user moves the bar.
+	// svelte-ignore state_referenced_locally — intentional initial seeding.
+	let lastBarX = barPos.x;
+	// svelte-ignore state_referenced_locally — intentional initial seeding.
+	let lastBarY = barPos.y;
+	$effect(() => {
+		if (barPos.x !== lastBarX) {
+			lastBarX = barPos.x;
+			writeAssistantBarX(barPos.x);
+		}
+		if (barPos.y !== lastBarY) {
+			lastBarY = barPos.y;
+			writeAssistantBarY(barPos.y);
+		}
+	});
+
+	// Collapsed-bar width persists. `null` = unset — the bar keeps
+	// inheriting the window width until the user resizes it.
+	// svelte-ignore state_referenced_locally — intentional initial seeding.
+	let lastBarWidth: number | null = barWidth;
+	$effect(() => {
+		if (barWidth !== lastBarWidth) {
+			lastBarWidth = barWidth;
+			if (barWidth !== null) writeAssistantBarWidth(barWidth);
 		}
 	});
 
@@ -176,21 +221,29 @@
 	});
 
 	// Current geometry. Collapsed wins over maximized — the minimized window
-	// is always the title bar docked at the bottom edge of the viewport (same
-	// x and width as the floating window). Letting the maximized box win
-	// while the body is hidden would leave a full-size empty surface.
-	// Otherwise maximized overrides the floating position/size.
+	// is the 40 px title bar. It starts docked at the bottom edge of the
+	// viewport (same x and width as the floating window); a stored bar
+	// position and width win instead and clamp on-screen. Letting the
+	// maximized box win while the body is hidden would leave a full-size
+	// empty surface. Otherwise maximized overrides the floating
+	// position/size.
 	const geometry = $derived.by(() => {
 		if (typeof window === 'undefined') {
 			return { x: 0, y: 0, width: winWidth, height: winHeight };
 		}
 		if (collapsed) {
-			return {
-				x: pos.x < 0 ? initialPos.x : pos.x,
-				y: window.innerHeight - HEADER_HEIGHT - DEFAULT_BOTTOM,
-				width: winWidth,
-				height: HEADER_HEIGHT
-			};
+			const width = Math.min(barWidth ?? winWidth, window.innerWidth);
+			const x =
+				barPos.x < 0
+					? pos.x < 0
+						? initialPos.x
+						: pos.x
+					: Math.max(0, Math.min(window.innerWidth - width, barPos.x));
+			const y =
+				barPos.y < 0
+					? window.innerHeight - HEADER_HEIGHT - DEFAULT_BOTTOM
+					: Math.max(0, Math.min(window.innerHeight - HEADER_HEIGHT, barPos.y));
+			return { x, y, width, height: HEADER_HEIGHT };
 		}
 		if (maximized) {
 			return {
@@ -214,27 +267,38 @@
 	});
 
 	function onDragStart(e: PointerEvent) {
-		// No dragging while maximized — the window is pinned to the viewport.
-		if (maximized) return;
-		// No dragging while collapsed — the bar is docked to the bottom edge;
-		// moving it would detach it from the dock.
-		if (collapsed) return;
+		// The maximized window never drags — it is pinned to the viewport.
+		// A collapsed bar stays draggable even then: collapsed wins in the
+		// geometry, so the bar is the rendered surface, not the pinned box.
+		if (maximized && !collapsed) return;
 		// Only the header drag handle starts a drag; ignore clicks on the
 		// buttons inside the header (they have their own onclick handlers).
 		const target = e.target as HTMLElement;
 		if (target.closest('button')) return;
 		dragging = true;
 		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-		dragOffset = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+		// Offset = pointer minus the dragged surface's current top-left: the
+		// floating window while expanded, the bar while collapsed.
+		dragOffset = { x: e.clientX - geometry.x, y: e.clientY - geometry.y };
 	}
 
 	function onDragMove(e: PointerEvent) {
 		if (!dragging) return;
 		const nx = e.clientX - dragOffset.x;
 		const ny = e.clientY - dragOffset.y;
-		// Clamp to keep the header within the viewport.
+		// Clamp to keep the dragged surface within the viewport.
 		const win = typeof window !== 'undefined' ? window : null;
 		if (!win) return;
+		if (collapsed) {
+			// The bar moves as a whole strip: any position on screen, same
+			// 40 px height. It is no longer pinned to the bottom edge.
+			const width = Math.min(barWidth ?? winWidth, win.innerWidth);
+			barPos = {
+				x: Math.max(0, Math.min(win.innerWidth - width, nx)),
+				y: Math.max(0, Math.min(win.innerHeight - HEADER_HEIGHT, ny))
+			};
+			return;
+		}
 		const clampedX = Math.max(0, Math.min(win.innerWidth - winWidth, nx));
 		const clampedY = Math.max(HEADER_HEIGHT, Math.min(win.innerHeight - HEADER_HEIGHT, ny));
 		pos = { x: clampedX, y: clampedY };
@@ -252,9 +316,10 @@
 	// flush with the viewport: the TOP edge, the LEFT edge, and the TOP-LEFT
 	// corner. Resizing keeps the BOTTOM-RIGHT corner anchored: as the user
 	// drags a top/left handle, both `pos` (top-left) and the size move together
-	// so the opposite corner stays put. Disabled while maximized (pinned) or
-	// collapsed (header only). Each handle captures the pointer so the drag
-	// survives even if the cursor leaves the handle element.
+	// so the opposite corner stays put. Disabled while maximized (pinned);
+	// while collapsed the bar resizes through its own width handle below.
+	// Each handle captures the pointer so the drag survives even if the
+	// cursor leaves the handle element.
 	type ResizeEdge = 'left' | 'top' | 'corner';
 	let resizeEdge = $state<ResizeEdge | null>(null);
 	/** Fixed bottom-right anchor captured at resize start (viewport coords). */
@@ -312,6 +377,46 @@
 		(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
 	}
 
+	// ── Collapsed-bar width resize ──────────────────────────────────────
+	//
+	// The bar resizes from its LEFT edge; the right edge stays put. The
+	// handle renders only while collapsed — the expanded window uses the
+	// edge/corner handles above. A resize persists the width and the bar
+	// position, so the bar reopens at the size the user set.
+	let barResizing = $state(false);
+	/** Fixed right-edge anchor captured at bar resize start (viewport x). */
+	let barResizeAnchor = $state(0);
+
+	function onBarResizeStart(e: PointerEvent) {
+		if (!collapsed) return;
+		// Materialize an unset bar position first, so the anchor math below
+		// works on real coordinates and the resize persists a full position.
+		if (barPos.x < 0) barPos = { x: geometry.x, y: geometry.y };
+		barResizeAnchor = barPos.x + (barWidth ?? winWidth);
+		barResizing = true;
+		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+		e.stopPropagation();
+	}
+
+	function onBarResizeMove(e: PointerEvent) {
+		if (!barResizing) return;
+		const win = typeof window !== 'undefined' ? window : null;
+		if (!win) return;
+		// Desired width = distance from the pointer to the fixed right edge.
+		const desired = barResizeAnchor - e.clientX;
+		// Clamp: never below the minimum, never past the viewport's left
+		// edge, so the bar never inverts and its x stays on-screen.
+		const nextWidth = Math.max(BAR_WIDTH_MIN, Math.min(desired, barResizeAnchor));
+		barWidth = nextWidth;
+		barPos = { ...barPos, x: barResizeAnchor - nextWidth };
+	}
+
+	function onBarResizeEnd(e: PointerEvent) {
+		if (!barResizing) return;
+		barResizing = false;
+		(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+	}
+
 	// Keep the window inside the viewport on resize so it never gets lost
 	// off-screen if the user resizes their browser smaller. (Maximized geometry
 	// is recomputed reactively via `geometry` and needs no clamping here.)
@@ -332,7 +437,7 @@
 	class:collapsed
 	class:dragging
 	class:maximized
-	class:resize-dragging={!!resizeEdge}
+	class:resize-dragging={!!resizeEdge || barResizing}
 	style:left="{geometry.x}px"
 	style:top="{geometry.y}px"
 	style:width="{geometry.width}px"
@@ -413,7 +518,8 @@
 	<!-- Edge / corner resize handles (top / left / top-left corner). The
      window docks bottom-right, so these are the edges not flush with the
      viewport. Hidden while maximized or collapsed so they never intercept
-     the maximized window or the header-only state. -->
+     the maximized window or the bar — the bar has its own width handle
+     below. -->
 	{#if !maximized && !collapsed}
 		<div
 			class="resize-handle resize-left"
@@ -443,6 +549,22 @@
 			onpointermove={onResizeMove}
 			onpointerup={onResizeEnd}
 			onpointercancel={onResizeEnd}
+		></div>
+	{/if}
+
+	<!-- Collapsed-bar width handle. The bar resizes from its left edge; the
+     right edge stays put. Hidden while expanded — the edge/corner handles
+     above own resizing then. -->
+	{#if collapsed}
+		<div
+			class="resize-handle resize-left"
+			role="separator"
+			aria-orientation="vertical"
+			aria-label={m.assistant_resize_width_aria()}
+			onpointerdown={onBarResizeStart}
+			onpointermove={onBarResizeMove}
+			onpointerup={onBarResizeEnd}
+			onpointercancel={onBarResizeEnd}
 		></div>
 	{/if}
 </div>

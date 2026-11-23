@@ -39,9 +39,11 @@
 	rendering: the stored token array must reach the `referenceCell` consumer
 	one capsule per unique token — a repeated token renders once, because a
 	duplicate each key makes Svelte throw and the whole table fails to render
-	— never as raw JSON text. The duration stories pin the zero/negative
-	contract: `Duration` renders `0s` for both, so a stored 0 is never the
-	blank dash.
+	— never as raw JSON text. The array stories pin the primitive-item chips:
+	one chip per item, a `+N` chip past the cap, the blank dash for `[]`, and
+	the JSON-text fallback for object items. The duration stories pin the
+	zero/negative contract: `Duration` renders `0s` for both, so a stored 0 is
+	never the blank dash.
 -->
 
 <Story
@@ -117,9 +119,9 @@
 </Story>
 
 <Story
-	name="PlainArrayStaysText"
+	name="ArrayOfStringRendersChips"
 	args={{
-		value: ['alpha', 'beta'],
+		value: ['iam', 'grants', 'ui'],
 		fieldType: 'array' as const,
 		fieldDef: {
 			key: 'tags',
@@ -129,9 +131,82 @@
 	}}
 	play={async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
-		// A plain array keeps the text kind: the stored value renders as JSON
-		// text, and no reference cell fires.
-		await expect(canvas.getByText('["alpha","beta"]')).toBeVisible();
+		// One chip per item — never the raw JSON dump.
+		await expect(canvas.getByText('iam')).toBeVisible();
+		await expect(canvas.getByText('grants')).toBeVisible();
+		await expect(canvas.getByText('ui')).toBeVisible();
+		expect(canvas.queryByText('["iam","grants","ui"]')).toBeNull();
+	}}
+>
+	{#snippet template(args)}
+		<FieldValue value={args.value} fieldType={args.fieldType} fieldDef={args.fieldDef} />
+	{/snippet}
+</Story>
+
+<Story
+	name="ArrayOfStringOverflowsWithPlusN"
+	args={{
+		value: ['alpha', 'beta', 'gamma', 'delta', 'epsilon'],
+		fieldType: 'array' as const,
+		fieldDef: {
+			key: 'tags',
+			type: 'array',
+			items: { key: '(items)', type: 'string' }
+		} satisfies FieldDef
+	}}
+	play={async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		// Three chips at the default cap, then the literal `+N` chip for the
+		// rest. Hidden items stay out of the DOM.
+		await expect(canvas.getByText('alpha')).toBeVisible();
+		await expect(canvas.getByText('+2')).toBeVisible();
+		expect(canvas.queryByText('delta')).toBeNull();
+		expect(canvas.queryByText('epsilon')).toBeNull();
+	}}
+>
+	{#snippet template(args)}
+		<FieldValue value={args.value} fieldType={args.fieldType} fieldDef={args.fieldDef} />
+	{/snippet}
+</Story>
+
+<Story
+	name="ArrayOfStringEmptyRendersBlank"
+	args={{
+		value: [],
+		fieldType: 'array' as const,
+		fieldDef: {
+			key: 'tags',
+			type: 'array',
+			items: { key: '(items)', type: 'string' }
+		} satisfies FieldDef
+	}}
+	play={async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		// An empty array holds no content — the blank dash, never "[]".
+		await expect(canvas.getByText('—')).toBeVisible();
+		expect(canvas.queryByText('[]')).toBeNull();
+	}}
+>
+	{#snippet template(args)}
+		<FieldValue value={args.value} fieldType={args.fieldType} fieldDef={args.fieldDef} />
+	{/snippet}
+</Story>
+
+<Story
+	name="ObjectItemArrayStaysText"
+	args={{
+		value: [{ zip: '94105' }],
+		fieldType: 'array' as const,
+		fieldDef: {
+			key: 'rows',
+			type: 'array',
+			items: { key: '(items)', type: 'object' }
+		} satisfies FieldDef
+	}}
+	play={async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		// Object items have no chip form — the JSON-text fallback stays.
+		await expect(canvas.getByText('[{"zip":"94105"}]')).toBeVisible();
 	}}
 >
 	{#snippet template(args)}

@@ -45,10 +45,23 @@ export interface DoctypeViews {
  *
  * On the server there is no caching — `fetcher` is always invoked.
  */
+/**
+ * Fetch the `core.DocumentView` children of a `core.DocType` projection.
+ *
+ * With `{ fresh: true }` the cached entry is dropped first, so the fetch
+ * re-runs even inside the TTL window. The result refills the cache.
+ */
 async function fetchDoctypeViews(
 	driver: DataDriver,
-	parentDocId: string
+	parentDocId: string,
+	opts?: { fresh?: boolean }
 ): Promise<DocumentViewChild[]> {
+	if (opts?.fresh) {
+		// A route entry or an `invalidateAll()` re-run must see current data —
+		// the cached list may be older than an external write. Drop the entry,
+		// then re-fetch. The result refills the cache for the other surfaces.
+		doctypeViewsCache.invalidate(parentDocId);
+	}
 	const cached = await doctypeViewsCache.get(parentDocId, async () => {
 		// The nested child list route takes no `page` / `items` — it serves the
 		// whole child collection (see `RestRoutes.render_child_list`).
@@ -138,15 +151,21 @@ export async function loadDoctypeViews(
  *
  * Shares the same `doctypeViewsCache` — the ids ride the cached children list,
  * so this costs no extra round-trip.
+ *
+ * Pass `{ fresh: true }` to skip the cache read: the fetch re-runs and refills
+ * the cache. Use it where the caller needs current data — a fresh route entry
+ * or an invalidation-driven re-run must not serve a list older than an
+ * external write (a second tab, an assistant write).
  */
 export async function loadDoctypeViewsWithIds(
 	driver: DataDriver,
-	parentDocId: string
+	parentDocId: string,
+	opts?: { fresh?: boolean }
 ): Promise<DoctypeViews> {
 	const templates: Partial<Record<ViewKind, TemplateNode | null>> = {};
 	const ids: Partial<Record<ViewKind, string>> = {};
 	try {
-		const children = await fetchDoctypeViews(driver, parentDocId);
+		const children = await fetchDoctypeViews(driver, parentDocId, opts);
 		for (const child of children) {
 			const kind = child.data.kind;
 			if (kind && (VIEW_KINDS as readonly string[]).includes(kind)) {

@@ -42,8 +42,12 @@ export const load: LayoutLoad = async ({ params, fetch }) => {
 
 	const def = parseDoctypeDef(match as Record<string, unknown>);
 	// Templates feed the preview; the child ids let the Views tab PATCH a
-	// stored view instead of creating a duplicate of the same kind.
-	const { templates: views, ids: viewIds } = await loadDoctypeViewsWithIds(driver, qualifiedName);
+	// stored view instead of creating a duplicate of the same kind. Fresh
+	// fetch: a route entry or an `invalidateAll()` re-run must not serve a
+	// cached list older than an external write (a second tab, an assistant).
+	const { templates: views, ids: viewIds } = await loadDoctypeViewsWithIds(driver, qualifiedName, {
+		fresh: true
+	});
 	return {
 		def: def as DoctypeDef,
 		registry,

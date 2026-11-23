@@ -7,7 +7,12 @@ content:
       type: string
       title: Account ID
       required: true
-      description: The ULID of the account this event relates to.
+      filters:
+      - equality
+      description: 'The ULID of the account this event relates to. Filterable so the
+        audit log can answer: all login events about account X. Synthetic principals
+        (`system:password`, `system:oidc`, an unresolved IdP `sub`) are not account
+        ids and stay outside this filter.'
     app:
       type: string
       title: App

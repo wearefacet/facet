@@ -42,7 +42,7 @@ vi.mock('$lib/navModel', () => ({
 import { apiFetch } from '$lib/session.svelte';
 import { prependDraft, rebuildDraftNav } from '$lib/navState.svelte';
 import { domainProjectionToNavDomain } from '$lib/navModel';
-import { goto } from '$app/navigation';
+import { goto, invalidateAll } from '$app/navigation';
 import { resolve } from '$app/paths';
 import {
 	clearBuilderDraft,
@@ -52,6 +52,7 @@ import {
 	publishDraft,
 	setBuilderDraft
 } from './builderDraft.svelte';
+import { domainListCache, doctypeRegistryCache } from '$lib/datasource/clientCache.js';
 
 const mockApiFetch = vi.mocked(apiFetch);
 const mockPrependDraft = vi.mocked(prependDraft);
@@ -59,6 +60,12 @@ const mockRebuildDraftNav = vi.mocked(rebuildDraftNav);
 const mockConvert = vi.mocked(domainProjectionToNavDomain);
 const mockGoto = vi.mocked(goto);
 const mockResolve = vi.mocked(resolve);
+const mockInvalidateAll = vi.mocked(invalidateAll);
+
+// The publish path drops these TTL caches in place. The spec spies on the
+// real singletons, so the module needs no mock.
+const invalidateDomainList = vi.spyOn(domainListCache, 'invalidate');
+const invalidateDoctypeRegistry = vi.spyOn(doctypeRegistryCache, 'invalidate');
 
 // `publishDraft` routes through the SvelteKit router; the identity `resolve`
 // keeps the goto target readable in the assertions.
@@ -78,6 +85,9 @@ beforeEach(() => {
 	mockConvert.mockClear();
 	mockGoto.mockClear();
 	mockResolve.mockClear();
+	mockInvalidateAll.mockClear();
+	invalidateDomainList.mockClear();
+	invalidateDoctypeRegistry.mockClear();
 	noteWsInvalidation(null);
 	clearBuilderDraft();
 });
@@ -198,6 +208,16 @@ describe('publishDraft', () => {
 		);
 		expect(mockGoto).toHaveBeenCalledOnce();
 		expect(mockGoto).toHaveBeenCalledWith('/Builder');
+		// The publish drops the list caches and re-runs the loads, so the
+		// drafts list, the sidebar, and the published list catch up without
+		// the WS burst.
+		expect(invalidateDomainList).toHaveBeenCalledOnce();
+		expect(invalidateDoctypeRegistry).toHaveBeenCalledOnce();
+		expect(mockInvalidateAll).toHaveBeenCalledOnce();
+		// invalidateAll runs after the goto, the same order as discardDraft.
+		expect(mockGoto.mock.invocationCallOrder[0]).toBeLessThan(
+			mockInvalidateAll.mock.invocationCallOrder[0]
+		);
 	});
 
 	it('waits for the recorded WS invalidation before routing away', async () => {
@@ -275,7 +295,12 @@ describe('publishDraft', () => {
 			status: 'published',
 			report: { domain: 'orders', grant_tickets: [ticket] }
 		});
+		// The ticket path also drops the caches — the lists behind the open
+		// dialog re-fetch — but it does not route or invalidate.
+		expect(invalidateDomainList).toHaveBeenCalledOnce();
+		expect(invalidateDoctypeRegistry).toHaveBeenCalledOnce();
 		expect(mockGoto).not.toHaveBeenCalled();
+		expect(mockInvalidateAll).not.toHaveBeenCalled();
 	});
 
 	it('surfaces the 409 conflict as a distinct outcome without retrying or routing', async () => {
@@ -290,6 +315,10 @@ describe('publishDraft', () => {
 		// The store never retries on its own: one request, no navigation.
 		expect(mockApiFetch).toHaveBeenCalledOnce();
 		expect(mockGoto).not.toHaveBeenCalled();
+		// A failed publish changes nothing: no cache drop, no load re-run.
+		expect(invalidateDomainList).not.toHaveBeenCalled();
+		expect(invalidateDoctypeRegistry).not.toHaveBeenCalled();
+		expect(mockInvalidateAll).not.toHaveBeenCalled();
 	});
 
 	it('publishes with overwrite only on the explicit confirmed second call', async () => {

@@ -12,6 +12,7 @@ import type { FieldDef, FieldType } from '$lib/doctype/types.js';
  */
 export type FieldValueKind =
 	| 'text'
+	| 'array'
 	| 'integer'
 	| 'boolean'
 	| 'enum'
@@ -45,6 +46,7 @@ const KIND_BY_TYPE: Record<FieldType, FieldValueKind> = {
 	dateperiod: 'daterange',
 	period: 'daterange',
 	object: 'text',
+	// Refined by item type in `cellKind` — never read directly.
 	array: 'text',
 	dictionary: 'text',
 	reference: 'reference',
@@ -59,21 +61,38 @@ const KIND_BY_TYPE: Record<FieldType, FieldValueKind> = {
 	secret: 'secret'
 };
 
+/** Array item types that render as chips. */
+const ARRAY_KIND_ITEM_TYPES: ReadonlySet<FieldType> = new Set<FieldType>([
+	'string',
+	'integer',
+	'enum'
+]);
+
 /**
  * Resolve the render kind for a field type. Absent or unknown types render
  * as text.
  *
- * An `array` field whose `items` are `reference` resolves to the reference
- * kind: the stored value is a JSON array of qualified tokens, the same shape
- * a `collection: true` reference stores. The item type lives on the field
- * definition, so callers pass the definition when they have one. A plain
- * array (or an array without a definition) keeps the text kind.
+ * An `array` field refines by its item type:
+ *
+ * - `reference` items → `reference`: the stored value is a JSON array of
+ *   qualified tokens, the same shape a `collection: true` reference stores.
+ * - `string` / `integer` / `enum` items → `array`: the renderer draws one
+ *   chip per item.
+ * - Any other item type, or no item definition → `text`: the JSON-text
+ *   fallback. Object items and definition-less arrays keep it.
+ *
+ * The item type lives on the field definition, so callers pass the
+ * definition when they have one.
  */
 export function cellKind(
 	fieldType: FieldType | null | undefined,
 	fieldDef?: FieldDef | null
 ): FieldValueKind {
-	if (fieldType === 'array' && fieldDef?.items?.type === 'reference') return 'reference';
+	if (fieldType === 'array') {
+		const itemType = fieldDef?.items?.type;
+		if (itemType === 'reference') return 'reference';
+		if (itemType && ARRAY_KIND_ITEM_TYPES.has(itemType)) return 'array';
+	}
 	return (fieldType != null && KIND_BY_TYPE[fieldType]) || 'text';
 }
 

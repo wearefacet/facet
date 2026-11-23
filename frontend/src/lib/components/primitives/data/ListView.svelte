@@ -22,6 +22,7 @@
 	import Can from '$lib/components/primitives/surfaces/Can.svelte';
 	import QuickViewHost from '$lib/components/primitives/surfaces/QuickViewHost.svelte';
 	import { collectionViewsCache } from '$lib/datasource/clientCache.js';
+	import { confirm } from '$lib/confirm.svelte';
 	import { getPinnedCollectionViews, togglePinnedCollectionView } from '$lib/settings.svelte.js';
 	import { collectionViewDeepLinkSlugs } from '$lib/collectionView/slug.js';
 
@@ -143,6 +144,9 @@
 	let refreshKey = $state(0);
 	/** When set, the views fetch resolves by selecting the tab with this name. */
 	let focusName = $state<string | null>(null);
+	/** When true, the next views fetch re-syncs `?view=` — after a delete the
+	 * URL still names a view that no longer exists. */
+	let resyncUrl = $state(false);
 
 	// Fetch saved views as children of the parent core.DocType projection.
 	// Errors are non-fatal: the listing falls back to a synthetic "Default" tab.
@@ -187,6 +191,12 @@
 					// Reflect the just-focused tab in the URL so the deep-link matches —
 					// the focus path bypasses `selectView`, so it would otherwise leave
 					// the URL pointing at the previous view.
+					syncUrlToActive();
+				}
+				if (resyncUrl) {
+					// The delete removed the view the URL named — re-sync to the tab
+					// the refetch left active.
+					resyncUrl = false;
 					syncUrlToActive();
 				}
 			})
@@ -434,11 +444,58 @@
 		focusName = view.name;
 		refreshKey++;
 	}
+
+	/** True while a confirmed delete is in flight — blocks a second delete. */
+	let deleting = $state(false);
+
+	/**
+	 * Delete the active saved view. The shared confirm dialog gates the
+	 * write. The delete rides the same child route the views fetch reads;
+	 * it is a soft delete, so the audit log can restore the view. After it
+	 * lands, mirror `handleSaved`: drop the cached children list and bump
+	 * the refresh key, so the views effect refetches. With zero views left,
+	 * the synthetic "Default" tab takes over on its own.
+	 */
+	async function handleDelete() {
+		// Only a real (saved) view can be deleted — not the Default tab.
+		if (!activeItem || deleting) return;
+		const ok = await confirm({
+			title: m.list_view_delete_confirm_title({ name: activeItem.data.name }),
+			message: m.list_view_delete_confirm_body(),
+			confirmLabel: m.common_delete(),
+			variant: 'danger'
+		});
+		if (!ok) return;
+		deleting = true;
+		try {
+			await driver
+				.domain('core')
+				.doctype('DocType')
+				.doc(parentDocId)
+				.children<CollectionView>('collection_view')
+				.doc(activeItem.id)
+				.delete();
+			// The cached children list is now stale — drop it, then bump the
+			// refresh key so the views effect refetches (same flow as a save).
+			collectionViewsCache.invalidate(parentDocId);
+			resyncUrl = true;
+			refreshKey++;
+		} catch (err) {
+			// The delete failed (RBAC, network). The strip keeps the view; this
+			// primitive has no error surface, so log for diagnosis only.
+			console.error('list view delete failed', err);
+		} finally {
+			deleting = false;
+		}
+	}
 </script>
 
 <QuickViewHost {driver} rootDef={doctype} rootParentDocId={parentDocId}>
 	{#snippet trigger(api)}
-		<div class="listview">
+		<div
+			class="listview"
+			class:kanban-fill={activeView?.surface === 'kanban' && activeView.config?.kanban}
+		>
 			{#if showTabs}
 				<Tabs {tabs} bind:active onchange={selectView}>
 					{#snippet icon(i: number)}
@@ -543,6 +600,27 @@
 									</IconButton>
 								</Can>
 							{/if}
+							<Can doctype="core.CollectionView" action="delete">
+								<IconButton
+									label={m.list_view_delete()}
+									disabled={deleting}
+									onclick={() => handleDelete()}
+								>
+									<svg
+										viewBox="0 0 24 24"
+										width="15"
+										height="15"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+									>
+										<path d="M3 6h18" />
+										<path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+										<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+										<path d="M10 11v6M14 11v6" />
+									</svg>
+								</IconButton>
+							</Can>
 						{/if}
 					{/snippet}
 				</Tabs>
@@ -628,6 +706,15 @@
 		border-radius: var(--r);
 		background: var(--surface);
 		overflow: hidden;
+	}
+
+	/* Kanban surface only — the fill chain. The host becomes a flex column
+	   and takes the full height. The board then fills the page, and each
+	   lane fits the board. Table and Calendar keep their content height. */
+	.listview.kanban-fill {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
 	}
 
 	/* Lead icon rendered through the Tabs `icon` snippet. The tab-on class

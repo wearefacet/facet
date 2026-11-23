@@ -68,6 +68,14 @@ module Facet
       # granted. Stored as a top-level `app` field on the event content so an
       # admin can filter the audit log by app without parsing `details`.
       #
+      # `subject_resolved` states whether `account_id` names a live
+      # `iam.Account` row. It picks the mutation actioner: a resolved subject
+      # is stamped as the actioner itself, so the audit `actioner_id` filter
+      # answers "all login events about account X". A synthetic principal
+      # (`system:password`, `system:oidc`, an unresolved IdP `sub`) keeps the
+      # `system` actioner. Call sites pass the signal explicitly; the writer
+      # never infers it from the id shape.
+      #
       # Fail-silent: a LoginEvent write failure never breaks the request that
       # triggered it. The event is observability, not a transaction-side-effect.
       def self.write_login_event(
@@ -76,6 +84,7 @@ module Facet
         event : String,
         details : String? = nil,
         app : String? = nil,
+        subject_resolved : Bool = true,
       ) : Nil
         content = {
           "account_id" => account_id,
@@ -83,6 +92,7 @@ module Facet
           "details"    => details,
           "app"        => app,
         }.to_json
+        actioner_id = subject_resolved ? account_id : "system"
         Database.with_transaction(db, ignore_if_set: true) do |txn|
           Mutation::Client.create(
             txn,
@@ -90,7 +100,7 @@ module Facet
             "LoginEvent",
             doc_id: Util::ScriptHelpers.ulid,
             content: content,
-            actioner_id: "system",
+            actioner_id: actioner_id,
           )
         end
       rescue ex

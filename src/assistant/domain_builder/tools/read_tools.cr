@@ -4,6 +4,7 @@
 require "json"
 require "../../../doctype/definition_store"
 require "../../../doctype/check"
+require "../../../domain/check"
 require "../../../document/read"
 require "../../../document/list"
 require "../../../mutation/client"
@@ -333,7 +334,7 @@ module Facet
         private def self.register_check_doctype(agent : Agent, db : DB::Connection) : Nil
           agent.register_tool(
             "check_doctype",
-            "Run cross-doctype diagnostics for a single doctype. Also validates the doctype's DocumentView templates structurally and warns when a standard view kind (view, form, quickView, inline, card) is not defined. Returns {doctype_id, issues:[{severity,category,field,message}]}. Use after every create/update to confirm integrity.",
+            "Run cross-doctype diagnostics for a single doctype. Also validates the doctype's DocumentView templates structurally, validates its CollectionView configs, and warns when a standard view kind (view, form, quickView, inline, card) is not defined. Returns {doctype_id, issues:[{severity,category,field,message}]}. Use after every create/update to confirm integrity.",
             schema_object(
               properties: {"doctype_id" => {"type" => "string"}},
               required: ["doctype_id"],
@@ -362,6 +363,57 @@ module Facet
               Tools.error(result.message)
             end
           end
+        end
+
+        # Runs `Domain::Check` against the conversation's draft domain —
+        # the domain-level half of the iteration engine. The draft domain
+        # comes from the session context, so the tool carries no
+        # arguments. The payload mirrors the check HTTP route: per-doctype
+        # issues and notices, plus domain-level issues. Publish-gate
+        # diagnostics (including the schema-version bump warning) appear
+        # for drafts derived from a live domain.
+        private def self.register_check_domain(agent : Agent, db : DB::Connection, context : Context) : Nil
+          agent.register_tool(
+            "check_domain",
+            "Run aggregate diagnostics for the whole draft domain: check_doctype for every doctype in the draft, plus domain-level issues (zero doctypes, invalid domain hooks) and publish-gate findings for drafts derived from a live domain — including a missing schema-version bump. Takes no arguments — it always checks the conversation's draft domain. Returns {domain, domain_issues:[{severity,category,field,message}], doctypes:[{doctype_id,issue_count,issues,notices}]}. Use after bulk edits and before asking the human to review the draft.",
+            schema_object(
+              properties: {} of String => Hash(String, String),
+              required: [] of String,
+            ),
+          ) do |_args|
+            result = Facet::Domain::Check.call(db, context.draft_domain)
+
+            case result
+            in Facet::Domain::Check::Result
+              domain_issues = result.domain_issues.map { |issue| domain_issue_payload(issue) }
+              doctypes = result.doctypes.map do |dt|
+                {
+                  "doctype_id"  => JSON::Any.new(dt.doctype_id),
+                  "issue_count" => JSON::Any.new(dt.issues.size),
+                  "issues"      => dt.issues.map { |issue| domain_issue_payload(issue) },
+                  "notices"     => dt.notices.map { |notice| domain_issue_payload(notice) },
+                }
+              end
+              Tools.ok({domain: JSON::Any.new(result.domain), domain_issues: domain_issues, doctypes: doctypes})
+            in Facet::ServiceError
+              Tools.error(result.message)
+            end
+          end
+        end
+
+        # Serialises one `Domain::Check::Issue` to the
+        # {severity, category, message, field?} shape. The check HTTP
+        # route emits the same shape.
+        private def self.domain_issue_payload(issue : Facet::Domain::Check::Issue) : Hash(String, JSON::Any)
+          h = {
+            "severity" => JSON::Any.new(issue.severity.to_s),
+            "category" => JSON::Any.new(issue.category.to_s),
+            "message"  => JSON::Any.new(issue.message),
+          }
+          if f = issue.field
+            h["field"] = JSON::Any.new(f)
+          end
+          h
         end
 
         # Returns the raw markdown body of a skill file. Unlike every other

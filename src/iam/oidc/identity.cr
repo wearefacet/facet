@@ -99,8 +99,17 @@ module Facet
         ) : TokenEmitter::Result | Facet::ServiceError
           case resolved = resolve(db, provider, claims)
           in Denied
-            audit_account = resolved.account_id || claims.sub
-            Helpers.write_login_event(db, audit_account, "oidc_denied", resolved.reason)
+            # The audit subject follows the resolution: a denial that names an
+            # account (suspended, service account, failed link) carries that
+            # account as the actioner. A denial with no account (unknown
+            # identity, email-branch refusal) carries the raw IdP `sub` and
+            # keeps the `system` actioner.
+            if audit_account = resolved.account_id
+              Helpers.write_login_event(db, audit_account, "oidc_denied", resolved.reason)
+            else
+              Helpers.write_login_event(db, claims.sub, "oidc_denied", resolved.reason,
+                subject_resolved: false)
+            end
             Facet::ServiceError.new(401, "Login denied")
           in Resolved
             authenticate_resolved(db, provider, claims, resolved)

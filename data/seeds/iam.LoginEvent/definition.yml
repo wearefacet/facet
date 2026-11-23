@@ -10,8 +10,9 @@ fields:
   account_id:
     type: string
     required: true
+    filters: [equality]
     title: "Account ID"
-    description: "The ULID of the account this event relates to."
+    description: "The ULID of the account this event relates to. Filterable so the audit log can answer: all login events about account X. Synthetic principals (`system:password`, `system:oidc`, an unresolved IdP `sub`) are not account ids and stay outside this filter."
   event:
     type: enum
     required: true
