@@ -12,7 +12,7 @@ a separate component — see [`filter-bar.md`](filter-bar.md).
 | ---- | ---- |
 | `frontend/src/routes/[domain=notApi]/[doctype]/+page.svelte` | The page. Parses the `filters[...]` URL params, renders the head, hosts `ListView`. |
 | `frontend/src/lib/components/primitives/data/ListView.svelte` | The listing host. Fetches the `core.CollectionView` children, renders the tabs, dispatches to the surface. |
-| `frontend/src/lib/table/Table.svelte` | The table surface. Rows, sort, filters, pagination, inline boolean edit. |
+| `frontend/src/lib/table/Table.svelte` | The table surface. Rows, sort, filters, pagination, inline boolean edit, header drag-reorder. |
 | `frontend/src/lib/table/TableToolbar.svelte` | Toolbar wrapper that renders the `FilterBar`. |
 | `frontend/src/lib/table/types.ts` | `Column`, `SortState`, `ToolbarActionsArgs`, `TableProps`. |
 | `frontend/src/lib/collectionView/viewState.ts` | The persisted manual state (localStorage). Vitest-tested. |
@@ -30,6 +30,24 @@ fallback columns.
 The tab strip carries the saved-view affordances: pin (the
 `pinnedCollectionViews` account setting), edit or save-as, delete, and
 create. See [`settings.md`](settings.md) for the pin store.
+
+## Column reorder
+
+Two doors set the column order of a saved view:
+
+- **View editor.** The edit dialog's column list moves a column with the
+  arrow buttons (see `CollectionViewColumnsForm`).
+- **Table header.** On a saved view, a header drags onto another header and
+  the drop applies the move. The affordance is pointer-only (HTML5 drag);
+  the arrow buttons stay the keyboard path. The synthetic `Default` tab and
+  trash mode never reorder — there is no saved config to persist.
+
+The header drag is a `Table` capability (`columnsReorderable` +
+`onColumnMove`); `ListView` owns the write: it applies the index move to the
+active view's `config.columns`, PATCHes the `core.CollectionView` child, and
+refreshes through the same cache-invalidate + refetch path the editor's save
+uses. The affordance renders only when the viewer holds `update` on
+`core.CollectionView` — a UI hint; the backend re-checks the write.
 
 ## Deep links
 

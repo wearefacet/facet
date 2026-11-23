@@ -387,6 +387,26 @@
 />
 
 <Story
+	name="ColumnDragReorder"
+	args={{
+		columns: moneyColumns,
+		datasource: defaultDs,
+		columnsReorderable: true,
+		onColumnMove: undefined
+	}}
+	play={async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const invoiceHead = canvas.getByText('Invoice').closest('th');
+		const vendorHead = canvas.getByText('Vendor').closest('th');
+		await expect(invoiceHead).toBeTruthy();
+		await expect(vendorHead).toBeTruthy();
+		// Reorderable headers carry the drag affordance class and are draggable.
+		expect(invoiceHead?.classList.contains('reorderable')).toBe(true);
+		expect(invoiceHead?.getAttribute('draggable')).toBe('true');
+	}}
+/>
+
+<Story
 	name="WithSelection"
 	args={{
 		columns: moneyColumns,

@@ -26,12 +26,24 @@ import type {
 } from './types.js';
 import type { FieldDef } from '$lib/doctype/types.js';
 
-/** Field types that never become table columns (containers, computed blobs, secrets). */
+/** Field types that never become table columns (containers, secrets).
+ *  `data` (computed) fields ARE pickable — the column editor offers them —
+ *  but they never seed a default column set. */
 const SKIP_TYPES: ReadonlySet<FieldDef['type']> = new Set([
 	'object',
 	'array',
 	'child',
 	'data',
+	'secret'
+]);
+
+/** Field types the column picker never offers (containers and secrets).
+ *  Wider than {@link SKIP_TYPES}: a computed (`data`) field is a legitimate
+ *  manual column (the assistant can author one), only the seed omits it. */
+const PICKER_SKIP_TYPES: ReadonlySet<FieldDef['type']> = new Set([
+	'object',
+	'array',
+	'child',
 	'secret'
 ]);
 
@@ -82,9 +94,13 @@ export interface CollectionViewDraft {
  * its `meta` — the Table's loader flattens them onto the row — so they are
  * selectable for any doctype. The `title` is the picker label and the
  * default column header.
+ *
+ * Computed (`data`) fields are pickable: the picker is the manual door to
+ * the same configs the assistant authors directly. Containers and secrets
+ * stay excluded.
  */
 export function pickableFields(fields: FieldDef[]): FieldDef[] {
-	return [...fields.filter((f) => !SKIP_TYPES.has(f.type)), ...SYSTEM_TIMESTAMP_FIELD_DEFS];
+	return [...fields.filter((f) => !PICKER_SKIP_TYPES.has(f.type)), ...SYSTEM_TIMESTAMP_FIELD_DEFS];
 }
 
 /**

@@ -14,7 +14,7 @@
 	import Table from '$lib/table/Table.svelte';
 	import Calendar from '$lib/calendar/Calendar.svelte';
 	import Kanban from '$lib/kanban/Kanban.svelte';
-	import type { Column, ToolbarActionsArgs } from '$lib/table/types.js';
+	import type { Column, ColumnMoveEvent, ToolbarActionsArgs } from '$lib/table/types.js';
 	import IconButton from '$lib/components/primitives/actions/IconButton.svelte';
 	import Tabs from '$lib/components/primitives/navigation/Tabs.svelte';
 	import CollectionViewEditor from './CollectionViewEditor.svelte';
@@ -22,6 +22,9 @@
 	import Can from '$lib/components/primitives/surfaces/Can.svelte';
 	import QuickViewHost from '$lib/components/primitives/surfaces/QuickViewHost.svelte';
 	import { collectionViewsCache } from '$lib/datasource/clientCache.js';
+	import { can } from '$lib/permissions.svelte';
+	import { toast } from '$lib/toast.svelte.js';
+	import { errorMessage } from '$lib/datasource/bannerError.js';
 	import { confirm } from '$lib/confirm.svelte';
 	import { getPinnedCollectionViews, togglePinnedCollectionView } from '$lib/settings.svelte.js';
 	import { collectionViewDeepLinkSlugs } from '$lib/collectionView/slug.js';
@@ -472,6 +475,50 @@
 		refreshKey++;
 	}
 
+	// ── Header drag-reorder ───────────────────────────────────────────
+	// The table reports a header drop as an index move; this handler applies
+	// it to the active saved view's `config.columns` and PATCHes the view.
+	// Only a real (saved) view reorders — the synthetic Default tab has no
+	// config to persist — and only when the viewer holds `update` on
+	// `core.CollectionView` (a UI hint; the backend re-checks the write).
+
+	const columnsReorderable = $derived(
+		!includeDeleted && activeItem !== null && can('core.CollectionView', 'update')
+	);
+
+	let reordering = $state(false);
+
+	async function handleColumnMove(move: ColumnMoveEvent) {
+		const item = activeItem;
+		if (!item || reordering) return;
+		const cfg = item.data.config?.columns;
+		if (!cfg || cfg.length < 2) return;
+		const { from, to } = move;
+		if (from < 0 || to < 0 || from >= cfg.length || to >= cfg.length || from === to) return;
+		const next = [...cfg];
+		const [moved] = next.splice(from, 1);
+		next.splice(to, 0, moved);
+		reordering = true;
+		try {
+			await driver
+				.domain('core')
+				.doctype('DocType')
+				.doc(parentDocId)
+				.children<CollectionView>('collection_view')
+				.doc(item.id)
+				.update({ config: { columns: next } });
+			// Same refresh path as the editor's save: drop the cached children
+			// list, refetch, keep the active tab (the view's own name).
+			collectionViewsCache.invalidate(parentDocId);
+			focusName = item.data.name;
+			refreshKey++;
+		} catch (err) {
+			toast({ message: errorMessage(err, m.common_save_failed()), variant: 'error' });
+		} finally {
+			reordering = false;
+		}
+	}
+
 	/** True while a confirmed delete is in flight — blocks a second delete. */
 	let deleting = $state(false);
 
@@ -682,6 +729,8 @@
 					{filters}
 					persistKey={tableViewStateKey}
 					{toolbarActions}
+					columnsReorderable={columnsReorderable}
+					onColumnMove={handleColumnMove}
 					onRowClick={includeDeleted
 						? undefined
 						: (row) => {

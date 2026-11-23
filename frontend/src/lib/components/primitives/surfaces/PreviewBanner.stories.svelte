@@ -24,10 +24,21 @@
 	args={{ draftId: 'hr.Q8ZK4M2P' }}
 	play={async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
-		// The banner names the draft and offers the exit control.
+		// No label prop — the banner falls back to the raw draft id.
 		await expect(canvas.getByText('Previewing draft hr.Q8ZK4M2P')).toBeVisible();
 		await expect(canvas.getByRole('status')).toBeVisible();
 		await expect(canvas.getByRole('button', { name: 'Exit preview' })).toBeVisible();
+	}}
+/>
+
+<Story
+	name="WithDomainLabel"
+	args={{ draftId: 'hr.Q8ZK4M2P', label: 'Human Resources' }}
+	play={async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		// The banner names the draft by its display label, not the reference.
+		await expect(canvas.getByText('Previewing draft Human Resources')).toBeVisible();
+		await expect(canvas.queryByText('hr.Q8ZK4M2P')).toBeNull();
 	}}
 />
 

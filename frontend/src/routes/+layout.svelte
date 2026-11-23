@@ -780,7 +780,11 @@
 		Builder editor. AppShell's children render the live application's
 		list/table/show/form surfaces against the draft's data, authorised
 		by the Bearer token injected by `apiFetch`. -->
-			<PreviewBanner draftId={previewSession.draftId} onexit={() => storeEndPreview()} />
+			<PreviewBanner
+				draftId={previewSession.draftId}
+				label={getDomainLabel(previewSession.draftId)}
+				onexit={() => storeEndPreview()}
+			/>
 		{/if}
 		<AppShell
 			bind:collapsed

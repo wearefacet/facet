@@ -51,6 +51,13 @@ export interface SortState {
 	desc: boolean;
 }
 
+/** The drag-reorder event the table reports through `onColumnMove` —
+ * the header index the drag started at and the index it dropped on. */
+export interface ColumnMoveEvent {
+	from: number;
+	to: number;
+}
+
 /** The table state the `toolbarActions` snippet receives — the columns the
  * table shows, the compacted filter map the datasource receives (freshly
  * seeded empty chips dropped, exactly what the last list call carried), and

@@ -61,7 +61,7 @@ const tableDraft = (overrides: Partial<CollectionViewDraft> = {}): CollectionVie
 
 describe('collectionView/config — editor config helpers', () => {
 	describe('pickableFields', () => {
-		it('drops container, computed, and secret types, keeps flat fields in order', () => {
+		it('drops containers and secrets, keeps computed and flat fields in order', () => {
 			const out = pickableFields(FLAT_FIELDS).filter(
 				(f) => !f.key.startsWith('created_at') && !f.key.startsWith('updated_at')
 			);
@@ -71,6 +71,7 @@ describe('collectionView/config — editor config helpers', () => {
 				'status',
 				'owner_id',
 				'notes',
+				'payload',
 				'expected_close_date'
 			]);
 		});
@@ -151,6 +152,7 @@ describe('collectionView/config — editor config helpers', () => {
 			const columns = defaultColumns(FLAT_FIELDS);
 			expect(remainingFields(pickable, columns).map((f) => f.key)).toEqual([
 				'notes',
+				'payload',
 				'expected_close_date',
 				...SYSTEM_TIMESTAMP_FIELD_DEFS.map((f) => f.key)
 			]);

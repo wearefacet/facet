@@ -19,9 +19,18 @@
 
 	let {
 		draftId,
+		/**
+		 * Display label of the draft domain (resolved by the mount from the
+		 * nav model). Falls back to the raw id when the caller passes none —
+		 * the banner names the draft by its label, never by the technical
+		 * reference alone.
+		 */
+		label,
 		onexit = () => {}
 	}: {
 		draftId: string;
+		/** Draft domain display label; `undefined` falls back to `draftId`. */
+		label?: string;
 		onexit?: () => void;
 	} = $props();
 </script>
@@ -30,7 +39,7 @@
 	<div class="content">
 		<span class="chip">
 			<PencilRuler class="banner-ic" size={13} stroke-width={1.9} />
-			<span class="msg">{m.builder_preview_banner({ id: draftId })}</span>
+			<span class="msg">{m.builder_preview_banner({ id: label ?? draftId })}</span>
 			<span class="hint">{m.builder_preview_hint()}</span>
 		</span>
 		<button class="exit" type="button" onclick={onexit}>

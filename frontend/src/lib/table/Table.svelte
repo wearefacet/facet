@@ -15,7 +15,7 @@
 	import { can } from '$lib/permissions.svelte';
 	import type { ReferenceClickHandler } from '$lib/template-types.js';
 	import { resolveArtifact, type ArtifactGrant } from '$lib/artifacts.js';
-	import type { Column, SortState, ToolbarActionsArgs } from './types.js';
+	import type { Column, ColumnMoveEvent, SortState, ToolbarActionsArgs } from './types.js';
 	import type { DataSource } from '$lib/datasource/interface.js';
 	import type { DataDriver } from '$lib/datasource/driver.js';
 	import type { DoctypeDef } from '$lib/doctype/types.js';
@@ -49,6 +49,14 @@
 		/** Artifact metadata fetch for `file` cells. Defaults to the cached
 		 *  `GET /Api/core/artifacts/:id` lookup; stories pass a synthetic one. */
 		fetchArtifact,
+		/**
+		 * Enables drag-reorder on the column headers. When set together with
+		 * `onColumnMove`, a header drags and the table reports the move; the
+		 * caller owns persistence. Sorting stays on a plain click.
+		 */
+		columnsReorderable = false,
+		/** Called with the header indices when a dragged header drops on another. */
+		onColumnMove,
 		/** Right-aligned action affordances rendered beside the toolbar's filters. */
 		toolbarActions
 	}: {
@@ -113,6 +121,10 @@
 		 * lookup; stories pass a synthetic one.
 		 */
 		fetchArtifact?: (id: string) => Promise<ArtifactGrant>;
+		/** Whether the column headers drag to reorder. */
+		columnsReorderable?: boolean;
+		/** Called with the header indices when a dragged header drops on another. */
+		onColumnMove?: (move: ColumnMoveEvent) => void;
 		/** Right-aligned action affordances rendered beside the toolbar's filters.
 		 * The snippet receives the table's current state (columns, the compacted
 		 * filter map the datasource receives, and the sort) so an export action
@@ -416,6 +428,49 @@
 		onSortCallback?.(key);
 	}
 
+	// ── Column drag-reorder ────────────────────────────────────────
+	// With `columnsReorderable` + `onColumnMove` set, a header drags onto
+	// another header and the table reports the index move; the caller owns
+	// persistence. HTML5 drag only — the keyboard path for reordering stays
+	// the view editor's arrow buttons. A plain click still sorts.
+
+	/** Header index currently dragged — `null` when no drag is in flight. */
+	let dragIndex = $state<number | null>(null);
+	/** Header index the dragged header currently hovers over. */
+	let dragOverIndex = $state<number | null>(null);
+
+	function handleColumnDragStart(index: number, e: DragEvent) {
+		if (!columnsReorderable) return;
+		dragIndex = index;
+		e.dataTransfer?.setData('text/plain', String(index));
+		if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+	}
+
+	function handleColumnDragOver(index: number, e: DragEvent) {
+		if (dragIndex === null || dragIndex === index) return;
+		e.preventDefault();
+		if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+		dragOverIndex = index;
+	}
+
+	function handleColumnDrop(index: number, e: DragEvent) {
+		if (dragIndex === null || dragIndex === index) {
+			dragIndex = null;
+			dragOverIndex = null;
+			return;
+		}
+		e.preventDefault();
+		const from = dragIndex;
+		dragIndex = null;
+		dragOverIndex = null;
+		onColumnMove?.({ from, to: index });
+	}
+
+	function handleColumnDragEnd() {
+		dragIndex = null;
+		dragOverIndex = null;
+	}
+
 	// ── Pagination helpers ───────────────────────────────────────────────
 
 	const totalPages = $derived(total != null ? Math.max(1, Math.ceil(total / rowsPerPage)) : 0);
@@ -459,6 +514,13 @@
 		if (sortState && sortState.key === col.key) {
 			parts.push('sorted');
 			if (sortState.desc) parts.push('desc');
+		}
+		if (columnsReorderable) parts.push('reorderable');
+		if (dragIndex !== null && dragIndex === columns.findIndex((c) => c.key === col.key)) {
+			parts.push('dragging');
+		}
+		if (dragOverIndex !== null && dragOverIndex === columns.findIndex((c) => c.key === col.key)) {
+			parts.push('drag-over');
 		}
 		return parts.join(' ');
 	};
@@ -585,7 +647,7 @@
 					</th>
 				{/if}
 
-				{#each columns as col (col.key)}
+				{#each columns as col, colIndex (col.key)}
 					<th
 						class={thClass(col)}
 						style={col.width ? `width: ${col.width}` : ''}
@@ -604,6 +666,11 @@
 									}
 								}
 							: undefined}
+						draggable={columnsReorderable}
+						ondragstart={(e) => handleColumnDragStart(colIndex, e)}
+						ondragover={(e) => handleColumnDragOver(colIndex, e)}
+						ondrop={(e) => handleColumnDrop(colIndex, e)}
+						ondragend={handleColumnDragEnd}
 					>
 						{#if col.sortable}
 							<span class="sort-wrap">{col.label} <span class="sort-arrow">▲</span></span>
@@ -811,6 +878,19 @@
 
 	.table-wrap thead th.sorted.desc .sort-arrow {
 		transform: rotate(180deg);
+	}
+
+	/* ---- column drag-reorder ---- */
+	.table-wrap thead th.reorderable {
+		cursor: grab;
+	}
+
+	.table-wrap thead th.dragging {
+		opacity: 0.4;
+	}
+
+	.table-wrap thead th.drag-over {
+		box-shadow: inset 2px 0 0 var(--accent);
 	}
 
 	.table-wrap thead th.right {
