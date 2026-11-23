@@ -295,10 +295,83 @@
 		const onchange = args.onchange as unknown as { mock: { calls: unknown[][] } };
 		const emitted: AppGrant[] = (onchange.mock.calls.at(-1)?.[0] as AppGrant[] | undefined) ?? [];
 		const contact = emitted.find((g) => g.target === 'crm.Contact');
+		// The write flag rides on the canonical create/update pair — the alias
+		// is never persisted.
 		await expect(contact?.actions).toEqual([
 			{ name: 'read', required: true },
-			{ name: 'write', required: false }
+			{ name: 'create', required: false },
+			{ name: 'update', required: false }
 		]);
+	}}
+>
+	{#snippet template(args)}
+		<div style="min-height: 600px; padding: 24px; background: var(--surface-2);">
+			<AppGrantsEditor {...args} />
+		</div>
+	{/snippet}
+</Story>
+
+<Story
+	name="CanonicalExternalGrants"
+	args={{
+		// Grants authored outside the editor (API, MCP, an external builder)
+		// arrive in the backend's canonical vocabulary: create/update as
+		// separate declarations, no `write` alias. The picker must read them
+		// at their true level — this is the regression shape of the CRM app
+		// whose grants rendered as all-None.
+		grants: [
+			{
+				target: 'crm.Company',
+				actions: [
+					{ name: 'read', required: true },
+					{ name: 'create', required: true },
+					{ name: 'update', required: true },
+					{ name: 'delete', required: true }
+				]
+			},
+			{
+				target: 'crm.CompanyMembership',
+				actions: [
+					{ name: 'read', required: true },
+					{ name: 'create', required: true },
+					{ name: 'update', required: true },
+					{ name: 'delete', required: true }
+				]
+			}
+		],
+		doctypeCatalogue: catalogue,
+		mode: 'edit'
+	}}
+	play={async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		// The parent card shows Full selected.
+		const companyGroup = canvas.getByRole('group', {
+			name: /^Access level for Company$/
+		});
+		await expect(within(companyGroup).getByRole('button', { name: 'Full' })).toHaveAttribute(
+			'aria-pressed',
+			'true'
+		);
+		// The child has its own explicit entry, so the tag reads
+		// "Full, overridden" — and its segments are enabled (the parent
+		// ceiling is full, not none).
+		await expect(canvas.getByText('Full, overridden')).toBeVisible();
+		const childGroup = canvas.getByRole('group', {
+			name: /^Access level for CompanyMembership$/
+		});
+		await expect(within(childGroup).getByRole('button', { name: 'Read' })).not.toBeDisabled();
+		// The consent summary folds create/update into "Create and edit" with
+		// the noun list — no bare "create"/"update" lines.
+		const summary = canvas
+			.getByText('What people will see')
+			.closest('.grants-summary') as HTMLElement | null;
+		if (!summary) throw new Error('summary panel not rendered');
+		const summaryCanvas = within(summary);
+		await expect(summaryCanvas.getByText('Read')).toBeVisible();
+		await expect(summaryCanvas.getByText('Create and edit')).toBeVisible();
+		await expect(summaryCanvas.getByText('Delete')).toBeVisible();
+		await expect(summaryCanvas.queryByText('create')).toBeNull();
+		await expect(summaryCanvas.queryByText('update')).toBeNull();
 	}}
 >
 	{#snippet template(args)}

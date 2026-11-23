@@ -17,9 +17,11 @@ import {
 	materialiseInherited,
 	fallbackPlural,
 	anySensitiveGranted,
+	canonicalActions,
+	isCoreActionName,
 	type PlainLevel
 } from './appGrantsMapping.js';
-import type { AppGrant, DoctypeCatalogueEntry } from './appTypes.js';
+import type { AppGrant, AppGrantAction, DoctypeCatalogueEntry } from './appTypes.js';
 
 // A minimal catalogue used across the spec. Indices match the qualified
 // targets so tests can reference them without re-typing.
@@ -83,17 +85,22 @@ describe('appGrantsMapping — levelToActions', () => {
 		expect(levelToActions('read')).toEqual([{ name: 'read', required: false }]);
 	});
 
-	it('produces read + write for the "write" level', () => {
+	it('produces read + create + update for the "write" level (canonical form)', () => {
+		// The picker writes the backend's canonical vocabulary directly: the
+		// `write` alias is never persisted (`src/rbac/grant.cr` expands it to
+		// the same pair at parse time).
 		expect(levelToActions('write')).toEqual([
 			{ name: 'read', required: false },
-			{ name: 'write', required: false }
+			{ name: 'create', required: false },
+			{ name: 'update', required: false }
 		]);
 	});
 
-	it('produces read + write + delete for the "full" level', () => {
+	it('produces read + create + update + delete for the "full" level (canonical form)', () => {
 		expect(levelToActions('full')).toEqual([
 			{ name: 'read', required: false },
-			{ name: 'write', required: false },
+			{ name: 'create', required: false },
+			{ name: 'update', required: false },
 			{ name: 'delete', required: false }
 		]);
 	});
@@ -101,8 +108,15 @@ describe('appGrantsMapping — levelToActions', () => {
 	it('honours the per-action required flags', () => {
 		expect(levelToActions('full', { read: true, write: false, delete: true })).toEqual([
 			{ name: 'read', required: true },
-			{ name: 'write', required: false },
+			{ name: 'create', required: false },
+			{ name: 'update', required: false },
 			{ name: 'delete', required: true }
+		]);
+		// The `write` display flag rides on both canonical declarations.
+		expect(levelToActions('write', { write: true })).toEqual([
+			{ name: 'read', required: false },
+			{ name: 'create', required: true },
+			{ name: 'update', required: true }
 		]);
 	});
 
@@ -127,6 +141,54 @@ describe('appGrantsMapping — actionsToLevel', () => {
 			expect(actionsToLevel(actions)).toBe(level);
 		});
 	}
+
+	it('classifies canonical grants authored outside the editor', () => {
+		// The CRM-app shape: all four canonical declarations, all required.
+		const canonicalFull: AppGrantAction[] = [
+			{ name: 'read', required: true },
+			{ name: 'create', required: true },
+			{ name: 'update', required: true },
+			{ name: 'delete', required: true }
+		];
+		expect(actionsToLevel(canonicalFull)).toBe('full');
+		expect(
+			actionsToLevel([
+				{ name: 'read', required: true },
+				{ name: 'create', required: true },
+				{ name: 'update', required: true }
+			])
+		).toBe('write');
+		expect(actionsToLevel([{ name: 'read', required: true }])).toBe('read');
+	});
+
+	it('degrades a partial canonical set to the highest level it fully covers', () => {
+		// Never over-claim: the picker shows the closest level below the
+		// grant; the consent summary still lists every action.
+		expect(
+			actionsToLevel([
+				{ name: 'read', required: true },
+				{ name: 'delete', required: true }
+			])
+		).toBe('read');
+		expect(
+			actionsToLevel([
+				{ name: 'read', required: false },
+				{ name: 'create', required: false }
+			])
+		).toBe('read');
+	});
+
+	it('returns "none" for a create/update pair without read', () => {
+		// The picker's levels always include read; a read-less write pair has
+		// no representable level. The entry survives untouched — only the
+		// summary discloses it.
+		expect(
+			actionsToLevel([
+				{ name: 'create', required: true },
+				{ name: 'update', required: true }
+			])
+		).toBe('none');
+	});
 
 	it('returns "none" for an empty actions array', () => {
 		expect(actionsToLevel([])).toBe('none');
@@ -345,10 +407,38 @@ describe('appGrantsMapping — materialiseInherited', () => {
 		const next = materialiseInherited(grants, CATALOGUE);
 		const cm = next.find((g) => g.target === 'crm.CompanyMembership');
 		expect(actionsToLevel(cm!.actions)).toBe('write');
-		expect(cm!.actions.find((a) => a.name === 'write')).toEqual({ name: 'write', required: true });
+		expect(cm!.actions.find((a) => a.name === 'create')).toEqual({
+			name: 'create',
+			required: true
+		});
+		expect(cm!.actions.find((a) => a.name === 'update')).toEqual({
+			name: 'update',
+			required: true
+		});
 		expect(cm!.actions.find((a) => a.name === 'read')).toEqual({ name: 'read', required: false });
 		// The child's own named action keeps its own flag.
 		expect(cm!.actions.find((a) => a.name === 'merge')).toEqual({ name: 'merge', required: false });
+	});
+
+	it('keeps one declaration per action when a child already carries the canonical pair', () => {
+		// Degenerate external shape: create/update without read. The walk
+		// resolves the parent's level and layers it under; the canonicalising
+		// merge must not emit duplicated create/update declarations.
+		const grants: AppGrant[] = [
+			{ target: 'crm.Company', actions: levelToActions('write', { write: true }) },
+			{
+				target: 'crm.CompanyMembership',
+				actions: [
+					{ name: 'create', required: false },
+					{ name: 'update', required: false }
+				]
+			}
+		];
+		const next = materialiseInherited(grants, CATALOGUE);
+		const cm = next.find((g) => g.target === 'crm.CompanyMembership')!;
+		expect(cm.actions.filter((a) => a.name === 'create')).toHaveLength(1);
+		expect(cm.actions.filter((a) => a.name === 'update')).toHaveLength(1);
+		expect(actionsToLevel(cm.actions)).toBe('write');
 	});
 
 	it('writes nothing when the parent is at none', () => {
@@ -400,10 +490,54 @@ describe('appGrantsMapping — effectiveRequireds', () => {
 	it('returns an empty map when no grant backs the doctype', () => {
 		expect(effectiveRequireds([], 'crm.Contact', CATALOGUE)).toEqual({});
 	});
+
+	it('collapses the canonical create/update pair into the single write flag', () => {
+		// All-required canonical entry (the CRM-app shape): every display flag
+		// reads as required.
+		const grants: AppGrant[] = [
+			{
+				target: 'crm.Contact',
+				actions: [
+					{ name: 'read', required: true },
+					{ name: 'create', required: true },
+					{ name: 'update', required: true },
+					{ name: 'delete', required: true }
+				]
+			}
+		];
+		expect(effectiveRequireds(grants, 'crm.Contact', CATALOGUE)).toEqual({
+			read: true,
+			write: true,
+			delete: true
+		});
+	});
+
+	it('shows the write flag as optional unless both declarations are required', () => {
+		// Divergent external flags: the picker shows one pill for the pair,
+		// required only when both are required. Flipping it sets both.
+		const grants: AppGrant[] = [
+			{
+				target: 'crm.Contact',
+				actions: [
+					{ name: 'read', required: true },
+					{ name: 'create', required: true },
+					{ name: 'update', required: false },
+					{ name: 'delete', required: true }
+				]
+			}
+		];
+		expect(effectiveRequireds(grants, 'crm.Contact', CATALOGUE)).toEqual({
+			read: true,
+			write: false,
+			delete: true
+		});
+	});
 });
 
 describe('appGrantsMapping — levelActionNames / coreActionVerb', () => {
-	it('lists the action names a level grants, in canonical order', () => {
+	it('lists the display action names a level grants, in display order', () => {
+		// `write` is the display alias for the canonical create/update pair —
+		// one pill, one flag.
 		expect(levelActionNames('read')).toEqual(['read']);
 		expect(levelActionNames('write')).toEqual(['read', 'write']);
 		expect(levelActionNames('full')).toEqual(['read', 'write', 'delete']);
@@ -413,7 +547,64 @@ describe('appGrantsMapping — levelActionNames / coreActionVerb', () => {
 	it('maps core action names to the consent verbs', () => {
 		expect(coreActionVerb('read')).toBe(m.apps_grants_verb_read());
 		expect(coreActionVerb('write')).toBe(m.apps_grants_verb_write());
+		expect(coreActionVerb('create')).toBe(m.apps_grants_verb_write());
+		expect(coreActionVerb('update')).toBe(m.apps_grants_verb_write());
 		expect(coreActionVerb('delete')).toBe(m.apps_grants_verb_delete());
+	});
+});
+
+describe('appGrantsMapping — canonicalActions / isCoreActionName', () => {
+	it('expands the write alias into the canonical pair', () => {
+		expect(canonicalActions([{ name: 'write', required: true }])).toEqual([
+			{ name: 'create', required: true },
+			{ name: 'update', required: true }
+		]);
+	});
+
+	it('keeps the first required flag when a name is declared twice', () => {
+		// Mirrors Grant.from_json: the first declaration wins, a later
+		// conflicting one is dropped.
+		expect(
+			canonicalActions([
+				{ name: 'write', required: true },
+				{ name: 'create', required: false }
+			])
+		).toEqual([
+			{ name: 'create', required: true },
+			{ name: 'update', required: true }
+		]);
+	});
+
+	it('passes canonical and named names through unchanged, in order', () => {
+		expect(
+			canonicalActions([
+				{ name: 'read', required: true },
+				{ name: 'create', required: true },
+				{ name: 'update', required: true },
+				{ name: 'delete', required: true },
+				{ name: 'export', required: false }
+			])
+		).toEqual([
+			{ name: 'read', required: true },
+			{ name: 'create', required: true },
+			{ name: 'update', required: true },
+			{ name: 'delete', required: true },
+			{ name: 'export', required: false }
+		]);
+	});
+
+	it('fails safe on a non-array input', () => {
+		expect(canonicalActions(null as unknown as AppGrantAction[])).toEqual([]);
+		expect(canonicalActions({} as unknown as AppGrantAction[])).toEqual([]);
+	});
+
+	it('treats the canonical four and the write alias as core', () => {
+		expect(isCoreActionName('read')).toBe(true);
+		expect(isCoreActionName('create')).toBe(true);
+		expect(isCoreActionName('update')).toBe(true);
+		expect(isCoreActionName('delete')).toBe(true);
+		expect(isCoreActionName('write')).toBe(true);
+		expect(isCoreActionName('export')).toBe(false);
 	});
 });
 
@@ -551,6 +742,53 @@ describe('appGrantsMapping — summarizeGrants (grouped)', () => {
 			m.apps_grants_verb_delete(),
 			'Merge'
 		]);
+	});
+
+	it('groups canonical create/update grants under the Create and edit verb', () => {
+		// Regression: the CRM-app shape. create/update are core actions in the
+		// canonical vocabulary — they must fold into the "Create and edit"
+		// group with a noun list, never render as bare named-action lines.
+		const grants: AppGrant[] = [
+			{
+				target: 'crm.Company',
+				actions: [
+					{ name: 'read', required: true },
+					{ name: 'create', required: true },
+					{ name: 'update', required: true },
+					{ name: 'delete', required: true }
+				]
+			}
+		];
+		const groups = summarizeGrants(grants, CATALOGUE);
+		expect(groups).toHaveLength(3);
+		expect(groups.map((g) => g.kind)).toEqual(['core', 'core', 'core']);
+		expect(groups.map((g) => g.verb)).toEqual([
+			m.apps_grants_verb_read(),
+			m.apps_grants_verb_write(),
+			m.apps_grants_verb_delete()
+		]);
+		expect(groups.every((g) => g.targets.includes('companies'))).toBe(true);
+		expect(groups.every((g) => g.optional === false)).toBe(true);
+	});
+
+	it('folds the write alias and the canonical pair into one Create and edit group', () => {
+		// A legacy alias entry and a canonical entry on different targets must
+		// land in the same core bucket, not in separate named buckets.
+		const grants: AppGrant[] = [
+			{ target: 'crm.Company', actions: levelToActions('write') },
+			{
+				target: 'crm.Contact',
+				actions: [
+					{ name: 'read', required: false },
+					{ name: 'create', required: false }
+				]
+			}
+		];
+		const groups = summarizeGrants(grants, CATALOGUE);
+		const writeGroups = groups.filter((g) => g.verb === m.apps_grants_verb_write());
+		expect(writeGroups).toHaveLength(1);
+		expect(writeGroups[0].kind).toBe('core');
+		expect(writeGroups[0].targets).toEqual(['companies', 'contacts']);
 	});
 });
 

@@ -7,13 +7,15 @@
 	import Toggle from '$lib/components/primitives/forms/Toggle.svelte';
 	import {
 		PLAIN_LEVEL_OPTIONS,
-		levelLabel,
+		canonicalActions,
 		clampChildLevel,
 		clearChildrenExceedingParent,
 		coreActionVerb,
 		effectiveRequireds,
 		hasExplicitGrant,
+		isCoreActionName,
 		levelActionNames,
+		levelLabel,
 		levelToActions,
 		materialiseInherited,
 		resolveEffectiveLevel,
@@ -183,18 +185,14 @@
 			// and any named actions layered on top. The flags seed from the
 			// effective grant (own entry first, else the inherited ancestor's)
 			// so overriding an inherited level keeps the flags the picker
-			// displayed; the explicit entry's own flags win where present.
+			// displayed.
 			const requireds: Record<string, boolean> = { ...coreRequireds(entry) };
 			const existing = idx >= 0 ? grants[idx] : null;
-			for (const action of existing?.actions ?? []) {
-				requireds[action.name] = action.required;
-			}
 			const core = levelToActions(level, requireds);
-			// Keep named actions that are not part of the core level.
-			const named =
-				existing?.actions.filter(
-					(a) => a.name !== 'read' && a.name !== 'write' && a.name !== 'delete'
-				) ?? [];
+			// Keep named actions that are not part of the core level. Canonical
+			// core names (create/update) and the legacy `write` alias are core —
+			// grants authored outside the editor arrive in the canonical shape.
+			const named = existing?.actions.filter((a) => !isCoreActionName(a.name)) ?? [];
 			const actions = [...core, ...named];
 			if (idx >= 0) {
 				grants[idx].actions = actions;
@@ -252,12 +250,7 @@
 		const requireds: Record<string, boolean> = { ...coreRequireds(entry) };
 		requireds[actionName] = !requireds[actionName];
 		const core = levelToActions(level, requireds);
-		const named =
-			idx >= 0
-				? grants[idx].actions.filter(
-						(a) => a.name !== 'read' && a.name !== 'write' && a.name !== 'delete'
-					)
-				: [];
+		const named = idx >= 0 ? grants[idx].actions.filter((a) => !isCoreActionName(a.name)) : [];
 		const actions = [...core, ...named];
 		if (idx >= 0) {
 			// Replace through splice, not a deep property write: `emit()` already
@@ -321,8 +314,15 @@
 	const grantedDomainCount = $derived(
 		new Set(doctypeCatalogue.filter((e) => effectiveLevel(e) !== 'none').map((e) => e.domain)).size
 	);
+	// Distinct canonical action names across the grants — the `write` alias
+	// counts as its create/update pair, so legacy and canonical grants total
+	// the same way.
 	const actionCount = $derived(
-		new Set((Array.isArray(grants) ? grants : []).flatMap((g) => g.actions.map((a) => a.name))).size
+		new Set(
+			(Array.isArray(grants) ? grants : []).flatMap((g) =>
+				canonicalActions(g.actions ?? []).map((a) => a.name)
+			)
+		).size
 	);
 	const hasSensitive = $derived(anySensitiveGranted(grants, doctypeCatalogue));
 </script>

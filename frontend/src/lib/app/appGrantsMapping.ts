@@ -6,6 +6,13 @@
  * shown in the grants picker UI and the raw `{actions: [{name, required}]}`
  * shape stored on an `app.App` document.
  *
+ * The stored vocabulary is the backend's canonical one: `read`, `create`,
+ * `update`, `delete` (`src/rbac/grant.cr`). `write` is an authoring-only
+ * alias the backend expands to `{create, update}` at parse time, so the
+ * picker writes the expanded pair directly — a saved grant reads back
+ * identically, and grants authored outside the editor (API, MCP, external
+ * builders) classify the same way.
+ *
  * These functions are pure (no Svelte, no state) so they can be unit-tested
  * in the Vitest `server` project. The grants editor component imports them to
  * keep its mutation handlers thin.
@@ -23,9 +30,9 @@ import * as m from '$lib/paraglide/messages';
  *
  * - `none`  — no grant entry for this doctype.
  * - `read`  — "Read": read only.
- * - `write` — "Create and edit": read + write. `write` is the alias that
- *             covers create and update on the backend, so a separate "add"
- *             level is not needed.
+ * - `write` — "Create and edit": read + create + update. `write` is the
+ *             display alias that stands for the canonical create/update
+ *             pair, so a separate "add" level is not needed.
  * - `full`  — "Full access": read + write + delete.
  *
  * The levels are ordered `none < read < write < full`. This ordering is the
@@ -78,10 +85,23 @@ export function levelLabel(level: PlainLevel): string {
 }
 
 /**
- * The action names each non-`none` level contributes (ignoring the
- * `required` flag, which the caller supplies separately).
+ * The action names each non-`none` level writes, in the backend's canonical
+ * vocabulary. `write` is never persisted: the backend would expand it to the
+ * same pair (`src/rbac/grant.cr` → `Grant.expand_action`), so the picker
+ * writes `create`/`update` directly and a saved grant reads back identically.
  */
 const LEVEL_ACTIONS: Record<Exclude<PlainLevel, 'none'>, string[]> = {
+	read: ['read'],
+	write: ['read', 'create', 'update'],
+	full: ['read', 'create', 'update', 'delete']
+};
+
+/**
+ * The action names the required-flag row renders for a level, in display
+ * order. `write` is the display alias that stands for the canonical
+ * `{create, update}` pair — one pill, one flag (see {@link effectiveRequireds}).
+ */
+const LEVEL_DISPLAY_ACTIONS: Record<Exclude<PlainLevel, 'none'>, string[]> = {
 	read: ['read'],
 	write: ['read', 'write'],
 	full: ['read', 'write', 'delete']
@@ -91,10 +111,11 @@ const LEVEL_ACTIONS: Record<Exclude<PlainLevel, 'none'>, string[]> = {
  * Build the `actions[]` array for a grant from a plain level and the
  * per-action `required` flags the caller has chosen.
  *
- * `requireds` keys are action names; missing keys default to `false`.
- * The returned array preserves the level's action order (read, write,
- * delete, then any named actions layered on top) so round-tripping through
- * {@link actionsToLevel} stays stable.
+ * `requireds` keys are the display action names — `read`, `write` (the alias
+ * that stands for the `{create, update}` pair), `delete` — plus any named
+ * action names; missing keys default to `false`. The write pair is emitted
+ * canonically: both `create` and `update` carry the `write` flag, so the
+ * stored shape matches what the backend resolver expands.
  *
  * `level = 'none'` returns an empty array — the caller removes the grant
  * entry entirely rather than persisting an empty one.
@@ -106,42 +127,92 @@ export function levelToActions(
 	if (level === 'none') return [];
 	return LEVEL_ACTIONS[level].map((name) => ({
 		name,
-		required: Boolean(requireds[name] ?? false)
+		required: Boolean(requireds[requiredFlagKey(name)] ?? false)
 	}));
 }
 
 /**
- * The action names a plain level grants, in the level's canonical order
- * (read, write, delete). `none` yields an empty array. The required-flag row
- * renders exactly these names — the level owns membership, the per-action
- * `required` flag is the caller's business.
+ * The display flag a canonical core action reads its `required` value from:
+ * the `create`/`update` pair shares the single `write` pill.
  */
-export function levelActionNames(level: PlainLevel): string[] {
-	if (level === 'none') return [];
-	return [...LEVEL_ACTIONS[level]];
+function requiredFlagKey(name: string): string {
+	return name === 'create' || name === 'update' ? 'write' : name;
 }
 
 /**
- * Recover the plain level from a stored `actions[]` array. The inverse of
- * {@link levelToActions}.
+ * The action names a plain level grants, in display order (read, write,
+ * delete) — the names the required-flag row renders. `none` yields an empty
+ * array. The level owns membership; the per-action `required` flag is the
+ * caller's business.
+ */
+export function levelActionNames(level: PlainLevel): string[] {
+	if (level === 'none') return [];
+	return [...LEVEL_DISPLAY_ACTIONS[level]];
+}
+
+/**
+ * The canonical core action names a grant can carry after the backend parse:
+ * `read`, `create`, `update`, `delete` (`src/rbac/grant.cr`). Anything else
+ * is a doctype-declared named action.
+ */
+const CORE_ACTION_NAMES: ReadonlySet<string> = new Set(['read', 'create', 'update', 'delete']);
+
+/**
+ * True for the core action names — the canonical four plus the `write`
+ * alias, which grants saved by earlier editor builds can still carry. Drives
+ * the editor's named-action filter: a core name or the alias must never leak
+ * into the "Extra abilities" pills.
+ */
+export function isCoreActionName(name: string): boolean {
+	return name === 'write' || CORE_ACTION_NAMES.has(name);
+}
+
+/**
+ * Expand a stored `actions[]` into the backend's canonical form: the `write`
+ * alias becomes separate `create` + `update` declarations, and a name
+ * declared twice keeps its first `required` flag — the same rules
+ * `Grant.from_json` applies at parse time (`src/rbac/grant.cr`). Grants
+ * authored outside the editor (API, MCP, external builders) arrive in this
+ * canonical shape; grants saved by earlier editor builds arrive with the
+ * alias. Fails safe on a non-array input.
+ */
+export function canonicalActions(actions: AppGrantAction[]): AppGrantAction[] {
+	const out: AppGrantAction[] = [];
+	const seen = new Set<string>();
+	for (const action of Array.isArray(actions) ? actions : []) {
+		if (!action || typeof action.name !== 'string') continue;
+		const names = action.name === 'write' ? ['create', 'update'] : [action.name];
+		for (const name of names) {
+			if (seen.has(name)) continue;
+			seen.add(name);
+			out.push({ name, required: Boolean(action.required) });
+		}
+	}
+	return out;
+}
+
+function hasAll(set: Set<string>, names: string[]): boolean {
+	return names.every((name) => set.has(name));
+}
+
+/**
+ * Recover the plain level from a stored `actions[]` array.
  *
- * Classification uses the core read/write/delete subset only. Named actions
- * (e.g. "export") are layered on top of a level and must not change it —
- * otherwise toggling a named action would flip the segmented control back to
- * "None". A grant that has no read/write/delete action at all (only named
- * actions) still reads as `'none'`.
+ * The input is canonicalised first (see {@link canonicalActions}), then
+ * classified by subset over the canonical core names: `full` when the entry
+ * covers `read` + `create` + `update` + `delete`, `write` when it covers
+ * `read` + `create` + `update`, `read` when it covers `read`. A partial set
+ * degrades to the highest level it fully covers — `{read, delete}` displays
+ * as `read` — so a grant authored outside the picker never renders as no
+ * access; the consent summary lists every action regardless. A grant with no
+ * `read` at all (only `create`/`update`, or only named actions) reads as
+ * `'none'`.
  */
 export function actionsToLevel(actions: AppGrantAction[]): PlainLevel {
-	const core = actions
-		.filter((a) => a.name === 'read' || a.name === 'write' || a.name === 'delete')
-		.map((a) => a.name)
-		.sort();
-	const join = core.join(',');
-	// Exact-match the sorted core action-name set against each level's
-	// signature. read/write/delete first so `full` is detected before `write`.
-	if (join === 'delete,read,write') return 'full';
-	if (join === 'read,write') return 'write';
-	if (join === 'read') return 'read';
+	const names = new Set(canonicalActions(actions).map((a) => a.name));
+	if (hasAll(names, LEVEL_ACTIONS.full)) return 'full';
+	if (hasAll(names, LEVEL_ACTIONS.write)) return 'write';
+	if (names.has('read')) return 'read';
 	return 'none';
 }
 
@@ -190,12 +261,14 @@ export function resolveEffectiveLevel(
  * the grant the level walk resolves to — the doctype's own entry when it has
  * one, otherwise the nearest ancestor's (inheritance). Mirrors
  * {@link resolveEffectiveLevel}'s walk, including the rule that skips
- * named-only entries (no core level of their own).
+ * entries with no core level of their own.
  *
- * The returned map keys every action name on the resolved entry (named
- * actions included); the editor reads only the core names it renders. An
- * empty map means no grant backs the doctype — every flag defaults to
- * `false` (optional).
+ * The returned map keys the **display** action names: `read`, `write`,
+ * `delete`, plus any named actions on the resolved entry. The canonical
+ * `create`/`update` pair collapses into the single `write` flag — required
+ * only when both declarations are required, because the picker shows one
+ * pill for the pair and flipping it sets both. An empty map means no grant
+ * backs the doctype — every flag defaults to `false` (optional).
  */
 export function effectiveRequireds(
 	grants: AppGrant[],
@@ -211,7 +284,13 @@ export function effectiveRequireds(
 		const grant = grants.find((g) => g.target === current);
 		if (grant && actionsToLevel(grant.actions) !== 'none') {
 			const requireds: Record<string, boolean> = {};
-			for (const action of grant.actions) requireds[action.name] = action.required;
+			for (const action of canonicalActions(grant.actions)) {
+				if (action.name === 'create' || action.name === 'update') {
+					requireds['write'] = (requireds['write'] ?? true) && action.required;
+				} else {
+					requireds[action.name] = action.required;
+				}
+			}
 			return requireds;
 		}
 		const entry = byTarget.get(current);
@@ -329,16 +408,17 @@ export function summarizeGrants(
 	const byTarget = new Map(catalogue.map((e) => [e.target, e] as const));
 
 	// Bucket key is `${kind}:${verb}` so two different named actions on the
-	// same target land in separate buckets, while the core read/write/delete
-	// actions on multiple targets collapse into one bucket per verb.
+	// same target land in separate buckets, while the core read/create/update/
+	// delete actions on multiple targets collapse into one bucket per verb
+	// (create and update share the "Create and edit" verb).
 	type Bucket = ConsentGroup & { actionNames: Set<string>; order: number };
 	const buckets = new Map<string, Bucket>();
 	let seq = 0;
 	for (const grant of arr) {
 		const entry = byTarget.get(grant.target);
 		const noun = entry ? entry.pluralLabel : fallbackPlural(grant.target);
-		for (const action of grant.actions) {
-			const isCore = action.name === 'read' || action.name === 'write' || action.name === 'delete';
+		for (const action of canonicalActions(grant.actions)) {
+			const isCore = CORE_ACTION_NAMES.has(action.name);
 			const verb = verbFor(action.name, entry);
 			const key = `${isCore ? 'core' : 'named'}:${verb}`;
 			let bucket = buckets.get(key);
@@ -362,16 +442,20 @@ export function summarizeGrants(
 		}
 	}
 
-	const order: string[] = ['read', 'write', 'delete'];
+	// Core groups sort by the read → create-and-edit → delete verb order;
+	// named groups come after, in their first-seen order, so toggling a named
+	// action on does not reshuffle the core copy. The bucket's verb is the
+	// sort key — create and update share one bucket, so name-set size says
+	// nothing about which verb it carries.
+	const coreVerbs: string[] = [
+		m.apps_grants_verb_read(),
+		m.apps_grants_verb_write(),
+		m.apps_grants_verb_delete()
+	];
 	const groups = [...buckets.values()];
 	groups.sort((a, b) => {
-		// Core groups sort by the read/write/delete order; named groups come
-		// after, in their first-seen order, so toggling a named action on does
-		// not reshuffle the core copy.
-		const ai =
-			a.kind === 'core' && a.actionNames.size === 1 ? order.indexOf([...a.actionNames][0]) : -1;
-		const bi =
-			b.kind === 'core' && b.actionNames.size === 1 ? order.indexOf([...b.actionNames][0]) : -1;
+		const ai = a.kind === 'core' ? coreVerbs.indexOf(a.verb) : -1;
+		const bi = b.kind === 'core' ? coreVerbs.indexOf(b.verb) : -1;
 		if (ai !== -1 && bi !== -1) return ai - bi;
 		if (ai !== -1) return -1;
 		if (bi !== -1) return 1;
@@ -391,15 +475,17 @@ export function coreActionVerb(name: string): string {
 
 /**
  * Map a single action name to the display verb used in the grouped consent
- * copy. `write` reads as "Create and edit" (it is the alias that covers
- * create + update); named actions read as their doctype-declared label, or
- * fall back to the raw action name when no label is set.
+ * copy. `write` (the display alias) and the canonical `create`/`update` pair
+ * read as "Create and edit"; named actions read as their doctype-declared
+ * label, or fall back to the raw action name when no label is set.
  */
 function verbFor(name: string, entry?: DoctypeCatalogueEntry): string {
 	switch (name) {
 		case 'read':
 			return m.apps_grants_verb_read();
 		case 'write':
+		case 'create':
+		case 'update':
 			return m.apps_grants_verb_write();
 		case 'delete':
 			return m.apps_grants_verb_delete();
@@ -475,11 +561,16 @@ function walkMaterialise(
 		const requireds = effectiveRequireds(grants, entry.target, catalogue);
 		grants.push({ target: entry.target, actions: levelToActions(effective, requireds) });
 	} else if (explicit && actionsToLevel(explicit.actions) === 'none' && effective !== 'none') {
-		// The child has only named actions but no core level; layer the
-		// inherited core level under them, with the parent's flags.
+		// The child has no readable core level of its own; layer the inherited
+		// core level under its own actions, with the parent's flags. The merge
+		// is canonicalised so a degenerate entry that already carries the
+		// create/update pair keeps one declaration per action name — the
+		// inherited flags win, matching what the picker displays.
 		const requireds = effectiveRequireds(grants, entry.target, catalogue);
-		const core = levelToActions(effective, requireds);
-		explicit.actions = [...core, ...explicit.actions];
+		explicit.actions = canonicalActions([
+			...levelToActions(effective, requireds),
+			...explicit.actions
+		]);
 	}
 	const children = catalogue.filter((e) => e.parentTarget === entry.target);
 	for (const child of children) {

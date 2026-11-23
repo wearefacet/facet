@@ -11,6 +11,7 @@
  */
 
 import type { AppContent, AppGrant } from './appTypes';
+import { canonicalActions } from './appGrantsMapping';
 
 /**
  * Convert a free-form display name into a URL-safe slug: lowercase, hyphens
@@ -255,11 +256,14 @@ export function buildClientSnippet(app: AppContent, issuerBase: string): string 
 /**
  * Convert the stored grants array into the flat scope-string list the
  * snippet uses: `{target: 'crm.Company', actions: [{name: 'write'...}]}` →
- * `crm.company:write`.
+ * `crm.company:create`, `crm.company:update`.
  *
  * - The target's domain is lowercased; the doctype name is lowercased.
- * - Each action name is appended after `:`. `write` covers create + update,
- *   so it stays as `write` (not `create`).
+ * - Action names are canonicalised first (see `canonicalActions`): the
+ *   `write` alias expands to its `create`/`update` pair, so the snippet
+ *   names the actions the runtime enforcer actually checks. The server does
+ *   not parse the requested `scope` — this list is documentation for the
+ *   client developer.
  * - Wildcard domain grants (`crm.*`) render as `crm.*` for every action.
  *
  * The result is de-duplicated and stably ordered (by target, then action
@@ -274,7 +278,7 @@ export function grantsToScopes(grants: AppGrant[]): string[] {
 		const domain = grant.target.slice(0, dot).toLowerCase();
 		const doctype = grant.target.slice(dot + 1).toLowerCase();
 		const qualifiedDoctype = `${domain}.${doctype}`;
-		for (const action of grant.actions) {
+		for (const action of canonicalActions(grant.actions ?? [])) {
 			scopes.add(`${qualifiedDoctype}:${action.name}`);
 		}
 	}

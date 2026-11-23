@@ -182,13 +182,17 @@ describe('appValidation — deriveSignInAddress / discoveryPath', () => {
 
 describe('appValidation — grantsToScopes', () => {
 	it('converts a grants array into flat domain.doctype:action strings', () => {
+		// Action names are canonicalised: the `write` alias expands to its
+		// create/update pair, so the snippet names the actions the runtime
+		// enforcer checks.
 		const grants: AppGrant[] = [
 			{ target: 'crm.Company', actions: levelToActions('write') },
 			{ target: 'crm.Contact', actions: levelToActions('read') }
 		];
 		expect(grantsToScopes(grants)).toEqual([
+			'crm.company:create',
 			'crm.company:read',
-			'crm.company:write',
+			'crm.company:update',
 			'crm.contact:read'
 		]);
 	});
@@ -272,7 +276,7 @@ describe('appValidation — buildClientSnippet', () => {
 			'authorizationEndpoint: "https://acme.facet.app/OAuth/authorize?client_id=app_7fk29xqm3vbn"'
 		);
 		expect(snippet).toContain(
-			'scopes: ["crm.company:read", "crm.company:write", "crm.contact:read"]'
+			'scopes: ["crm.company:create", "crm.company:read", "crm.company:update", "crm.contact:read"]'
 		);
 	});
 

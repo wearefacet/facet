@@ -98,7 +98,7 @@ The editor renders a **domain segmented rail** with grant counts per domain, a *
 
 The level owns **membership**; each granted action owns its own `required` flag. When a doctype's level is above None, a row titled "Role must have at setup" lists the level's actions as pills (Read, Create and edit, Delete), each with a Required/Optional toggle. Default is optional — no grant changes shape until an operator flips a toggle. A required action makes the setup-time usability check (`roleUsable` / `missingRequiredActions`) name the gap when the picked service role lacks it, gates OAuth consent and key issuance on the backend, and disables the app's launcher card for roles that miss it.
 
-The flags shown are the **effective** ones (`effectiveRequireds`): the doctype's own entry when it has one, otherwise the nearest ancestor grant's — the same walk the displayed level uses. Flipping a toggle on an inherited child materialises its explicit entry first (override-on-touch, like the level segments). Changing a level preserves the flags the picker displayed; `materialiseInherited` copies the source grant's flags into the entries it writes.
+The "Create and edit" pill stands for the canonical `create`/`update` pair: the pill reads as Required only when **both** declarations are required, and flipping it sets both. The flags shown are the **effective** ones (`effectiveRequireds`): the doctype's own entry when it has one, otherwise the nearest ancestor grant's — the same walk the displayed level uses. Flipping a toggle on an inherited child materialises its explicit entry first (override-on-touch, like the level segments). Changing a level preserves the flags the picker displayed; `materialiseInherited` copies the source grant's flags into the entries it writes.
 
 The doctype catalogue is loaded by `loadDoctypeCatalogue` from `core.DocType`. The list endpoint returns the full document content (including the `actions` dictionary, `plural_label`, `sensitive`, `member_of`), so a single call surfaces every doctype's named actions, its plural noun, its sensitivity, and its parent for inheritance. The catalogue is loaded once in the wizard layout and the detail layout so neither refetches on tab switches.
 
@@ -114,31 +114,26 @@ The clamp is enforced by `clampChildLevel`: a child's level can never exceed its
 
 ## Grants mapping
 
-The plain-language access levels the picker exposes map to raw `actions[]` arrays:
+The plain-language access levels the picker exposes map to raw `actions[]` arrays, written in the backend's **canonical** vocabulary:
 
-| Plain level | `actions` produced                                       |
-| ----------- | -------------------------------------------------------- |
-| None        | (no grant entry)                                         |
-| Read        | `[{name:"read", required:?}]`                            |
-| Write       | `[{name:"read",…}, {name:"write",…}]`                    |
-| Full        | `[{name:"read",…}, {name:"write",…}, {name:"delete",…}]` |
+| Plain level | `actions` produced                                                            |
+| ----------- | ----------------------------------------------------------------------------- |
+| None        | (no grant entry)                                                              |
+| Read        | `[{name:"read", required:?}]`                                                 |
+| Write       | `[{name:"read",…}, {name:"create",…}, {name:"update",…}]`                     |
+| Full        | `[{name:"read",…}, {name:"create",…}, {name:"update",…}, {name:"delete",…}]` |
 
-| Plain level | `actions` produced                                       |
-| ----------- | -------------------------------------------------------- |
-| None        | (no grant entry)                                         |
-| Read        | `[{name:"read", required:?}]`                            |
-| Write       | `[{name:"read",…}, {name:"write",…}]`                    |
-| Full        | `[{name:"read",…}, {name:"write",…}, {name:"delete",…}]` |
-
-The `required:?` flags come from the required-flag row (see above); the editor writes `false` for every action until the operator flips a toggle. `write` is the alias that covers create and update, so no separate "add" level is needed. The levels are ordered `none < read < write < full`; this ordering is the basis for the parent/child clamp. Pure helpers in `appGrantsMapping.ts`:
+The `required:?` flags come from the required-flag row (see above); the editor writes `false` for every action until the operator flips a toggle. The editor never persists the `write` alias: `RBAC::Grant.from_json` expands it to `{create, update}` at parse time (`src/rbac/grant.cr`), so the picker writes the expanded pair directly and a saved grant reads back identically. The alias stays valid authoring sugar for API callers and is accepted on read. The levels are ordered `none < read < write < full`; this ordering is the basis for the parent/child clamp. Pure helpers in `appGrantsMapping.ts`:
 
 | Function                                                        | Purpose                                                                                               |
 | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `levelToActions(level, requireds)`                              | Builds the `actions[]` for a plain level and caller-supplied required flags.                          |
-| `levelActionNames(level)`                                       | The action names a level grants, in canonical order (read, write, delete).                            |
+| `canonicalActions(actions)`                                     | Expands the `write` alias to `{create, update}` and de-duplicates (first flag wins) — mirrors the backend parse. |
+| `isCoreActionName(name)`                                        | True for `read`/`create`/`update`/`delete` plus the `write` alias; drives the named-action filter.    |
+| `levelToActions(level, requireds)`                              | Builds the `actions[]` for a plain level and caller-supplied display flags (`read`, `write`, `delete`). |
+| `levelActionNames(level)`                                       | The display action names a level grants, in display order (read, write, delete).                      |
 | `coreActionVerb(name)`                                          | The consent verb for a core action name ("Read", "Create and edit", "Delete").                        |
-| `effectiveRequireds(grants, target, catalogue)`                 | The required flags backing a doctype's effective level (own entry, else the nearest ancestor's).      |
-| `actionsToLevel(actions)`                                       | Recovers the plain level from a stored `actions[]`, classifying by the read/write/delete subset only. |
+| `effectiveRequireds(grants, target, catalogue)`                 | The required display flags backing a doctype's effective level; the create/update pair collapses into the single `write` flag. |
+| `actionsToLevel(actions)`                                       | Recovers the plain level from a stored `actions[]`, classifying by subset on the canonical names after canonicalisation. |
 | `resolveEffectiveLevel(grants, target, catalogue)`              | Resolves a doctype's effective level, walking the parent chain for inheritance.                       |
 | `clampChildLevel(desired, parentLevel)`                         | Returns `min(desired, parentLevel)` so a child never exceeds its parent.                              |
 | `clearChildrenExceedingParent(grants, parentTarget, catalogue)` | Removes explicit child grants that exceed the parent after a drop.                                    |
@@ -146,6 +141,8 @@ The `required:?` flags come from the required-flag row (see above); the editor w
 | `summarizeGrants(grants, catalogue)`                            | Groups grants into `ConsentGroup[]` (verb + noun list per group) for the consent preview.             |
 | `anySensitiveGranted(grants, catalogue)`                        | Returns true when at least one granted doctype is flagged sensitive.                                  |
 | `fallbackPlural(target)`                                        | Naive English pluraliser used as a fallback when a doctype has no `plural_label`.                     |
+
+`actionsToLevel` classifies by subset, so a partial canonical set degrades to the highest level it fully covers — `{read, delete}` displays as Read — and never over-claims; the consent summary lists every action regardless. A grant with no `read` at all (only `create`/`update`, or only named actions) reads as `none`; the entry survives untouched and only the summary discloses it.
 
 ## Validation and derivation helpers
 
@@ -187,6 +184,8 @@ Every Create / Activate / Disable / Re-enable / Delete / Save affordance is gate
 
 ## Quirks
 
+- Grants are stored and displayed in the backend's **canonical action vocabulary** (`read`/`create`/`update`/`delete`); the `write` alias is accepted on read and on API authoring but never persisted by the picker (`canonicalActions` mirrors `Grant.from_json`'s parse-time expansion). Grants authored outside the editor — API, MCP, an external builder — arrive canonical and classify like editor-written ones. Grants saved by earlier editor builds may still carry the alias; they classify identically and migrate to the canonical pair on the first edit of that entry.
+- The `scope` strings in the client snippet (`grantsToScopes`) are documentation only — the authorize endpoint does not parse the requested `scope` (`discovery.cr` ships an empty `scopes_supported`). They are canonicalised so the snippet names the actions the runtime enforcer checks.
 - The wizard shell is URL-driven; the in-progress id is in the query string, not in `sessionStorage`. Refreshing step 2+ without an `app` param is an error — the layout returns `400 No in-progress app`.
 - The `slug` input sanitises on input (lowercase, `^[a-z0-9-]+$`) using the workflow doc's plain-`<input>`-with-`oninput` pattern; `bind:value` cannot filter keystrokes. The slug auto-derives from the display name until the user clicks "Edit".
 - The setup step sends `slug` on create only. A loaded draft (back-navigation from a later step, e.g. the review checklist's Edit link) renders the slug input disabled, and the Continue PATCH never carries the key — the `app.App` update hook rejects any patch that includes it (`doc/backend/app-system.md` → `slug` immutability).
