@@ -3,7 +3,7 @@
 
 <script lang="ts" module>
 	import { defineMeta } from '@storybook/addon-svelte-csf';
-	import { fn } from 'storybook/test';
+	import { expect, fn, userEvent, within } from 'storybook/test';
 	import ChatInput from './ChatInput.svelte';
 	import { Paperclip } from '@lucide/svelte';
 
@@ -57,11 +57,34 @@
 			<ChatInput
 				bind:value={liveValue}
 				onsend={args.onsend}
-				placeholder="Type and press Ctrl+Enter to send…"
+				placeholder="Type and press Enter to send…"
 			/>
 			<div style="font-family: var(--font-mono); font-size: 11.5px; color: var(--text-3);">
 				current value: {liveValue || '(empty)'}
 			</div>
+		</div>
+	{/snippet}
+</Story>
+
+<Story
+	name="KeyboardSend"
+	play={async ({ canvasElement, args }) => {
+		const canvas = within(canvasElement);
+		const ta = canvas.getByRole('textbox') as HTMLTextAreaElement;
+		await userEvent.type(ta, 'line one');
+		// Shift+Enter keeps the native newline and never sends.
+		await userEvent.keyboard('{Shift>}{Enter}{/Shift}');
+		expect(args.onsend).not.toHaveBeenCalled();
+		expect(ta.value).toBe('line one\n');
+		// Plain Enter sends the trimmed text and clears the input.
+		await userEvent.keyboard('{Enter}');
+		expect(args.onsend).toHaveBeenCalledWith('line one');
+		expect(ta.value).toBe('');
+	}}
+>
+	{#snippet template(args)}
+		<div style="padding: 24px; max-width: 760px;">
+			<ChatInput onsend={args.onsend} placeholder="Type and press Enter to send…" />
 		</div>
 	{/snippet}
 </Story>

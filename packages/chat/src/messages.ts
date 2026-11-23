@@ -209,7 +209,7 @@ export function assistant_input_thinking(): string {
 }
 
 export function assistant_send_title(): string {
-	return 'Send (Ctrl+Enter)';
+	return 'Send (Enter)';
 }
 
 export function assistant_send_aria(): string {
@@ -217,7 +217,7 @@ export function assistant_send_aria(): string {
 }
 
 export function assistant_stop_title(): string {
-	return 'Stop (Ctrl+Enter)';
+	return 'Stop';
 }
 
 export function assistant_stop_aria(): string {

@@ -44,8 +44,9 @@ l’eau.
 
 ### 2. Demandez ce dont vous avez besoin
 
-Tapez dans la zone de message. Entrée ajoute une nouvelle ligne. Envoyez avec
-Ctrl+Entrée ou Cmd+Entrée, ou sélectionnez le bouton d’envoi.
+Tapez dans la zone de message. Appuyez sur Entrée pour envoyer. Appuyez
+sur Maj+Entrée pour ajouter une nouvelle ligne. Vous pouvez aussi
+sélectionner le bouton d’envoi.
 
 Exemples :
 

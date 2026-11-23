@@ -28,7 +28,7 @@
 		 * lockout. Either flag alone is enough to block sending.
 		 */
 		busy?: boolean;
-		/** Called with the message text on Ctrl/Cmd+Enter or send-button click. */
+		/** Called with the message text on Enter or send-button click. */
 		onsend?: (text: string) => void;
 		/** Called when the user clicks the button while `busy` (aborts the in-flight turn). */
 		onstop?: () => void;
@@ -61,12 +61,14 @@
 	});
 
 	function onkeydown(e: KeyboardEvent) {
-		// Ctrl+Enter or Cmd+Enter sends. Plain Enter inserts a newline (the
-		// textarea grows to fit).
-		if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-			e.preventDefault();
-			send();
-		}
+		// Enter sends. Shift+Enter keeps the native textarea newline (the
+		// textarea grows to fit; Alt+Enter stays native too). Ctrl/Cmd+Enter
+		// also sends — the earlier chord, kept for muscle memory. Enter that
+		// confirms an IME composition never sends.
+		if (e.key !== 'Enter' || e.isComposing) return;
+		if (e.shiftKey || e.altKey) return;
+		e.preventDefault();
+		send();
 	}
 
 	function send() {

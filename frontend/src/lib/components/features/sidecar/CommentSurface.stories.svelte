@@ -278,13 +278,17 @@
 		await userEvent.click(sendBtn);
 		await waitUntil(() => threadText().includes('Typed by the play function'));
 
-		// Ctrl/Cmd+Enter sends from the composer too, like the assistant input.
+		// Enter sends from the composer too, like the assistant input.
+		// Shift+Enter first: the editor keeps the newline, nothing sends.
 		await userEvent.click(editor);
 		await userEvent.type(editor, 'Sent with the keyboard shortcut');
 		await waitUntil(() => !sendBtn.disabled);
 		editor.dispatchEvent(
-			new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true })
+			new KeyboardEvent('keydown', { key: 'Enter', shiftKey: true, bubbles: true })
 		);
+		await sleep(300);
+		expect(threadText()).not.toContain('Sent with the keyboard shortcut');
+		editor.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
 		await waitUntil(() => threadText().includes('Sent with the keyboard shortcut'));
 		// The send cleared the composer for the next comment.
 		await expect(sendBtn).toBeDisabled();
@@ -483,8 +487,8 @@
 </Story>
 
 <!--
-	Ctrl/Cmd+Enter from the composer's fullscreen editor sends the comment
-	and closes the overlay — a successful send lands back on the inline
+	Enter from the composer's fullscreen editor sends the comment and
+	closes the overlay — a successful send lands back on the inline
 	composer, never on an emptied fullscreen editor.
 -->
 
@@ -514,10 +518,8 @@
 		await userEvent.click(canvas.getByRole('button', { name: 'Expand' }));
 		await expect(canvas.getByRole('dialog')).toBeInTheDocument();
 
-		// The chord sends and closes the overlay.
-		editor.dispatchEvent(
-			new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true })
-		);
+		// Enter sends and closes the overlay.
+		editor.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
 		await waitUntil(
 			() => threadText().includes('Sent from the fullscreen editor'),
 			'comment-added'

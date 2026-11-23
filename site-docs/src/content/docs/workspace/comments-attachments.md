@@ -51,8 +51,7 @@ comment then joins the end of the thread with your name, your picture, and
 the time.
 
 :::tip[Fast submit]
-Press Ctrl+Enter to send a comment. On a Mac, press Cmd+Enter. Enter alone
-starts a new line.
+Press Enter to send a comment. Press Shift+Enter to start a new line.
 :::
 
 ### 3. Mention a person or link a document

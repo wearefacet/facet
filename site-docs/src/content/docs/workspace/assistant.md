@@ -41,8 +41,8 @@ your work and ask as you go.
 
 ### 2. Ask for what you need
 
-Type into the message box. Enter adds a new line. Send with Ctrl+Enter or
-Cmd+Enter, or select the send button.
+Type into the message box. Press Enter to send. Press Shift+Enter to add
+a new line. You can also select the send button.
 
 Examples:
 

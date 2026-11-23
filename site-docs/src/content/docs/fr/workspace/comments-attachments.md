@@ -55,8 +55,8 @@ bouton affiche « Publication… ». Votre commentaire rejoint alors la fin du
 avec votre nom, votre image et l’heure.
 
 :::tip[Envoi rapide]
-Appuyez sur `Ctrl+Entrée` pour envoyer un commentaire. Sur un Mac, appuyez sur
-`Cmd+Entrée`. La touche Entrée seule commence une nouvelle ligne.
+Appuyez sur `Entrée` pour envoyer un commentaire. Appuyez sur
+`Maj+Entrée` pour commencer une nouvelle ligne.
 :::
 
 ### 3. Mentionnez une personne ou liez un document

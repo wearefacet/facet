@@ -174,14 +174,15 @@ mounts.
   `position: sticky` against the rail's scrollport, so the composer stays
   reachable without scrolling to the end of a long thread. Submit →
   `sidecars(segment).create({ body })` (the route sets `target`, the
-  backend Lua hook forces the author). Ctrl/Cmd+Enter submits from the
-  keyboard, like the assistant input (plain Enter inserts a newline); the
-  chord is intercepted in the capture phase on the composer and edit-box
-  wrappers, so the editor never reacts to it. A successful send also
-  closes the composer's fullscreen editor when the chord came from there
-  — a failed send keeps it open, with the error below the editor. Without
-  `can(hostQualified, 'create')` the composer is replaced by a locked
-  hint row — UI hint only, the backend re-checks the gate.
+  backend Lua hook forces the author). Enter submits from the
+  keyboard, like the assistant input (Shift+Enter inserts a newline); the
+  Enter keydown is intercepted in the capture phase on the composer and
+  edit-box wrappers, so the editor never reacts to it. Ctrl/Cmd+Enter
+  also submits — the earlier chord, kept for existing users. A successful
+  send also closes the composer's fullscreen editor when the send came
+  from there — a failed send keeps it open, with the error below the
+  editor. Without `can(hostQualified, 'create')` the composer is replaced
+  by a locked hint row — UI hint only, the backend re-checks the gate.
 - Replies arm the shared composer — there is no second reply box. The
   per-comment reply affordance sets the target: a gold `Replying to
   {name}` chip with a cancel button appears above the input, the

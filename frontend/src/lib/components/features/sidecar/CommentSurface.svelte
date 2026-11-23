@@ -145,8 +145,8 @@
 	let draft = $state('');
 	let submitting = $state(false);
 	let submitError = $state<string | null>(null);
-	// Bound to the composer editor's fullscreen flag. A Ctrl/Cmd+Enter send
-	// from the overlay must land back on the inline composer; a failed send
+	// Bound to the composer editor's fullscreen flag. A keyboard send from
+	// the overlay must land back on the inline composer; a failed send
 	// keeps the overlay open.
 	let composerExpanded = $state(false);
 
@@ -214,16 +214,20 @@
 		replyToId = null;
 	}
 
-	// ── Ctrl/Cmd+Enter submit ───────────────────────────────────────
-	// Mirrors the assistant input: the chord sends from the composer or
-	// the edit box, plain Enter still inserts a newline. Listens in the
+	// ── Enter submit ────────────────────────────────────────────────
+	// Mirrors the assistant input: Enter sends from the composer or the
+	// edit box, Shift+Enter inserts a newline (the editor keeps its
+	// hard-break binding; Alt+Enter stays native too). Ctrl/Cmd+Enter also
+	// sends — the earlier chord, kept for muscle memory. Listens in the
 	// capture phase on the wrapper so the Milkdown editor never sees the
-	// chord — a keymap reacting after the send cleared the draft would
-	// re-fill the composer with stale text.
+	// submit key — a keymap reacting after the send cleared the draft
+	// would re-fill the composer with stale text. Enter that confirms an
+	// IME composition never sends.
 	const submitShortcut: Action<HTMLElement, () => void> = (node, onsubmit) => {
 		let handler = onsubmit;
 		const onKeydown = (e: KeyboardEvent) => {
-			if (e.key !== 'Enter' || (!e.ctrlKey && !e.metaKey)) return;
+			if (e.key !== 'Enter' || e.isComposing) return;
+			if (e.shiftKey || e.altKey) return;
 			e.preventDefault();
 			e.stopPropagation();
 			handler();
