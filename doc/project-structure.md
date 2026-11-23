@@ -375,7 +375,7 @@ facet/
 │   │   ├── serve.cr       # Byte serving for downloads
 │   │   ├── upload_grants.cr # One-time signed upload capability (Redis, agent surfaces)
 │   │   ├── store.cr       # artifacts + artifact_owners SQL
-│   │   └── uploader.cr    # Shrine uploader (filesystem/S3), MIME sniffing
+│   │   └── uploader.cr    # Byte put/open by storage (filesystem via shrine, S3 via awscr), MIME sniffing
 │   ├── currency.cr        # Facet::Currency::Registry — hydration from core.Currency, ensure_fresh, mark_stale
 │   ├── replication.cr     # Namespace root for cross-domain field replication
 │   ├── replication/

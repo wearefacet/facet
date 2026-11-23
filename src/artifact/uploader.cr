@@ -458,9 +458,76 @@ module Facet
       end
 
       # Opens an artifact's IO for reading. The caller is responsible for
-      # closing the returned IO once streaming is done.
-      def self.open(path : String) : IO
-        storage.open(path)
+      # closing the returned IO once streaming is done. Tests can point
+      # the read at a non-primary storage through `storage_key`.
+      def self.open(path : String, storage_key : String = primary_storage_key) : IO
+        case storage = find_storage(storage_key)
+        when Shrine::Storage::S3
+          open_s3(storage, path)
+        else
+          storage.open(path)
+        end
+      end
+
+      # Reads an artifact's bytes from the S3 storage. The shard's
+      # `Shrine::Storage::S3#open` (0.6.5) cannot be used: it appends the
+      # response wrapper through `IO#<<`, which stores the wrapper's
+      # inspect string instead of the object bytes, and it returns that
+      # buffer positioned at EOF — the served body then never matches its
+      # `Content-Length`.
+      #
+      # This method reads through the awscr client directly, using the
+      # block-less `get_object`. Two reasons keep us off the block form:
+      # its error path is broken — the response body is still unread when
+      # awscr builds the exception, so a missing key raises a generic
+      # `XML::Error` instead of `Awscr::S3::NoSuchKey` — and the streamed
+      # body would need buffering anyway. The block-less form returns the
+      # object bytes and parses S3's error XML properly, so a missing key
+      # maps to `ObjectNotFound`. The whole object is held in memory
+      # (bounded by `max_upload_bytes`); the returned buffer is seekable,
+      # so range requests work as on the filesystem backend.
+      private def self.open_s3(storage : Shrine::Storage::S3, path : String) : IO
+        key = storage.object_key(path)
+        begin
+          output = storage.client.get_object(storage.bucket, key)
+        rescue Awscr::S3::NoSuchKey
+          raise ObjectNotFound.new("storage object not found: #{key}")
+        end
+        io = IO::Memory.new(output.body)
+        io.rewind
+        io
+      end
+
+      # Puts a fresh artifact object at `path`, dispatching on the storage
+      # backend. Sends the exact byte count on S3 (see `put_s3`); the
+      # filesystem path keeps the shrine flow.
+      private def self.put_object(storage_key : String, path : String, tempfile : File, size : Int64) : Nil
+        case storage = find_storage(storage_key)
+        when Shrine::Storage::S3
+          put_s3(storage, path, tempfile, size)
+        else
+          shrine_io = File.open(tempfile.path, "rb")
+          begin
+            Shrine.upload(shrine_io, storage_key, location: path)
+          ensure
+            shrine_io.close
+          end
+        end
+      end
+
+      # Uploads the spooled bytes to the S3 storage. The shard's
+      # `Shrine::Storage::S3#upload` (0.6.5) sends the body as a `String`
+      # and awscr derives `Content-Length` from `String#size` — the
+      # character count. Any binary payload with valid multi-byte UTF-8
+      # sequences makes the two differ and Crystal rejects the request
+      # with an ArgumentError. This method sends the body as `Bytes`, so
+      # the header carries the exact byte count.
+      private def self.put_s3(storage : Shrine::Storage::S3, path : String, tempfile : File, size : Int64) : Nil
+        bytes = Bytes.new(size)
+        File.open(tempfile.path, "rb") do |f|
+          f.read_fully(bytes)
+        end
+        storage.client.put_object(storage.bucket, storage.object_key(path), bytes)
       end
 
       # Deletes an artifact object from shrine storage. Best-effort —
@@ -613,13 +680,8 @@ module Facet
             new_artifact_id = ::Facet::Util::ScriptHelpers.ulid
             new_path = "#{sha256}/#{new_artifact_id}"
 
-            shrine_io = File.open(tempfile.path, "rb")
-            begin
-              uploaded = Shrine.upload(shrine_io, key, location: new_path)
-              path_uploaded = uploaded.id
-            ensure
-              shrine_io.close
-            end
+            put_object(key, new_path, tempfile, size)
+            path_uploaded = new_path
 
             kind = Store::PersistKind::InsertFresh
             artifact_id = new_artifact_id
@@ -688,6 +750,12 @@ module Facet
           dest.write(chunk[0, read])
         end
         total
+      end
+
+      # Raised by `open` when the storage backend reports the object
+      # missing (`NoSuchKey` on S3). The serve route maps this to `404`;
+      # every other storage failure keeps its natural `500`.
+      class ObjectNotFound < ::Exception
       end
 
       # Upload path error. `PayloadTooLarge` carries a meaningful HTTP status.

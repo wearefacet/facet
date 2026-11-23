@@ -1,6 +1,6 @@
 # Artifacts
 
-File storage for `file`-typed doctype fields and inline `urn:facet:artifact:…` links in longtext. Bytes live in object storage (S3 via shrine); metadata and access control live in PostgreSQL.
+File storage for `file`-typed doctype fields and inline `urn:facet:artifact:…` links in longtext. Bytes live in object storage (filesystem or S3); metadata and access control live in PostgreSQL. The S3 byte paths read and write through the awscr client directly — the `shrine.cr` S3 storage methods are bypassed (see *S3 byte paths* below).
 
 **Files covered:** `db/migrations/0003_artifacts.sql`, `src/artifact/config.cr`, `src/config.cr`, `src/doctype/field_types/file_type.cr`, `src/document/artifact_refs.cr`, `src/artifact/uploader.cr`, `src/artifact/store.cr`, `src/artifact/access.cr` (incl. `can_read_for_app?`), `src/artifact/grants.cr` (incl. `mint_ephemeral_for_app`), `src/artifact/upload_grants.cr` (signed upload capability), `src/artifact/routes.cr` (incl. the `/download` gateway; route bodies are private `handle_*` helpers, the download route `serve_*` helpers, and the shared `perform_account_upload` tail), `src/artifact/serve.cr` (`Artifact::Serve` — `stream_artifact`, `parse_range`, `stream_range`), `src/artifact/multipart.cr`, `src/artifact/owners.cr`, `src/artifact/prune.cr`.
 
@@ -173,11 +173,24 @@ One multipart request. No chunking, no session, no pre-flight. The uploader live
 2. Spool to tempfile, compute sha256.
 3. Look up candidate rows by sha256.
      → first candidate the caller can read: reuse it, skip the put.
-     → none: shrine put, remember the path.
+     → none: put the object, remember the path.
 4. Transaction: insert artifacts row (if new) + artifact_owners row [+ document mutation].
 5. On error: delete the object we put (ignore failures), re-raise.
 6. Always: delete the tempfile.
 ```
+
+## S3 byte paths (`src/artifact/uploader.cr`)
+
+`Uploader.open` and the fresh-object put inside `Uploader.upload` dispatch on the configured storage. The filesystem backend keeps the shrine flow. The S3 backend goes through the awscr client directly, because `shrine.cr` 0.6.5's S3 methods are broken:
+
+| Shard method | Defect | Facet replacement |
+|---|---|---|
+| `Storage::S3#open` | Appends the response wrapper through `IO#<<`, so the buffer holds the wrapper's inspect string, not the object bytes; the buffer is returned positioned at EOF, so the served body never matched its `Content-Length` (`ERR_HTTP2_PROTOCOL_ERROR` behind an HTTP/2 front). | `Uploader.open_s3` — block-less `get_object`, `IO::Memory` over the body, rewound and seekable. |
+| `Storage::S3#upload` | Sends the body as a `String`; awscr derives `Content-Length` from `String#size` (character count). Any binary payload with valid multi-byte UTF-8 sequences makes the counts differ and Crystal rejects the request with an `ArgumentError`. | `Uploader.put_s3` — sends the spooled bytes as `Bytes`, so the header carries the exact byte count. |
+
+The block-less `get_object` is deliberate over the block form: in the block form the response body is still unread when awscr builds its error, so a missing key raises a generic `XML::Error` instead of `Awscr::S3::NoSuchKey`. With the block-less form the error XML parses properly, `NoSuchKey` maps to `Uploader::ObjectNotFound`, and the serve route answers `404` for a missing object instead of a `500`. Other storage failures keep their natural `500`.
+
+Serving buffers the whole object in memory (bounded by `max_upload_bytes`); the returned `IO::Memory` is seekable, so range requests work as on the filesystem backend.
 
 Only delete an object this request uploaded — when step 3 reused an existing row, there is nothing of ours to clean up. Worst case on a crash between put and rollback is one hanging object, swept manually by `artifacts:reconcile`.
 

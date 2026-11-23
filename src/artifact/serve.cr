@@ -26,13 +26,21 @@ module Facet
       # MIME type. Supports HTTP range requests on the FileSystem backend
       # (other storages fall back to a full-body response).
       def self.stream_artifact(env, artifact : Facet::Artifact::Store::Artifact) : Nil
-        # Open the shrine IO once. FileSystem returns a `File` which
-        # supports `pos` / `size` / `seek`; S3 returns a lazy IO whose
-        # `size` is metadata. Range support is best-effort: the `Range`
-        # header is honoured when the IO responds to `seek` AND `size`;
-        # otherwise the full body streams with `200 OK` and no
-        # `Content-Range`.
-        io = Facet::Artifact::Uploader.open(artifact.path)
+        # Open the storage IO once. Both backends return a seekable,
+        # fully-buffered IO: FileSystem returns a `File`, S3 returns an
+        # `IO::Memory` read through the awscr client (`Uploader.open_s3`).
+        # The `Range` header is honoured when the IO responds to `seek`
+        # AND `size`; otherwise the full body streams with `200 OK` and
+        # no `Content-Range`.
+        begin
+          io = Facet::Artifact::Uploader.open(artifact.path)
+        rescue Facet::Artifact::Uploader::ObjectNotFound
+          # Nothing has been written yet — a clean 404 instead of a 500.
+          env.response.status_code = 404
+          env.response.content_type = "application/json"
+          env.response.print({error: "Not Found"}.to_json)
+          return
+        end
 
         # Mandatory response headers — see `doc/backend/artifact.md` →
         # Response hardening.
