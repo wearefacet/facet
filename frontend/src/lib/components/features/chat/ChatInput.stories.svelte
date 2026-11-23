@@ -38,6 +38,24 @@
 	{/snippet}
 </Story>
 
+<Story
+	name="LockedBusy"
+	play={async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const ta = canvas.getByRole('textbox') as HTMLTextAreaElement;
+		// A busy turn this surface cannot queue into locks the textarea, and the
+		// button becomes Stop — the reload-mid-turn posture.
+		expect(ta.disabled).toBe(true);
+		expect(canvas.getByRole('button', { name: 'Stop generating' })).toBeEnabled();
+	}}
+>
+	{#snippet template(args)}
+		<div style="padding: 24px; max-width: 760px;">
+			<ChatInput busy disabled placeholder="Agent is thinking…" onstop={args.onstop} />
+		</div>
+	{/snippet}
+</Story>
+
 <Story name="WithFooterRow">
 	{#snippet template(args)}
 		<div style="padding: 24px; max-width: 760px;">

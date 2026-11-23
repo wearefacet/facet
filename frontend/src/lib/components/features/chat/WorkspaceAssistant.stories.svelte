@@ -300,7 +300,11 @@
 		const winScope = within(win);
 		await userEvent.type(winScope.getByRole('textbox'), 'find my active customers');
 		await userEvent.click(winScope.getByRole('button', { name: 'Send message' }));
-		await expect(winScope.getByText('find my active customers')).toBeVisible();
+		// The thread repeats the message; the rail now auto-titles the
+		// conversation with it too, so the bubble is the last match (the rail
+		// renders before the thread).
+		const userBubble = () => winScope.getAllByText('find my active customers').at(-1)!;
+		await expect(userBubble()).toBeVisible();
 		await waitFor(
 			async () => {
 				await expect(winScope.getByText(/anything else/)).toBeVisible();
@@ -312,12 +316,12 @@
 		// must stay in the DOM. An unmount here is the regression: after the
 		// expand the thread would come back empty.
 		await userEvent.click(winScope.getByRole('button', { name: 'Collapse assistant' }));
-		await expect(winScope.getByText('find my active customers')).toBeInTheDocument();
+		await expect(userBubble()).toBeInTheDocument();
 
 		// Expand again — the same conversation and turns are still on
 		// screen, with no reselect from the rail.
 		await userEvent.click(winScope.getByRole('button', { name: 'Expand assistant' }));
-		await expect(winScope.getByText('find my active customers')).toBeVisible();
+		await expect(userBubble()).toBeVisible();
 		await expect(winScope.getByText(/anything else/)).toBeVisible();
 	}}
 >

@@ -26,16 +26,16 @@
 		disabled?: boolean;
 		/**
 		 * When true, the composer shows the thinking state and the button
-		 * becomes Stop. The textarea STAYS editable: a send during a turn
-		 * queues the message — the panel drains the queue when the turn
-		 * settles. Distinct from `disabled`: a hard lockout (no provider
-		 * configured) still blocks everything.
+		 * becomes Stop. On its own the textarea stays editable: a send during
+		 * a live turn queues the message — the panel drains the queue when the
+		 * turn settles. Combine with `disabled` for a locked busy state (a turn
+		 * this surface cannot queue into).
 		 */
 		busy?: boolean;
 		/** How many messages are queued for the current turn. */
 		queueCount?: number;
 		/** Called with the message text on Enter or send-button click. */
-			onsend?: (text: string) => void;
+		onsend?: (text: string) => void;
 		/** Called when the user clicks the button while `busy` (aborts the in-flight turn). */
 		onstop?: () => void;
 		/** Optional row content rendered below the textarea (context chips, model chip, attach button, etc.). */
@@ -103,7 +103,7 @@
 		send();
 	}
 
-	const locked = $derived(disabled);
+	const locked = $derived(disabled || busy);
 	const canSend = $derived(value.trim().length > 0 && !locked);
 </script>
 

@@ -169,6 +169,11 @@
 	/** Server cancel token of the in-flight turn on the selected
 	 * conversation — the stop button. `null` when idle. */
 	let currentTurnToken = $state<string | null>(null);
+	/** True while the SELECTED conversation shows an orphaned running turn —
+	 * the backend generates, but this surface has no live stream to queue
+	 * sends against. `busy` (thinking state, Stop button) plus this lock
+	 * keeps the composer inert, matching the pre-refactor contract. */
+	let orphanLocked = $state(false);
 	/** Generation counter for conversation selections — a `listTurns`
 	 * response that belongs to an older selection is discarded. */
 	let selectSeq = 0;
@@ -229,6 +234,7 @@
 		inputText = '';
 		busy = false;
 		currentTurnToken = null;
+		orphanLocked = false;
 	});
 
 	/** Cancels the in-flight orphan watch, if any. The superseded watch's
@@ -286,6 +292,7 @@
 		sessionsVersion++;
 		if (conversation?.id === convId) {
 			busy = false;
+			orphanLocked = false;
 			currentTurnToken = null;
 		}
 		if (s.pending.length > 0) {
@@ -308,7 +315,6 @@
 	});
 
 	async function handleSelect(selected: Conversation) {
-		console.log('PROBE select', selected.id.slice(-6), 'same=', selected.id === conversation?.id, 'streaming=', sessions.get(selected.id)?.streaming, 'pending=', sessions.get(selected.id)?.pending.length);
 		// Re-clicking the selected row is a no-op — the thread is already on
 		// screen, and a watch, if any, keeps running.
 		if (selected.id === conversation?.id) return;
@@ -320,6 +326,7 @@
 		// anything; re-selecting it finds the entry still live.
 		cancelWatch();
 		busy = false;
+		orphanLocked = false;
 		currentTurnToken = null;
 
 		// Rapid row clicks resolve out of order — a `listTurns` response that
@@ -351,11 +358,11 @@
 			// lock the composer and watch the turn. The row carries the cancel
 			// token, so the stop button works against the in-flight turn.
 			const running = listed.find((row) => row.status === 'running');
-			console.log('PROBE select listed', listed.length, 'statuses=', listed.map((r) => r.status).join(','), 'running=', !!running, 'seqOk=', seq === selectSeq);
 			const current = sessionOf(selected.id);
 			const placeholder = current.turns.find((t) => t.kind === 'agent' && t.streaming);
 			if (running && placeholder && placeholder.kind === 'agent') {
 				busy = true;
+				orphanLocked = true;
 				currentTurnToken = running.turn_token ?? null;
 				// Turns before the running row's block — the suffix the catch-up
 				// tick replaces with server truth.
@@ -425,6 +432,7 @@
 		if (unconfigured) return;
 		cancelWatch();
 		busy = false;
+		orphanLocked = false;
 		currentTurnToken = null;
 		try {
 			conversation = await createConversation();
@@ -879,7 +887,7 @@
 					{placeholder}
 					{busy}
 					queueCount={pendingMessages.length}
-					disabled={unconfigured}
+					disabled={unconfigured || orphanLocked}
 					onsend={handleSend}
 					onstop={handleCancel}
 				/>
