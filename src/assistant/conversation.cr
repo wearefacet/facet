@@ -174,7 +174,7 @@ module Facet
         order_sql = build_order_clause(sort)
 
         rows = [] of Record
-        rs = db.query(
+        db.query(
           "SELECT id, session_id, cache_key, system_prompt, context,
                   enabled_tools, created_at, updated_at, archived_at
            FROM agent_conversations
@@ -182,11 +182,10 @@ module Facet
            ORDER BY #{order_sql}
            LIMIT $#{params.size + 1} OFFSET $#{params.size + 2}",
           args: params + [items, offset] of ::DB::Any,
-        )
-        rs.each { rows << read_record(rs) }
+        ) do |rs|
+          rs.each { rows << read_record(rs) }
+        end
         rows
-      ensure
-        rs.try(&.close)
       end
 
       # Returns the capped count of conversations matching `filters`, from

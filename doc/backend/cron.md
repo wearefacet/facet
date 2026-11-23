@@ -72,11 +72,12 @@ scheduler.stop
 
 ## Wiring
 
-The scheduler is instantiated and started in `Facet::CLI.run_server` (`src/main.cr`) alongside the other long-lived fibers, wired with `Cron::Lease.redis_acquirer` as the tick-lease acquirer so a tick fires exactly once across backend instances. It is stopped in the `at_exit` block. The domain-hooks subsystem runs its own poll loop (`Hooks::Scheduler`) — with its own lease design — and does not register tasks with `Facet::Cron::Scheduler`. Eight tasks are boot-registered from the table in `Cron::Tasks.boot_entries` (`src/cron/tasks.cr`), each with its schedule from config:
+The scheduler is instantiated and started in `Facet::CLI.run_server` (`src/main.cr`) alongside the other long-lived fibers, wired with `Cron::Lease.redis_acquirer` as the tick-lease acquirer so a tick fires exactly once across backend instances. It is stopped in the `at_exit` block. The domain-hooks subsystem runs its own poll loop (`Hooks::Scheduler`) — with its own lease design — and does not register tasks with `Facet::Cron::Scheduler`. Nine tasks are boot-registered from the table in `Cron::Tasks.boot_entries` (`src/cron/tasks.cr`), each with its schedule from config:
 
 | Task id | Service | Schedule key | Purpose |
 |---|---|---|---|
 | `sidecar.reconcile` | `Cron::SidecarReconcile` | `sidecar.reconcile_cron` | Re-enqueue orphaned sidecar sweeps |
+| `artifact.grant_prune` | `Cron::ArtifactGrantPrune` | `artifact.grant_prune_cron` | Delete expired `ephemeral` grant rows past the retention window (see [`artifact.md`](artifact.md) → Expired grant prune) |
 | `tombstone.content_prune` | `Cron::TombstoneContentPrune` | `tombstone.prune_cron` | Clear tombstone payloads after retention (ages on `projections.deleted_at`) |
 | `secrets.prune` | `Cron::SecretsPrune` | `secrets.prune_cron` | Drop expired secret slots |
 | `assistant.turn_sweep` | `Cron::AssistantTurnSweep` | `assistant.turn_sweep_cron` | Mark stale `running` agent turns `interrupted` |
@@ -108,7 +109,7 @@ work block, and logs one completion line:
 The line logs at INFO whenever the pass touched rows. A zero-work pass logs
 too when the task keeps the heartbeat (`log_zero`, the default) — the daily
 retention passes do: mutation compaction, secrets prune, tombstone content
-prune, and assistant usage prune. For these the line is the "this ran"
+prune, artifact grant prune, and assistant usage prune. For these the line is the "this ran"
 marker. The assistant turn sweep passes `log_zero: false`: it runs often,
 so a quiet sweep stays out of the log. A pass whose config disables it logs
 one INFO line that names the setting (for example

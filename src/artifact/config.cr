@@ -42,6 +42,15 @@ module Facet
       # design: a mint-to-upload gap is seconds, not hours.
       getter upload_grant_ttl_seconds : Int32
 
+      # Retention window for expired `ephemeral` grant rows, in days. A row
+      # leaves `artifact_grants` once it expired at least this long ago;
+      # `0` keeps every expired row forever — the prune skips. Resolved
+      # per pass through `core.SystemSettings` (`artifact.grant_prune_days`).
+      getter grant_prune_days : Int32
+
+      # Schedule for the expired-grant prune task (`Cron::ArtifactGrantPrune`).
+      getter grant_prune_cron : String
+
       def initialize(
         @storage : Storage = Storage.new,
         @prune_after_days : Int32 = 30,
@@ -49,6 +58,8 @@ module Facet
         @grant_ttl_media_seconds : Int32 = 21_600,
         @max_upload_bytes : Int64 = 52_428_800_i64,
         @upload_grant_ttl_seconds : Int32 = 300,
+        @grant_prune_days : Int32 = 7,
+        @grant_prune_cron : String = "0 5 * * *",
       )
       end
 
@@ -80,6 +91,8 @@ module Facet
           grant_ttl_media_seconds: read_int(raw.try(&.["grant_ttl_media_seconds"]?), 21_600),
           max_upload_bytes: read_int64(raw.try(&.["max_upload_bytes"]?), 52_428_800),
           upload_grant_ttl_seconds: read_int(raw.try(&.["upload_grant_ttl_seconds"]?), 300),
+          grant_prune_days: read_int(raw.try(&.["grant_prune_days"]?), 7),
+          grant_prune_cron: raw.try(&.["grant_prune_cron"]?).try(&.as_s) || "0 5 * * *",
         )
       end
 

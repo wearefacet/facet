@@ -72,13 +72,13 @@ credential slots bind to `core.SystemSettings.settings`.
 A knob is one dot-separated path, and the path is its identity everywhere —
 in the config file, in the settings document, in the registry, in the read
 API, and in the fallback resolution. No underscore-to-dot conversion exists.
-Registered paths (30):
+Registered paths (31):
 
 | Group | Paths |
 | --- | --- |
 | Assistant | `assistant.name`, `assistant.api_endpoint`, `assistant.api_key` (secret), `assistant.model`, `assistant.system_prompt`, `assistant.max_tokens`, `assistant.temperature`, `assistant.max_history`, `assistant.auto_execute_tools` |
 | Mail | `mail.adapter`, `mail.from_address`, `mail.from_name`, `mail.smtp.host`, `mail.smtp.port`, `mail.smtp.username`, `mail.smtp.password` (secret), `mail.smtp.use_tls` |
-| Artifacts | `artifact.grant_ttl_seconds`, `artifact.grant_ttl_media_seconds`, `artifact.prune_after_days`, `artifact.storage.type` (read-only) |
+| Artifacts | `artifact.grant_ttl_seconds`, `artifact.grant_ttl_media_seconds`, `artifact.grant_prune_days`, `artifact.prune_after_days`, `artifact.storage.type` (read-only) |
 | Retention | `mutations.retention_days`, `tombstone.content_retention_days` |
 | Localization | `localization.default_timezone`, `localization.default_language` |
 | IAM policy | `iam.mfa.type` (`none` \| `totp`), `iam.mfa.enforcement` (`preferred` \| `always`), `iam.auth.mode` (`hybrid` \| `oidc_only`), `iam.oidc.provision_roles` (array of `iam.Roles` references), `iam.change_password_expiration` (seconds) |
@@ -94,7 +94,8 @@ provision. The registry's `StringList` kind serves this path; the read
 side is `IAM::Policy.provision_roles` (uncached — an auth decision).
 
 **The retention contract:** a window of `0` means **keep forever** — the
-compaction pass, the tombstone content prune, and the artifact prune each
+compaction pass, the tombstone content prune, the artifact prune, and the
+expired-grant prune each
 skip when their window is 0, and a file-side 0 means the same thing
 (`mutations.retention_days: 0` also stops the per-doctype
 `retention_overrides` from applying for that pass). Negative values are
@@ -321,7 +322,9 @@ flowchart LR
   so a change applies to every link minted afterwards — existing grant rows
   keep the expiry they were minted with. The prune window resolves per
   run: the `facet artifacts:prune` CLI reads `artifact.prune_after_days`
-  through the runtime settings before it queries. The storage adapter is
+  through the runtime settings before it queries, and
+  `Cron::ArtifactGrantPrune.call` reads `artifact.grant_prune_days` at the
+  top of each pass the same way. The storage adapter is
   deliberately not hot: `Uploader.configure_storages!` wires the Shrine
   storage once per process from the config file, and switching backends at
   runtime would strand the existing bytes — see the key grammar.

@@ -113,6 +113,7 @@
 		'mail.smtp.port',
 		'artifact.grant_ttl_seconds',
 		'artifact.grant_ttl_media_seconds',
+		'artifact.grant_prune_days',
 		'artifact.prune_after_days',
 		'mutations.retention_days',
 		'tombstone.content_retention_days',
@@ -127,6 +128,7 @@
 	 * (checked = keep forever), while `text` holds the editable days.
 	 */
 	const RETENTION_PATHS: readonly string[] = [
+		'artifact.grant_prune_days',
 		'artifact.prune_after_days',
 		'mutations.retention_days',
 		'tombstone.content_retention_days'
@@ -639,6 +641,12 @@
 			label: m.system_settings_artifact_grant_ttl_media(),
 			kind: 'number',
 			helper: m.system_settings_artifact_grant_ttl_media_helper()
+		},
+		{
+			path: 'artifact.grant_prune_days',
+			label: m.system_settings_artifact_grant_prune(),
+			kind: 'retention',
+			helper: m.system_settings_artifact_grant_prune_helper()
 		},
 		{
 			path: 'artifact.prune_after_days',

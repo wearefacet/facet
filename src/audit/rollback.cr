@@ -470,29 +470,30 @@ module Facet
       # Groups a cluster's mutations by document. Returns the earliest
       # mutation per document as `{(domain, doc_type, doc_id) => {id, idx}}`,
       # or `nil` when the cluster exceeds the mutation cap.
+      #
+      # The cap is pushed into SQL (`LIMIT cap + 1`) so a runaway cluster is
+      # never streamed. An early `return` out of a row loop would abandon the
+      # open `ResultSet` and leave its response frames queued on the pinned
+      # transaction connection — the next statement on that socket would read
+      # another request's response (see `src/database/wire_guard.cr`).
       private def self.cluster_groups(
         db : DB::Connection,
         trace : String,
       ) : Hash(Tuple(String, String, String), NamedTuple(id: String, idx: Int32))?
-        earliest = Hash(Tuple(String, String, String), NamedTuple(id: String, idx: Int32)).new
-        count = 0
-        rs = db.query(
-          "SELECT domain, doc_type, doc_id, idx, id FROM mutations WHERE cause_trace = $1 ORDER BY idx ASC",
-          trace
+        rows = db.query_all(
+          "SELECT domain, doc_type, doc_id, idx, id FROM mutations " \
+          "WHERE cause_trace = $1 ORDER BY idx ASC LIMIT $2",
+          trace, CLUSTER_MUTATION_CAP + 1,
+          as: {String, String, String, Int32, String},
         )
-        rs.each do
-          count += 1
-          return nil if count > CLUSTER_MUTATION_CAP
-          domain = rs.read(String)
-          doc_type = rs.read(String)
-          doc_id = rs.read(String)
-          idx = rs.read(Int32)
-          id = rs.read(String)
+        return nil if rows.size > CLUSTER_MUTATION_CAP
+
+        earliest = Hash(Tuple(String, String, String), NamedTuple(id: String, idx: Int32)).new
+        rows.each do |(domain, doc_type, doc_id, idx, id)|
           key = {domain, doc_type, doc_id}
           current = earliest[key]?
           earliest[key] = {id: id, idx: idx} if current.nil? || idx < current[:idx]
         end
-        rs.close
         earliest
       end
 

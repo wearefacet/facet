@@ -4,6 +4,7 @@
 # The table wires the eight boot task classes, so it requires them — a
 # `require` of this file alone is enough for the CLI listing and the specs.
 require "../config"
+require "./artifact_grant_prune"
 require "./assistant_turn_sweep"
 require "./assistant_usage_prune"
 require "./event_lag_check"
@@ -38,6 +39,7 @@ module Facet
         config = Facet::Config.instance
         [
           Entry.new(id: "sidecar.reconcile", schedule_key: "sidecar.reconcile_cron", cron: config.sidecar.reconcile_cron, task: -> { Facet::Cron::SidecarReconcile.call }),
+          Entry.new(id: "artifact.grant_prune", schedule_key: "artifact.grant_prune_cron", cron: config.artifact.grant_prune_cron, task: -> { Facet::Cron::ArtifactGrantPrune.call }),
           Entry.new(id: "tombstone.content_prune", schedule_key: "tombstone.prune_cron", cron: config.tombstone.prune_cron, task: -> { Facet::Cron::TombstoneContentPrune.call }),
           Entry.new(id: "secrets.prune", schedule_key: "secrets.prune_cron", cron: config.secrets.prune_cron, task: -> { Facet::Cron::SecretsPrune.call }),
           Entry.new(id: "assistant.turn_sweep", schedule_key: "assistant.turn_sweep_cron", cron: config.assistant.turn_sweep_cron, task: -> { Facet::Cron::AssistantTurnSweep.call }),

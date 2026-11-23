@@ -172,6 +172,11 @@ module Facet
 
       # Yields each mutation (action, arguments, emitted_at) in order from
       # start_idx+1 to target_idx.
+      #
+      # The block form closes the `ResultSet` on every path — a raising
+      # consumer (a rollback refusing a document, a compaction replay
+      # failing) must not leave the response frames queued on the pinned
+      # connection (see `src/database/wire_guard.cr`).
       private def self.replay_mutations(
         db : DB::Connection,
         domain : String,
@@ -181,7 +186,7 @@ module Facet
         target_idx : Int32,
         & : String, JSON::Any, Time -> Nil
       ) : Nil
-        rs = db.query(
+        db.query(
           <<-SQL,
             SELECT action, arguments, emitted_at
             FROM mutations
@@ -190,14 +195,14 @@ module Facet
             ORDER BY idx ASC
           SQL
           domain, doc_type, doc_id, start_idx, target_idx
-        )
-        rs.each do
-          action = rs.read(String)
-          arguments = rs.read(JSON::Any)
-          emitted_at = rs.read(Time)
-          yield action, arguments, emitted_at
+        ) do |rs|
+          rs.each do
+            action = rs.read(String)
+            arguments = rs.read(JSON::Any)
+            emitted_at = rs.read(Time)
+            yield action, arguments, emitted_at
+          end
         end
-        rs.close
       end
     end
   end

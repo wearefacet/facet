@@ -86,6 +86,7 @@ ROWS = [
   Row.new("iam.auth", "mode", "string", "\"hybrid\"", "Login modes: hybrid keeps passwords, oidc_only removes them."),
   Row.new("iam", "change_password_expiration", "integer", "86400", "Lifetime of credential links (reset, invite, first credential), in seconds."),
   Row.new("iam", "secure_cookies", "boolean", "true", "Set the Secure flag on auth cookies; disable only for plain-HTTP dev."),
+  Row.new("iam.oidc", "provision_roles", "string[]", "[]", "Roles every OIDC-provisioned account receives when its provider sets no default_role; entries are iam.Roles references."),
   # ── mail ────────────────────────────────────────────────────────────────
   Row.new("mail", "adapter", "string", "\"dev\"", "Delivery adapter: dev prints to stdout, smtp delivers through the smtp sub-object; production refuses dev."),
   Row.new("mail", "from_address", "string", "\"no-reply@facet.local\"", "Sender address for outbound email."),
@@ -193,6 +194,8 @@ ROWS = [
   Row.new("artifact", "grant_ttl_media_seconds", "integer", "21600", "Signed download-link TTL for audio and video, in seconds."),
   Row.new("artifact", "max_upload_bytes", "integer", "52428800", "Hard cap on one upload body, in bytes."),
   Row.new("artifact", "upload_grant_ttl_seconds", "integer", "300", "TTL of a signed upload URL, in seconds."),
+  Row.new("artifact", "grant_prune_days", "integer", "7", "Days an expired ephemeral grant row stays before the prune deletes it; zero keeps every expired row forever."),
+  Row.new("artifact", "grant_prune_cron", "string", "\"0 5 * * *\"", "Schedule of the expired-grant prune task."),
 ]
 
 private def esc(text : String) : String

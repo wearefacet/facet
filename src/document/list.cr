@@ -784,7 +784,7 @@ module Facet
         offset : Int32,
       ) : Array(Mutation::Client::Projection)
         items = [] of Mutation::Client::Projection
-        rs = db.query(
+        db.query(
           <<-SQL,
             SELECT domain, doc_type, id, content, version, links, meta, state, display_name, deleted_at, updated_at, created_at
             FROM projections
@@ -795,24 +795,24 @@ module Facet
 
 
           args: all_params
-        )
-        rs.each do
-          items << Mutation::Client::Projection.new(
-            domain: rs.read(String),
-            doc_type: rs.read(String),
-            id: rs.read(String),
-            content: rs.read(JSON::Any),
-            version: rs.read(Int32),
-            links: rs.read(JSON::Any),
-            meta: rs.read(JSON::Any),
-            state: rs.read(String),
-            display_name: rs.read(String?),
-            deleted_at: rs.read(Time?),
-            updated_at: rs.read(Time),
-            created_at: rs.read(Time),
-          )
+        ) do |rs|
+          rs.each do
+            items << Mutation::Client::Projection.new(
+              domain: rs.read(String),
+              doc_type: rs.read(String),
+              id: rs.read(String),
+              content: rs.read(JSON::Any),
+              version: rs.read(Int32),
+              links: rs.read(JSON::Any),
+              meta: rs.read(JSON::Any),
+              state: rs.read(String),
+              display_name: rs.read(String?),
+              deleted_at: rs.read(Time?),
+              updated_at: rs.read(Time),
+              created_at: rs.read(Time),
+            )
+          end
         end
-        rs.close
         items
       end
 

@@ -2022,6 +2022,8 @@
 	"system_settings_artifact_grant_ttl_helper": "Durée de validité, en secondes, d'un lien de téléchargement signé. S'applique aux documents et aux images. Vide suit le fichier — 3600 par défaut (une heure).",
 	"system_settings_artifact_grant_ttl_media": "TTL des octrois média",
 	"system_settings_artifact_grant_ttl_media_helper": "Durée de validité, en secondes, d'un lien signé pour l'audio et la vidéo. Maintient la lecture en vie lors des déplacements dans le média. Vide suit le fichier — 21600 par défaut (six heures).",
+	"system_settings_artifact_grant_prune": "Rétention des octrois expirés",
+	"system_settings_artifact_grant_prune_helper": "Jours pendant lesquels une ligne de lien signé expiré reste avant que la purge ne la supprime. La fenêtre compte depuis l'expiration du lien. Zéro conserve chaque octroi expiré pour toujours. Vide suit le fichier — 7 par défaut.",
 	"system_settings_artifact_prune": "Délai de purge",
 	"system_settings_artifact_prune_helper": "Jours pendant lesquels un artefact reste à l'abri après la fin de sa dernière référence. Passé ce délai, la purge peut le supprimer. Zéro conserve chaque artefact pour toujours. Vide suit le fichier — 30 par défaut.",
 	"system_settings_retention_mutations": "Rétention de l'historique",

@@ -108,7 +108,7 @@ facet/
 │   ├── shutdown.cr        # Graceful-shutdown coordination — signal traps, drain, teardown
 │   ├── config.cr          # Loads the YAML config for the active environment (per-section loaders)
 │   ├── database.cr        # Central database pools + route table + pin model + transaction helpers
-│   ├── database/          # Cluster grammar records (`database.cluster` config shape)
+│   ├── database/          # Cluster grammar records (`database.cluster` config shape) + wire-state guard (`wire_guard.cr` — discards desynced connections at release)
 │   ├── fiber_state.cr     # Fiber-local pins (db_ro/db_rw), per-connection txn depths, request caches
 │   ├── migrate.cr         # Migration runner (UP/DOWN per SQL file) + core seeding
 │   ├── logging.cr         # Config-driven log setup (JSON or text)
@@ -507,6 +507,7 @@ facet/
 │   │   └── subscription_resolver.cr # Path resolution + RBAC
 │   ├── cron.cr            # Namespace root for cron (parser + scheduler)
 │   ├── cron/
+│   │   ├── artifact_grant_prune.cr    # Deletes expired ephemeral grant rows past the retention window
 │   │   ├── assistant_turn_sweep.cr    # Marks stale running turns as error
 │   │   ├── assistant_usage_prune.cr   # Deletes aged assistant_usage rows
 │   │   ├── event_lag_check.cr         # Consumer lag probe + /Healthcheck gauge
@@ -716,6 +717,7 @@ facet/
 │   │   ├── audit_spec.cr              # Facet::Audit — list + events
 │   │   └── restore_spec.cr            # Facet::Audit::Restore + rollback
 │   ├── cron/
+│   │   ├── artifact_grant_prune_spec.cr    # Cron::ArtifactGrantPrune — window resolution, kind filter, keep-forever, idempotency
 │   │   ├── assistant_usage_prune_spec.cr   # Cron::AssistantUsagePrune
 │   │   ├── event_lag_check_spec.cr         # Cron::EventLagCheck — threshold warn, vanished key, no groups
 │   │   ├── list_cli_spec.cr                # Cron::ListCLI — table render, invalid-expression failure

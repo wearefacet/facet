@@ -531,32 +531,32 @@ module Facet
                      end
 
         items = [] of MutationRecord
-        rs = db.query(select_sql, args: params)
-        rs.each do
-          items << MutationRecord.new(
-            domain: rs.read(String),
-            doc_type: rs.read(String),
-            id: rs.read(String),
-            doc_id: rs.read(String),
-            idx: rs.read(Int32),
-            action: rs.read(String),
-            actioner_id: rs.read(String),
-            arguments: rs.read(JSON::Any),
-            channel: rs.read(String),
-            app: rs.read(String?),
-            api_key: rs.read(String?),
-            acting_role: rs.read(String?),
-            cause_kind: rs.read(String),
-            cause_name: rs.read(String?),
-            cause_event: rs.read(String?),
-            cause_source: rs.read(String?),
-            cause_parent: rs.read(String?),
-            cause_trace: rs.read(String),
-            emitted_at: rs.read(Time),
-            display_name: aggregate ? rs.read(String?) : nil,
-          )
+        db.query(select_sql, args: params) do |rs|
+          rs.each do
+            items << MutationRecord.new(
+              domain: rs.read(String),
+              doc_type: rs.read(String),
+              id: rs.read(String),
+              doc_id: rs.read(String),
+              idx: rs.read(Int32),
+              action: rs.read(String),
+              actioner_id: rs.read(String),
+              arguments: rs.read(JSON::Any),
+              channel: rs.read(String),
+              app: rs.read(String?),
+              api_key: rs.read(String?),
+              acting_role: rs.read(String?),
+              cause_kind: rs.read(String),
+              cause_name: rs.read(String?),
+              cause_event: rs.read(String?),
+              cause_source: rs.read(String?),
+              cause_parent: rs.read(String?),
+              cause_trace: rs.read(String),
+              emitted_at: rs.read(Time),
+              display_name: aggregate ? rs.read(String?) : nil,
+            )
+          end
         end
-        rs.close
         items
       end
 

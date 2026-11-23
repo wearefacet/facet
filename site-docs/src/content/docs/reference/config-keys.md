@@ -31,6 +31,8 @@ The loaders read the keys below:
 | (root) | `host` | string | "localhost:3000" | Host and port the server binds to; may carry a scheme when a reverse proxy terminates TLS. |
 | (root) | `snapshot_every` | integer | 10 | Mutations between automatic projection snapshots. |
 | (root) | `trusted_proxies` | string list | [] | Reverse-proxy addresses whose X-Forwarded-For chains the server trusts. |
+| artifact | `grant_prune_cron` | string | "0 5 * * *" | Schedule of the expired-grant prune task. |
+| artifact | `grant_prune_days` | integer | 7 | Days an expired ephemeral grant row stays before the prune deletes it; zero keeps every expired row forever. |
 | artifact | `grant_ttl_media_seconds` | integer | 21600 | Signed download-link TTL for audio and video, in seconds. |
 | artifact | `grant_ttl_seconds` | integer | 3600 | Signed download-link TTL for documents and images, in seconds. |
 | artifact | `max_upload_bytes` | integer | 52428800 | Hard cap on one upload body, in bytes. |
@@ -97,6 +99,7 @@ The loaders read the keys below:
 | iam.mfa.totp | `enabled` | boolean | true | Offer TOTP multi-factor login. |
 | iam.mfa.totp | `issuer` | string | "Facet" | Issuer name in the otpauth URI. |
 | iam.mfa.totp | `window` | integer | 1 | Accepted TOTP time steps around the current one. |
+| iam.oidc | `provision_roles` | string[] | [] | Roles every OIDC-provisioned account receives when its provider sets no default_role; entries are iam.Roles references. |
 | import_export | `max_import_rows` | integer | 100000 | Row cap of one import file; the job refuses a larger file with the limit named, before any row is written. |
 | import_export | `wait_poll_ms` | integer | 500 | Poll interval of a wait=true import or export request, in milliseconds. |
 | import_export | `wait_timeout_s` | integer | 30 | Seconds a wait=true request waits before falling back to the enqueue response. |

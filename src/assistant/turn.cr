@@ -333,16 +333,15 @@ module Facet
       # Returns the ordered turns for a conversation (by `idx`).
       def self.list(db : DB::Connection, conversation_id : String) : Array(Record)
         rows = [] of Record
-        rs = db.query(
+        db.query(
           "SELECT id, conversation_id, idx, request_messages, response_messages,
                   status, usage, finish_reason, error, turn_token, created_at
            FROM agent_turns WHERE conversation_id = $1 ORDER BY idx ASC",
           conversation_id,
-        )
-        rs.each { rows << read_record(rs) }
+        ) do |rs|
+          rs.each { rows << read_record(rs) }
+        end
         rows
-      ensure
-        rs.try(&.close)
       end
 
       # Marks every stale `running` row as an `error` turn with message

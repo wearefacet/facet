@@ -186,6 +186,9 @@ module Facet
         check_bound(merged, "artifact.prune_after_days", errors) do |n|
           n >= 0 || "must be zero (keep forever) or a positive number of days"
         end
+        check_bound(merged, "artifact.grant_prune_days", errors) do |n|
+          n >= 0 || "must be zero (keep forever) or a positive number of days"
+        end
       end
 
       private def self.validate_retention_bounds(merged : JSON::Any, errors : Array(ValidationError)) : Nil

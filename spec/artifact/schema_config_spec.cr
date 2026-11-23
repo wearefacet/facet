@@ -211,6 +211,8 @@ describe Facet::Artifact do
       cfg.grant_ttl_seconds.should eq(3600)
       cfg.grant_ttl_media_seconds.should eq(21_600)
       cfg.max_upload_bytes.should eq(52_428_800_i64)
+      cfg.grant_prune_days.should eq(7)
+      cfg.grant_prune_cron.should eq("0 5 * * *")
     end
 
     it "overrides individual knobs from the artifact: section" do
@@ -219,6 +221,8 @@ describe Facet::Artifact do
         grant_ttl_seconds: 30
         grant_ttl_media_seconds: 3600
         max_upload_bytes: 1024
+        grant_prune_days: 14
+        grant_prune_cron: "30 5 * * *"
         storage:
           type: filesystem
           directory: tmp/uploads/test/store
@@ -230,6 +234,8 @@ describe Facet::Artifact do
       cfg.grant_ttl_seconds.should eq(30)
       cfg.grant_ttl_media_seconds.should eq(3600)
       cfg.max_upload_bytes.should eq(1024_i64)
+      cfg.grant_prune_days.should eq(14)
+      cfg.grant_prune_cron.should eq("30 5 * * *")
     end
 
     it "fails loud when the storage entry is absent from the section" do
@@ -322,6 +328,8 @@ describe Facet::Artifact do
       cfg.artifact.grant_ttl_seconds.should eq(3600)
       cfg.artifact.grant_ttl_media_seconds.should eq(21_600)
       cfg.artifact.max_upload_bytes.should eq(52_428_800_i64)
+      cfg.artifact.grant_prune_days.should eq(7)
+      cfg.artifact.grant_prune_cron.should eq("0 5 * * *")
     end
 
     it "fails loud when artifact_base_url is missing" do

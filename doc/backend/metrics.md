@@ -43,6 +43,7 @@ Counters (hooks in existing code):
 | `facet_jobs_abandoned_total` | `kind` | `Jobs::Worker#run_maintenance`, per lease-swept row |
 | `facet_http_requests_total` | `method`, `route`, `status_class` | `HTTP::MetricsHandler`, registered **first** in the middleware stack so it wraps every other handler and reads the final status after `call_next` |
 | `facet_db_checkout_total` | `database`, `role` | `Database.with_connection`, per pool checkout (pin reuse never counts). `database` names the route-table entry (back-compat single pool: `main`); `role` is `rw` or `ro`. The series is the pool-sizing input — tune `max_pool_size` from the observed checkout rate and the escalation paths (a nested rw block inside a ro scope holds two connections per fiber for its duration) |
+| `facet_db_poisoned_discards_total` | — | `PG::Connection#release` (`src/database/wire_guard.cr`), when a connection is closed instead of pooled because a response was still queued on its socket. Any increment means a code path abandoned a result set — see [`workflow.md`](workflow.md) → Database quirks |
 | `facet_cron_task_failures_total` | `task` | `Cron::Scheduler#spawn_fire`, in the task-fiber rescue |
 | `facet_cron_task_lease_skips_total` | `task` | `Cron::Scheduler#spawn_fire`, per dispatch skipped because another instance holds the tick lease |
 | `facet_fiber_restarts_total` | `fiber` | `Util::FiberSupervisor#supervise`, per supervised restart — covers every long-lived fiber (stream consumers, cache subscribers, fanout, cron/hooks/jobs loops, dev watcher) |

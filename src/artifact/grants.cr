@@ -365,6 +365,57 @@ module Facet
         )
       end
 
+      # ── Prune (cron) ────────────────────────────────────────────────────
+
+      # The maximum number of rows per DELETE batch. Caps the `ANY($1)`
+      # array size so the bind payload stays bounded.
+      PRUNE_BATCH_SIZE = 1000
+
+      # Deletes `ephemeral` grant rows that expired at least
+      # `retention_days` ago. Permanent rows (`kind = 'permanent'`,
+      # `expires_at` NULL) never match — the comparison filters them out.
+      # A window of 0 or less deletes nothing — 0 means keep forever.
+      #
+      # Each batch is its own implicit transaction, so a failure does not
+      # roll back earlier batches and a rerun resumes where the failed run
+      # stopped. Idempotent — a deleted row does not match again. Returns
+      # the number of rows removed.
+      #
+      # A deleted row is safe for the serve route: `verify` reads the row
+      # before the expiry check and answers `unknown grant` — the same
+      # hard failure an expired row already produced. No caller can tell
+      # a pruned row from an expired one.
+      def self.prune_expired(db : DB::Connection, retention_days : Int32) : Int32
+        return 0 if retention_days <= 0
+        total = 0
+        loop do
+          ids = select_prunable_ids(db, retention_days)
+          break if ids.empty?
+
+          db.exec("DELETE FROM artifact_grants WHERE id = ANY($1)", ids)
+          total += ids.size
+          break if ids.size < PRUNE_BATCH_SIZE
+        end
+        total
+      end
+
+      # Returns the ids of prunable rows: `ephemeral`, with an `expires_at`
+      # at least `retention_days` in the past. `expires_at` and `now()` are
+      # both tz-naive UTC, so the interval comparison is deterministic (see
+      # the Time / Timezone contract).
+      private def self.select_prunable_ids(db : DB::Connection, retention_days : Int32) : Array(String)
+        db.query_all(
+          <<-SQL,
+            SELECT id FROM artifact_grants
+            WHERE kind = 'ephemeral'
+              AND expires_at <= now() - make_interval(days => $1)
+            LIMIT #{PRUNE_BATCH_SIZE}
+          SQL
+          retention_days,
+          as: String,
+        )
+      end
+
       # ── Verify (serve route) ────────────────────────────────────────────
 
       # Verifies a signed URL against the stored grant row. The grant must

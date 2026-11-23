@@ -113,6 +113,8 @@ The artifact subsystem reads four top-level YAML keys plus an `artifact:` sectio
 | `grant_ttl_media_seconds` | `Int32` | `21_600` | Signed-URL TTL for `audio/*` and `video/*` — long enough that a seek mid-playback doesn't hit an expired URL. **Hot key:** resolves at every ephemeral mint. |
 | `max_upload_bytes` | `Int64` | `52_428_800` (50 MiB) | Hard cap on a single upload's body size. Enforced before the request touches disk so an oversized upload returns `413` without spooling a tempfile. |
 | `upload_grant_ttl_seconds` | `Int32` | `300` | TTL of a signed upload capability (`Artifact::UploadGrants`) — the one-time URL an MCP agent POSTs its multipart body to. Short by design: a mint-to-upload gap is seconds, not hours. |
+| `grant_prune_days` | `Int32` | `7` | Retention window for expired `ephemeral` grant rows: a row leaves `artifact_grants` once it expired at least this long ago. `0` keeps every expired row forever — the prune returns nothing. **Hot key:** resolves through `core.SystemSettings` at every prune pass — see [`system-settings.md`](system-settings.md). |
+| `grant_prune_cron` | `String` | `"0 5 * * *"` | Schedule of the expired-grant prune task (`Cron::ArtifactGrantPrune`), daily at 05:00 — offset after the secrets prune at 04:45. |
 
 `artifact.storage` fields (`Facet::Artifact::Config::Storage`):
 
@@ -143,6 +145,8 @@ artifact:
   grant_ttl_media_seconds: 21600
   max_upload_bytes: 52428800
   upload_grant_ttl_seconds: 300
+  grant_prune_days: 7
+  grant_prune_cron: "0 5 * * *"
   storage:
     type: s3
     bucket: facet-artifacts
@@ -289,6 +293,14 @@ The gateway reuses `Grants.mint_ephemeral` / `Grants.mint_ephemeral_for_app`, wh
 The deploy route (`POST /Api/app/:id/deploy`, `src/app/deploy.cr`) uploads an app build through the standard multipart intake — every `files[<i>].file` part becomes an `artifacts` row plus an owner row bound to the `app.Deployment` document, inside the deploy transaction.
 
 Serving those bytes is **not** the grant layer and never walks ACLs: a published build is public by definition, and the app pointer (`app.App.host` + `active_deployment`) is the authorization. `App::Hosting::Handler` (`src/app/hosting.cr`) streams the mapped artifact with the stored `mime_type`, `nosniff`, and one conservative cache policy. Owner rows still exist for provenance and prune eligibility; see [`app-system.md`](app-system.md) → Deployment serving.
+
+### Expired grant prune (`Cron::ArtifactGrantPrune`)
+
+Every download-gateway click mints one `ephemeral` row in `artifact_grants`. The signed URL dies at `expires_at`, but until a cascade removed it the row stayed on the books forever — dead weight that the epoch bump and the admin grant listing kept scanning. `Cron::ArtifactGrantPrune` (`src/cron/artifact_grant_prune.cr`) closes that: on its daily pass (`artifact.grant_prune_cron`, default 05:00 UTC) it deletes every `ephemeral` row whose `expires_at` passed at least `artifact.grant_prune_days` ago (default 7).
+
+The primitive is `Grants.prune_expired` (`src/artifact/grants.cr`) — batched deletes of 1000 rows, each batch its own implicit transaction, idempotent, a rerun resumes after a failed batch. The window follows the retention contract: `0` keeps every expired row forever (the pass logs the disable and touches nothing), negative values fall back to the file value. Permanent rows (`kind = 'permanent'`, `expires_at` NULL) never match — a published grant lives until revoke or artifact purge.
+
+A pruned row is indistinguishable from an expired one at the serve route: `Grants.verify` reads the row before the expiry check, so the URL answers `unknown grant` — the same hard failure an expired row already produced. No caller can tell the difference, and no signed URL outlives its row.
 
 ## Admin surface (`/Api/Artifacts`)
 

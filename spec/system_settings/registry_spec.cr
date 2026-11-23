@@ -12,6 +12,7 @@ describe Facet::SystemSettings do
     it "registers exactly the phase-1 tier paths plus the localization and policy paths" do
       paths = Facet::SystemSettings::SPEC.keys
       paths.sort!.should eq([
+        "artifact.grant_prune_days",
         "artifact.grant_ttl_media_seconds",
         "artifact.grant_ttl_seconds",
         "artifact.prune_after_days",
@@ -69,6 +70,7 @@ describe Facet::SystemSettings do
       spec["artifact.grant_ttl_seconds"].kind.should eq(Facet::SystemSettings::Kind::Number)
       spec["iam.change_password_expiration"].kind.should eq(Facet::SystemSettings::Kind::Number)
       spec["artifact.grant_ttl_media_seconds"].kind.should eq(Facet::SystemSettings::Kind::Number)
+      spec["artifact.grant_prune_days"].kind.should eq(Facet::SystemSettings::Kind::Number)
       spec["artifact.prune_after_days"].kind.should eq(Facet::SystemSettings::Kind::Number)
       spec["artifact.storage.type"].kind.should eq(Facet::SystemSettings::Kind::String)
       spec["mutations.retention_days"].kind.should eq(Facet::SystemSettings::Kind::Number)
@@ -98,6 +100,8 @@ describe Facet::SystemSettings do
         .try(&.as_i64).should eq(config.artifact.grant_ttl_seconds.to_i64)
       spec["artifact.grant_ttl_media_seconds"].fallback.call(config)
         .try(&.as_i64).should eq(config.artifact.grant_ttl_media_seconds.to_i64)
+      spec["artifact.grant_prune_days"].fallback.call(config)
+        .try(&.as_i64).should eq(config.artifact.grant_prune_days.to_i64)
       spec["artifact.prune_after_days"].fallback.call(config)
         .try(&.as_i64).should eq(config.artifact.prune_after_days.to_i64)
       spec["artifact.storage.type"].fallback.call(config)

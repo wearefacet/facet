@@ -2022,6 +2022,8 @@
 	"system_settings_artifact_grant_ttl_helper": "Seconds a signed download link stays valid. Applies to documents and images. Empty follows the file — default 3600 (one hour).",
 	"system_settings_artifact_grant_ttl_media": "Media grant TTL",
 	"system_settings_artifact_grant_ttl_media_helper": "Seconds a signed link stays valid for audio and video. Keeps playback alive when the listener seeks. Empty follows the file — default 21600 (six hours).",
+	"system_settings_artifact_grant_prune": "Expired grant retention",
+	"system_settings_artifact_grant_prune_helper": "Days an expired signed-link row stays before the prune deletes it. The window counts from the link's expiry. Zero keeps every expired grant forever. Empty follows the file — default 7.",
 	"system_settings_artifact_prune": "Prune delay",
 	"system_settings_artifact_prune_helper": "Days an artifact stays safe after its last reference ends. After that, the prune run can delete it. Zero keeps every artifact forever. Empty follows the file — default 30.",
 	"system_settings_retention_mutations": "History retention",

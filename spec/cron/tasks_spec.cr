@@ -6,9 +6,10 @@ require "../../src/cron/tasks"
 
 describe Facet::Cron::Tasks do
   describe ".boot_entries" do
-    it "lists the eight boot tasks in registration order" do
+    it "lists the nine boot tasks in registration order" do
       Facet::Cron::Tasks.boot_entries.map(&.id).should eq([
         "sidecar.reconcile",
+        "artifact.grant_prune",
         "tombstone.content_prune",
         "secrets.prune",
         "assistant.turn_sweep",
@@ -22,6 +23,7 @@ describe Facet::Cron::Tasks do
     it "names the config key that owns each schedule" do
       Facet::Cron::Tasks.boot_entries.map(&.schedule_key).should eq([
         "sidecar.reconcile_cron",
+        "artifact.grant_prune_cron",
         "tombstone.prune_cron",
         "secrets.prune_cron",
         "assistant.turn_sweep_cron",
@@ -36,6 +38,7 @@ describe Facet::Cron::Tasks do
       entries = Facet::Cron::Tasks.boot_entries
       entries.map(&.cron).should eq([
         Facet::Config.instance.sidecar.reconcile_cron,
+        Facet::Config.instance.artifact.grant_prune_cron,
         Facet::Config.instance.tombstone.prune_cron,
         Facet::Config.instance.secrets.prune_cron,
         Facet::Config.instance.assistant.turn_sweep_cron,

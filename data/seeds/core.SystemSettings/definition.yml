@@ -122,7 +122,7 @@ fields:
   artifact:
     type: object
     title: Artifacts
-    description: "File storage serving: signed download links and the prune window. The storage adapter itself is deployment material and lives only in the config file."
+    description: "File storage serving: signed download links, the expired-grant retention, and the prune window. The storage adapter itself is deployment material and lives only in the config file."
     properties:
       grant_ttl_seconds:
         type: integer
@@ -132,6 +132,10 @@ fields:
         type: integer
         title: Media grant TTL
         description: "Seconds a signed link stays valid for audio and video, so seeking mid-playback does not hit an expired URL. Empty follows the file; the file default is 21600 (six hours)."
+      grant_prune_days:
+        type: integer
+        title: Expired grant retention
+        description: "Days an expired ephemeral grant row stays before the prune deletes it — the window counts from the link's expiry, not its mint. Permanent grants never expire and are never pruned. Zero keeps every expired grant forever — the prune skips. Empty follows the file; the file default is 7."
       prune_after_days:
         type: integer
         title: Prune delay

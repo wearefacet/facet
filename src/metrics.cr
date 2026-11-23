@@ -51,6 +51,7 @@ module Facet
       "facet_jobs_abandoned_total"                    => MetricMeta.new("counter", "Background job rows requeued by the expired-lease sweep, per kind."),
       "facet_http_requests_total"                     => MetricMeta.new("counter", "HTTP requests handled, by method, route group, and status class."),
       "facet_db_checkout_total"                       => MetricMeta.new("counter", "Pooled connection checkouts, by database entry and pool role (rw/ro)."),
+      "facet_db_poisoned_discards_total"              => MetricMeta.new("counter", "Pooled connections discarded at release because a response was still queued on their socket (abandoned result set)."),
       "facet_cron_task_failures_total"                => MetricMeta.new("counter", "Cron task firings that raised, per task id."),
       "facet_cron_task_lease_skips_total"             => MetricMeta.new("counter", "Cron task dispatches skipped because another instance holds the tick lease, per task id."),
       "facet_event_loss_publish_flush_failures_total" => MetricMeta.new("counter", "Failed Event::Publisher.flush calls since process start."),

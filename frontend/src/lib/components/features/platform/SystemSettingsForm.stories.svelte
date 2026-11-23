@@ -51,6 +51,7 @@
 				'artifact.storage.type': 'filesystem',
 				'artifact.grant_ttl_seconds': 3600,
 				'artifact.grant_ttl_media_seconds': 21600,
+				'artifact.grant_prune_days': 7,
 				'artifact.prune_after_days': 30,
 				'mutations.retention_days': 180,
 				'tombstone.content_retention_days': 30

@@ -29,6 +29,7 @@
     artifact:
       grant_ttl_seconds: null
       grant_ttl_media_seconds: null
+      grant_prune_days: null
       prune_after_days: null
     mutations:
       retention_days: null

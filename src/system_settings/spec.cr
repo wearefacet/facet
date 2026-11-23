@@ -153,6 +153,10 @@ module Facet
         path: "mail.smtp.use_tls", kind: Kind::Bool, secret: false,
         fallback: ->(c : Facet::Config) : JSON::Any? { b(c.mail.smtp.use_tls) },
       ),
+      "artifact.grant_prune_days" => Spec.new(
+        path: "artifact.grant_prune_days", kind: Kind::Number, secret: false,
+        fallback: ->(c : Facet::Config) : JSON::Any? { i(c.artifact.grant_prune_days) },
+      ),
       "artifact.grant_ttl_seconds" => Spec.new(
         path: "artifact.grant_ttl_seconds", kind: Kind::Number, secret: false,
         fallback: ->(c : Facet::Config) : JSON::Any? { i(c.artifact.grant_ttl_seconds) },

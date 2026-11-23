@@ -25,6 +25,7 @@ Les clés secrètes n’apparaissent jamais dans une réponse d’API de lecture
 
 | Clé | Type | Défaut | Rôle |
 |---|---|---|---|
+| `artifact.grant_prune_days` | number | 7 | Days an expired ephemeral grant row stays before the prune deletes it — the window counts from the link's expiry, not its mint. |
 | `artifact.grant_ttl_media_seconds` | number | 21600 | Seconds a signed link stays valid for audio and video, so seeking mid-playback does not hit an expired URL. |
 | `artifact.grant_ttl_seconds` | number | 3600 | Seconds a signed download link stays valid for documents and images. |
 | `artifact.prune_after_days` | number | 30 | Days an artifact stays protected after its last reference ends, before the prune run can delete it. |

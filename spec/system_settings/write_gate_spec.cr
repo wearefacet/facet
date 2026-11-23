@@ -109,13 +109,15 @@ describe Facet::SystemSettings::WriteGate do
       errors_for(%({"mail": {"smtp": {"port": 587}}})).should be_empty
     end
 
-    it "rejects non-positive artifact TTLs but lets the prune window be zero (keep forever)" do
+    it "rejects non-positive artifact TTLs but lets the prune windows be zero (keep forever)" do
       errors_for(%({"artifact": {"grant_ttl_seconds": 0}})).should_not be_empty
       errors_for(%({"artifact": {"grant_ttl_media_seconds": -1}})).should_not be_empty
       errors_for(%({"artifact": {"prune_after_days": 0}})).should be_empty
       errors_for(%({"artifact": {"prune_after_days": -1}})).should_not be_empty
+      errors_for(%({"artifact": {"grant_prune_days": 0}})).should be_empty
+      errors_for(%({"artifact": {"grant_prune_days": -1}})).should_not be_empty
       errors_for(%({
-        "artifact": {"grant_ttl_seconds": 3600, "grant_ttl_media_seconds": 21600, "prune_after_days": 7}
+        "artifact": {"grant_ttl_seconds": 3600, "grant_ttl_media_seconds": 21600, "grant_prune_days": 7, "prune_after_days": 7}
       })).should be_empty
     end
 
