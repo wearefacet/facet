@@ -19,6 +19,7 @@
 	import type { DataSource } from '$lib/datasource/interface.js';
 	import type { DataDriver } from '$lib/datasource/driver.js';
 	import type { DoctypeDef } from '$lib/doctype/types.js';
+	import { loadViewState, saveViewState } from '$lib/collectionView/viewState.js';
 	import TableToolbar from './TableToolbar.svelte';
 	import {
 		isInteractiveTarget,
@@ -42,6 +43,7 @@
 		driver,
 		filters: initialFilters = {},
 		onFilterChange,
+		persistKey = null,
 		onRowClick,
 		onReferenceClick,
 		/** Artifact metadata fetch for `file` cells. Defaults to the cached
@@ -86,6 +88,16 @@
 		filters?: Record<string, unknown>;
 		/** Called whenever the toolbar changes the active filters. */
 		onFilterChange?: (filters: Record<string, unknown>) => void;
+		/**
+		 * localStorage key that persists this listing's manual state (sort,
+		 * filters, rows-per-page) across visits — minted per collection view by
+		 * `ListView` (`viewStateStorageKey`). When set, the table restores the
+		 * state at mount and whenever the key changes (a tab or trash-mode
+		 * switch), and writes it back on every header and toolbar edit.
+		 * Precedence: a non-empty `filters` prop (a shared deep link) wins over
+		 * the stored map. `null` (default) keeps the state purely in-memory.
+		 */
+		persistKey?: string | null;
 		/** Called with the row item when a body row (non-checkbox) is clicked. */
 		onRowClick?: (item: T) => void;
 		/**
@@ -270,6 +282,41 @@
 	 *  clobbering in-flight toolbar edits. */
 	let activeFilters: Record<string, unknown> = $derived({ ...initialFilters });
 
+	// ── Persisted view state ─────────────────────────────────────────────
+	//
+	// With `persistKey` set (ListView mints one per collection view), the
+	// manual state survives leaving the page. This effect seeds the in-memory
+	// state from localStorage at mount and re-seeds on a key change — a tab
+	// switch or a trash-mode toggle swaps the view. Precedence: URL-carried
+	// filters (a non-empty `filters` prop) beat the stored map — a shared
+	// deep link is explicit intent — and the stored sort beats the `sort`
+	// prop seed. The write-back rides the edit handlers (`persistViewState`).
+	//
+	// The effect reads only `persistKey`, the `filters` prop, and the `sort`
+	// prop seed — never the state it assigns — so it cannot loop. It is
+	// declared before the load effect below, so the first fetch already rides
+	// the restored state.
+	$effect(() => {
+		if (persistKey === null) return;
+		const stored = loadViewState(persistKey);
+		const nextFilters =
+			Object.keys(initialFilters).length > 0 ? initialFilters : (stored?.filters ?? {});
+		activeFilters = { ...nextFilters };
+		sortState = stored?.sort ?? initialSort;
+		if (stored?.rowsPerPage !== undefined) rowsPerPage = stored.rowsPerPage;
+		page = 1;
+	});
+
+	/** Write the current manual state to localStorage (no-op without a key). */
+	function persistViewState(): void {
+		if (persistKey === null) return;
+		saveViewState(persistKey, {
+			sort: sortState,
+			filters: activeFilters,
+			rowsPerPage
+		});
+	}
+
 	/** Build sort array for the datasource list call. */
 	function buildSortParam(): string[] | undefined {
 		if (!sortState) return undefined;
@@ -352,6 +399,7 @@
 	function handleFilterChange(next: Record<string, unknown>) {
 		activeFilters = next;
 		page = 1; // filter change → restart at first page
+		persistViewState();
 		onFilterChange?.(next);
 	}
 
@@ -364,6 +412,7 @@
 			sortState = { key, desc: false };
 		}
 		page = 1; // reset to first page on sort change
+		persistViewState();
 		onSortCallback?.(key);
 	}
 
@@ -396,6 +445,7 @@
 		if (!Number.isInteger(next) || next < 1 || next === rowsPerPage) return;
 		rowsPerPage = next;
 		page = 1;
+		persistViewState();
 	}
 
 	// ── Alignment helpers ────────────────────────────────────────────────

@@ -49,6 +49,8 @@ The `FilterBar` is **controlled**: the parent owns the `filters` map and reflect
 <FilterBar {doctype} {driver} filters={activeFilters} onFilterChange={handleFilterChange} />
 ```
 
+The `Table` persists the filter map per listing view in localStorage — the chips and the search term survive a return visit. See [`list-view.md`](list-view.md) → Persisted manual state.
+
 ### In the calendar view configuration
 
 The calendar never shows the filter bar on the surface. Instead, the `CollectionViewEditor` embeds the `FilterBar` in its calendar-surface config step. The authored filter map is saved into `CalendarViewConfig.filters`; the calendar applies it to every `list()` fetch.

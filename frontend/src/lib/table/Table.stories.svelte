@@ -302,6 +302,28 @@
 		{ key: 'invoiceNo', label: 'Invoice' },
 		{ key: 'contract', label: 'Contract' }
 	];
+
+	// ── Persisted view state ───────────────────────────────────────────
+	// localStorage is shared by every story and file in the run (one
+	// long-lived iframe, `isolate: false`), so these stories use dedicated
+	// keys nothing else reads. The restore seed stays in storage on purpose:
+	// its play is read-only, so a retry or a repeated run remounts against
+	// the same record. The write story clears its key at load so every mount
+	// starts clean, and removes it again at the end of the play.
+	const RESTORE_KEY = 'facet.story.table.viewState.restore';
+	const WRITE_KEY = 'facet.story.table.viewState.write';
+
+	if (typeof window !== 'undefined') {
+		window.localStorage.setItem(
+			RESTORE_KEY,
+			JSON.stringify({
+				sort: { key: 'value', desc: true },
+				filters: { status__eq: 'open' },
+				rowsPerPage: 10
+			})
+		);
+		window.localStorage.removeItem(WRITE_KEY);
+	}
 </script>
 
 <script lang="ts">
@@ -552,5 +574,86 @@
 		});
 		const cell = canvasElement.querySelector('td .cell-text[title]');
 		await expect(cell).toHaveAttribute('title', ARTIFACT_ID);
+	}}
+/>
+
+<!-- Persisted view state, restore: the seed record carries a descending
+     Value sort, the status filter, and a 10-rows page size; the table
+     restores all three at mount. The play is read-only — a retry remounts
+     against the same seed, so it stays deterministic. -->
+<Story
+	name="RestoresPersistedViewState"
+	args={{
+		columns,
+		datasource,
+		doctype,
+		driver,
+		persistKey: RESTORE_KEY
+	}}
+	play={async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+
+		// Sort restored: the Value header carries the descending aria-sort.
+		await waitFor(() => {
+			expect(canvasElement.querySelector('th[aria-sort="descending"]')?.textContent).toContain(
+				'Value'
+			);
+		});
+
+		// Filter restored: only the two open deals render — the won one stays out.
+		await expect(canvas.getByText('Acme Corp — Platform License')).toBeVisible();
+		await expect(canvas.getByText('Globex Inc — Consultancy')).toBeVisible();
+		await expect(canvas.queryByText('Acme Corp — Renewal')).toBeNull();
+
+		// Page size restored: the footer select shows 10.
+		await expect(canvas.getByDisplayValue('10')).toBeVisible();
+
+		// The stored record is untouched — the play never writes.
+		expect(JSON.parse(window.localStorage.getItem(RESTORE_KEY) ?? 'null')).toEqual({
+			sort: { key: 'value', desc: true },
+			filters: { status__eq: 'open' },
+			rowsPerPage: 10
+		});
+	}}
+/>
+
+<!-- Persisted view state, write-back: a header click, a search term, and a
+     page-size change land in localStorage under the story's key. The final
+     cleanup keeps a repeated run of this file clean. -->
+<Story
+	name="PersistsViewStateEdits"
+	args={{
+		columns,
+		datasource,
+		doctype,
+		driver,
+		persistKey: WRITE_KEY
+	}}
+	play={async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const readStored = () =>
+			JSON.parse(window.localStorage.getItem(WRITE_KEY) ?? 'null') as {
+				sort: { key: string; desc: boolean } | null;
+				filters: Record<string, unknown>;
+				rowsPerPage?: number;
+			} | null;
+
+		// Sort write: click the Value header → the sort lands in storage. The
+		// direction depends on the state the mount restored, so only the key
+		// is asserted here — the restore story pins the direction.
+		const valueHeader = canvas.getByRole('columnheader', { name: /Value/ });
+		await userEvent.click(valueHeader);
+		await waitFor(() => expect(readStored()?.sort?.key).toBe('value'));
+
+		// Search write: the debounced term rides the `search` key.
+		await userEvent.type(canvas.getByRole('textbox'), 'acme');
+		await waitFor(() => expect(readStored()?.filters).toEqual({ search: 'acme' }));
+
+		// Page-size write: pick 100 in the footer selector.
+		await userEvent.selectOptions(canvas.getByRole('combobox'), '100');
+		await waitFor(() => expect(readStored()?.rowsPerPage).toBe(100));
+
+		// Clean up so the next mount of this story always starts clean.
+		window.localStorage.removeItem(WRITE_KEY);
 	}}
 />

@@ -25,6 +25,7 @@
 	import { confirm } from '$lib/confirm.svelte';
 	import { getPinnedCollectionViews, togglePinnedCollectionView } from '$lib/settings.svelte.js';
 	import { collectionViewDeepLinkSlugs } from '$lib/collectionView/slug.js';
+	import { viewStateStorageKey } from '$lib/collectionView/viewState.js';
 
 	let {
 		driver,
@@ -72,6 +73,15 @@
 		 * to the `Table`; toolbar edits then own the map until the prop changes.
 		 */
 		filters = {},
+		/**
+		 * Override the localStorage key the table persists its manual state
+		 * (sort, filters, rows-per-page) under. `undefined` (default) mints the
+		 * key from the parent doctype, the active collection view, and the
+		 * trash mode (`viewStateStorageKey`); `null` disables persistence —
+		 * stories that drive sort or filter interactions pass `null` so a
+		 * repeated run always starts clean.
+		 */
+		persistKey = undefined,
 		/** Right-aligned action affordances rendered beside the table toolbar's filters. */
 		toolbarActions
 	}: {
@@ -104,6 +114,8 @@
 		refreshSignal?: number;
 		/** Initial filter map for the listing (`field__op` → value). */
 		filters?: Record<string, unknown>;
+		/** Override (or `null`-disable) the per-view localStorage state key. */
+		persistKey?: string | null;
 		/** Right-aligned action affordances rendered beside the table toolbar's
 		 * filters. Forwarded to the `Table` unchanged; the snippet receives the
 		 * table's current state (columns, compacted filters, sort). */
@@ -258,6 +270,21 @@
 	const activeItem = $derived(views.length > 0 ? (views[active] ?? null) : null);
 	/** Convenience: the active view data (or null). */
 	const activeView = $derived(activeItem?.data ?? null);
+
+	/**
+	 * localStorage key the `Table` persists its manual state (sort, filters,
+	 * rows-per-page) under — per parent doctype, active collection view
+	 * (`default` for the synthetic tab and tab-less listings), and trash
+	 * mode. `persistKey` overrides it; `null` disables persistence.
+	 */
+	const tableViewStateKey = $derived.by(() => {
+		if (persistKey !== undefined) return persistKey;
+		return viewStateStorageKey(
+			parentDocId,
+			activeItem?.id ?? 'default',
+			includeDeleted ? 'deleted' : 'live'
+		);
+	});
 
 	// Field types excluded from the synthetic "Default" tab's fallback
 	// columns. Mirrors the backend seed rule in
@@ -653,6 +680,7 @@
 					{doctype}
 					{driver}
 					{filters}
+					persistKey={tableViewStateKey}
 					{toolbarActions}
 					onRowClick={includeDeleted
 						? undefined

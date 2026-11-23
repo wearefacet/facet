@@ -815,12 +815,16 @@
 			<div
 				style="position: relative; width: 100%; height: 80vh; min-height: 500px; overflow: hidden; padding: 24px;"
 			>
+				<!-- The play drives sort and filter interactions; persistence
+				     would restore them on the next run and break the asserted
+				     state. Opt out — the Table stories cover persistence. -->
 				<ListView
 					{driver}
 					doctype={companyDef}
 					parentDocId="crm.Company"
 					pageSize={25}
 					viewerId="iam.Account.viewer"
+					persistKey={null}
 				>
 					{#snippet toolbarActions(args)}
 						<div data-testid="export-state">

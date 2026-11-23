@@ -97,4 +97,13 @@ export interface TableProps<T> {
 	 * inside the table are display-only (not clickable).
 	 */
 	onReferenceClick?: ReferenceClickHandler;
+	/**
+	 * localStorage key that keeps this listing's manual state (sort,
+	 * filters, rows-per-page) across visits. When set, the table restores
+	 * the state at mount and on a key change, and writes it back on every
+	 * header or toolbar edit. `null` (default) keeps the state purely
+	 * in-memory. Minted per collection view by `ListView` through
+	 * `viewStateStorageKey`.
+	 */
+	persistKey?: string | null;
 }
