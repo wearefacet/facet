@@ -8,6 +8,7 @@
 	import { MockDataDriver } from '$lib/datasource/MockDriver.js';
 	import { parseDoctypeDef, type DoctypeDef } from '$lib/doctype/types.js';
 	import type { DocumentResponse } from '$lib/datasource/types.js';
+	import type { PickerSources } from '$lib/referenceSearch.js';
 
 	/**
 	 * CommentSurface stories mount the threaded comment sidecar against a
@@ -105,6 +106,28 @@
 	// Fresh instance for the fullscreen-send story — the play creates a
 	// comment through it.
 	const fullscreenDriver = makeDriver(false);
+	// Fresh instance for the mention-picker story — the play creates a
+	// comment through it.
+	const mentionDriver = makeDriver(false);
+
+	// ── Mention picker — synthetic sources ──────────────────────────────
+	// The picker must not touch the network in a story (the same pattern
+	// as the Markdown primitive stories): the bundle pins the People
+	// candidates and the chip label resolver. Empty recents keep the
+	// popup to the People group alone.
+	const MENTION_ADA_ID = '01HZZZZZZZZZZZZZZZZZZZZZAA';
+	const mentionSources: PickerSources = {
+		searchAccounts: async (q) =>
+			[
+				{ id: MENTION_ADA_ID, name: 'Ada Lovelace' },
+				{ id: '01HZZZZZZZZZZZZZZZZZZZZZAB', name: 'Bob Yeager' }
+			].filter((a) => a.name.toLowerCase().includes(q.trim().toLowerCase())),
+		recentDocuments: () => [],
+		resolveLabel: async (domain, _doctype, id) =>
+			domain === 'iam' && id === MENTION_ADA_ID
+				? { status: 'ok', label: 'Ada Lovelace' }
+				: { status: 'unknown' }
+	};
 
 	/** A five-level thread (the deepest reply flattens past the indent cap)
 	 *  plus two replies whose parent was deleted — exercises the tree build,
@@ -214,7 +237,7 @@
 </script>
 
 <script lang="ts">
-	import { expect, within, userEvent } from 'storybook/test';
+	import { expect, within, userEvent, waitFor } from 'storybook/test';
 </script>
 
 <Story
@@ -544,9 +567,73 @@
 	{/snippet}
 </Story>
 
+<Story
+	name="Enter picks the mention while the picker is open"
+	play={async ({ canvasElement }) => {
+		await sleep(500);
+		const canvas = within(canvasElement);
+		const editor = canvasElement.querySelector<HTMLElement>(
+			'[data-testid="comment-composer"] .ProseMirror'
+		);
+		if (!editor) throw new Error('Composer editor not mounted');
+		const sendBtn = canvas.getByRole('button', { name: 'Comment' }) as HTMLButtonElement;
+		const threadText = () => canvasElement.querySelector('.cs-thread')?.textContent ?? '';
+		const waitUntil = async (cond: () => boolean, label: string): Promise<void> => {
+			const start = Date.now();
+			while (!cond()) {
+				if (Date.now() - start > 3000) throw new Error(`waitUntil timed out: ${label}`);
+				await sleep(50);
+			}
+		};
+
+		// Typing the @ trigger opens the reference picker over the composer.
+		await userEvent.click(editor);
+		await userEvent.type(editor, 'Pinging @Ad');
+		await waitFor(() => canvas.getByRole('button', { name: /Ada Lovelace/ }));
+
+		// Enter with the popup open confirms the candidate — it must not
+		// publish the comment. The capture-phase send listener defers to
+		// the picker while its popup is inside the composer wrapper.
+		editor.dispatchEvent(
+			new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+		);
+		await waitFor(() => {
+			expect(canvasElement.querySelector('.md-ref-picker')).toBeNull();
+		});
+		// The picked mention chip landed in the draft; the thread is empty.
+		await waitFor(() => {
+			expect(canvasElement.querySelector('.md-mention-chip')).not.toBeNull();
+		});
+		expect(threadText()).not.toContain('Pinging');
+
+		// Picker closed — Enter sends the comment again.
+		await waitUntil(() => !sendBtn.disabled, 'draft-synced');
+		editor.dispatchEvent(
+			new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+		);
+		await waitUntil(() => threadText().includes('Pinging'), 'comment-added');
+		await expect(sendBtn).toBeDisabled();
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={composerOnlyManifest}>
+			<div style="max-width: 480px; padding: 24px;">
+				<CommentSurface
+					driver={mentionDriver}
+					{hostDef}
+					{hostDoc}
+					segment="comments"
+					sidecarDef={commentDef}
+					sources={mentionSources}
+				/>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
 // Kept last: the shared browser (vite.config.ts → storybook project, // isolate: false) makes play
-interactions leak across stories — earlier // stories in this file hit the same ordering sensitivity
-(see the retry // pattern in the Edit story).
+// interactions leak across stories — earlier // stories in this file hit the same ordering
+sensitivity // (see the retry // pattern in the Edit story).
 <Story
 	name="Long comment clamps"
 	play={async ({ canvasElement }) => {

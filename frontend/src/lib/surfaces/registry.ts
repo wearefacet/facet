@@ -6,6 +6,7 @@ import type { DataDriver } from '$lib/datasource/driver.js';
 import type { DocumentResponse } from '$lib/datasource/types.js';
 import type { DoctypeDef } from '$lib/doctype/types.js';
 import type { ReferenceClickHandler } from '$lib/template-types';
+import type { PickerSources } from '$lib/referenceSearch.js';
 import SidecarDvtSurface from '$lib/components/features/document-view/SidecarDvtSurface.svelte';
 
 /**
@@ -55,6 +56,13 @@ export interface SidecarSurfaceProps {
 	 * static.
 	 */
 	onReferenceClick?: ReferenceClickHandler;
+	/**
+	 * Injectable data sources for the reference picker and the chip label
+	 * resolver inside a surface's Markdown editors. Surfaces with editors
+	 * pass it through; default = the real services (`createDefaultSources`).
+	 * Stories inject synthetic bundles so no story touches the network.
+	 */
+	sources?: PickerSources;
 }
 
 const sidecarSurfaces = new Map<string, Component<SidecarSurfaceProps>>();

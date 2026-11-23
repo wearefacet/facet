@@ -43,8 +43,15 @@
 	 * — production roles scope edits to `$mine` and the backend re-checks
 	 * every mutation.
 	 */
-	let { driver, hostDef, hostDoc, segment, onchanged, onReferenceClick }: SidecarSurfaceProps =
-		$props();
+	let {
+		driver,
+		hostDef,
+		hostDoc,
+		segment,
+		onchanged,
+		onReferenceClick,
+		sources
+	}: SidecarSurfaceProps = $props();
 
 	const qualifiedHost = $derived(`${hostDef.domain}.${hostDef.doctype}`);
 	// Nested sidecar create is implied by the host's `create` grant.
@@ -222,12 +229,19 @@
 	// capture phase on the wrapper so the Milkdown editor never sees the
 	// submit key — a keymap reacting after the send cleared the draft
 	// would re-fill the composer with stale text. Enter that confirms an
-	// IME composition never sends.
+	// IME composition never sends. While the @ reference picker popup is
+	// open, Enter belongs to it: the guard skips interception so the
+	// editor's keymap confirms the candidate instead (Escape closes the
+	// picker; the next Enter sends).
 	const submitShortcut: Action<HTMLElement, () => void> = (node, onsubmit) => {
 		let handler = onsubmit;
 		const onKeydown = (e: KeyboardEvent) => {
 			if (e.key !== 'Enter' || e.isComposing) return;
 			if (e.shiftKey || e.altKey) return;
+			// The picker popup lives in this wrapper's DOM while open — its
+			// keymap (`pickerKeyDown` in Milkdown) owns Enter. Class owned by
+			// Milkdown.svelte.
+			if (node.querySelector('.md-ref-picker')) return;
 			e.preventDefault();
 			e.stopPropagation();
 			handler();
@@ -458,6 +472,7 @@
 									value={editDraft}
 									onchange={(v) => (editDraft = v)}
 									domain={hostDef.domain}
+									{sources}
 								/>
 								{#if mutationError}
 									<span class="cs-mutation-error" role="alert">{mutationError}</span>
@@ -491,6 +506,7 @@
 										readonly
 										bare
 										{onReferenceClick}
+										{sources}
 									/>
 								</div>
 								{#if longIds[row.meta.id]}
@@ -558,6 +574,7 @@
 					: m.doc_comment_reply_placeholder()}
 				onchange={(v) => (draft = v)}
 				domain={hostDef.domain}
+				{sources}
 				bind:expanded={composerExpanded}
 			/>
 			{#if submitError}
