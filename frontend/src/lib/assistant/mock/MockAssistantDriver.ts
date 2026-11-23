@@ -148,6 +148,14 @@ export class MockAssistantDriver implements AssistantDriver {
 		return Promise.resolve(updated);
 	}
 
+	renameConversation(id: string, title: string | null): Promise<Conversation> {
+		const updated = this.conversations.rename(id, title);
+		if (!updated) {
+			return Promise.reject(new Error(`Conversation ${id} not found`));
+		}
+		return Promise.resolve(this.withActive(updated));
+	}
+
 	// ── Turn routes ──────────────────────────────────────────────────────────
 
 	listTurns(conversationId: string): Promise<Turn[]> {
@@ -268,7 +276,12 @@ export class MockAssistantDriver implements AssistantDriver {
 	 * mirrors the backend, which computes it from the running-turn row
 	 * rather than storing it. */
 	private withActive(conv: Conversation): Conversation {
-		return { ...conv, active: this.turns.runningTurn(conv.id) !== null };
+		return {
+			...conv,
+			active: this.turns.runningTurn(conv.id) !== null,
+			// The backend api_hash lifts `context.title` into the flat field.
+			title: (conv.context['title'] as string | undefined) ?? null
+		};
 	}
 
 	/** Generates an isolated ULID — exposed for stories that need unique ids. */

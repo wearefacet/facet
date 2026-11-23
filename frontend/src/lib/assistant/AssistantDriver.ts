@@ -93,6 +93,13 @@ export interface AssistantDriver {
 	 */
 	setConversationArchived(id: string, archived: boolean): Promise<Conversation>;
 
+	/**
+	 * Rename a conversation. Mirrors `PATCH /Api/assistant/conversations/:id`
+	 * with `{ title: string | null }` — a string renames (trimmed, capped at
+	 * 120 characters server-side), `null` clears the auto-title.
+	 */
+	renameConversation(id: string, title: string | null): Promise<Conversation>;
+
 	/** List turns of a conversation in `idx` order. Mirrors `GET /:id/turns`. */
 	listTurns(conversationId: string): Promise<Turn[]>;
 

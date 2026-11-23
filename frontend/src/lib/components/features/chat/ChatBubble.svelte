@@ -12,6 +12,9 @@
 		tag,
 		content = '',
 		streaming = false,
+		/** Dimmed bubble: a message queued while the agent works — sent when
+		 * the current turn settles. Visual only; the text is the same. */
+		pending = false,
 		children
 	}: {
 		/** Who sent the message. `user` renders a right-aligned bubble; `agent` renders flush-left with a name header. */
@@ -24,6 +27,8 @@
 		content?: string;
 		/** When true, shows a blinking caret at the end of the content. */
 		streaming?: boolean;
+		/** Renders the queued-message posture (dimmed). */
+		pending?: boolean;
 		/** Alternative to `content`: render arbitrary Svelte content inside the bubble. */
 		children?: import('svelte').Snippet;
 	} = $props();
@@ -31,7 +36,7 @@
 
 {#if role === 'user'}
 	<div class="row user">
-		<div class="bubble">
+		<div class="bubble" class:pending>
 			{#if children}
 				{@render children()}
 			{:else}
@@ -72,6 +77,10 @@
 		border-radius: var(--r-lg) var(--r-lg) 4px var(--r-lg);
 		padding: 10px 14px;
 		max-width: 84%;
+	}
+	.user .bubble.pending {
+		opacity: 0.55;
+		border-style: dashed;
 	}
 
 	/* ── Agent turn — flush left, no bubble, matches .agent ─────────────── */

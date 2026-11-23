@@ -10,6 +10,9 @@
 		placeholder = m.assistant_input_placeholder(),
 		disabled = false,
 		busy = false,
+		/** Messages queued while the agent works — rendered as a hint under
+		 * the textarea. The panel drains the queue on turn settle. */
+		queueCount = 0,
 		onsend,
 		onstop,
 		children,
@@ -22,14 +25,17 @@
 		/** Disables input and send. */
 		disabled?: boolean;
 		/**
-		 * When true, the composer shows a "thinking…" placeholder and refuses
-		 * input. Distinct from `disabled`: carries the streaming in-flight
-		 * semantics (the agent is producing a turn) rather than a generic
-		 * lockout. Either flag alone is enough to block sending.
+		 * When true, the composer shows the thinking state and the button
+		 * becomes Stop. The textarea STAYS editable: a send during a turn
+		 * queues the message — the panel drains the queue when the turn
+		 * settles. Distinct from `disabled`: a hard lockout (no provider
+		 * configured) still blocks everything.
 		 */
 		busy?: boolean;
+		/** How many messages are queued for the current turn. */
+		queueCount?: number;
 		/** Called with the message text on Enter or send-button click. */
-		onsend?: (text: string) => void;
+			onsend?: (text: string) => void;
 		/** Called when the user clicks the button while `busy` (aborts the in-flight turn). */
 		onstop?: () => void;
 		/** Optional row content rendered below the textarea (context chips, model chip, attach button, etc.). */
@@ -82,13 +88,22 @@
 
 	function onButtonClick() {
 		if (busy) {
+			// With text in the box the click queues it; without, it stops the
+			// agent. The icon already shows the Send glyph once the user types.
+			const text = value.trim();
+			if (text) {
+				onsend?.(text);
+				value = '';
+				queueMicrotask(autosize);
+				return;
+			}
 			onstop?.();
 			return;
 		}
 		send();
 	}
 
-	const locked = $derived(disabled || busy);
+	const locked = $derived(disabled);
 	const canSend = $derived(value.trim().length > 0 && !locked);
 </script>
 
@@ -103,6 +118,11 @@
 			bind:value
 			{onkeydown}
 			{...rest}></textarea>
+		{#if queueCount > 0}
+			<div class="queue-hint" role="status">
+				{m.assistant_input_queued({ count: queueCount })}
+			</div>
+		{/if}
 		{#if children}
 			<div class="crow">
 				{@render children()}
@@ -111,14 +131,14 @@
 	</div>
 	<button
 		class="send"
-		class:stop={busy}
+		class:stop={busy && !canSend}
 		type="button"
-		title={busy ? m.assistant_stop_title() : m.assistant_send_title()}
-		aria-label={busy ? m.assistant_stop_aria() : m.assistant_send_aria()}
-		disabled={!busy && !canSend}
+		title={busy ? (canSend ? m.assistant_send_title() : m.assistant_stop_title()) : m.assistant_send_title()}
+		aria-label={busy ? (canSend ? m.assistant_send_aria() : m.assistant_stop_aria()) : m.assistant_send_aria()}
+		disabled={!locked && !canSend && !busy}
 		onclick={onButtonClick}
 	>
-		{#if busy}
+		{#if busy && !canSend}
 			<Square size={13} fill="currentColor" />
 		{:else}
 			<Send size={17} />
@@ -175,6 +195,11 @@
 	.ta:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+
+	.queue-hint {
+		font-size: 11.5px;
+		color: var(--text-3);
 	}
 
 	.crow {

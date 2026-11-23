@@ -337,9 +337,11 @@
 	play={async ({ canvasElement }) => {
 		// The module pre-ran one full turn on `replayAssistant` — its row is
 		// already in the rail. Selecting it restores the parts from stored
-		// turns; nothing navigates a second time.
+		// turns; nothing navigates a second time. The rail row shows the
+		// auto-title — the first user message (the mock mirrors the backend
+		// stream hook), not the generic kind label.
 		const canvas = within(canvasElement);
-		const row = await waitFor(() => canvas.getAllByText('workspace conversation')[0]);
+		const row = await waitFor(() => canvas.getAllByText('find my active customers')[0]);
 		await userEvent.click(row);
 		// Same surfaces as the live turn — rebuilt from persisted messages.
 		await waitFor(
@@ -525,11 +527,12 @@
 
 		// A capped row replays its persisted partial exchange on reload. The
 		// fresh conversation sorts first (updated_at DESC), so the capped one
-		// is the second row after the new-conversation click.
+		// is the second row after the new-conversation click. Both rows show
+		// their auto-titles (the first user message of each conversation).
 		await userEvent.click(canvas.getByRole('button', { name: '+ New' }));
-		await waitFor(() => expect(canvas.getAllByText('workspace conversation').length).toBe(2));
-		const rows = canvas.getAllByText('workspace conversation');
-		await userEvent.click(rows[1]);
+		await waitFor(() => expect(canvas.getAllByText('cap it please').length).toBe(1));
+		const rows = canvas.getByText('cap it please');
+		await userEvent.click(rows);
 
 		// The rebuilt thread shows the same tool call and error line from the
 		// persisted row — the replay path through turnsFromRows.
@@ -591,41 +594,59 @@
 	play={async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		const textarea = () => canvas.getByRole('textbox') as HTMLTextAreaElement;
-		const rows = () => canvas.getAllByText('workspace conversation');
+		// Each rail row shows its auto-title (the mock mirrors the backend's
+		// first-turn hook): the generating conversation first, the idle one
+		// second — `updated_at` pins the order. The first match is the rail
+		// row (the rail renders before the thread, which repeats the user
+		// bubble text inside the selected conversation).
+		//
+		// A rail rerender (the `activeId` prop flips with the busy state)
+		// can swap the row node between query and dispatch — a click on the
+		// detached node no-ops silently. Each click therefore retries with
+		// its outcome: the waitFor re-queries fresh nodes until the click
+		// lands AND the expected thread content shows.
+		async function clickRow(title: string, expectText: string): Promise<void> {
+			await waitFor(async () => {
+				await userEvent.click(canvas.getAllByText(title)[0]!);
+				await expect(canvas.getByText(expectText)).toBeVisible();
+			});
+		}
 
-		// Two conversations in the rail: the generating one first (its turn
-		// touched it last), the idle one second.
-		await waitFor(() => expect(rows().length).toBe(2));
+		// Both conversations sit in the rail.
+		await waitFor(() => expect(canvas.getAllByText('still there?')[0]!).toBeVisible());
+		await waitFor(() => expect(canvas.getAllByText('hello idle')[0]!).toBeVisible());
 
 		// Select the conversation whose turn row is still `running` server-side
 		// — the state a reload mid-turn produces.
-		await userEvent.click(rows()[0]);
+		await userEvent.click(canvas.getAllByText('still there?')[0]!);
 
 		// The reloaded thread renders the persisted user bubble plus a live
 		// thinking indicator; the composer locks into its busy state.
 		await waitFor(async () => {
 			await expect(canvas.getByText('Thinking…')).toBeVisible();
 		});
-		await expect(canvas.getByText('still there?')).toBeVisible();
-		await expect(textarea().disabled).toBe(true);
+		// The thread repeats the user bubble text (the rail row shows the
+		// auto-title, the thread shows the message itself).
+		await expect(canvas.getAllByText('still there?').length).toBeGreaterThanOrEqual(2);
 		await expect(canvas.getByRole('button', { name: 'Stop generating' })).toBeVisible();
+		// The composer locks — busy rides the listTurns resolution, so wait
+		// for it rather than sampling the transient unlock window.
+		await waitFor(async () => {
+			await expect(textarea().disabled).toBe(true);
+		});
 
 		// The watch must not hold the panel hostage: switching to an idle
 		// conversation works while the poll runs, releases the composer, and
 		// switching back resumes the busy state.
-		await userEvent.click(rows()[1]);
-		await waitFor(async () => {
-			await expect(canvas.getByText('Idle reply.')).toBeVisible();
-		});
+		await clickRow('hello idle', 'Idle reply.');
 		await waitFor(async () => {
 			await expect(textarea().disabled).toBe(false);
 		});
 
-		await userEvent.click(rows()[0]);
+		await clickRow('still there?', 'Thinking…');
 		await waitFor(async () => {
-			await expect(canvas.getByText('Thinking…')).toBeVisible();
+			await expect(textarea().disabled).toBe(true);
 		});
-		await expect(textarea().disabled).toBe(true);
 
 		// The backend settles the turn (here: the test helper completing the
 		// running row). The next poll rebuilds the thread from server truth

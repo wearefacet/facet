@@ -13,6 +13,7 @@ require "./conversation"
 require "./access"
 require "./limits"
 require "./language"
+require "./title"
 require "./usage"
 require "../system_settings"
 require "./stream/cancel_bus"
@@ -43,6 +44,10 @@ module Facet
 
       DEFAULT_ITEMS = 100
 
+      # Upper bound for a client-supplied conversation title (the PATCH
+      # rename door). The auto-title caps at 60; the rename door is wider so
+      # a deliberate name never gets clipped.
+
       # Conversation kinds that own a dedicated creation route and carry an
       # owner in `context.created_by`. The generic create route rejects them
       # (allowing a client to forge the context would let a crafted payload
@@ -56,6 +61,8 @@ module Facet
         "workspace"                  => "/Api/assistant/workspace/conversations",
         App::Context::KIND           => App::Routes::CREATE_ROUTE,
       }
+
+      MAX_TITLE_LENGTH = 120
 
       # Registers all assistant routes on the Kemal router.
       def self.register : Nil
@@ -248,12 +255,16 @@ module Facet
         end
       end
 
-      # Archives or unarchives a conversation. The body is `{archived: true|false}`
-      # — `true` stamps `archived_at`, `false` clears it. Archiving is a
-      # list-organisation state only: the conversation stays readable and
-      # streamable, and its next turn clears the flag (`Conversation.unarchive`
-      # from the turn writers). Owner-gated like every other single-conversation
-      # surface.
+      # Archives/unarchives or renames a conversation. The body is
+      # `{archived: true|false}` and/or `{title: string|null}` — both keys are
+      # optional and independent; at least one must be present. `archived`
+      # stamps/clears `archived_at`; a `title` string renames the
+      # conversation (trimmed, capped at 120 characters), `null` clears the
+      # auto-title. Archiving is a list-organisation state only: the
+      # conversation stays readable and streamable, and its next turn clears
+      # the flag. Renaming writes the same `context.title` member the
+      # auto-title writes, so the two doors agree on one storage shape.
+      # Owner-gated like every other single-conversation surface.
       private def self.handle_update_conversation(env) : Nil
         return unless Facet::HTTP::Helpers.require_csrf(env)
 
@@ -261,9 +272,39 @@ module Facet
         body = Facet::HTTP::Helpers.require_body(env) || return
         parsed = Facet::HTTP::Helpers.parse_json_body(env, body) || return
 
-        archived = parsed["archived"]?.try(&.as_bool?)
-        if archived.nil?
+        archived_raw = parsed["archived"]?
+        archived = archived_raw.try(&.as_bool?)
+        if archived_raw && archived.nil?
           Facet::HTTP::Helpers.error_response(env, 422, "Field 'archived' must be a boolean")
+          return
+        end
+
+        title_raw = parsed["title"]?
+        title : String?? = nil
+        title_present = !title_raw.nil?
+        if title_present && title_raw
+          if title_raw.not_nil!.raw.nil?
+            title = nil
+          elsif (value = title_raw.as_s?)
+            trimmed = value.strip
+            if trimmed.empty?
+              title = nil
+            elsif trimmed.size > MAX_TITLE_LENGTH
+              Facet::HTTP::Helpers.error_response(
+                env, 422, "Field 'title' must be at most #{MAX_TITLE_LENGTH} characters")
+              return
+            else
+              title = trimmed
+            end
+          else
+            Facet::HTTP::Helpers.error_response(env, 422, "Field 'title' must be a string or null")
+            return
+          end
+        end
+
+        unless archived_raw || title_present
+          Facet::HTTP::Helpers.error_response(
+            env, 422, "Body must carry 'archived' (boolean) or 'title' (string|null)")
           return
         end
 
@@ -277,7 +318,10 @@ module Facet
         return unless ownership_check(env, record)
 
         updated = Database.with_db do |db|
-          next nil unless Conversation.set_archived(db, id, archived)
+          next nil unless archived.nil? || Conversation.set_archived(db, id, archived)
+          if title_present
+            next nil unless Conversation.rename(db, id, title)
+          end
           Conversation.find(db, id)
         end
 
@@ -352,6 +396,20 @@ module Facet
         turn_token = Util::ScriptHelpers.ulid
         turn_id = open_stream_turn(env, conversation_id, content, turn_token)
         return unless turn_id
+
+        # Auto-title: the first turn of a title-less conversation names it
+        # after the user's message (collapsed whitespace, capped). Runs after
+        # the open so a brand-new conversation cannot race its own title, and
+        # the WHERE guard makes every later call a no-op. Best-effort — a
+        # failure never blocks the stream.
+        if turn_idx(turn_id) == 1
+          title = Assistant::Title.from_content(content)
+          if title
+            Database.with_db do |db|
+              Conversation.set_title(db, conversation_id, title)
+            end
+          end
+        end
 
         write_sse_headers(env)
 
@@ -515,6 +573,16 @@ module Facet
         when Facet::ServiceError
           Facet::HTTP::Helpers.error_response(env, open_result.status, open_result.message)
           nil
+        end
+      end
+
+      # Reads back the `idx` of an opened turn row — `1` marks the
+      # conversation's first turn, the auto-title trigger. `nil` when the
+      # row is gone (cannot happen between the open and this read) or the
+      # query fails; the caller treats it as "not first".
+      private def self.turn_idx(turn_id : String) : Int32?
+        Database.with_db(:read_only) do |db|
+          db.query_one?("SELECT idx FROM agent_turns WHERE id = $1", turn_id, as: Int32)
         end
       end
 

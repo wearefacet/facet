@@ -122,6 +122,22 @@ export class HttpAssistantDriver implements AssistantDriver {
 		return (await res.json()).data as Conversation;
 	}
 
+	async renameConversation(id: string, title: string | null): Promise<Conversation> {
+		const res = await this.fetch(
+			`${this.baseUrl}/Api/assistant/conversations/${encodeURIComponent(id)}`,
+			{
+				method: 'PATCH',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-Requested-With': XMLHttpRequest_HEADER
+				},
+				body: JSON.stringify({ title })
+			}
+		);
+		await this.assertOk(res);
+		return (await res.json()).data as Conversation;
+	}
+
 	// ── Turn routes ──────────────────────────────────────────────
 
 	async listTurns(conversationId: string): Promise<Turn[]> {

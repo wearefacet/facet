@@ -2,8 +2,10 @@
 // Copyright (c) 2026 Amplitude Solutions Ltd
 
 import type { Turn, TurnSummary } from '../types.js';
+import { titleFromContent } from '../title.js';
 import type { MockConversationStore } from './conversation.js';
 import { ulid } from './conversation.js';
+import type { AgentMessage } from '../types.js';
 
 /**
  * In-memory implementation of the `Assistant::Turn` storage service.
@@ -50,6 +52,18 @@ export class MockTurnStore {
 		this.rows.set(row.id, row);
 		this.conversations.touch(conversationId);
 		this.conversations.unarchive(conversationId);
+		// Auto-title: the first turn of a title-less conversation names it
+		// after the user's message — mirrors the backend stream-route hook.
+		if (idx === 1 && !this.conversations.find(conversationId)?.context['title']) {
+			const firstUser = fields.request_messages.find(
+				(msg: AgentMessage) => msg.role === 'user'
+			);
+			const title = titleFromContent(firstUser?.content ?? null);
+			if (title) {
+				const conv = this.conversations.find(conversationId);
+				if (conv) conv.context = { ...conv.context, title };
+			}
+		}
 		return row;
 	}
 

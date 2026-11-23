@@ -124,19 +124,51 @@
 		| { id: number; kind: 'user'; content: string }
 		| { id: number; kind: 'agent'; parts: AgentPart[]; streaming: boolean };
 
+	/**
+	 * Live turn state of one conversation. Streams write their chunks into a
+	 * per-conversation entry, never into a shared array — so selecting
+	 * another conversation mid-stream cannot corrupt the other thread, and
+	 * N conversations can generate in parallel.
+	 */
+	interface ConvSession {
+		/** The thread as rendered — history rows plus the live exchange. */
+		turns: Turn[];
+		/** Accumulated parts of the live agent turn (streaming only). */
+		parts: AgentPart[];
+		/** True while a live SSE stream is attached to this conversation. */
+		streaming: boolean;
+		/** Turns before the live `[user, placeholder]` pair — the suffix a
+		 * catch-up rebuild replaces with server truth. */
+		baseLen: number;
+		/** Local id of the live agent turn (streaming only). */
+		agentTurnId: number;
+		/** Server cancel token of the in-flight turn, when known. */
+		turnToken: string | null;
+		/** The stop action posted a cancel; a transport break renders the
+		 * cancelled note instead of the raw error. */
+		cancelIntent: boolean;
+		/** Messages typed while the turn was generating, drained FIFO on
+		 * settle. The backend's one-running-turn rule (409) makes any other
+		 * policy impossible, so exactly one message drains per settle. */
+		pending: string[];
+	}
+
 	let conversation = $state<Conversation | null>(null);
-	let turns = $state<Turn[]>([]);
+	/** Per-conversation live state. Read through the derived `turns`. */
+	const sessions = new Map<string, ConvSession>();
 
 	/** Monotonic counter for stable turn keys. */
 	let turnSeq = 0;
+	/** Bumped on every write into any session — drives the derived reads. */
+	let sessionsVersion = $state(0);
+	/** True while the SELECTED conversation is generating (live stream or an
+	 * orphan watch) — the composer lock. Other conversations may generate in
+	 * parallel; their streams keep filling their own sessions in the
+	 * background and the rail stays navigable. */
 	let busy = $state(false);
-	/** True while this panel is attached to a live SSE stream (`handleSend`).
-	 * A stream writes its chunks into `turns` by index, so switching
-	 * conversations mid-stream would corrupt the other thread — navigation
-	 * stays blocked until the stream (and its broken-stream watch) ends. An
-	 * orphan watch (reload path) does NOT set this: it only polls server-side
-	 * state, so the rail stays navigable while it runs. */
-	let streaming = $state(false);
+	/** Server cancel token of the in-flight turn on the selected
+	 * conversation — the stop button. `null` when idle. */
+	let currentTurnToken = $state<string | null>(null);
 	/** Generation counter for conversation selections — a `listTurns`
 	 * response that belongs to an older selection is discarded. */
 	let selectSeq = 0;
@@ -150,13 +182,6 @@
 	 * conversation or send a turn — the message explains the posture and
 	 * names the fix (system settings). */
 	let unconfigured = $derived(!configured);
-	let currentTurnToken = $state<string | null>(null);
-	/** True once the stop action posted a cancel for the in-flight turn. The
-	 *  stream can then die at the transport level before the `cancelled`
-	 *  frame arrives — the failure renders the cancelled note instead of a
-	 *  raw browser error, because the turn settles as cancelled server-side
-	 *  either way. Reset on each new send. */
-	let cancelIntentSent = false;
 	/** Bump to force ConversationList to reload after a turn lands. */
 	let listVersion = $state(0);
 	/** When true, the conversation rail is hidden (mounted but display:none). */
@@ -164,6 +189,27 @@
 	/** Rolling-window usage meter data. `null` hides the meter — unlimited
 	 * budget, or the usage fetch failed (never blocks the chat). */
 	let usage = $state<AssistantUsage | null>(null);
+
+	/** The thread of the selected conversation (empty when none selected).
+	 *
+	 * Reads `sessionsVersion` directly and copies the session's arrays: a
+	 * derived downstream of another derived only re-runs when the upstream
+	 * OUTPUT reference changes, and a plain property read on the session
+	 * object is not tracked (see doc/frontend/workflow.md → deep property
+	 * mutations on shared proxy objects). A fresh shallow copy per recompute
+	 * keeps the each-blocks honest. */
+	const turns = $derived.by<Turn[]>(() => {
+		void sessionsVersion;
+		const s = conversation ? sessions.get(conversation.id) : null;
+		return s ? [...s.turns] : [];
+	});
+	/** Queued messages of the selected conversation, rendered as dimmed
+	 * pending bubbles above the composer. Same copy rule as `turns`. */
+	const pendingMessages = $derived.by<string[]>(() => {
+		void sessionsVersion;
+		const s = conversation ? sessions.get(conversation.id) : null;
+		return s ? [...s.pending] : [];
+	});
 
 	// Reset when the context changes — each context (e.g. each builder draft)
 	// carries its own conversation set. The key comparison (not object
@@ -176,8 +222,9 @@
 		if (key === lastContextKey) return;
 		lastContextKey = key;
 		cancelWatch();
+		sessions.clear();
+		sessionsVersion++;
 		conversation = null;
-		turns = [];
 		error = null;
 		inputText = '';
 		busy = false;
@@ -191,6 +238,66 @@
 		watchToken++;
 	}
 
+	/** The session record of a conversation, created empty on first touch. */
+	function sessionOf(convId: string): ConvSession {
+		let s = sessions.get(convId);
+		if (!s) {
+			s = {
+				turns: [],
+				parts: [],
+				streaming: false,
+				baseLen: 0,
+				agentTurnId: 0,
+				turnToken: null,
+				cancelIntent: false,
+				pending: []
+			};
+			sessions.set(convId, s);
+		}
+		return s;
+	}
+
+	/** Replaces one session's thread and marks the derived reads stale. */
+	function setTurns(convId: string, next: Turn[]): void {
+		sessionOf(convId).turns = next;
+		sessionsVersion++;
+	}
+
+	/** Writes the streaming parts into the live agent turn of a session. */
+	function patchAgentTurn(convId: string): void {
+		const s = sessionOf(convId);
+		s.turns = s.turns.map((t, i) =>
+			i === s.baseLen + 1 && t.kind === 'agent'
+				? { ...t, parts: s.parts, streaming: s.streaming }
+				: t
+		);
+		sessionsVersion++;
+	}
+
+	/** Applies the settle of one conversation's in-flight turn: release its
+	 * live-stream state, then drain one queued message (FIFO) back into the
+	 * send path. The backend allows one running turn per conversation —
+	 * the drain can only start here, when the previous turn is over. */
+	function settleSession(convId: string): void {
+		const s = sessionOf(convId);
+		s.streaming = false;
+		s.turnToken = null;
+		s.cancelIntent = false;
+		sessionsVersion++;
+		if (conversation?.id === convId) {
+			busy = false;
+			currentTurnToken = null;
+		}
+		if (s.pending.length > 0) {
+			const [next, ...rest] = s.pending;
+			s.pending = rest;
+			sessionsVersion++;
+			// Re-enter the send path for the drained message. `runTurn`
+			// re-locks the session synchronously before its first await.
+			void runTurn(convId, next);
+		}
+	}
+
 	// Usage meter: fetched once on mount, in the background — the chat never
 	// waits for it, and a failure just leaves the meter hidden.
 	$effect(() => {
@@ -201,18 +308,16 @@
 	});
 
 	async function handleSelect(selected: Conversation) {
-		// A live stream writes its chunks into `turns` by index — switching
-		// conversations mid-stream would corrupt the other thread. An orphan
-		// watch is safe to walk away from: selecting another conversation
-		// cancels it (the backend's one-running-turn 409 applies to the
-		// conversation that is generating, never to the panel).
-		if (streaming) return;
+		console.log('PROBE select', selected.id.slice(-6), 'same=', selected.id === conversation?.id, 'streaming=', sessions.get(selected.id)?.streaming, 'pending=', sessions.get(selected.id)?.pending.length);
 		// Re-clicking the selected row is a no-op — the thread is already on
 		// screen, and a watch, if any, keeps running.
 		if (selected.id === conversation?.id) return;
 
 		// Anything in flight belongs to the previous selection: cancel its
-		// watch and release its composer lock before loading the new one.
+		// watch and release the composer lock before loading the new one.
+		// A live stream on the other conversation keeps running — its chunks
+		// fill that conversation's own session, so switching cannot corrupt
+		// anything; re-selecting it finds the entry still live.
 		cancelWatch();
 		busy = false;
 		currentTurnToken = null;
@@ -221,21 +326,34 @@
 		// belongs to an older selection is discarded.
 		const seq = ++selectSeq;
 		conversation = selected;
-		turns = [];
 		error = null;
+		const s = sessionOf(selected.id);
+
+		// A live stream (or a queue already draining) owns this conversation's
+		// thread — its entry is ahead of the server rows, and a refetch would
+		// overwrite the running turn with stale history.
+		if (s.streaming || s.pending.length > 0) {
+			busy = true;
+			currentTurnToken = s.turnToken;
+			sessionsVersion++;
+			return;
+		}
+
 		try {
 			const listed = await driver.listTurns(selected.id);
 			if (seq !== selectSeq) return;
-			turns = turnsFromRows(listed);
+			setTurns(selected.id, turnsFromRows(listed));
 
 			// A running row means the backend is generating right now — this
 			// device was not attached to its stream (page reload, another
 			// device). The persisted user input plus the live thinking
-			// placeholder already sit in `turns` (turnsFromRows emitted them);
+			// placeholder already sit in the turns (turnsFromRows emitted them);
 			// lock the composer and watch the turn. The row carries the cancel
 			// token, so the stop button works against the in-flight turn.
 			const running = listed.find((row) => row.status === 'running');
-			const placeholder = turns.find((t) => t.kind === 'agent' && t.streaming);
+			console.log('PROBE select listed', listed.length, 'statuses=', listed.map((r) => r.status).join(','), 'running=', !!running, 'seqOk=', seq === selectSeq);
+			const current = sessionOf(selected.id);
+			const placeholder = current.turns.find((t) => t.kind === 'agent' && t.streaming);
 			if (running && placeholder && placeholder.kind === 'agent') {
 				busy = true;
 				currentTurnToken = running.turn_token ?? null;
@@ -304,13 +422,14 @@
 	}
 
 	async function handleNew() {
-		if (streaming || unconfigured) return;
+		if (unconfigured) return;
 		cancelWatch();
 		busy = false;
 		currentTurnToken = null;
 		try {
 			conversation = await createConversation();
-			turns = [];
+			sessionOf(conversation.id); // seed the empty session
+			sessionsVersion++;
 			error = null;
 			listVersion++;
 		} catch (err) {
@@ -339,14 +458,14 @@
 	 * the conversation catches up through `listTurns`.
 	 *
 	 * `noteTurnId` is the stable id of the agent turn carrying the partial
-	 * state: the local streaming turn for `handleSend`, the placeholder turn
+	 * state: the local streaming turn for the send path, the placeholder turn
 	 * for `handleSelect`. The running row's rendering is a contiguous
-	 * suffix of `turns`; `baseLen` is the number of turns before that
-	 * suffix, so each rebuild replaces exactly the running block. A rebuild
-	 * replaces the trailing placeholder, so the still-generating marker
-	 * targets the current placeholder id — the original note turn id goes
-	 * stale after the first rebuild. Selecting another conversation (or a
-	 * context reset) bumps the watch token: this watch stops polling and
+	 * suffix of the session's turns; `baseLen` is the number of turns before
+	 * that suffix, so each rebuild replaces exactly the running block. A
+	 * rebuild replaces the trailing placeholder, so the still-generating
+	 * marker targets the current placeholder id — the original note turn id
+	 * goes stale after the first rebuild. Selecting another conversation (or
+	 * a context reset) bumps the watch token: this watch stops polling and
 	 * its `finally` leaves the panel flags to the newer owner.
 	 */
 	async function watchOrphanedTurn(
@@ -384,7 +503,20 @@
 							created_at: summary.created_at
 						};
 						const rebuilt = turnsFromRows([row]);
-						turns = [...turns.slice(0, baseLen), ...rebuilt];
+						// A cancel intent was already posted: the turn settles as
+						// cancelled server-side, so the rebuild carries the cancelled
+						// note — without this the progressive tick would wipe the note
+						// the transport-break catch rendered, and the user would see
+						// the turn keep "thinking" after pressing stop.
+						const tailTurn = rebuilt[rebuilt.length - 1];
+						if (sessionOf(convId).cancelIntent && tailTurn && tailTurn.kind === 'agent') {
+							tailTurn.parts = appendTextPart(
+								tailTurn.parts,
+								`\n\n${m.assistant_cancelled_note()}`
+							);
+							tailTurn.streaming = false;
+						}
+						setTurns(convId, [...sessionOf(convId).turns.slice(0, baseLen), ...rebuilt]);
 						const tail = rebuilt[rebuilt.length - 1];
 						if (tail) placeholderId = tail.id;
 					}
@@ -400,31 +532,28 @@
 			if (outcome.outcome === 'settled') {
 				try {
 					const listed = await driver.listTurns(convId);
-					turns = turnsFromRows(listed);
+					setTurns(convId, turnsFromRows(listed));
 				} catch {
 					// Refetch failed — the note turn's current state stands; a
 					// reopen of the conversation catches up through listTurns.
-					attachStillGenerating(placeholderId);
+					attachStillGenerating(convId, placeholderId);
 				}
 			} else {
 				// Timeout, or the status endpoint itself failed (offline, 5xx).
-				attachStillGenerating(placeholderId);
+				attachStillGenerating(convId, placeholderId);
 			}
-			// `no_turn` — the backend has no turns at all; the same note applies
-			// (nothing was ever going to arrive on this conversation).
 		} catch {
 			// The status endpoint itself failed (offline, 5xx) mid-poll. The
 			// turn may still be running — the note turn keeps its partial state
 			// plus the marker; a reopen of the conversation catches up.
 			if (token !== watchToken) return;
 			if (conversation?.id !== convId) return;
-			attachStillGenerating(placeholderId);
+			attachStillGenerating(convId, placeholderId);
 		} finally {
 			// Only the owning watch releases the flags — a superseded one
 			// would clobber the state of the selection that replaced it.
 			if (token === watchToken) {
-				busy = false;
-				currentTurnToken = null;
+				settleSession(convId);
 				listVersion++;
 			}
 		}
@@ -432,8 +561,9 @@
 
 	/** Appends the still-generating marker to the agent turn carrying the
 	 * orphaned turn's partial state, and stops its caret. */
-	function attachStillGenerating(turnId: number): void {
-		turns = turns.map((t) =>
+	function attachStillGenerating(convId: string, turnId: number): void {
+		const s = sessionOf(convId);
+		s.turns = s.turns.map((t) =>
 			t.id === turnId && t.kind === 'agent'
 				? {
 						...t,
@@ -442,39 +572,58 @@
 					}
 				: t
 		);
+		sessionsVersion++;
 	}
 
+	/** The composer entry point: a message for the selected conversation.
+	 * While that conversation generates, the message queues (FIFO) and
+	 * drains automatically when the turn settles — the user can keep typing
+	 * and sending without waiting. The backend allows one running turn per
+	 * conversation (409 on a second), so the queue is the only way a send
+	 * during a turn can succeed later. When no conversation exists yet, one
+	 * is created first and the message attaches to it. */
 	async function handleSend(text: string) {
-		if (busy || unconfigured) return;
-
+		if (unconfigured) return;
 		// If no conversation exists yet, create one and attach this message to
 		// it instead of silently dropping the input.
 		if (!conversation) {
 			await handleNew();
 			if (!conversation) return; // creation failed — error already surfaced
 		}
+		const s = sessionOf(conversation.id);
+		if (busy || s.streaming) {
+			s.pending = [...s.pending, text];
+			sessionsVersion++;
+			return;
+		}
+		await runTurn(conversation.id, text);
+	}
+
+	/** Runs one streamed turn on a conversation — the live half of the old
+	 * `handleSend`. Assumes the conversation is idle; `handleSend` and the
+	 * queue drain are the only callers, and both gate on the session state. */
+	async function runTurn(convId: string, text: string): Promise<void> {
+		const s = sessionOf(convId);
 
 		error = null;
-		cancelIntentSent = false;
-		turns = [...turns, { id: ++turnSeq, kind: 'user', content: text }];
-		busy = true;
-		streaming = true;
-
+		s.cancelIntent = false;
+		s.streaming = true;
+		s.turns = [...s.turns, { id: ++turnSeq, kind: 'user', content: text }];
 		const agentTurn: Turn = { id: ++turnSeq, kind: 'agent', parts: [], streaming: true };
-		turns = [...turns, agentTurn];
-		const idx = turns.length - 1;
-
-		let parts: AgentPart[] = [];
-		let turnStreaming = true;
-
-		const convId = conversation.id;
+		s.turns = [...s.turns, agentTurn];
+		s.agentTurnId = agentTurn.id;
+		s.parts = [];
+		// Turns before the [user bubble, placeholder] pair appended above — the
+		// suffix a catch-up tick replaces with server truth.
+		s.baseLen = s.turns.length - 2;
+		sessionsVersion++;
+		if (conversation?.id === convId) {
+			busy = true;
+			currentTurnToken = null;
+		}
 
 		const ctxPrefix = pageContext?.() ?? '';
 		const apiContent = ctxPrefix ? `${ctxPrefix}\n\n${text}` : text;
-
-		// Turns before the [user bubble, placeholder] pair appended above — the
-		// suffix a catch-up tick replaces with server truth.
-		const baseLen = turns.length - 2;
 
 		// Set when the iterator ends WITHOUT a terminal SSE event — the fetch
 		// body broke (refresh, network switch, provider mid-stream failure).
@@ -485,34 +634,36 @@
 			brokeWithoutTerminal = true; // flipped off by each terminal event
 			for await (const ev of driver.streamAsk(convId, { content: apiContent })) {
 				if (ev.event === 'meta') {
-					currentTurnToken = ev.turn_token;
+					s.turnToken = ev.turn_token;
+					if (conversation?.id === convId) currentTurnToken = ev.turn_token;
 				} else if (ev.event === 'chunk') {
-					parts = applyChunkToParts(parts, ev.chunk);
+					s.parts = applyChunkToParts(s.parts, ev.chunk);
 					handleUiToolChunk(ev.chunk);
 				} else if (ev.event === 'done') {
 					brokeWithoutTerminal = false;
-					turnStreaming = false;
+					s.streaming = false;
 				} else if (ev.event === 'error') {
 					brokeWithoutTerminal = false;
-					parts = appendTextPart(parts, `\n\n${m.assistant_error_line({ message: ev.message })}`);
-					turnStreaming = false;
+					s.parts = appendTextPart(
+						s.parts,
+						`\n\n${m.assistant_error_line({ message: ev.message })}`
+					);
+					s.streaming = false;
 				} else if (ev.event === 'cancelled') {
 					brokeWithoutTerminal = false;
-					parts = appendTextPart(parts, `\n\n${m.assistant_cancelled_note()}`);
-					turnStreaming = false;
+					s.parts = appendTextPart(s.parts, `\n\n${m.assistant_cancelled_note()}`);
+					s.streaming = false;
 				}
-				turns = turns.map((t, i) =>
-					i === idx && t.kind === 'agent' ? { ...t, parts, streaming: turnStreaming } : t
-				);
+				patchAgentTurn(convId);
 			}
 		} catch (err) {
-			if (cancelIntentSent) {
+			if (s.cancelIntent) {
 				// The stop action is already out and the stream body died before
 				// the `cancelled` frame could arrive — a transport-level failure
 				// after a cancel intent. The turn settles as cancelled server-side
 				// (the broken-stream watch below rebuilds the thread from server
 				// truth), so render the cancelled note, not the raw error.
-				parts = appendTextPart(parts, `\n\n${m.assistant_cancelled_note()}`);
+				s.parts = appendTextPart(s.parts, `\n\n${m.assistant_cancelled_note()}`);
 			} else {
 				// A spent budget is expected and self-explanatory — show the
 				// dedicated line instead of the bare status text.
@@ -520,39 +671,40 @@
 					err instanceof HttpAssistantError && err.status === 429
 						? m.assistant_usage_limit_reached()
 						: (err as Error).message;
-				parts = appendTextPart(parts, `\n\n${m.assistant_error_line({ message })}`);
+				s.parts = appendTextPart(s.parts, `\n\n${m.assistant_error_line({ message })}`);
 			}
-			turnStreaming = false;
-			turns = turns.map((t, i) =>
-				i === idx && t.kind === 'agent' ? { ...t, parts, streaming: turnStreaming } : t
-			);
+			s.streaming = false;
+			patchAgentTurn(convId);
 		} finally {
 			// The fetch body broke mid-turn (refresh, network switch). The
 			// backend keeps generating — watch the turn state and, once the
 			// orphaned turn settles, rebuild the thread from server truth so
 			// the user keeps the reply they would otherwise have lost. A normal
 			// `done` / `error` / `cancelled` event means the exit path already
-			// ran; no catch-up is needed. `busy` stays true for the whole
-			// watch: a send into this conversation would 409 anyway.
+			// ran; no catch-up is needed. The session stays owned by the watch
+			// until it ends: a send into this conversation would 409 anyway.
 			if (brokeWithoutTerminal) {
-				await watchOrphanedTurn(convId, agentTurn.id, baseLen);
+				await watchOrphanedTurn(convId, s.agentTurnId, s.baseLen);
+			} else {
+				settleSession(convId);
 			}
-			busy = false;
-			currentTurnToken = null;
 			listVersion++;
-			// Released last: the broken-stream watch keeps navigation blocked
-			// until it ends (its rebuild targets the thread by conversation id,
-			// but the panel stays attached to this turn's partial state).
-			streaming = false;
 		}
 	}
 
 	async function handleCancel() {
-		if (!currentTurnToken) return;
+		if (!currentTurnToken || !conversation) return;
+		const s = sessionOf(conversation.id);
 		// Record the intent before the POST: a transport-level stream failure
 		// after this point renders the cancelled note — the turn settles as
 		// cancelled server-side even when the frame never arrives.
-		cancelIntentSent = true;
+		s.cancelIntent = true;
+		// A deliberate stop also drops the queue: the user asked the agent to
+		// stop working on this conversation, not to run the typed follow-ups.
+		if (s.pending.length > 0) {
+			s.pending = [];
+			sessionsVersion++;
+		}
 		try {
 			await driver.cancel(currentTurnToken);
 		} catch {
@@ -699,6 +851,9 @@
 										/>
 									{/if}
 								{/each}
+								{#each pendingMessages as pending, i (i)}
+									<ChatBubble role="user" content={pending} pending />
+								{/each}
 							</ChatThread>
 						{/if}
 					</div>
@@ -723,6 +878,7 @@
 					bind:value={inputText}
 					{placeholder}
 					{busy}
+					queueCount={pendingMessages.length}
 					disabled={unconfigured}
 					onsend={handleSend}
 					onstop={handleCancel}

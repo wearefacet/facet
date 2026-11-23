@@ -73,7 +73,8 @@
 				created_at: new Date(now).toISOString(),
 				updated_at: new Date(now).toISOString(),
 				archived_at: null,
-				active: false
+				active: false,
+				title: (context['title'] as string | undefined) ?? null
 			};
 			driver.seedConversation(conv);
 		}
@@ -205,7 +206,9 @@
 		await expect(toggleBtn).toHaveAttribute('aria-pressed', 'true');
 
 		// The list shows only this account's workspace conversations — the
-		// builder row and the other account's workspace row stay hidden.
+		// builder row and the other account's workspace row stay hidden. These
+		// rows were seeded without turns, so they keep the kind label (no
+		// auto-title exists yet).
 		await waitFor(async () => {
 			await expect(within(win).getAllByText('workspace conversation').length).toBe(2);
 		});

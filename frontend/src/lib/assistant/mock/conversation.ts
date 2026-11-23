@@ -31,7 +31,8 @@ export class MockConversationStore {
 			created_at: now,
 			updated_at: now,
 			archived_at: null,
-			active: false
+			active: false,
+			title: null
 		};
 		this.rows.set(conv.id, conv);
 		return conv;
@@ -92,6 +93,22 @@ export class MockConversationStore {
 		const row = this.rows.get(id);
 		if (!row) return null;
 		row.archived_at = archived ? new Date().toISOString() : null;
+		return row;
+	}
+
+	/** Sets or clears the conversation title; returns the updated row or
+	 * `null` for an unknown id — the mock's `Conversation.rename`. The
+	 * title lives in `context` (the same member the backend auto-title
+	 * writes) and is lifted into the flat `title` field. */
+	rename(id: string, title: string | null): Conversation | null {
+		const row = this.rows.get(id);
+		if (!row) return null;
+		if (title) {
+			row.context = { ...row.context, title };
+		} else {
+			const { title: _dropped, ...rest } = row.context;
+			row.context = rest;
+		}
 		return row;
 	}
 

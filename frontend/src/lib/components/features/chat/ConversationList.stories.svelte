@@ -47,7 +47,8 @@
 				created_at: new Date(now - (count - i) * 60_000).toISOString(),
 				updated_at: new Date(now - (count - i) * 60_000).toISOString(),
 				archived_at: null,
-				active: false
+				active: false,
+				title: (ctx['title'] as string | undefined) ?? null
 			};
 			driver.seedConversation(conv);
 		}
@@ -68,7 +69,8 @@
 			created_at: new Date(now - 90_000).toISOString(),
 			updated_at: new Date(now - 90_000).toISOString(),
 			archived_at: new Date(now - 60_000).toISOString(),
-			active: false
+			active: false,
+			title: null
 		};
 		driver.seedConversation(conv);
 		return driver;
@@ -92,7 +94,8 @@
 			created_at: new Date(now).toISOString(),
 			updated_at: new Date(now).toISOString(),
 			archived_at: null,
-			active: false
+			active: false,
+			title: null
 		};
 		runningDriver.seedConversation(conv);
 		runningDriver.seedRunningTurn(conv.id, 'Summarise the suppliers', 'story-turn-token');

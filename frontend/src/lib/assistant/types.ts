@@ -29,6 +29,10 @@ export interface Conversation {
 	 * the flag the rail renders as its running icon. Server-computed on the
 	 * list / get surfaces. */
 	active: boolean;
+	/** Conversation title — the auto-title (first user message) or a
+	 * user rename, lifted out of `context` by the API. `null` until the
+	 * first turn titles it. The rail renders it over the kind fallback. */
+	title: string | null;
 }
 
 /** Body of `POST /Api/assistant/conversations`. */

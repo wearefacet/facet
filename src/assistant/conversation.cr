@@ -145,6 +145,36 @@ module Facet
         )
       end
 
+      # Auto-titles a conversation. Called once by the stream route after the
+      # first turn opens (`idx == 1`) with the user's message text: collapsed
+      # whitespace, trimmed, capped at 60 characters. The title lives in the
+      # free-form `context` jsonb under `title` — no migration — and the typed
+      # context parsers (workspace, domain-builder, app) read only their own
+      # keys, so the extra member is inert to them. A conversation that
+      # already carries a title is never re-titled (the WHERE guard makes the
+      # write a no-op), so an explicit rename survives later turns.
+      def self.set_title(db : DB::Connection, id : String, title : String) : Nil
+        db.exec(
+          "UPDATE agent_conversations " \
+          "SET context = context || jsonb_build_object('title', $2) " \
+          "WHERE id = $1 AND NOT (context ? 'title')",
+          id, title,
+        )
+      end
+
+      # Explicit rename from the PATCH door: sets or clears `context.title`.
+      # Unlike {@link set_title} this overwrites any stored title, and
+      # `nil` removes the member. Returns `true` when the row exists — the
+      # caller answers a missing row with 404.
+      def self.rename(db : DB::Connection, id : String, title : String?) : Bool
+        row = if title
+                db.query_one?("UPDATE agent_conversations SET context = jsonb_set(context, '{title}', to_jsonb($2)) WHERE id = $1 RETURNING id", id, title) { |rs| rs.read(String) }
+              else
+                db.query_one?("UPDATE agent_conversations SET context = context - 'title' WHERE id = $1 RETURNING id", id) { |rs| rs.read(String) }
+              end
+        row != nil
+      end
+
       # Lists conversations with filtering, sorting, and pagination.
       #
       # Filters use the same `field__op` convention as `Document::List`:
@@ -221,6 +251,9 @@ module Facet
           cache_key:     record.cache_key,
           system_prompt: record.system_prompt,
           context:       record.context,
+          # Auto-title (or rename) — lifted out of `context` so every
+          # consumer reads one flat key instead of digging into the jsonb.
+          title:         record.context.as_h?.try(&.["title"]?.try(&.as_s?)),
           enabled_tools: record.enabled_tools,
           created_at:    record.created_at,
           updated_at:    record.updated_at,

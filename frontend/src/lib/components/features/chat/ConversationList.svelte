@@ -3,8 +3,9 @@
 
 <script lang="ts">
 	import * as m from '$lib/paraglide/messages';
-	import { Archive, ArchiveRestore, PanelLeftClose } from '@lucide/svelte';
+	import { Archive, ArchiveRestore, PanelLeftClose, Pencil } from '@lucide/svelte';
 	import RelativeTime from '$lib/components/primitives/data/RelativeTime.svelte';
+	import { confirmWithText } from '$lib/confirm.svelte.js';
 	import type {
 		AssistantDriver,
 		Conversation,
@@ -150,6 +151,11 @@
 	}
 
 	function excerpt(conv: Conversation): string {
+		// The title wins: the auto-title (first user message) or a user
+		// rename. The kind label is the fallback — a title-less conversation
+		// keeps its surface label ("workspace conversation", …).
+		const title = typeof conv.title === 'string' ? conv.title.trim() : '';
+		if (title) return title;
 		const kind = typeof conv.context?.kind === 'string' ? conv.context.kind : '';
 		if (kind) return m.assistant_conversation_excerpt({ kind });
 		return m.assistant_conversation_fallback();
@@ -173,6 +179,32 @@
 		workingId = conv.id;
 		try {
 			await driver.setConversationArchived(conv.id, conv.archived_at == null);
+			await loadPage(1, true);
+		} catch (err) {
+			error = (err as Error).message;
+		} finally {
+			workingId = null;
+		}
+	}
+
+	/** Opens the rename dialog for a row. Confirming applies the title
+	 * (empty input clears the auto-title) and reloads the rail. */
+	async function toggleRename(conv: Conversation, e: MouseEvent) {
+		e.stopPropagation();
+		if (workingId) return;
+		const result = await confirmWithText({
+			title: m.assistant_conversations_rename_title(),
+			message: m.assistant_conversations_rename_helper(),
+			confirmLabel: m.assistant_conversations_rename_confirm(),
+			prompt: {
+				label: m.assistant_conversations_rename_label(),
+				placeholder: excerpt(conv)
+			}
+		});
+		if (!result.ok) return;
+		workingId = conv.id;
+		try {
+			await driver.renameConversation(conv.id, result.text.trim() || null);
 			await loadPage(1, true);
 		} catch (err) {
 			error = (err as Error).message;
@@ -273,6 +305,16 @@
 									<RelativeTime class="cl-time" date={conv.updated_at} />
 								</div>
 							</div>
+						</button>
+						<button
+							class="cl-row-action"
+							type="button"
+							disabled={workingId !== null}
+							onclick={(e) => toggleRename(conv, e)}
+							aria-label={m.assistant_conversations_rename_title()}
+							title={m.assistant_conversations_rename_title()}
+						>
+							<Pencil size={13} stroke-width={1.9} />
 						</button>
 						<button
 							class="cl-row-action"
