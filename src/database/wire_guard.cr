@@ -43,10 +43,10 @@ require "../metrics"
 # `release` is reopened on `PG::Connection` rather than on
 # `DB::Connection` because crystal-db 0.14 defines `release` on the base
 # class only, and a `previous_def` reopen there would lose the dispatch to
-# the driver subclass. `release` calls the inherited `DB::Connection#release`
-# explicitly — the same `context.release(self)` the base method runs — and
-# `close` runs `DB::Connection#do_close`, which discards the connection from
-# its pool (`context.discard`); the pool opens a fresh one on demand.
+# the driver subclass. A clean release delegates with `super` — the same
+# `context.release(self)` the base method runs — and a dirty one calls
+# `close`, which runs `DB::Connection#do_close` and discards the connection
+# from its pool (`context.discard`); the pool opens a fresh one on demand.
 module PQ
   class Connection
     # `Sync` (and simple `Query`) messages sent whose `ReadyForQuery` has
