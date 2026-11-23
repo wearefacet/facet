@@ -72,9 +72,17 @@ self-contained.
 
 - The page presents "Automatic ({zone})" as the first option, resolved
   client-side via `Intl.DateTimeFormat().resolvedOptions().timeZone`.
-- `"auto"` is a frontend-only sentinel — the backend default is `"UTC"` and
-  rejects `"auto"` (not a loadable IANA name). Only a concrete IANA name is
-  ever PUT to the backend.
+- Selecting "Automatic" PUTs the `"auto"` sentinel — a legal stored value
+  (`Keys::AUTO_TIMEZONE` server-side): it means "follow the browser", and
+  `displayTimezone()` resolves it at render time, so a user who travels
+  keeps following their device zone without re-picking. Only the export
+  body carries a concrete zone — the export resolves the sentinel
+  client-side first (the server never converts with `"auto"`).
+- The backend registry default for `core.timezone` and the built-in
+  `localization.default_timezone` are both `"auto"`, so a fresh account on
+  a stock install renders in its browser zone. An admin can pin the
+  instance policy to a concrete IANA name (Configure → Platform →
+  Settings); "Server default" then follows the pin.
 - The timezone list is built from `Intl.supportedValuesOf('timeZone')` when
   available, with a curated fallback list for older runtimes. The list
   always contains `UTC`: `allTimezones()` adds it when the runtime omits it
@@ -91,23 +99,28 @@ self-contained.
 - A plain "UTC" option (value `UTC`, label `UTC`) sits after "Server
   default", and `UTC` never renders as a continent group — the
   `(GMT{offset}) {city}` template has no city for it. The merged value can
-  be `UTC` (the server default on a stock install), so the picker always
-  holds an option that matches the bound value.
+  be `UTC` (a server policy that pins it, or an explicit choice), so the
+  picker always holds an option that matches the bound value.
+- A failed save reverts the select to the loaded value — the select
+  binding flips before the PUT resolves, and the `catch` puts the stored
+  value back so the picker never shows a state the backend refused.
 - The language select carries the same server-default option; the concrete
   entries mirror the backend `ALLOWED_LANGUAGES` registry.
 
 ### Display timezone
 
 `displayTimezone()` (in `settings.svelte.ts`) is the single resolver for the
-zone datetimes render in: it returns the stored `core.timezone`, or the
-browser's zone when the value is the `auto` sentinel or the store has not
-loaded yet. Every surface that shows or enters a datetime resolves through it
+zone datetimes render in: it returns the browser's zone when the stored
+`core.timezone` is the `auto` sentinel (the default) or the store has not
+loaded yet, and the stored concrete IANA name otherwise. Every surface that
+shows or enters a datetime resolves through it
 — `RelativeTime` (and therefore every table, audit, notification, and sidecar
 timestamp), the audit detail labels, the API-key expiry note, the dashboard
 day/night icon, `DatetimePicker`, and the table's "CSV — current view" export
-(the resolved zone rides the export body; the `auto` sentinel never leaves the
-browser) — so a settings change re-renders the affected surfaces. Read the
-function inside a `$derived` or a template expression to keep that reactivity.
+(the resolved zone rides the export body — the export never receives the
+`auto` sentinel) — so a settings change re-renders the affected surfaces.
+Read the function inside a `$derived` or a template expression to keep that
+reactivity.
 
 `date` / `dateperiod` values are calendar dates, not instants: they render
 verbatim (`YYYY-MM-DD`) and never pass through a timezone converter — the

@@ -56,7 +56,7 @@ The allowed `(app, key)` pairs and their value kinds are declared in
 
 ```crystal
 REGISTRY = {
-  {"core", "timezone"}                => Descriptor.new("core", "timezone", Kind::String, JSON::Any.new("UTC")),
+  {"core", "timezone"}                => Descriptor.new("core", "timezone", Kind::String, JSON::Any.new("auto")),
   {"core", "language"}                => Descriptor.new("core", "language", Kind::String, JSON::Any.new("en")),
   {"core", "pinned_doctypes"}         => Descriptor.new("core", "pinned_doctypes", Kind::Array, JSON::Any.new([] of JSON::Any)),
   {"core", "pinned_collection_views"} => Descriptor.new("core", "pinned_collection_views", Kind::Array, JSON::Any.new([] of JSON::Any)),
@@ -71,7 +71,7 @@ become an unvalidated dumping ground. Per-key value validation is in
 
 | (app, key) | Kind | Validation |
 |---|---|---|
-| `core.timezone` | String | Loadable IANA timezone via `Time::Location.load`. `UTC` is always valid. |
+| `core.timezone` | String | `auto` (follow the browser — `Keys::AUTO_TIMEZONE`) stored verbatim, or a loadable IANA timezone via `Time::Location.load`. `UTC` is always valid. |
 | `core.language` | String | Must be in `Keys::ALLOWED_LANGUAGES`. Today: `{"en", "fr"}`. |
 | `core.pinned_doctypes` | Array | JSON array of qualified doctype names (`domain.Doctype`). Each element must be a string in `domain.Doctype` form. |
 | `core.pinned_collection_views` | Array | JSON array of pinned CollectionView projection ids (ULIDs). Each element must be a non-empty string. |
@@ -129,6 +129,14 @@ mapping (the pinned lists, the notification preference) keep their
 registry default. `/Api/iam/me` inherits the chain — its `settings` block
 resolves through `Service.get`.
 
+The built-in timezone default at every tier is `auto`
+(`Keys::AUTO_TIMEZONE`): an account with no row on a stock install follows
+its browser zone. The frontend resolves the sentinel at render time — the
+server never knows the caller's zone and never converts with it. An admin
+who wants "everyone on one zone unless they choose" pins
+`localization.default_timezone` to a concrete IANA name (Configure →
+Platform → Settings); the write gate accepts `auto` or a loadable name.
+
 ## HTTP Routes
 
 All routes are under `/Api/settings`. They are self-service: the
@@ -151,7 +159,7 @@ rows where `account_id` matches, enforced in the SQL `WHERE account_id = $1`).
 {
   "app": "core",
   "values": { "timezone": "Europe/Paris", "language": "en" },
-  "defaults": { "timezone": "UTC", "language": "en" }
+  "defaults": { "timezone": "auto", "language": "en" }
 }
 ```
 
@@ -167,7 +175,7 @@ it calls the DELETE route and reloads.
 
 `GET /Api/settings/core/timezone` (default, never written):
 ```json
-{ "app": "core", "key": "timezone", "value": "UTC" }
+{ "app": "core", "key": "timezone", "value": "auto" }
 ```
 
 `PUT /Api/settings/core/timezone` body:

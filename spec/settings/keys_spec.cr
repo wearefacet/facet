@@ -10,7 +10,7 @@ describe Facet::Settings::Keys do
       d = Facet::Settings::Keys.descriptor?("core", "timezone")
       d.should_not be_nil
       d.not_nil!.kind.should eq(Facet::Settings::Keys::Kind::String)
-      d.not_nil!.default.as_s.should eq("UTC")
+      d.not_nil!.default.as_s.should eq("auto")
     end
 
     it "returns nil for an unknown key" do
@@ -61,6 +61,11 @@ describe Facet::Settings::Keys do
 
     it "accepts a real IANA timezone name" do
       error = Facet::Settings::Keys.validate("core", "timezone", JSON::Any.new("Europe/Paris"))
+      error.should be_nil
+    end
+
+    it "accepts the auto sentinel (follow the browser)" do
+      error = Facet::Settings::Keys.validate("core", "timezone", JSON::Any.new("auto"))
       error.should be_nil
     end
 

@@ -26,10 +26,17 @@ module Facet::Settings
       kind : Kind,
       default : JSON::Any
 
+    # The stored value that means "follow the browser". The frontend resolves
+    # it through `Intl` at render time — the server never knows the caller's
+    # zone, so it persists the sentinel verbatim and never converts with it.
+    # The same value is the built-in default at every tier of the timezone
+    # chain (registry default, `localization.default_timezone` file default).
+    AUTO_TIMEZONE = "auto"
+
     # The registered set of preference keys. The hash is keyed by
     # `{app, key}` to disambiguate keys across application scopes.
     REGISTRY = {
-      {"core", "timezone"}                => Descriptor.new("core", "timezone", Kind::String, JSON::Any.new("UTC")),
+      {"core", "timezone"}                => Descriptor.new("core", "timezone", Kind::String, JSON::Any.new(AUTO_TIMEZONE)),
       {"core", "language"}                => Descriptor.new("core", "language", Kind::String, JSON::Any.new("en")),
       {"core", "pinned_doctypes"}         => Descriptor.new("core", "pinned_doctypes", Kind::Array, JSON::Any.new([] of JSON::Any)),
       {"core", "pinned_collection_views"} => Descriptor.new("core", "pinned_collection_views", Kind::Array, JSON::Any.new([] of JSON::Any)),
@@ -100,8 +107,10 @@ module Facet::Settings
     private def self.validate_value(descriptor : Descriptor, value : JSON::Any) : String?
       case {descriptor.app, descriptor.key}
       when {"core", "timezone"}
-        # Must be a loadable IANA timezone. `UTC` is always valid.
+        # `auto` (follow the browser) is stored verbatim. Every other value
+        # must be a loadable IANA timezone. `UTC` is always valid.
         name = value.as_s
+        return nil if name == AUTO_TIMEZONE
         begin
           Time::Location.load(name)
           nil

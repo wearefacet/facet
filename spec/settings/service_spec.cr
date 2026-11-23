@@ -11,7 +11,7 @@ describe Facet::Settings::Service do
       with_db do |db|
         account_id = create_test_account(db)
         values = Facet::Settings::Service.get(db, account_id, "core")
-        values["timezone"].as_s.should eq("UTC")
+        values["timezone"].as_s.should eq("auto")
         values["language"].as_s.should eq("en")
       end
     end
@@ -59,7 +59,7 @@ describe Facet::Settings::Service do
         result = Facet::Settings::Service.get_value(db, account_id, "core", "timezone")
         result.should_not be_nil
         value, updated_at = result.not_nil!
-        value.as_s.should eq("UTC")
+        value.as_s.should eq("auto")
         updated_at.should be_nil
       end
     end
@@ -105,6 +105,17 @@ describe Facet::Settings::Service do
 
         value, _updated_at = result.as({JSON::Any, Time})
         value.as_s.should eq("America/New_York")
+      end
+    end
+
+    it "stores the auto sentinel for the timezone" do
+      with_db do |db|
+        account_id = create_test_account(db)
+        result = Facet::Settings::Service.update(db, account_id, "core", "timezone", JSON::Any.new("auto"))
+        result.is_a?(Facet::ServiceError).should be_false
+
+        value, _updated_at = result.as({JSON::Any, Time})
+        value.as_s.should eq("auto")
       end
     end
 

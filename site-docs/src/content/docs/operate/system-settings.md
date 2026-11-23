@@ -95,7 +95,7 @@ each value:
 - `mail.adapter: smtp` requires a non-null `mail.smtp.host`.
 - `mail.adapter: dev` is refused under `APP_ENV=production`, unless the file
   sets `mail.allow_dev_adapter_in_production: true`.
-- `localization.default_timezone` must be a loadable IANA name.
+- `localization.default_timezone` must be `auto` or a loadable IANA name.
 - `iam.mfa.type` is `none` or `totp`; `iam.mfa.enforcement` is `preferred`
   or `always`; `iam.auth.mode` is `hybrid` or `oidc_only`. `oidc_only` is
   refused while no enabled OIDC provider document exists.

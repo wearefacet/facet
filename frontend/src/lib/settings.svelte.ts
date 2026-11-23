@@ -13,8 +13,8 @@
  * - `loadSettings` — `GET /Api/settings/core` — returns the registered `core`
  *   values with backend defaults merged in for keys the user never wrote.
  * - `saveTimezone` / `saveLanguage` — `PUT /Api/settings/core/:key` — upsert a
- *   single key. The backend validates (IANA timezone names; language allowlist)
- *   and rejects invalid values with 422.
+ *   single key. The backend validates (the `auto` sentinel or a loadable IANA
+ *   timezone name; language allowlist) and rejects invalid values with 422.
  * - `getPinnedDoctypes` / `togglePinnedDoctype` — read and mutate the user's
  *   pinned doctype list (stored under the `core.pinned_doctypes` key as a JSON
  *   array of qualified doctype names). `togglePinnedDoctype` updates the store
@@ -37,11 +37,14 @@
  *
  * ## Timezone "auto"
  *
- * The page presents "Automatic ({zone})" as the first timezone option. The
- * backend default is `"UTC"` and rejects `"auto"` (not a loadable IANA name),
- * so `auto` is a frontend-only sentinel: it renders the browser's real zone
- * (`Intl.DateTimeFormat().resolvedOptions().timeZone`) and never leaves the
- * browser. Only an explicit, concrete IANA name is ever PUT to the backend.
+ * "Automatic" is the stored default at every tier of the chain (the registry
+ * default and the built-in `localization.default_timezone`): the value
+ * `"auto"` persists server-side and means "follow the browser" —
+ * `displayTimezone()` resolves it to
+ * `Intl.DateTimeFormat().resolvedOptions().timeZone` at render time, so a
+ * user who travels keeps following their device zone. Surfaces that need a
+ * concrete zone for a server call (the CSV view export) resolve the sentinel
+ * client-side before the request; the server never converts with `"auto"`.
  *
  * ## SSR safety
  *
@@ -57,12 +60,15 @@ import { apiErrorMessage } from '$lib/http.js';
 import * as m from '$lib/paraglide/messages';
 import { getLocale, setLocale, type Locale } from '$lib/paraglide/runtime';
 
-/** The sentinel that means "follow the browser/system timezone". */
+/**
+ * The sentinel that means "follow the browser/system timezone". A legal
+ * stored value: the backend persists it verbatim and never converts with it.
+ */
 export const AUTO_TIMEZONE = 'auto';
 
 /** Values the backend registers for the `core` application scope. */
 export interface CoreSettings {
-	/** IANA timezone name (e.g. `"Europe/Paris"`), or `"auto"` on the client. */
+	/** IANA timezone name (e.g. `"Europe/Paris"`), or the `"auto"` sentinel. */
 	timezone: string;
 	/** Language code, from the backend `ALLOWED_LANGUAGES` allowlist. */
 	language: string;
@@ -254,9 +260,8 @@ export async function loadSettings(fetchFn?: typeof fetch): Promise<CoreSettings
 	return values;
 }
 
-/** Upsert the timezone preference. */
+/** Upsert the timezone preference. `"auto"` persists the follow-the-browser sentinel. */
 export async function saveTimezone(tz: string, fetchFn?: typeof fetch): Promise<void> {
-	if (tz === AUTO_TIMEZONE) throw new Error(`'${AUTO_TIMEZONE}' cannot be saved to the backend`);
 	await putSetting('timezone', tz, fetchFn);
 }
 

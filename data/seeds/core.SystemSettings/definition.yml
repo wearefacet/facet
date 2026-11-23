@@ -162,7 +162,7 @@ fields:
       default_timezone:
         type: string
         title: Default timezone
-        description: "IANA timezone name (e.g. 'Europe/Paris') applied to accounts without their own timezone. The write gate requires a loadable name. Empty follows the file; the file default is UTC."
+        description: "IANA timezone name (e.g. 'Europe/Paris') applied to accounts without their own timezone, or 'auto' to follow each account's browser — the built-in default. The write gate requires 'auto' or a loadable name. Empty follows the file; the file default is auto."
       default_language:
         type: string
         title: Default language

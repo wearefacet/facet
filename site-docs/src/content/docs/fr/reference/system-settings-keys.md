@@ -42,8 +42,9 @@ Les clés secrètes n’apparaissent jamais dans une réponse d’API de lecture
 | `iam.change_password_expiration` | number | 86400 | Seconds a credential link stays valid: the password-reset link, the invite link, and the first-credential change token share one window. |
 | `iam.mfa.enforcement` | string | "preferred" | 'preferred' asks but never blocks; 'always' holds every un-enrolled login at the enrollment step. |
 | `iam.mfa.type` | string | "totp" | 'totp' enables TOTP MFA; 'none' turns MFA off — no challenge, no enroll hold. |
+| `iam.oidc.provision_roles` | stringlist | [] | Roles assigned to every JIT-provisioned account whose provider sets no default_role — e.g. an 'employee' role. |
 | `localization.default_language` | string | "en" | Language code applied to accounts without their own language. |
-| `localization.default_timezone` | string | "UTC" | IANA timezone name (e.g. 'Europe/Paris') applied to accounts without their own timezone. |
+| `localization.default_timezone` | string | "auto" | IANA timezone name (e.g. 'Europe/Paris') applied to accounts without their own timezone, or 'auto' to follow each account's browser — the built-in default. |
 | `mail.adapter` | string | "dev" | 'dev' prints emails to stdout; 'smtp' delivers through the smtp sub-object. |
 | `mail.from_address` | string | "no-reply@facet.local" | Envelope and header sender address. |
 | `mail.from_name` | string | "Facet" | Display name on the From header. |

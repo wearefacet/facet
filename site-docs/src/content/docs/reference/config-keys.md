@@ -108,7 +108,7 @@ The loaders read the keys below:
 | jobs | `retention_days` | integer | 30 | Days terminal job rows are kept. |
 | jobs | `sweep_interval_s` | number | 30.0 | Seconds between expired-lease sweeps. |
 | localization | `default_language` | string | "en" | Language accounts follow until they pick their own; must be in the platform allowlist. |
-| localization | `default_timezone` | string | "UTC" | Timezone accounts follow until they pick their own; must be a loadable IANA name. |
+| localization | `default_timezone` | string | "auto" | Timezone accounts follow until they pick their own; auto follows each account's browser, any other value must be a loadable IANA name. |
 | logs | `format` | string | "text" | Log output format: text or json. |
 | logs | `level` | string | "info" | Minimum severity bound to every source. |
 | lua | `instruction_limit` | integer | 1000000 | Lua VM instruction budget per script run. |

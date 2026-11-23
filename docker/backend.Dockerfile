@@ -51,7 +51,9 @@ RUN crystal build src/main.cr --release -o /app/facet
 # image is Ubuntu 24.04). liblua5.4-0 is the shared object the binary loads;
 # libxml2 and libyaml-0 are the Crystal stdlib link deps (XML and YAML
 # parsers — the config loader pulls YAML at boot); ca-certificates feeds
-# outbound TLS (SMTP, OIDC discovery, S3); curl feeds the HEALTHCHECK.
+# outbound TLS (SMTP, OIDC discovery, S3); curl feeds the HEALTHCHECK;
+# tzdata feeds `Time::Location` — the settings validator, the export
+# timezone, and the localization policy all load IANA zone names.
 FROM ubuntu:24.04 AS runtime
 ARG VERSION=dev
 ARG REVISION=unknown
@@ -63,7 +65,7 @@ LABEL org.opencontainers.image.licenses="BUSL-1.1" \
       org.opencontainers.image.source="https://github.com/wearefacet/facet"
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends liblua5.4-0 libxml2 libyaml-0-2 ca-certificates curl \
+  && apt-get install -y --no-install-recommends liblua5.4-0 libxml2 libyaml-0-2 ca-certificates curl tzdata \
   && rm -rf /var/lib/apt/lists/*
 
 # Non-root runtime user. /app and /data are owned by it: the entrypoint

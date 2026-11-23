@@ -327,19 +327,21 @@ module Facet
       # ── Localization rules ──────────────────────────────────────
 
       # The instance defaults validate like the account-level values they
-      # generalize (`Settings::Keys.validate_value`): a loadable IANA
-      # timezone, a language inside the allowlist.
+      # generalize (`Settings::Keys.validate_value`): the `auto` sentinel or
+      # a loadable IANA timezone, a language inside the allowlist.
       private def self.validate_localization_rules(merged : JSON::Any, errors : Array(ValidationError)) : Nil
         if timezone = str_at(merged, "localization.default_timezone")
-          begin
-            Time::Location.load(timezone)
-          rescue ex
-            errors << ValidationError.new(
-              field: "localization.default_timezone",
-              message: "is not a loadable IANA timezone (#{ex.message})",
-              code: "invalid_format",
-              params: {"value" => timezone},
-            )
+          unless timezone == Facet::Settings::Keys::AUTO_TIMEZONE
+            begin
+              Time::Location.load(timezone)
+            rescue ex
+              errors << ValidationError.new(
+                field: "localization.default_timezone",
+                message: "is not a loadable IANA timezone (#{ex.message})",
+                code: "invalid_format",
+                params: {"value" => timezone},
+              )
+            end
           end
         end
 

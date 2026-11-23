@@ -131,8 +131,12 @@ describe('saveTimezone / saveLanguage', () => {
 		expect(getTimezone()).toBe('Europe/Paris');
 	});
 
-	it('rejects the AUTO_TIMEZONE sentinel', async () => {
-		await expect(saveTimezone(AUTO_TIMEZONE)).rejects.toThrow();
+	it('PUTs the AUTO_TIMEZONE sentinel as the stored value', async () => {
+		const { fetchFn, calls } = makeStub();
+		await saveTimezone(AUTO_TIMEZONE, fetchFn);
+		expect(calls[0]?.url).toBe('/Api/settings/core/timezone');
+		expect(JSON.parse(String(calls[0]?.init?.body))).toEqual({ value: 'auto' });
+		expect(getTimezone()).toBe('auto');
 	});
 
 	it('PUTs /Api/settings/core/language', async () => {

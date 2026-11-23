@@ -41,7 +41,7 @@ describe "Settings HTTP Integration" do
       assert_http_status(response, 200)
       json = JSON.parse(response.body)
       json["app"].to_s.should eq("core")
-      json["values"]["timezone"].to_s.should eq("UTC")
+      json["values"]["timezone"].to_s.should eq("auto")
       json["values"]["language"].to_s.should eq("en")
     end
   end
@@ -110,7 +110,7 @@ describe "Settings HTTP Integration" do
 
       assert_http_status(response, 200)
       json = JSON.parse(response.body)
-      json["value"].to_s.should eq("UTC")
+      json["value"].to_s.should eq("auto")
       json["updated_at"]?.should be_nil
     end
 
@@ -284,7 +284,7 @@ describe "Settings HTTP Integration" do
       assert_http_status(response, 200)
       json = JSON.parse(response.body)
       json["settings"]?.should_not be_nil
-      json["settings"]["timezone"].to_s.should eq("UTC")
+      json["settings"]["timezone"].to_s.should eq("auto")
       json["settings"]["language"].to_s.should eq("en")
     end
 
@@ -405,7 +405,7 @@ describe "Settings HTTP Integration" do
       # The value fell back to the default chain.
       read_request = HTTP::Request.new("GET", "/Api/settings/core/timezone", headers: auth_cookie_header(account_id.as(String)))
       read_response = call_api(read_request)
-      JSON.parse(read_response.body)["value"].to_s.should eq("UTC")
+      JSON.parse(read_response.body)["value"].to_s.should eq("auto")
     end
 
     it "is idempotent — deleting a missing row still answers 204" do

@@ -177,7 +177,7 @@ ROWS = [
   # ── logs / localization ─────────────────────────────────────────────────
   Row.new("logs", "format", "string", "\"text\"", "Log output format: text or json."),
   Row.new("logs", "level", "string", "\"info\"", "Minimum severity bound to every source."),
-  Row.new("localization", "default_timezone", "string", "\"UTC\"", "Timezone accounts follow until they pick their own; must be a loadable IANA name."),
+  Row.new("localization", "default_timezone", "string", "\"auto\"", "Timezone accounts follow until they pick their own; auto follows each account's browser, any other value must be a loadable IANA name."),
   Row.new("localization", "default_language", "string", "\"en\"", "Language accounts follow until they pick their own; must be in the platform allowlist."),
   # ── artifact ────────────────────────────────────────────────────────────
   Row.new("artifact.storage", "type", "string", "\"filesystem\"", "Object storage backend: filesystem or s3; the storage entry itself is required."),

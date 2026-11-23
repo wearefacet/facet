@@ -397,8 +397,7 @@ module Facet
       # at boot and storage is tz-naive UTC — so this is the server's
       # "today", the same day every other server-side reader sees. It is
       # not the caller's local calendar day; that conversion is a frontend
-      # concern (the `core.timezone` setting). The release image ships no
-      # tzdata, so there is no IANA-zone form.
+      # concern (the `core.timezone` setting, the `auto` sentinel included).
       def self.date_today : String
         Time.utc.to_s("%Y-%m-%d")
       end

@@ -103,7 +103,7 @@ sémantique à l’écriture vérifie chaque valeur :
 - `mail.adapter: smtp` exige un `mail.smtp.host` non nul.
 - `mail.adapter: dev` est refusé sous `APP_ENV=production`, sauf si le fichier
   pose `mail.allow_dev_adapter_in_production: true`.
-- `localization.default_timezone` doit être un nom IANA chargeable.
+- `localization.default_timezone` doit être `auto` ou un nom IANA chargeable.
 - `iam.mfa.type` vaut `none` ou `totp` ; `iam.mfa.enforcement` vaut
   `preferred` ou `always` ; `iam.auth.mode` vaut `hybrid` ou `oidc_only`.
   `oidc_only` est refusé tant qu’aucun document de fournisseur OIDC actif

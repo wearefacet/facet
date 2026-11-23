@@ -122,11 +122,15 @@
 				timezoneFlash.saved();
 				return;
 			}
-			// Resolve the auto sentinel to the concrete system zone before saving.
-			await saveTimezone(value === AUTO_TIMEZONE ? systemTimezone() : value);
+			// `auto` persists the follow-the-browser sentinel; any other value
+			// is a concrete IANA zone. The backend stores both verbatim.
+			await saveTimezone(value);
 			timezone = value;
 			timezoneFlash.saved();
 		} catch (e) {
+			// The select binding flipped before the save; put the loaded value
+			// back so the picker shows the stored state again.
+			timezone = loadSettingValue('timezone');
 			timezoneFlash.failed(errorMessage(e, m.settings_timezone_save_error()));
 		}
 	}
@@ -149,6 +153,9 @@
 			// Intl-formatted names switch with the stored preference.
 			reconcileLocale(value);
 		} catch (e) {
+			// The select binding flipped before the save; put the loaded value
+			// back so the picker shows the stored state again.
+			language = loadSettingValue('language');
 			languageFlash.failed(errorMessage(e, m.settings_language_save_error()));
 		}
 	}
@@ -211,11 +218,11 @@
 			label: m.settings_server_default({ value: defaults?.timezone ?? 'UTC' }),
 			featured: true
 		});
-		// The merged value can be 'UTC' (the server default on a stock
-		// install). A plain UTC option guarantees the picker holds an option
-		// for the bound value — the same entry the platform SystemSettingsForm
-		// pins first. Without it, no option matches and the stale label acts
-		// as a search query on open.
+		// The stored or merged value can be `UTC` (a server policy that pins
+		// it, or an explicit choice). A plain UTC option guarantees the picker
+		// holds an option for the bound value — the same entry the platform
+		// SystemSettingsForm pins first. Without it, no option matches and the
+		// stale label acts as a search query on open.
 		out.push({ value: 'UTC', label: 'UTC', featured: true });
 		for (const continent of continents) {
 			groups[continent].sort((a, b) => a.label.localeCompare(b.label));

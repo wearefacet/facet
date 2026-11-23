@@ -209,6 +209,10 @@ describe Facet::SystemSettings::WriteGate do
         .should be_empty
     end
 
+    it "accepts the auto sentinel for the timezone" do
+      errors_for(%({"localization": {"default_timezone": "auto"}})).should be_empty
+    end
+
     it "refuses a timezone the runtime cannot load" do
       errors = errors_for(%({"localization": {"default_timezone": "Bogus/Nowhere"}}))
       field_messages(errors, "localization.default_timezone").should_not be_empty

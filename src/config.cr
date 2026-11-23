@@ -155,7 +155,7 @@ module Facet
     # and the account-settings service reads them as the server tier of
     # its default chain — see `doc/backend/settings.md`.
     record LocalizationConfig,
-      default_timezone : String = "UTC",
+      default_timezone : String = "auto",
       default_language : String = "en"
 
     # ── Lua sandbox limits ──────────────────────────────────────────
@@ -526,18 +526,21 @@ module Facet
     # fail closed like the mail adapter and the MFA enforcement: a timezone
     # the runtime cannot load and a language outside the allowlist would
     # otherwise surface as broken rendering for every account that follows
-    # the server default.
+    # the server default. `auto` (follow each account's browser) is the
+    # built-in default and always valid.
     private def self.load_localization(raw : YAML::Any) : LocalizationConfig
       loc_raw = raw["localization"]?
       return LocalizationConfig.new if loc_raw.nil? || loc_raw.raw.nil?
 
-      timezone = loc_raw["default_timezone"]?.try(&.as_s) || "UTC"
-      begin
-        Time::Location.load(timezone)
-      rescue ex
-        raise ArgumentError.new(
-          "localization.default_timezone '#{timezone}' is not a loadable IANA timezone (#{ex.message})"
-        )
+      timezone = loc_raw["default_timezone"]?.try(&.as_s) || Facet::Settings::Keys::AUTO_TIMEZONE
+      unless timezone == Facet::Settings::Keys::AUTO_TIMEZONE
+        begin
+          Time::Location.load(timezone)
+        rescue ex
+          raise ArgumentError.new(
+            "localization.default_timezone '#{timezone}' is not a loadable IANA timezone (#{ex.message})"
+          )
+        end
       end
 
       language = loc_raw["default_language"]?.try(&.as_s) || "en"

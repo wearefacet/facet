@@ -666,6 +666,8 @@
 	// ── Localization chapter — the instance defaults an account follows
 	// until it picks its own values. The zone list is the shared builder
 	// (lib/timezones.ts), the same one the personal settings page renders.
+	// `auto` leads the zone options: it is the built-in default (follow each
+	// account's browser) and the value a stock install resolves to.
 	const LOCALIZATION_FIELDS: FieldRow[] = [
 		{
 			path: 'localization.default_timezone',
@@ -673,6 +675,7 @@
 			kind: 'enum',
 			helper: m.system_settings_localization_timezone_helper(),
 			options: [
+				{ value: 'auto', label: m.system_settings_localization_timezone_auto() },
 				{ value: 'UTC', label: 'UTC' },
 				...allTimezones()
 					.filter((zone) => zone !== 'UTC')
