@@ -75,6 +75,11 @@
 		min-width: 0;
 		display: flex;
 		flex-direction: column;
+		/* Flex child of the lane's scrollable stack. `overflow: hidden`
+		   zeroes the automatic minimum size, so the default shrink would
+		   compact the card to the lane height instead of overflowing —
+		   the stack scrolls in the lane, cards keep their natural height. */
+		flex-shrink: 0;
 		transition:
 			border-color 0.12s,
 			box-shadow 0.12s;

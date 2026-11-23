@@ -83,5 +83,6 @@ The backend enforces the same rules at the write door: `Document::CollectionView
 - The surface shows no filter bar — filters are authored in the view config (the calendar rule).
 - Trash mode never renders the kanban surface: the kanban branch sits behind the live-document listing like the calendar's.
 - Custom lanes may overlap — a document can appear in more than one lane; values-mode lanes are disjoint by construction.
+- Cards never compact to fit the lane — the card root carries `flex-shrink: 0`. Its `overflow: hidden` zeroes the automatic minimum size, so a default-shrink flex child of the scrollable stack would be squeezed to the lane height instead of overflowing. The lane stack scrolls; the 260 px body cap still bounds one tall card.
 - A stored `sort` array is edited as one entry (field + direction); the editor round-trips only the first entry.
 - The stories' identity-fallback coverage uses a purpose-built doctype without a `card` view child — the doctype-views cache keys on the doctype id, so reusing `crm.Deal` would read another story's cached template (the `DocumentCard` stories rule).
