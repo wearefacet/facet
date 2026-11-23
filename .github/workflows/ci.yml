@@ -168,6 +168,14 @@ jobs:
       # durable storage: checkpoint storms stall commits past the pool's
       # 5s checkout timeout, and every request 500s with an empty message.
       - name: Spec suite
+        env:
+          # `.env*` is git-ignored (only `.env.example` ships), so a fresh
+          # checkout has no `.env.test`. `config.test.yml` expands
+          # `!env DATABASE_URL` at config load. spec_helper.cr rewrites the
+          # path onto the per-worker database, so the host, port, and
+          # credentials are the only parts that matter here. The URL matches
+          # compose.test.yml (port 5433, postgres/postgres).
+          DATABASE_URL: postgres://postgres:postgres@localhost:5433/facet_test
         run: make test
       - name: OOM diagnosis
         if: failure()

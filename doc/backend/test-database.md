@@ -2,12 +2,15 @@
 
 The backend spec suite owns a throwaway PostgreSQL instance. It runs on the
 host port 5433, next to the dev instance on 5432. The suite connects to it
-through `DATABASE_URL` in `.env.test`.
+through `DATABASE_URL`: developers set it in `.env.test`; CI exports it on
+the spec step of `.github/workflows/ci.yml`.
 
 ## Source files
 
 - `compose.test.yml` — the instance definition (image, ports, storage).
-- `.env.test` — the suite's `DATABASE_URL`.
+- `.env.test` — the suite's `DATABASE_URL` for local runs. The dotenv files
+  are git-ignored; copy `.env.example`. CI exports the variable on the spec
+  step of `ci.yml` instead.
 - `spec/spec_helper.cr` — reachability preflight, template and worker
   database lifecycle, seeded-baseline snapshot.
 - `spec/support/seeded_baseline_helper.cr` — the snapshot/restore helpers.

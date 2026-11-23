@@ -20,7 +20,7 @@ Contributions are licensed to Amplitude Solutions Ltd through the Contributor Li
 | Caddy                   | The dev proxy. `scripts/dev` expects it on PATH. Hosted apps need one `/etc/hosts` line (`127.0.0.1 facet.localhost app.apps.localhost`); Chromium resolves `*.localhost` by itself. |
 | Lua 5.4 or 5.5 headers  | The `lua` shard links the system library (`liblua5.4-dev` on Debian/Ubuntu). |
 
-Configuration lives in `config.dev.yml` (backend) and the root `.env` (shared addresses, notably `BACKEND_URL`).
+Configuration lives in `config.dev.yml` (backend) and the root `.env` (shared addresses, notably `BACKEND_URL`). The dotenv files are git-ignored — copy `.env.example` to create one.
 
 ## Daily commands
 
