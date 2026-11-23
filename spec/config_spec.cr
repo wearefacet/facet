@@ -366,9 +366,9 @@ module Facet
     end
 
     describe "LocalizationConfig" do
-      it "defaults to UTC and en" do
+      it "defaults to auto and en" do
         cfg = Config.from_yaml_node(build_yaml_config(""))
-        cfg.localization.default_timezone.should eq("UTC")
+        cfg.localization.default_timezone.should eq("auto")
         cfg.localization.default_language.should eq("en")
       end
 
@@ -376,6 +376,11 @@ module Facet
         cfg = Config.from_yaml_node(build_yaml_config("localization:\n  default_timezone: Europe/Paris\n  default_language: en"))
         cfg.localization.default_timezone.should eq("Europe/Paris")
         cfg.localization.default_language.should eq("en")
+      end
+
+      it "accepts the auto sentinel" do
+        cfg = Config.from_yaml_node(build_yaml_config("localization:\n  default_timezone: auto\n  default_language: en"))
+        cfg.localization.default_timezone.should eq("auto")
       end
 
       it "raises on a timezone the runtime cannot load" do
@@ -1001,7 +1006,7 @@ module Facet
 
       it "treats an empty localization: section like an absent one" do
         cfg = Config.from_yaml_node(build_yaml_config("localization:"))
-        cfg.localization.default_timezone.should eq("UTC")
+        cfg.localization.default_timezone.should eq("auto")
         cfg.localization.default_language.should eq("en")
       end
 
