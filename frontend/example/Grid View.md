@@ -266,11 +266,12 @@ per currency) is client-side over the loaded rows only.
 | `frontend/src/lib/grid/summary.ts` | per-column aggregate calls, response normalization | **landed** |
 | `frontend/src/lib/grid/types.ts` | `GridColumn`, `GridProps` | **landed** |
 | `frontend/src/lib/grid/Grid.stories.svelte` | 6 stories, axe `error` mode | **landed** |
-| `frontend/src/lib/grid/writeQueue.ts` (+ spec) | per-row batching, concurrency cap, undo stack | phase 2 |
-| `frontend/src/lib/grid/coerce.ts` (+ spec) | raw text → typed value (shared by editors + paste) | phase 2 |
-| `frontend/src/lib/grid/editors/*.svelte` | `CellEditor` over the existing form inputs | phase 2 |
+| `frontend/src/lib/grid/writeQueue.ts` (+ spec) | per-row batching, concurrency cap, undo stack | **landed** |
+| `frontend/src/lib/grid/coerce.ts` (+ spec) | raw text → typed value (shared by editors + paste) | **landed** (paste parse joins phase 3) |
+| `frontend/src/lib/grid/editors/*.svelte` | `CellEditor` over the existing form inputs | **landed** |
+| `frontend/src/lib/grid/fieldTypes.ts` | the writable + aggregate-able type sets, shared by the surface and the editor | **landed** |
 | `frontend/src/lib/grid/PastePreview.svelte` | the preview dialog | phase 3 |
-| `frontend/src/lib/components/primitives/data/CollectionViewGridForm.svelte` | the view editor's grid step | phase 4 |
+| `frontend/src/lib/components/primitives/data/CollectionViewGridForm.svelte` | the view editor's grid step | **landed** (stories in place; the surface picker keeps `grid` disabled until the listing mounts the surface) |
 | `src/document/collection_view_gate.cr` → `validate_grid` | backend gate rules | phase 4 |
 | `doc/frontend/grid.md`, `doc/backend/collection-view.md` | docs | phase 4 |
 | assistant skill `collection-views.md` | the `grid` vocabulary | phase 4 |
@@ -285,11 +286,14 @@ currency; `null` for an empty set), and the `validateDraft` save gate treats `gr
 1. **Read-only grid** — ✅ landed: types, `Grid.svelte` (pagination model, sticky frozen
    columns, gutter + checkbox, `FieldValue` cells, range selection, keyboard nav, copy,
    Σ row, footer + selection chip), selection/clipboard specs, stories.
-2. **Editing** — per-type editors over the existing inputs, `writeQueue` (one PATCH per
-   row, cap 4, undo), cell-local 422 states, boolean flip, the refresh-clobber rule.
+2. **Editing** — ✅ landed: per-type editors over the existing inputs, `writeQueue` (one
+   PATCH per row, cap 4, undo), cell-local 422 states, boolean flip, the refresh-clobber
+   rule.
 3. **Bulk** — TSV paste + preview, fill down / handle, clear range, ghost new-row line.
-4. **App integration** — `ListView` branch + tab icon + trash skip, `CollectionViewGridForm`,
-   backend `validate_grid`, the `id` sort tie-breaker, docs.
+4. **App integration** — `ListView` branch + tab icon + trash skip, `CollectionViewGridForm`
+   (✅ landed with stories; the picker keeps `grid` disabled until the listing mounts the
+   surface), backend `validate_grid`, the `id` sort tie-breaker, docs
+   (`doc/frontend/grid.md` landed).
 
 Deferred beyond phase 4: sub-field columns, live-flash/conflict machinery, keyset cursors
 + windowing + count estimate + aggregate cost control, `select` projection, series fill,

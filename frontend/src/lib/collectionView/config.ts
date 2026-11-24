@@ -15,12 +15,14 @@ import { SYSTEM_TIMESTAMP_FIELD_DEFS, hasOperator } from '$lib/doctype/filters.j
 import { humanizeLabel } from '$lib/calendar/discriminator.js';
 import { validateLanes, groupByLaneKeys } from '$lib/kanban/lanes.js';
 import { isSortableField } from '$lib/doctype/types.js';
+import { isAggregatableField, isWritableField } from '$lib/grid/fieldTypes.js';
 import { CALENDAR_DISCRIMINATOR_TYPES } from './types.js';
 import type {
 	CollectionView,
 	CollectionViewColumn,
 	CollectionViewConfig,
 	CollectionSurface,
+	GridViewConfig,
 	KanbanLane,
 	KanbanViewConfig
 } from './types.js';
@@ -90,6 +92,14 @@ export interface CollectionViewDraft {
 	sortDesc: boolean;
 	/** Kanban: drag & drop moves between lanes enabled. */
 	allowMove: boolean;
+	/** Grid: leading columns pinned left, after the gutter and checkbox. */
+	frozen: number;
+	/** Grid: the ghost new-row line is on. */
+	allowCreate: boolean;
+	/** Grid row sort field; empty means the surface default. */
+	gridSortField: string;
+	/** Grid row sort direction (descending when true — the `-` prefix). */
+	gridSortDesc: boolean;
 	/** Defs the sort picker offers — the sortable subset of the pickable
 	 *  fields. `buildConfig` drops a `sortField` that no longer resolves
 	 *  here (removed field, or a type the backend refuses to sort). */
@@ -294,6 +304,57 @@ export function buildConfig(draft: CollectionViewDraft): CollectionViewConfig {
 			kanban.sort = [`${draft.sortDesc ? '-' : ''}${sortField}`];
 		}
 		return { kanban };
+	}
+	if (draft.surface === 'grid') {
+		/** Resolve a column key against the doctype schema. The system
+		 *  timestamps never resolve — they render but never edit, so they
+		 *  carry no editability (and their datetime type is not aggregate-able
+		 *  anyway). */
+		const schemaField = (key: string): FieldDef | null =>
+			draft.fields.find((f) => f.key === key) ?? null;
+
+		// The grid reuses the table's columns array under grid column
+		// semantics: a writable column is editable unless `editable: false`,
+		// and a field aggregate needs an aggregate-able type. Normalizing
+		// here keeps a stored config's drift (a flag the surface no longer
+		// honours) out of the saved document — the backend gate would
+		// answer 422 otherwise.
+		const columns = draft.columns.map((col) => {
+			const copy: CollectionViewColumn = { ...col };
+			const field = schemaField(copy.key);
+			// Only the opt-out persists: checked (or a stale `editable: true`)
+			// drops the flag — absent already reads editable.
+			if (!(field !== null && isWritableField(field) && copy.editable === false)) {
+				delete copy.editable;
+			}
+			if (
+				copy.summary &&
+				copy.summary !== 'count' &&
+				!(field !== null && isAggregatableField(field))
+			) {
+				delete copy.summary;
+			}
+			return copy;
+		});
+
+		const grid: GridViewConfig = {
+			filters: dropUnknownFilter(draft.filters, draft.filterableFields)
+		};
+		const frozen = Math.min(Math.max(0, Math.trunc(draft.frozen) || 0), columns.length);
+		if (frozen > 0) grid.frozen = frozen;
+		const sortField = draft.gridSortField.trim();
+		// One sort entry — the `-` prefix composes the descending direction.
+		// Omitted when unset, or when the field no longer resolves to a
+		// sortable def: the surface then applies its own default instead of
+		// sending a sort that answers `422 unsortable_field` (the kanban rule).
+		const sortDef = draft.sortFields.find((f) => f.key === sortField);
+		if (sortDef && isSortableField(sortDef)) {
+			grid.sort = [`${draft.gridSortDesc ? '-' : ''}${sortField}`];
+		}
+		// Persisted only when on — views saved before the option existed keep
+		// their read-only create door (the `allow_move` rule).
+		if (draft.allowCreate) grid.allow_create = true;
+		return { columns, grid };
 	}
 	return {
 		calendar: {

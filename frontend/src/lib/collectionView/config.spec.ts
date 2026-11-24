@@ -58,6 +58,10 @@ const tableDraft = (overrides: Partial<CollectionViewDraft> = {}): CollectionVie
 	sortField: '',
 	sortDesc: true,
 	allowMove: false,
+	frozen: 0,
+	allowCreate: false,
+	gridSortField: '',
+	gridSortDesc: true,
 	sortFields: [],
 	...overrides
 });
@@ -587,6 +591,126 @@ describe('collectionView/config — editor config helpers', () => {
 				lanes: [{ label: 'Low', filter: { probability__lt: 50 } }]
 			});
 			expect('allow_move' in (buildConfig(disabled).kanban ?? {})).toBe(false);
+		});
+	});
+
+	describe('buildConfig — grid', () => {
+		it('carries the authored columns and normalizes the grid flags', () => {
+			const draft = tableDraft({
+				surface: 'grid',
+				columns: [
+					{ key: 'title', label: 'Deal Title' },
+					// A writable field with an explicit opt-out keeps it.
+					{ key: 'value', label: 'Deal Value', editable: false, summary: 'sum' },
+					// `editable: true` on a writable field normalizes away —
+					// absent already reads editable.
+					{ key: 'notes', label: 'Notes', editable: true },
+					// A computed field never carries editability, and its
+					// count summary survives (count runs field-free).
+					{ key: 'payload', label: 'Weighted', editable: true, summary: 'count' }
+				]
+			});
+			expect(buildConfig(draft)).toEqual({
+				columns: [
+					{ key: 'title', label: 'Deal Title' },
+					{ key: 'value', label: 'Deal Value', editable: false, summary: 'sum' },
+					{ key: 'notes', label: 'Notes' },
+					{ key: 'payload', label: 'Weighted', summary: 'count' }
+				],
+				grid: { filters: {} }
+			});
+		});
+
+		it('drops a field aggregate whose type the backend does not aggregate', () => {
+			const draft = tableDraft({
+				surface: 'grid',
+				columns: [
+					{ key: 'value', summary: 'sum' },
+					{ key: 'title', summary: 'avg' },
+					{ key: 'payload', summary: 'max' }
+				]
+			});
+			const columns = buildConfig(draft).columns ?? [];
+			// money keeps sum; string and data lose the aggregate.
+			expect(columns[0].summary).toBe('sum');
+			expect('summary' in columns[1]).toBe(false);
+			expect('summary' in columns[2]).toBe(false);
+		});
+
+		it('keeps the system timestamp columns read-only and count-able', () => {
+			const draft = tableDraft({
+				surface: 'grid',
+				columns: [{ key: 'updated_at', label: 'Updated At', editable: true, summary: 'count' }]
+			});
+			expect(buildConfig(draft).columns).toEqual([
+				{ key: 'updated_at', label: 'Updated At', summary: 'count' }
+			]);
+		});
+
+		it('persists frozen only within 0..columns.length, and only when positive', () => {
+			const two = tableDraft({
+				surface: 'grid',
+				frozen: 2,
+				columns: [{ key: 'title' }, { key: 'value' }]
+			});
+			expect(buildConfig(two).grid?.frozen).toBe(2);
+
+			const zero = tableDraft({ surface: 'grid', frozen: 0, columns: [{ key: 'title' }] });
+			expect('frozen' in (buildConfig(zero).grid ?? {})).toBe(false);
+
+			// A stored count above the column set clamps at the last column.
+			const over = tableDraft({
+				surface: 'grid',
+				frozen: 5,
+				columns: [{ key: 'title' }, { key: 'value' }]
+			});
+			expect(buildConfig(over).grid?.frozen).toBe(2);
+		});
+
+		it('composes the one-entry sort with the - prefix (the kanban rule)', () => {
+			const desc = tableDraft({
+				surface: 'grid',
+				gridSortField: 'probability',
+				gridSortDesc: true,
+				sortFields: [field('probability', 'integer')]
+			});
+			expect(buildConfig(desc).grid?.sort).toEqual(['-probability']);
+
+			const asc = tableDraft({
+				surface: 'grid',
+				gridSortField: 'probability',
+				gridSortDesc: false,
+				sortFields: [field('probability', 'integer')]
+			});
+			expect(buildConfig(asc).grid?.sort).toEqual(['probability']);
+		});
+
+		it('omits sort when unset and drops one whose field no longer resolves', () => {
+			const unset = tableDraft({ surface: 'grid' });
+			expect('sort' in (buildConfig(unset).grid ?? {})).toBe(false);
+
+			const stale = tableDraft({
+				surface: 'grid',
+				gridSortField: 'probability',
+				sortFields: [field('value', 'money')]
+			});
+			expect('sort' in (buildConfig(stale).grid ?? {})).toBe(false);
+		});
+
+		it('persists allow_create only when enabled, and drops stale filter keys', () => {
+			const on = tableDraft({
+				surface: 'grid',
+				allowCreate: true,
+				filters: { status__ne: 'abandoned', ghost__eq: 'x' },
+				filterableFields: [field('status', 'enum', { operators: ['eq', 'ne'] })]
+			});
+			expect(buildConfig(on).grid).toEqual({
+				allow_create: true,
+				filters: { status__ne: 'abandoned' }
+			});
+
+			const off = tableDraft({ surface: 'grid', allowCreate: false });
+			expect('allow_create' in (buildConfig(off).grid ?? {})).toBe(false);
 		});
 	});
 

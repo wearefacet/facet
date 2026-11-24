@@ -43,6 +43,7 @@
 	import { fetchSummaries, type FieldSummary } from './summary.js';
 	import { createWriteQueue } from './writeQueue.js';
 	import { valueEquals } from './coerce.js';
+	import { WRITABLE_FIELD_TYPES } from './fieldTypes.js';
 	import CellEditor from './editors/CellEditor.svelte';
 	import type { CommitMove } from './editors/types.js';
 	import type { GridColumn, GridProps } from './types.js';
@@ -329,26 +330,6 @@
 
 	// ── Cell editing (the editors phase) ─────────────────────────────────
 
-	/** The field types a cell editor can write. Containers, `data`, `file`,
-	 *  `secret` never edit in the grid — the peek drawer owns them. */
-	const WRITABLE_FIELD_TYPES = new Set([
-		'string',
-		'longtext',
-		'integer',
-		'money',
-		'date',
-		'datetime',
-		'period',
-		'dateperiod',
-		'enum',
-		'boolean',
-		'reference',
-		'color',
-		'duration',
-		'phone',
-		'url'
-	]);
-
 	/** The open editor: its row, column, and the seed char (type-to-edit). */
 	let editing = $state<{ r: number; c: number; seed: string | null } | null>(null);
 	/** The open shell's API — the outside-commit request goes through it. */
@@ -469,9 +450,13 @@
 		applyCell(rowId, col.key, value);
 		setPending(rowId, col.key, { status: 'saving', value });
 		try {
-			const saved = (await writeQueue.push(rowId, { [col.key]: value }, {
-				before: { [col.key]: before }
-			})) as DocumentResponse<T> | undefined;
+			const saved = (await writeQueue.push(
+				rowId,
+				{ [col.key]: value },
+				{
+					before: { [col.key]: before }
+				}
+			)) as DocumentResponse<T> | undefined;
 			setPending(rowId, col.key, null);
 			if (saved?.meta) {
 				applyCell(rowId, col.key, value, saved.meta.updated_at);
@@ -818,7 +803,7 @@
 				.join(' · ') || null
 		);
 	}
-	</script>
+</script>
 
 <!-- The press ends wherever the pointer is — the drag disarms globally. -->
 <svelte:window onmouseup={() => (pressArmed = false)} />
