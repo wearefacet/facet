@@ -22,6 +22,7 @@
 	import AlertBanner from '$lib/components/primitives/content/AlertBanner.svelte';
 	import DoctypeHeader from '$lib/components/primitives/content/DoctypeHeader.svelte';
 	import ReferencePicker from '$lib/components/primitives/forms/ReferencePicker.svelte';
+	import ReferenceListEditor from '$lib/components/primitives/forms/ReferenceListEditor.svelte';
 	import { buildFormCreate, buildFormPatch } from '$lib/doctype/formDiff.js';
 	import { ensureAbsoluteUrl, urlAdornment, urlFieldError } from '$lib/doctype/urlValue.js';
 	import { seedCreateValues, seedEditValues } from '$lib/doctype/formSeed.js';
@@ -833,6 +834,31 @@
 								error={fieldError(field.key)}
 								bind:value={values[field.key] as MoneyValue | ''}
 							/>
+						{:else if field.type === 'reference' && field.collection}
+							<!-- Collection reference — stores a JSON array of qualified ids,
+							     edited as a chip list, never as raw text. -->
+							<ReferenceListEditor
+								label={field.title ?? humanize(field.key)}
+								required={field.required}
+								doctype={refTargetDoctype(field)}
+								filter={field.filter}
+								{driver}
+								error={fieldError(field.key)}
+								bind:value={values[field.key] as string[]}
+							/>
+						{:else if field.type === 'array' && field.items?.type === 'reference'}
+							<!-- Array-of-reference stores the same token array (the show
+							     side renders it through the reference kind) — same editor,
+							     with the target declared on the item definition. -->
+							<ReferenceListEditor
+								label={field.title ?? humanize(field.key)}
+								required={field.required}
+								doctype={refTargetDoctype(field.items)}
+								filter={field.items.filter}
+								{driver}
+								error={fieldError(field.key)}
+								bind:value={values[field.key] as string[]}
+							/>
 						{:else if field.type === 'object' || field.type === 'array' || field.type === 'dictionary'}
 							<StructuredInput
 								label={field.title ?? humanize(field.key)}
@@ -865,9 +891,8 @@
 								bind:value={values[field.key] as string}
 							/>
 						{:else if field.type === 'reference' && !field.collection}
-							<!-- Single-value references only: a collection reference stores a
-							     JSON array and keeps the plain-text input (same line DvtValue
-							     draws for display). -->
+							<!-- Single-value references only: the picker binds one scalar.
+							     A collection reference binds the chip list editor above. -->
 							<ReferencePicker
 								label={field.title ?? humanize(field.key)}
 								required={field.required}

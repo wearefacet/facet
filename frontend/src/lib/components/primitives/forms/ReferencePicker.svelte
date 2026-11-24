@@ -32,6 +32,7 @@
 		helper,
 		filter,
 		recordMeta,
+		onpick,
 		...rest
 	}: {
 		label?: string;
@@ -66,6 +67,16 @@
 		 * Unkeyed ids fall back to the driver label and the declared tint.
 		 */
 		recordMeta?: Record<string, { label?: string; icon?: string | null; color?: string | null }>;
+		/**
+		 * Multi-select hook (`ReferenceListEditor`). When set, a record pick
+		 * calls this instead of adopting the record: `selectedRec` stays null,
+		 * the `value` binding is never written, and the dropdown stays open so
+		 * the parent can append target after target. The pick carries the bare
+		 * record id, the display label, and the qualified doctype the record
+		 * was picked under (`selectedType` — the authoritative target for the
+		 * parent's token qualification).
+		 */
+		onpick?: (pick: { id: string; label: string; doctype: string | null }) => void;
 	} = $props();
 
 	const mode = $derived(doctype ? 'forced' : doctypes?.length ? 'constrained' : 'open');
@@ -341,6 +352,13 @@
 	function selectRecord(i: number): void {
 		const rec = results[i];
 		if (!rec) return;
+		if (onpick) {
+			// Add-mode: the parent owns the outcome. Keep the dropdown open and
+			// the query intact so several targets can be added in a row.
+			onpick({ id: rec.id, label: displayLabel(rec), doctype: selectedType });
+			active = 0;
+			return;
+		}
 		selectedRec = rec;
 		recOpen = false;
 	}
