@@ -47,6 +47,7 @@ private SEEDED_VIEW_MATRIX = {
   "app.Deployment"    => ["quickView", "view"],
   "iam.OIDCProvider"  => ["quickView", "view"],
   "core.Currency"     => ["form", "quickView", "view"],
+  "core.Comment"      => ["quickView"],
 }
 
 private record SeededView, id : String, parent : String, kind : String, template : JSON::Any? do

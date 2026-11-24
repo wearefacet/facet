@@ -5,6 +5,8 @@ require "json"
 require "base64"
 require "../database"
 require "../http/helpers"
+require "../doctype/definition_store"
+require "../document/projection_gucs"
 require "../mutation/client"
 require "../util/script_helpers"
 require "../rbac/permission"
@@ -94,6 +96,20 @@ module Facet
         }.to_json
         actioner_id = subject_resolved ? account_id : "system"
         Database.with_transaction(db, ignore_if_set: true) do |txn|
+          # Stage the projection GUCs the trigger reads (search corpus,
+          # links, display_name). The raw create below stages nothing on its
+          # own, and an unstaged GUC stores NULL derived columns — the audit
+          # event's `display_name` (the `{{ event }}` template) then renders
+          # the bare document id in every audit view. The template comes from
+          # the stored `iam.LoginEvent` definition; a missing definition takes
+          # the no-definition branch, the pipeline fallback.
+          defn = Doctype::DefinitionStore.fetch(txn, "iam.LoginEvent")
+          if defn
+            Document::ProjectionGucs.set_all(txn, defn, JSON.parse(content))
+          else
+            Document::ProjectionGucs.clear_all(txn)
+          end
+
           Mutation::Client.create(
             txn,
             "iam",

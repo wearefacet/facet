@@ -37,7 +37,8 @@ describe('mock seed: document and collection views', () => {
 		'app.App': ['quickView', 'view'],
 		'app.Deployment': ['quickView', 'view'],
 		'iam.OIDCProvider': ['quickView', 'view'],
-		'core.Currency': ['form', 'quickView', 'view']
+		'core.Currency': ['form', 'quickView', 'view'],
+		'core.Comment': ['quickView']
 	};
 
 	it('serves the seeded currency views through the document_view child route', async () => {

@@ -13,8 +13,10 @@
 # The matrix: admin-facing
 # doctypes get the three standard kinds, read-only records get view +
 # quickView (their writers are bespoke routes), and doctypes owned by
-# bespoke surfaces (comments, attachments, audit rows, builder meta)
-# stay on the fallbacks.
+# bespoke surfaces (attachments, audit rows, builder meta) stay on the
+# fallbacks. `core.Comment` carries a `quickView` only: the peek drawer
+# shows the target and author first, then the body as read-only markdown
+# prose (a plain field row would flatten the markdown source).
 #
 # `core.Currency` — system data: the `ticker` is the registry key, so the
 # form surfaces `active` / `favorite` / `digits` / `grouping` as the
@@ -1014,4 +1016,32 @@
         - type: field
           label: Auto-provision
           value: $auto_provision
+      - type: record-meta
+# ── core.Comment ─────────────────────────────────────────────────────────────
+#
+# The peek drawer for a comment. `target` and `author` sit on top (both are
+# references, so the driver hydrates their labels); the body renders below
+# as read-only markdown through the `markdown` node — the `body` field is
+# `longtext`, so a field row would flatten its source. No `view` or `form`:
+# comments are read and edited through the threaded sidecar surface.
+- id: core.Comment.quickView
+  meta: { parent_id: core.Comment }
+  content:
+    parent_doctype: core.Comment
+    kind: quickView
+    template:
+      type: col
+      children:
+      - type: hr
+      - type: section
+        label: Comment
+        children:
+        - type: field
+          label: Target
+          value: $target
+        - type: field
+          label: Author
+          value: $author
+      - type: markdown
+        field: body
       - type: record-meta

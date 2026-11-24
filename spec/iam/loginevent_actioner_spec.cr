@@ -31,6 +31,14 @@ private def lea_seed_login_event_doctype(db) : Nil
   Facet::Doctype::DefinitionStore.cache.clear
 end
 
+private def lea_last_login_event_display_name(db) : String?
+  db.query_one(
+    "SELECT display_name FROM projections WHERE domain = 'iam' AND doc_type = 'LoginEvent' " \
+    "ORDER BY id DESC LIMIT 1",
+    as: String?,
+  )
+end
+
 # Registers the doctypes the OIDC identity flow reads, seeds one enabled
 # provider, and registers the LoginEvent doctype under test.
 private def lea_seed_oidc_world(db, auto_provision : Bool) : Nil
@@ -72,6 +80,20 @@ describe "iam.LoginEvent actioner attribution" do
 
       actioner, _doc_id = lea_last_login_event(db)
       actioner.should eq(account_id)
+    end
+  end
+
+  it "stages the display_name from the event template" do
+    with_db do |db|
+      lea_seed_login_event_doctype(db)
+      account_id = create_test_account(db, email: "label@example.com")
+
+      Facet::IAM::Helpers.write_login_event(db, account_id, "logout", "spec probe")
+
+      # The `{{ event }}` template renders the event type — without the
+      # staged projection GUC the column stays NULL and the audit cell
+      # falls back to the bare ULID.
+      lea_last_login_event_display_name(db).should eq("logout")
     end
   end
 
