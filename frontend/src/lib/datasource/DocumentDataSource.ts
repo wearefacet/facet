@@ -97,6 +97,9 @@ async function listRequest<T>(
 	if (params?.aggregate) {
 		query.set('aggregate', params.aggregate);
 	}
+	if (params?.field) {
+		query.set('field', params.field);
+	}
 	if (params?.includeDeleted) {
 		query.set('deleted', 'true');
 	}

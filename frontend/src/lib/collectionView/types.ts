@@ -7,13 +7,19 @@
  *
  * A view is either general (shared, `owner_id` absent) or personal
  * (`owner_id` set to the creator's account id). Supported surfaces are
- * `table`, `calendar`, and `kanban`; `grid` will follow.
+ * `table`, `calendar`, `kanban`, and `grid`.
  */
 
 import type { FieldType } from '$lib/doctype/types.js';
 
 /** Supported presentation layouts for a doctype listing. */
-export type CollectionSurface = 'table' | 'calendar' | 'kanban';
+export type CollectionSurface = 'table' | 'calendar' | 'kanban' | 'grid';
+
+/** Per-column aggregate shown in the grid's Σ row. `sum`/`avg`/`min`/`max`
+ *  need an aggregate-able field type (`integer`, `duration`, `money` — the
+ *  backend's `List::Aggregate.AGGREGATE_FIELD_TYPES`); `count` runs
+ *  field-free on any column. The table surface ignores the flag. */
+export type GridColumnSummary = 'count' | 'sum' | 'avg' | 'min' | 'max';
 
 /** A single column declaration in a table-surface view config. */
 export interface CollectionViewColumn {
@@ -24,21 +30,51 @@ export interface CollectionViewColumn {
 	/** Optional inline width (e.g. "120px", "2fr"). */
 	width?: string;
 	/**
-	 * Inline-editable cell. Present (as `true`) only on boolean columns the
-	 * author marked updatable — the table renders those cells as toggles
-	 * gated on the viewer's `update` permission. Absent means read-only.
+	 * Inline-editable cell. The table reads `true` only — boolean columns the
+	 * author marked updatable render as toggles (absent means read-only).
+	 * The grid reads it as a boolean: a writable column is editable unless
+	 * `false`, and `true` on a non-writable field fails the view gate.
 	 */
-	editable?: true;
+	editable?: boolean;
+	/** Grid-only: the Σ-row aggregate for this column. Absent = no summary. */
+	summary?: GridColumnSummary;
 }
 
-/** Surface-specific configuration. Currently `table`, `calendar`, and `kanban`. */
+/** Surface-specific configuration. Currently `table`, `calendar`, `kanban`,
+ *  and `grid`. */
 export interface CollectionViewConfig {
-	/** Ordered column definitions for the `table` surface. */
+	/** Ordered column definitions for the `table` surface. The grid reuses
+	 *  the same array, so a view can switch between Table and Grid keeping
+	 *  its columns. */
 	columns?: CollectionViewColumn[];
 	/** Calendar-surface configuration. Present when `surface === 'calendar'`. */
 	calendar?: CalendarViewConfig;
 	/** Kanban-surface configuration. Present when `surface === 'kanban'`. */
 	kanban?: KanbanViewConfig;
+	/** Grid-surface configuration. Present when `surface === 'grid'`. */
+	grid?: GridViewConfig;
+}
+
+/**
+ * Grid-surface configuration — the same nesting `calendar` and `kanban`
+ * use. Absent members fall back to the surface defaults (no frozen
+ * columns, no base filter, `['-updated_at']` sort, no new-row line).
+ */
+export interface GridViewConfig {
+	/** Leading columns pinned left, after the gutter and checkbox. An
+	 *  integer in `0..columns.length`. */
+	frozen?: number;
+	/** View-level base filter, merged into every fetch (e.g.
+	 *  `status__ne: 'lost'`) — the kanban rule. */
+	filters?: Record<string, unknown>;
+	/** Row sort — field keys, `-` prefix = descending, the `ListParams.sort`
+	 *  format passed through as-is. The surface defaults to
+	 *  `['-updated_at']` when absent. */
+	sort?: string[];
+	/** Show the ghost new-row line under the rows. Absent or false keeps
+	 *  the grid read-only at the create door (the same opt-in rule as the
+	 *  kanban `allow_move`), AND-ed with the viewer's `create` grant. */
+	allow_create?: boolean;
 }
 
 /**
@@ -176,7 +212,7 @@ export interface KanbanViewConfig {
 export interface CollectionView {
 	/** Tab label shown in the listing UI. */
 	name: string;
-	/** Presentation layout. `table` or `calendar`. */
+	/** Presentation layout. `table`, `calendar`, `kanban`, or `grid`. */
 	surface: CollectionSurface;
 	/** Surface-specific configuration. */
 	config?: CollectionViewConfig;

@@ -41,7 +41,16 @@ export interface DocumentResponse<T = Record<string, unknown>> {
 /** An item in a collection response — matches the backend's per-item `{ data, meta }` response shape. */
 export type ListItem<T = Record<string, unknown>> = { data: T; meta: DocumentMeta };
 
-/** Response from collection endpoints (GET /:doctype, child list). */
+/** Response from collection endpoints (GET /:doctype, child list).
+ *
+ * Field-aggregate requests (`aggregate: 'sum' | 'avg' | 'min' | 'max'` +
+ * `field`) deviate from this shape: the body is
+ * `{ data: { value }, meta: { count, more: false } }` — `value` is a JSON
+ * number for `integer` / `duration` fields and a `{ ticker => amount }
+ * bag (decimal strings) for `money` fields, grouped per currency
+ * (src/document/list/aggregate.cr). Datasource callers normalize that
+ * shape themselves (see `lib/grid/summary.ts`).
+ */
 export interface ListResponse<T = Record<string, unknown>> {
 	/**
 	 * Each item is `{ data, meta }` — the same shape as a single-document response.
@@ -71,7 +80,15 @@ export interface ListParams {
 	 * The response uses the same `ListResponse` shape, so callers can drop the
 	 * parameter to switch back to a normal list without changing types.
 	 */
-	aggregate?: 'count';
+	aggregate?: 'count' | 'sum' | 'avg' | 'min' | 'max';
+	/**
+	 * Target field for a field aggregate (`aggregate: 'sum' | 'avg' | 'min' |
+	 * 'max'`). Required for field aggregates, ignored for `count`. The backend
+	 * answers 422 when the field is dotted, unknown, hidden, or of a type
+	 * without numeric aggregate semantics (`integer`, `duration`, and `money`
+	 * only — `List::Aggregate.AGGREGATE_FIELD_TYPES`).
+	 */
+	field?: string;
 	/**
 	 * When true, the backend returns tombstones (`deleted_at IS NOT NULL`)
 	 * instead of live rows — the trash listing. Same pagination, RBAC scoping,

@@ -412,8 +412,10 @@ export function validateDraft(draft: CollectionViewDraft): DraftValidation {
 		draft.surface === 'kanban' && draft.kanbanMode === 'custom' ? validateLanes(draft.lanes) : [];
 	const canSave =
 		nameError === null &&
-		(draft.surface === 'table'
-			? columnsError === null
+		(draft.surface === 'table' || draft.surface === 'grid'
+			? // The grid reuses the table's columns array — the same
+				// at-least-one-column rule guards both surfaces.
+				columnsError === null
 			: draft.surface === 'calendar'
 				? discriminatorError === null && endFieldError === null
 				: groupByError === null && lanesError === null && laneErrors.length === 0);
