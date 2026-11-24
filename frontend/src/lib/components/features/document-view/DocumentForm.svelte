@@ -630,13 +630,16 @@
 			}
 
 			// Fetch current rows so `computeChildOps` can diff drafts against them.
-			// The children REST route is keyed by the PARENT's domain + doctype
-			// (`/Api/:parentDomain/:parentDoctype/:id/:rel`), not the child's.
-			// `rel.qualifiedDoctype` is the child doctype name — using it here would
-			// produce `/Api/.../:childDoctype/:parentId/:rel`, which the backend's
-			// RestRoutes rejects with 404 "Unknown child". The parent's domain /
-			// doctype come from `def` (already in scope — the parent doctype
-			// definition).
+			// `items: 1000` is the backend's `MAX_ITEMS` — the child list honors
+			// `items` now, so a smaller window would make the diff blind to
+			// older rows (an update draft past the window would create a
+			// duplicate). The children REST route is keyed by the PARENT's
+			// domain + doctype (`/Api/:parentDomain/:parentDoctype/:id/:rel`),
+			// not the child's. `rel.qualifiedDoctype` is the child doctype name —
+			// using it here would produce `/Api/.../:childDoctype/:parentId/:rel`,
+			// which the backend's RestRoutes rejects with 404 "Unknown child".
+			// The parent's domain / doctype come from `def` (already in scope —
+			// the parent doctype definition).
 			const parentDomain = def.domain;
 			const parentDoctype = def.doctype;
 			let existing: Array<{ id: string; data: Record<string, unknown> }> = [];
@@ -646,7 +649,7 @@
 					.doctype(parentDoctype)
 					.doc(parentId)
 					.children(rel.rel)
-					.list({ items: 200 });
+					.list({ items: 1000 });
 				existing = (
 					res.data as unknown as Array<{
 						meta: { id: string };

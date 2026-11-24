@@ -2,6 +2,12 @@
 
 Notable changes to Facet. The project is pre-1.0: a release can contain breaking changes.
 
+## Unreleased
+
+### HTTP API
+
+- Child lists paginate. `GET /Api/:domain/:doctype/:id/:rel` now forwards the full list grammar — `page`, `items`, `sort`, `filters`, `select`, `scope`, `deleted`, `aggregate`, `field` — with the flat route's validation and defaults (`page: 1`, `items: 100`). Before, the route fixed page 1 at 1000 items and ignored every other parameter. Clients that passed `page` / `sort` to a child list and relied on the fixed answer must pass no parameters to keep the old (unsorted, first-page) shape. Child-list ETags changed value once (the fingerprint now covers page/items/sort); clients holding `If-None-Match` take one 200, then stable. Sidecar lists stay unpaginated.
+
 ## 0.2.1 — beta (2026-11-24)
 
 Post-release hardening. The first deployed instances exposed data-integrity, security, storage, and settings defects; this release closes them and lands the first usable npm packages.

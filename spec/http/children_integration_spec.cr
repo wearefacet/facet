@@ -50,6 +50,25 @@ def create_simple_doctype!(domain, doctype, member_of = nil, fields_json = "{}")
   JSON.parse(resp.body)["meta"]["id"].as_s
 end
 
+# A child doctype that declares named scopes (used by the scope-forwarding
+# specs). `scopes` maps scope name to `{description, where}` like the
+# doctype definition contract; `where` values are strings — the scope
+# predicate grammar compares text against the extracted JSONB value.
+def create_doctype_scoped!(domain, doctype, member_of, fields_json, scopes)
+  entries = scopes.map { |name, body| %("#{name}": #{body.to_json}) }
+  body = %({
+    "doctype": "#{doctype}",
+    "domain": "#{domain}",
+    "aggregate_root": false,
+    "member_of": "#{member_of}",
+    "fields": #{fields_json},
+    "scopes": {#{entries.join(", ")}}
+  })
+  resp = create_doctype_http(body)
+  assert_http_status(resp, 201)
+  JSON.parse(resp.body)["meta"]["id"].as_s
+end
+
 # GETs a child-list path with an arbitrary query string (the shared
 # `list_nested_http` helper takes no query parameters).
 def child_list(path : String) : HTTP::Client::Response
@@ -600,8 +619,10 @@ describe "child list filters" do
       j(%({"lines": {"doctype": "InvoiceLine", "collection": true}})),
       j(%({"label": {"type": "string"}}))
     )
-    create_simple_doctype!("childtest", "InvoiceLine", "Invoice",
-      j(%({"label": {"type": "string", "filters": ["equality"]}, "qty": {"type": "integer", "filters": ["comparison"]}})))
+    create_doctype_scoped!("childtest", "InvoiceLine", "Invoice",
+      j(%({"label": {"type": "string", "filters": ["equality"]}, "qty": {"type": "integer", "filters": ["comparison"]}})),
+      {"small" => {"description" => "Lines of two or less", "where" => {"qty__lte" => "2"}}}
+    )
     Fiber.current.auth_context = Facet::RBAC::AuthContext.system
   end
 
@@ -659,7 +680,7 @@ describe "child list filters" do
     assert_error_contains(resp, "json array")
   end
 
-  it "keeps ignored params out of the ETag fingerprint" do
+  it "revalidates the ETag per request fingerprint" do
     inv = create_doc_id_http("childtest", "Invoice", j(%({"label": "INV-6"})))
     create_child_doc_id_http("childtest", "Invoice", inv, "lines", j(%({"label": "alpha", "qty": 2})))
     create_child_doc_id_http("childtest", "Invoice", inv, "lines", j(%({"label": "beta", "qty": 4})))
@@ -668,17 +689,151 @@ describe "child list filters" do
     assert_http_status(first, 200)
     etag = first.headers["ETag"]
 
-    # A stray `?page=2` is ignored by the route — it must not change the
-    # fingerprint, so the revalidation hits.
-    stray = call_api(HTTP::Request.new("GET",
+    # The same parameters hit the same fingerprint — the revalidation hits.
+    same = call_api(HTTP::Request.new("GET",
+      "/Api/childtest/Invoice/#{inv}/lines?filters[label__eq]=alpha",
+      headers: HTTP::Headers{"If-None-Match" => etag}))
+    assert_http_status(same, 304)
+
+    # A different page is a different request — the fingerprint carries
+    # page/items/sort like the flat route, so it cannot answer a false 304.
+    other_page = call_api(HTTP::Request.new("GET",
       "/Api/childtest/Invoice/#{inv}/lines?filters[label__eq]=alpha&page=2",
       headers: HTTP::Headers{"If-None-Match" => etag}))
-    assert_http_status(stray, 304)
+    assert_http_status(other_page, 200)
 
-    # A different filter changes the fingerprint — no false 304.
+    # A different filter changes the fingerprint too — no false 304.
     other = call_api(HTTP::Request.new("GET",
       "/Api/childtest/Invoice/#{inv}/lines?filters[label__eq]=beta",
       headers: HTTP::Headers{"If-None-Match" => etag}))
     assert_http_status(other, 200)
+  end
+
+  it "paginates the child list" do
+    inv = create_doc_id_http("childtest", "Invoice", j(%({"label": "INV-P"})))
+    create_child_doc_id_http("childtest", "Invoice", inv, "lines", j(%({"label": "one", "qty": 1})))
+    create_child_doc_id_http("childtest", "Invoice", inv, "lines", j(%({"label": "two", "qty": 2})))
+    create_child_doc_id_http("childtest", "Invoice", inv, "lines", j(%({"label": "three", "qty": 3})))
+
+    page1 = child_list("/Api/childtest/Invoice/#{inv}/lines?items=1&page=1")
+    assert_http_status(page1, 200)
+    p1 = parse_body(page1)
+    p1["data"].as_a.size.should eq(1)
+    # The count is offset-relative, like the flat route: it reports the
+    # rows remaining from the page offset, not the page size.
+    p1["meta"]["count"].as_i.should eq(3)
+    p1["meta"]["more"].as_bool.should be_false
+
+    page2 = child_list("/Api/childtest/Invoice/#{inv}/lines?items=1&page=2")
+    assert_http_status(page2, 200)
+    p2 = parse_body(page2)
+    p2["data"].as_a.size.should eq(1)
+    p2["data"].as_a.first["data"]["label"].as_s.should_not eq(p1["data"].as_a.first["data"]["label"].as_s)
+    p2["meta"]["count"].as_i.should eq(2)
+    p2["meta"]["more"].as_bool.should be_false
+
+    # A page past the end is empty; the count is offset-relative.
+    page4 = child_list("/Api/childtest/Invoice/#{inv}/lines?items=1&page=4")
+    assert_http_status(page4, 200)
+    p4 = parse_body(page4)
+    p4["data"].as_a.size.should eq(0)
+    p4["meta"]["count"].as_i.should eq(0)
+    p4["meta"]["more"].as_bool.should be_false
+  end
+
+  it "defaults to 100 items like the flat route" do
+    inv = create_doc_id_http("childtest", "Invoice", j(%({"label": "INV-D"})))
+    101.times do |i|
+      create_child_doc_id_http("childtest", "Invoice", inv, "lines", j(%({"label": "line-#{i}", "qty": #{i}})))
+    end
+
+    resp = child_list("/Api/childtest/Invoice/#{inv}/lines")
+    assert_http_status(resp, 200)
+    body = parse_body(resp)
+    body["data"].as_a.size.should eq(100)
+    body["meta"]["count"].as_i.should eq(101)
+
+    # Page 2 carries the remainder.
+    page2 = child_list("/Api/childtest/Invoice/#{inv}/lines?page=2")
+    assert_http_status(page2, 200)
+    parse_body(page2)["data"].as_a.size.should eq(1)
+  end
+
+  it "sorts the child list" do
+    inv = create_doc_id_http("childtest", "Invoice", j(%({"label": "INV-S"})))
+    create_child_doc_id_http("childtest", "Invoice", inv, "lines", j(%({"label": "b", "qty": 2})))
+    create_child_doc_id_http("childtest", "Invoice", inv, "lines", j(%({"label": "c", "qty": 3})))
+    create_child_doc_id_http("childtest", "Invoice", inv, "lines", j(%({"label": "a", "qty": 1})))
+
+    asc = child_list("/Api/childtest/Invoice/#{inv}/lines?sort=qty")
+    assert_http_status(asc, 200)
+    labels = parse_body(asc)["data"].as_a.map(&.["data"].["label"].as_s)
+    labels.should eq(%w[a b c])
+
+    desc = child_list("/Api/childtest/Invoice/#{inv}/lines?sort=-qty")
+    assert_http_status(desc, 200)
+    labels = parse_body(desc)["data"].as_a.map(&.["data"].["label"].as_s)
+    labels.should eq(%w[c b a])
+  end
+
+  it "answers 422 for an unsortable or unknown sort field" do
+    inv = create_doc_id_http("childtest", "Invoice", j(%({"label": "INV-S2"})))
+    create_child_doc_id_http("childtest", "Invoice", inv, "lines", j(%({"label": "a", "qty": 1})))
+
+    resp = child_list("/Api/childtest/Invoice/#{inv}/lines?sort=ghost")
+    assert_http_status(resp, 422)
+    assert_error_contains(resp, "ghost")
+  end
+
+  it "lists tombstones with deleted=true" do
+    inv = create_doc_id_http("childtest", "Invoice", j(%({"label": "INV-T"})))
+    line = create_child_doc_id_http("childtest", "Invoice", inv, "lines", j(%({"label": "gone", "qty": 1})))
+
+    live = child_list("/Api/childtest/Invoice/#{inv}/lines")
+    assert_http_status(live, 200)
+    parse_body(live)["data"].as_a.size.should eq(1)
+
+    del = call_api(HTTP::Request.new("DELETE", "/Api/childtest/Invoice/#{inv}/lines/#{line}"))
+    assert_http_status(del, 204)
+
+    after = child_list("/Api/childtest/Invoice/#{inv}/lines")
+    assert_http_status(after, 200)
+    parse_body(after)["data"].as_a.size.should eq(0)
+
+    trash = child_list("/Api/childtest/Invoice/#{inv}/lines?deleted=true")
+    assert_http_status(trash, 200)
+    trash_body = parse_body(trash)
+    trash_body["data"].as_a.size.should eq(1)
+    trash_body["data"].as_a.first["data"]["label"].as_s.should eq("gone")
+  end
+
+  it "narrows the child list with a named scope" do
+    inv = create_doc_id_http("childtest", "Invoice", j(%({"label": "INV-SC"})))
+    create_child_doc_id_http("childtest", "Invoice", inv, "lines", j(%({"label": "small", "qty": 2})))
+    create_child_doc_id_http("childtest", "Invoice", inv, "lines", j(%({"label": "big", "qty": 9})))
+
+    scoped = child_list("/Api/childtest/Invoice/#{inv}/lines?scope=small")
+    assert_http_status(scoped, 200)
+    rows = parse_body(scoped)["data"].as_a
+    rows.size.should eq(1)
+    rows.first["data"]["label"].as_s.should eq("small")
+
+    unknown = child_list("/Api/childtest/Invoice/#{inv}/lines?scope=ghost")
+    assert_http_status(unknown, 422)
+    assert_error_contains(unknown, "ghost")
+  end
+
+  it "projects the child list with select and answers 422 for an unknown key" do
+    inv = create_doc_id_http("childtest", "Invoice", j(%({"label": "INV-SEL"})))
+    create_child_doc_id_http("childtest", "Invoice", inv, "lines", j(%({"label": "alpha", "qty": 2})))
+
+    sel = child_list("/Api/childtest/Invoice/#{inv}/lines?select=label")
+    assert_http_status(sel, 200)
+    row = parse_body(sel)["data"].as_a.first
+    row["data"].as_h.keys.should eq(["label"])
+
+    bad = child_list("/Api/childtest/Invoice/#{inv}/lines?select=ghost")
+    assert_http_status(bad, 422)
+    assert_error_contains(bad, "ghost")
   end
 end
