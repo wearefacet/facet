@@ -639,25 +639,30 @@ module Facet
       ) : Nil
         kinds = Set(String).new
 
-        db.query(
+        # The rows are materialized before validation: the validator resolves
+        # relation targets through `Database.with_connection`, which pins the
+        # SAME read-only connection inside this loop. A nested query on an
+        # open result set interleaves its wire frames with the outer response
+        # — the connection desyncs and the next statement reads garbage
+        # (the /check 500 a `children`-source relation trips). Read both
+        # columns, close the set, then validate.
+        views = db.query_all(
           "SELECT content->>'kind', content->'template' FROM projections " \
           "WHERE domain = 'core' AND doc_type = 'DocumentView' " \
           "AND meta->>'parent_id' = $1 AND deleted_at IS NULL",
           definition.qualified_name,
-        ) do |rs|
-          rs.each do
-            kind = rs.read(String?)
-            template = rs.read(JSON::Any?)
-            kinds << kind if kind
+          as: {String?, JSON::Any?},
+        )
+        views.each do |(kind, template)|
+          kinds << kind if kind
 
-            ViewTemplateValidator.validate(template, definition).each do |issue|
-              issues << Issue.new(
-                severity: :warning,
-                category: :view,
-                field: issue.path,
-                message: "DocumentView '#{kind}': #{issue.message}",
-              )
-            end
+          ViewTemplateValidator.validate(template, definition).each do |issue|
+            issues << Issue.new(
+              severity: :warning,
+              category: :view,
+              field: issue.path,
+              message: "DocumentView '#{kind}': #{issue.message}",
+            )
           end
         end
 

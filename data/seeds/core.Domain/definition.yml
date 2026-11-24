@@ -42,6 +42,11 @@ fields:
     title: Draft
     description: "When true, this domain is a throwaway draft — its doctypes can be freely rewritten without version/migration discipline, and the domain cannot be referenced by live-domain replication. Set once at create time; flipped to false by the publish action (which copies structure into a fresh real domain and drops the draft). Cannot be changed afterwards via document update."
     filters: [equality]
+  source_domain:
+    type: string
+    title: "Source Domain"
+    description: "The live domain this draft was derived from (`Domain::Draft.create_from` provenance). Absent on empty drafts and on live domains; read-only — stamped server-side at draft creation, never written through the document API."
+    filters: [equality]
 children:
   doctypes:
     doctype: DocType
