@@ -153,6 +153,33 @@ describe Facet::Assistant::Conversation do
       end
     end
   end
+
+  describe ".set_title" do
+    it "stores the title in context under 'title'" do
+      with_db do |db|
+        conv = spawn_test_conversation(db, "sess-title")
+        Facet::Assistant::Conversation.set_title(db, conv.id, "Hello there")
+        found = Facet::Assistant::Conversation.find(db, conv.id).not_nil!
+        found.context.as_h["title"].as_s.should eq("Hello there")
+      end
+    end
+
+    it "never overwrites an existing title" do
+      with_db do |db|
+        conv = spawn_test_conversation(db, "sess-title-guard")
+        Facet::Assistant::Conversation.set_title(db, conv.id, "First")
+        Facet::Assistant::Conversation.set_title(db, conv.id, "Second")
+        found = Facet::Assistant::Conversation.find(db, conv.id).not_nil!
+        found.context.as_h["title"].as_s.should eq("First")
+      end
+    end
+
+    it "is a no-op for an unknown id" do
+      with_db do |db|
+        Facet::Assistant::Conversation.set_title(db, "01NONEXISTENT0000000000000000", "x")
+      end
+    end
+  end
 end
 
 describe Facet::Assistant::Turn do

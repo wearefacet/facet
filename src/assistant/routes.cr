@@ -272,58 +272,25 @@ module Facet
         body = Facet::HTTP::Helpers.require_body(env) || return
         parsed = Facet::HTTP::Helpers.parse_json_body(env, body) || return
 
-        archived_raw = parsed["archived"]?
-        archived = archived_raw.try(&.as_bool?)
-        if archived_raw && archived.nil?
-          Facet::HTTP::Helpers.error_response(env, 422, "Field 'archived' must be a boolean")
-          return
-        end
-
+        archived, archived_raw = parse_archived(env, parsed)
         title_raw = parsed["title"]?
-        title : String?? = nil
         title_present = !title_raw.nil?
-        if title_present && title_raw
-          if title_raw.not_nil!.raw.nil?
-            title = nil
-          elsif (value = title_raw.as_s?)
-            trimmed = value.strip
-            if trimmed.empty?
-              title = nil
-            elsif trimmed.size > MAX_TITLE_LENGTH
-              Facet::HTTP::Helpers.error_response(
-                env, 422, "Field 'title' must be at most #{MAX_TITLE_LENGTH} characters")
-              return
-            else
-              title = trimmed
-            end
-          else
-            Facet::HTTP::Helpers.error_response(env, 422, "Field 'title' must be a string or null")
-            return
-          end
+        title : String? = nil
+        if title_raw
+          title = parse_title(env, title_raw)
+          return unless title || title_raw.raw.nil?
         end
 
-        unless archived_raw || title_present
-          Facet::HTTP::Helpers.error_response(
-            env, 422, "Body must carry 'archived' (boolean) or 'title' (string|null)")
-          return
-        end
+        return if write_empty_update_error(env, archived, archived_raw, title_present)
 
-        record = Database.with_db(:read_only) do |db|
-          Conversation.find(db, id)
-        end
+        record = fetch_conversation(id)
         unless record
           Facet::HTTP::Helpers.error_response(env, 404, "Conversation not found")
           return
         end
         return unless ownership_check(env, record)
 
-        updated = Database.with_db do |db|
-          next nil unless archived.nil? || Conversation.set_archived(db, id, archived)
-          if title_present
-            next nil unless Conversation.rename(db, id, title)
-          end
-          Conversation.find(db, id)
-        end
+        updated = apply_conversation_update(id, archived, title_present, title)
 
         if updated
           active = Database.with_db(:read_only) { |db| Turn.running?(db, updated.id) }
@@ -331,6 +298,70 @@ module Facet
         else
           Facet::HTTP::Helpers.error_response(env, 404, "Conversation not found")
         end
+      end
+
+      # Reads the optional `archived` member of the update body. Returns the
+      # parsed boolean (or `nil` when absent or `null`) and the raw value so
+      # the caller can tell an absent key from a rejected type.
+      private def self.parse_archived(env, parsed : JSON::Any) : {Bool?, JSON::Any?}
+        archived_raw = parsed["archived"]?
+        {archived_raw.try(&.as_bool?), archived_raw}
+      end
+
+      # Reads one conversation on a read-only connection; `nil` when absent.
+      private def self.fetch_conversation(id : String) : Conversation::Record?
+        Database.with_db(:read_only) { |db| Conversation.find(db, id) }
+      end
+
+      # Answers 422 when `archived` is present but not a boolean, or when the
+      # body carries neither `archived` nor `title`. Returns `true` when an
+      # error was written.
+      private def self.write_empty_update_error(env, archived : Bool?, archived_raw : JSON::Any?, title_present : Bool) : Bool
+        if archived_raw && archived.nil?
+          Facet::HTTP::Helpers.error_response(env, 422, "Field 'archived' must be a boolean")
+          return true
+        end
+        return false if archived_raw || title_present
+
+        Facet::HTTP::Helpers.error_response(
+          env, 422, "Body must carry 'archived' (boolean) or 'title' (string|null)")
+        true
+      end
+
+      # Applies the archive flag and/or the title in one transaction and
+      # returns the refreshed record, or `nil` when the row vanished.
+      private def self.apply_conversation_update(id : String, archived : Bool?, title_present : Bool, title : String?)
+        Database.with_db do |db|
+          next nil unless archived.nil? || Conversation.set_archived(db, id, archived)
+          next nil if title_present && !Conversation.rename(db, id, title)
+          Conversation.find(db, id)
+        end
+      end
+
+      # Parses the `title` member of the update body. A JSON `null` and a
+      # blank string both clear the title and answer `nil`; a string is
+      # trimmed and capped at `MAX_TITLE_LENGTH`. On a rejected value (too
+      # long, wrong type) the 422 response is written and `nil` is returned —
+      # the caller tells the two `nil` cases apart with `title_raw.raw.nil?`.
+      private def self.parse_title(env, title_raw : JSON::Any) : String?
+        return nil if title_raw.raw.nil?
+
+        value = title_raw.as_s?
+        unless value
+          Facet::HTTP::Helpers.error_response(env, 422, "Field 'title' must be a string or null")
+          return nil
+        end
+
+        trimmed = value.strip
+        return nil if trimmed.empty?
+
+        if trimmed.size > MAX_TITLE_LENGTH
+          Facet::HTTP::Helpers.error_response(
+            env, 422, "Field 'title' must be at most #{MAX_TITLE_LENGTH} characters")
+          return nil
+        end
+
+        trimmed
       end
 
       # ── Stream routes ─────────────────────────────────────────────────────
@@ -405,8 +436,15 @@ module Facet
         if turn_idx(turn_id) == 1
           title = Assistant::Title.from_content(content)
           if title
-            Database.with_db do |db|
-              Conversation.set_title(db, conversation_id, title)
+            begin
+              Database.with_db do |db|
+                Conversation.set_title(db, conversation_id, title)
+              end
+            rescue ex : PQ::PQError | DB::Error
+              # Best-effort: a title write failure must never block the
+              # stream or leave the turn stuck. The conversation simply
+              # keeps no title (it is re-tried on no later turn).
+              Log.warn(exception: ex) { "Assistant auto-title write failed" }
             end
           end
         end

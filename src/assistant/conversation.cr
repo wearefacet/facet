@@ -156,7 +156,7 @@ module Facet
       def self.set_title(db : DB::Connection, id : String, title : String) : Nil
         db.exec(
           "UPDATE agent_conversations " \
-          "SET context = context || jsonb_build_object('title', $2) " \
+          "SET context = context || jsonb_build_object('title', $2::text) " \
           "WHERE id = $1 AND NOT (context ? 'title')",
           id, title,
         )
