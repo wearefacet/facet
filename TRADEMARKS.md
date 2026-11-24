@@ -28,4 +28,4 @@ You may fork and modify Facet under the BSL 1.1 license. If you distribute your 
 
 ## Questions
 
-Ask before you use the marks in any way not covered here: [licensing@facetapp.tech](mailto:licensing@facetapp.tech).
+Ask before you use the marks in any way not covered here: [contact@amplitude-solutions.com](mailto:contact@amplitude-solutions.com).

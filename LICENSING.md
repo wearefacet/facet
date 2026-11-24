@@ -30,7 +30,7 @@ The test is simple: is Facet itself the product, sold on self-service terms? The
 
 ## Grey zone? Ask us
 
-Some cases have no clean answer: reselling a product that embeds Facet, a free public demo service, a partnership program, or anything else you are not sure about. Write to us before you launch. We answer fast, and we say yes to fair uses: [licensing@facetapp.tech](mailto:licensing@facetapp.tech).
+Some cases have no clean answer: reselling a product that embeds Facet, a free public demo service, a partnership program, or anything else you are not sure about. Write to us before you launch. We answer fast, and we say yes to fair uses: [contact@amplitude-solutions.com](mailto:contact@amplitude-solutions.com).
 
 ## The Change Date
 

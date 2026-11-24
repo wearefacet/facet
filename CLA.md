@@ -50,7 +50,7 @@ Signing runs through the **CLA Assistant** GitHub app:
 
 One signature covers your future Contributions to Facet. If this CLA changes in a way that matters, the app asks you to sign again.
 
-If you cannot use GitHub, or if you contribute as a company, write to [licensing@facetapp.tech](mailto:licensing@facetapp.tech) and we will sign you another way.
+If you cannot use GitHub, or if you contribute as a company, write to [contact@amplitude-solutions.com](mailto:contact@amplitude-solutions.com) and we will sign you another way.
 
 ---
 
