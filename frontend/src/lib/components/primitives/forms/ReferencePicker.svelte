@@ -2,6 +2,7 @@
 <!-- Copyright (c) 2026 Amplitude Solutions Ltd -->
 
 <script lang="ts">
+	import { tick } from 'svelte';
 	import * as m from '$lib/paraglide/messages';
 	import DoctypeIcon from '../data/DoctypeIcon.svelte';
 	import Field from './Field.svelte';
@@ -361,6 +362,12 @@
 		}
 		selectedRec = rec;
 		recOpen = false;
+		// The chip replaces the input — carry the focus with it so the
+		// keyboard flow survives the pick (Enter re-opens, Tab moves on)
+		// instead of dropping to `body`.
+		void tick().then(() => {
+			(rootEl?.querySelector('.ref-rec') as HTMLElement | null)?.focus();
+		});
 	}
 
 	function startEdit(): void {
@@ -466,6 +473,8 @@
 		labelId={labelId ?? undefined}
 	>
 		{#snippet children(meta)}
+			<!-- No Field label (embedded hosts pass none) — the aria-label
+				fallback keeps the combobox named for assistive tech. -->
 			<div
 				class="ref"
 				class:ref-has-sel={!!selectedRec}
@@ -473,6 +482,7 @@
 				class:ref-disabled={disabled}
 				role="combobox"
 				aria-labelledby={labelId}
+				aria-label={labelId ? undefined : placeholder}
 				aria-expanded={recOpen || typeOpen}
 				aria-haspopup="listbox"
 				aria-controls={typeOpen ? listboxTypeId : recOpen ? listboxRecId : undefined}
@@ -543,6 +553,11 @@
 						if (selectedRec && !disabled) startEdit();
 					}}
 					onkeydown={(e) => {
+						// Own-keyboard only. Keydowns from the search input bubble
+						// through here; the Enter that picks a record has already set
+						// `selectedRec` (state writes land before the batched DOM
+						// update), so an ungated startEdit() would undo the pick.
+						if (e.target !== e.currentTarget) return;
 						if (e.key === 'Enter' && selectedRec && !disabled) startEdit();
 					}}
 					aria-label={selectedRec ? m.doc_ref_edit_aria() : undefined}
