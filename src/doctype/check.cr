@@ -60,7 +60,9 @@ module Facet
     #                  warning; a missing kind is an `:info` notice — the
     #                  frontend falls back to generic layouts for the
     #                  missing kinds, so absent optional UI is not a fault
-    #                  (B-304).
+    #                  (B-304). A doctype with zero `core.CollectionView`
+    #                  children gets an `:info` notice too — the listing
+    #                  shows the starter screen until a view is created.
     # - `:actions`     — the definition declares named actions but ships no
     #                  Lua script. The authoring gate rejects this state;
     #                  the warning covers definitions published before the
@@ -79,9 +81,11 @@ module Facet
     #                  row (the `"$name"` typo class).
     #
     # Warnings describe configurations that the runtime silently skips,
-    # never hard failures. Two groups are `:info` notices instead: the
+    # never hard failures. Three groups are `:info` notices instead: the
     # `:defaults` notices state what the runtime does without the optional
-    # config, and a missing standard view kind describes absent optional UI.
+    # config, a missing standard view kind describes absent optional UI,
+    # and a doctype with zero collection views describes a starter state
+    # the listing recovers from on first view creation.
     module Check
       # A single diagnostic finding.
       record Issue,
@@ -631,7 +635,7 @@ module Facet
       # the `:view` category. The field path and the message carry the
       # surface config path, the field name, and the capability the field
       # lacks (a kanban `group_by` without `eq`, a calendar `discriminator`
-      # without the window filter).
+      # without the window filter). Zero children get one `:info` notice.
       private def self.check_views(
         db : DB::Connection,
         definition : DoctypeDefinition,
@@ -684,11 +688,20 @@ module Facet
       # `Document::CollectionViewGate.validate` — the write doors refuse the
       # same shapes with `422`, and the check endpoint downgrades them to a
       # warning (it never blocks).
+      #
+      # A doctype with **zero** live CollectionView children gets an `:info`
+      # notice (not a warning): the listing renders the frontend starter
+      # screen and there is nothing broken to fix — but the doctype has no
+      # saved listing surface until someone creates a view. The notice
+      # tells the author (and the domain-builder agent, which reads the
+      # check output) to create one.
       private def self.check_collection_views(
         db : DB::Connection,
         definition : DoctypeDefinition,
         issues : Array(Issue),
       ) : Nil
+        view_count = 0
+
         db.query(
           "SELECT content->>'name', content->>'surface', content->'config' FROM projections " \
           "WHERE domain = 'core' AND doc_type = 'CollectionView' " \
@@ -696,6 +709,7 @@ module Facet
           definition.qualified_name,
         ) do |rs|
           rs.each do
+            view_count += 1
             name = rs.read(String?)
             surface = rs.read(String?)
             config = rs.read(JSON::Any?)
@@ -710,6 +724,15 @@ module Facet
               )
             end
           end
+        end
+
+        if view_count.zero?
+          issues << Issue.new(
+            severity: :info,
+            category: :view,
+            field: nil,
+            message: "No CollectionView defined for #{definition.qualified_name} — the listing shows the view starter. Create at least one collection view (table, kanban, or calendar) so the doctype has a listing surface.",
+          )
         end
       end
 

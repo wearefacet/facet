@@ -101,11 +101,42 @@ module Facet::Doctype
           persist_view_for_check(db, doc_id, "quickView")
           persist_view_for_check(db, doc_id, "inline")
           persist_view_for_check(db, doc_id, "card")
+          # At least one valid collection view — a viewless doctype gets
+          # its own :info notice (asserted below).
+          persist_collection_view_for_check(db, doc_id, "All", "table", %({"columns":[{"key":"name"}]}))
 
           result = Check.call(db, doc_id)
           result.should be_a(Check::Result)
           res = result.as(Check::Result)
           res.issues.should be_empty
+        end
+      end
+
+      it "emits an :info notice when the doctype has no collection views" do
+        with_db do |db|
+          ensure_domain(db, "viewless")
+          defn = DoctypeDefinition.from_json(%({
+            "doctype": "Naked",
+            "domain": "viewless",
+            "schema_version": 1,
+            "aggregate_root": true,
+            "fields": {"name": {"type": "string", "required": true}},
+            "search": "{{ name }}",
+            "display_name": "{{ name }}"
+          }))
+          doc_id = persist_doctype_for_check(db, defn)
+          persist_view_for_check(db, doc_id, "view")
+          persist_view_for_check(db, doc_id, "form")
+          persist_view_for_check(db, doc_id, "quickView")
+          persist_view_for_check(db, doc_id, "inline")
+          persist_view_for_check(db, doc_id, "card")
+
+          result = Check.call(db, doc_id)
+          res = result.as(Check::Result)
+          notices = res.issues.select { |i| i.category == :view && i.severity == :info }
+          notices.size.should eq(1)
+          notices.first.message.should contain("No CollectionView defined for viewless.Naked")
+          notices.first.message.should contain("starter")
         end
       end
 

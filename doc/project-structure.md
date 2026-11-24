@@ -145,7 +145,6 @@ facet/
 │   │   ├── action_definition.cr        # One scripted action in a definition
 │   │   ├── check.cr                    # /check diagnostics for one doctype
 │   │   ├── children_definition.cr      # One child relationship in the composition tree
-│   │   ├── collection_view_defaults.cr # Default CollectionView row for a doctype
 │   │   ├── composition.cr              # Bundle-level composition check
 │   │   ├── create.cr                   # Doctype creation service
 │   │   ├── definition_store.cr         # Doctype definition cache interface

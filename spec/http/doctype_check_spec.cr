@@ -29,7 +29,9 @@ describe "GET /Api/core/DocType/:id/check" do
       }))
       Facet::Document::Create.call(db, "core", "DocType", defn.to_json, Facet::RBAC::AuthContext.system)
       # Ship the standard views so the doctype stays clean — a missing
-      # standard kind surfaces as a `:view` warning.
+      # standard kind surfaces as a `:view` warning. One valid collection
+      # view too — a viewless doctype surfaces a `:view` `:info` notice
+      # (asserted in the example below).
       %w[view form quickView inline card].each do |kind|
         Facet::Mutation::Client.create(
           db, "core", "DocumentView",
@@ -39,6 +41,13 @@ describe "GET /Api/core/DocType/:id/check" do
           actioner_id: "system:test",
         )
       end
+      Facet::Mutation::Client.create(
+        db, "core", "CollectionView",
+        doc_id: "orders.Widget.collection_view.all",
+        content: %({"name": "All", "surface": "table", "config": {"columns": [{"key": "name"}]}}),
+        meta: %({"parent_id": "orders.Widget"}),
+        actioner_id: "system:test",
+      )
     end
 
     resp = call_api(HTTP::Request.new("GET", "/Api/core/DocType/orders.Widget/check"))
@@ -46,6 +55,33 @@ describe "GET /Api/core/DocType/:id/check" do
     body = JSON.parse(resp.body)
     body["data"]["doctype_id"].as_s.should eq("orders.Widget")
     body["data"]["issues"].as_a.should be_empty
+  end
+
+  it "returns a :view :info notice when the doctype has no collection views" do
+    with_db do |db|
+      defn = Facet::Doctype::DoctypeDefinition.from_json(%({
+        "doctype": "Viewless",
+        "domain": "orders",
+        "schema_version": 1,
+        "aggregate_root": true,
+        "fields": {"name": {"type": "string", "required": true}},
+        "search": "{{ name }}",
+        "display_name": "{{ name }}"
+      }))
+      Facet::Document::Create.call(db, "core", "DocType", defn.to_json, Facet::RBAC::AuthContext.system)
+    end
+
+    resp = call_api(HTTP::Request.new("GET", "/Api/core/DocType/orders.Viewless/check"))
+    assert_http_status(resp, 200)
+    body = JSON.parse(resp.body)
+    issues = body["data"]["issues"].as_a
+    # The doctype also misses the five standard DocumentView kinds (each an
+    # `:info` notice) — pick the zero-collection-views notice by message.
+    notices = issues.select { |i| i["message"].as_s.includes?("No CollectionView defined") }
+    notices.size.should eq(1)
+    notices.first["severity"].as_s.should eq("info")
+    notices.first["category"].as_s.should eq("view")
+    notices.first["message"].as_s.should contain("orders.Viewless")
   end
 
   it "returns 200 with :defaults findings when search and display_name are not declared" do

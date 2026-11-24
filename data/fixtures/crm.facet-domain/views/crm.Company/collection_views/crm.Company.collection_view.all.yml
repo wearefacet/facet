@@ -1,0 +1,23 @@
+---
+content:
+  name: All Companies
+  config:
+    columns:
+    - key: name
+    - key: status
+      width: 110px
+    - key: industry
+      width: 130px
+    - key: domain_name
+      width: 150px
+    - key: phone
+      width: 150px
+    - key: website
+      width: 190px
+    - key: company_size
+      width: 120px
+    - key: annual_revenue
+      width: 150px
+  surface: table
+meta:
+  parent_id: crm.Company

@@ -125,9 +125,11 @@ workspace sidebar: **Inventory** is there with its two doctypes.
 
 ## Step 6 — Create some records
 
-Click **Inventory → Item** in the sidebar. The list opens on the
-**All Records** table view. Use **New** (the list's create action) three
-times:
+Click **Inventory → Item** in the sidebar. The doctype has no view yet: the
+starter screen shows one card per layout. Pick **Table** to create the
+first view — name it `All items`, keep the suggested columns, and save.
+The list opens on the new view. Use **New** (the list's create action)
+three times:
 
 | Name           | Quantity | Status    | Supplier    | Cost price |
 | -------------- | -------- | --------- | ----------- | ---------- |
@@ -156,7 +158,7 @@ steps:
 
 ### Checkpoint
 
-A new **Board** tab opens next to All Records. Three lanes — In stock, Low,
+A new **Board** tab opens next to **All items**. Three lanes — In stock, Low,
 Ordered — each carrying the cards whose status matches. The lane filter is
 live: the In stock lane lists exactly the Standing desk.
 

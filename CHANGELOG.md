@@ -4,6 +4,11 @@ Notable changes to Facet. The project is pre-1.0: a release can contain breaking
 
 ## Unreleased
 
+### Workspace UI
+
+- **No default collection view.** A new doctype starts with zero views. The listing shows a starter screen — one card per layout (table, kanban, calendar) — that opens the view editor with the surface preselected; a view created there starts as a **personal** view. Without `create` permission on views the starter shows a note. Views created by earlier releases (the seeded `All Records`) remain; deleting the last view now stays deleted — the boot seed no longer recreates it.
+- The doctype `/check` report (and the domain-builder agent's check tools) carries an `:info` notice — not a warning — when a doctype has no collection view.
+
 ### HTTP API
 
 - Child lists paginate. `GET /Api/:domain/:doctype/:id/:rel` now forwards the full list grammar — `page`, `items`, `sort`, `filters`, `select`, `scope`, `deleted`, `aggregate`, `field` — with the flat route's validation and defaults (`page: 1`, `items: 100`). Before, the route fixed page 1 at 1000 items and ignored every other parameter. Clients that passed `page` / `sort` to a child list and relied on the fixed answer must pass no parameters to keep the old (unsorted, first-page) shape. Child-list ETags changed value once (the fingerprint now covers page/items/sort); clients holding `If-None-Match` take one 200, then stable. Sidecar lists stay unpaginated.

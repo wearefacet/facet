@@ -36,9 +36,10 @@ Ouvrez un domaine, puis sélectionnez un doctype. La liste s’ouvre sur la
 première vue enregistrée. Vous pouvez aussi ouvrir une vue directement depuis
 le tableau de bord du domaine.
 
-Chaque doctype livre une vue tableau générale nommée « All Records ». Une
-liste peut porter d’autres vues. Les onglets au-dessus du tableau les
-montrent, chacun avec une icône pour sa disposition : tableau, kanban ou
+Un nouveau doctype n’a pas encore de vue : la page affiche un écran
+d’accueil avec une carte par disposition. Choisissez une carte pour créer
+la première vue. Ensuite, les onglets au-dessus du tableau montrent les
+vues, chacune avec une icône pour sa disposition : tableau, kanban ou
 calendrier.
 
 <!-- d2

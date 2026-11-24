@@ -61,6 +61,8 @@
 		view = null,
 		/** Projection id of the existing view to edit (edit mode). Create mode omits it. */
 		viewId,
+		/** Surface preselected for create mode — skips the surface step. Omit for the full wizard. */
+		initialSurface,
 		viewerId,
 		onclose,
 		onsaved
@@ -73,6 +75,8 @@
 		view?: CollectionView | null;
 		/** Projection id of the existing view being edited. */
 		viewId?: string;
+		/** Surface preselected for create mode; skips the surface step. */
+		initialSurface?: CollectionSurface;
 		/** Account id of the current user — used to set `owner_id` for personal views. */
 		viewerId?: string;
 		onclose?: () => void;
@@ -84,7 +88,7 @@
 
 	type Step = 'surface' | 'config';
 	// svelte-ignore state_referenced_locally — initial value from the prop.
-	let step = $state<Step>(isEdit ? 'config' : 'surface');
+	let step = $state<Step>(isEdit || initialSurface ? 'config' : 'surface');
 
 	// ── Form state ──────────────────────────────────────────────────
 	// svelte-ignore state_referenced_locally — the editor is remounted fresh
@@ -93,7 +97,7 @@
 	// `surface` is immutable in edit mode for v1 (only `table` and `calendar`
 	// exist; the editor only constructs `table` views today).
 	// svelte-ignore state_referenced_locally — initial value from the prop.
-	let surface = $state<CollectionSurface>(view?.surface ?? 'table');
+	let surface = $state<CollectionSurface>(view?.surface ?? initialSurface ?? 'table');
 
 	/**
 	 * Effective scope of the view being authored:

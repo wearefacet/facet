@@ -17,14 +17,14 @@
 # The restore is additive and idempotent, matching `Seed.seed` semantics:
 # baseline rows go back with `ON CONFLICT DO NOTHING`, rows the example
 # already created stay untouched. Restored rows are byte-identical to
-# seeded rows except the default `core.CollectionView` projection ids,
-# which `Seed.seed` mints fresh on every run (the seed writes those views
-# without a fixed doc_id). Specs address seeded views by `parent_id`,
-# never by projection id, so the difference is invisible to the suite.
+# seeded rows. The seed no longer mints `core.CollectionView` rows (a
+# doctype starts with zero views — views are user-authored), so the
+# baseline carries no default views at all. Specs create the views they
+# need and address them by `parent_id`, never by projection id.
 #
 # Use `restore_seeded_baseline` for fixture setup only. Specs that test
-# `Doctype::Seed` behaviour itself (seed projection staging, seeded view
-# children, view idempotency) call `Doctype::Seed.seed` directly.
+# `Doctype::Seed` behaviour itself (seed projection staging, viewless
+# doctypes) call `Doctype::Seed.seed` directly.
 module SeededBaseline
   # The tables the per-example TRUNCATE wipes. The same list builds the
   # snapshot, the restore, and the TRUNCATE statement. FK children of
