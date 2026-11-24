@@ -358,18 +358,21 @@
 	// Which assistant mount (if any) the current route gets. The workspace
 	// mount is gated on `assistantAccess` so a stale persisted open state never
 	// mounts a window for an account whose roles lost their `assistant_access`
-	// flag (the backend gates the routes as well). During an active preview
-	// session the mount stays the builder one: the user is looking at the
-	// draft's live URL but is still iterating on the draft with the assistant,
-	// and the preview token would fail the workspace surface's role gates
-	// anyway (the capability principal carries no active role). The builder
-	// conversation binds to the preview domain — see the domain-builder
-	// create route's preview branch.
+	// flag (the backend gates the routes as well). The workspace surface serves
+	// the live application and the Configure shell alike: both are signed-in
+	// role-scoped surfaces, and the backend gates the workspace routes on
+	// `assistant_access`, not on the route. During an active preview session the
+	// mount stays the builder one: the user is looking at the draft's live URL
+	// but is still iterating on the draft with the assistant, and the preview
+	// token would fail the workspace surface's role gates anyway (the
+	// capability principal carries no active role). The builder conversation
+	// binds to the preview domain — see the domain-builder create route's
+	// preview branch.
 	const assistantSurface = $derived.by(() => {
 		if (!data.authenticated) return null;
 		if (isBuilderRoute) return 'builder' as const;
 		if (isPreviewActive()) return 'builder' as const;
-		if (!isConfigureRoute && !isConsentRoute && data.assistantAccess) {
+		if (!isConsentRoute && data.assistantAccess) {
 			return 'workspace' as const;
 		}
 		return null;
@@ -604,8 +607,8 @@
 				keys: 'Mod+I',
 				label: m.shortcuts_toggle_assistant(),
 				group: 'general',
-				// Configure and consent have no assistant surface — the key stays
-				// inert there instead of opening a window that cannot mount.
+				// Consent and unauthenticated routes have no assistant surface — the
+				// key stays inert there instead of opening a window that cannot mount.
 				when: () => assistantSurface !== null,
 				handler: () => {
 					toggleAssistantOpen();

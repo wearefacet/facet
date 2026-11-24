@@ -53,6 +53,7 @@
 	import { can } from '$lib/permissions.svelte.js';
 	import { onPermissionRefresh } from '$lib/authorization/permissionRefresh.svelte.js';
 	import { bellProps } from '$lib/notifications.svelte';
+	import { getAssistantOpen, toggleAssistantOpen } from '$lib/assistantOpen.svelte';
 
 	type LayoutData = {
 		domains: NavDomain[];
@@ -60,6 +61,11 @@
 		activeRole?: string | null;
 		availableRoles?: string[];
 		connectivity?: string[] | null;
+		/** Workspace-assistant availability (`me.assistant.access`) — gates the
+		 * top-bar pill. The floating window is mounted at the root layout. */
+		assistantAccess?: boolean;
+		/** Configured assistant display name (`me.assistant.name`). */
+		assistantName?: string;
 	};
 
 	/** The static, paramless Configure routes the sidebar links to. */
@@ -306,6 +312,14 @@
 	onPermissionRefresh(() => invalidateAll());
 
 	let collapsed = $state(false);
+
+	// The assistant pill mirrors the live shell: it renders only when the
+	// account may use the workspace assistant (`me.assistant.access`), and it
+	// toggles the same one open flag the floating window reads. The window
+	// itself is mounted at the root layout (`AssistantHost`), so it floats over
+	// this shell; the backend re-checks `assistant_access` on every create and
+	// stream.
+	const assistantAvailable = $derived(data.assistantAccess ?? false);
 </script>
 
 <!-- Collapsed rail: rows show only their icon, so the label moves to a
@@ -391,14 +405,17 @@
 	</SidebarShell>
 
 	<!-- Only controls with a working behaviour: the bell is wired through
-		`bellProps` (same as the live shell) and the search trigger opens the
-		Configure palette below. Configure has no assistant, so that control
-		stays hidden. -->
+		`bellProps` (same as the live shell), the search trigger opens the
+		Configure palette below, and the assistant pill toggles the workspace
+		window when the account may use it. -->
 	<Topbar
 		{crumbs}
 		showSearch
 		onsearch={() => (paletteOpen = true)}
-		showAssistant={false}
+		showAssistant={assistantAvailable}
+		assistantLabel={data.assistantName}
+		assistantOpen={getAssistantOpen()}
+		onassistant={toggleAssistantOpen}
 		{...bellProps()}
 	/>
 
