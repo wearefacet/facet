@@ -386,22 +386,36 @@
 		return `${base}?from=${encodeURIComponent(page.url.pathname + page.url.search)}`;
 	});
 
-	// ── Enter opens the full show page ──────────────────────────────────
+	// ── Drawer keyboard: Enter opens fully, Escape closes ───────────────
 	//
 	// With the drawer open, Enter means "open fully" — the same target as
-	// the header's external-link affordance. A capture-phase window listener
+	// the header's external-link affordance — and Escape means "close": pop
+	// one entry off the nav stack when the drawer was reached through a
+	// reference, otherwise close the drawer. A capture-phase window listener
 	// is required: the shortcuts dispatcher's route scope already holds the
-	// table's `Enter` entry (open the peek for the highlighted row), and
-	// registration order would let it consume the key first. The listener
-	// only claims the key when the focus sits on a non-interactive,
-	// non-typing target outside a dialog, so links, buttons, and inputs
-	// keep their native Enter (edit pencil, restore, form fields).
+	// table's `Enter` (open the peek for the highlighted row) and `Escape`
+	// (clear the row highlight) entries, and registration order would let
+	// them consume the keys first. The listener stays out of an open
+	// dialog's keyboard, and Enter only claims non-interactive, non-typing
+	// targets so links, buttons, and inputs keep their native Enter (edit
+	// pencil, restore, form fields). Escape is claimed from typing targets
+	// too — a picker inside the drawer already stops propagation on its own
+	// Escape, so only a genuinely unhandled press reaches this listener.
 	$effect(() => {
-		if (!quickViewOpen || !showHref) return;
+		if (!quickViewOpen) return;
 		const onKeydown = (e: KeyboardEvent) => {
 			if (e.defaultPrevented || e.isComposing) return;
-			if (e.key !== 'Enter' || e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+			if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
 			if (insideDialog(e.target)) return;
+			if (e.key === 'Escape') {
+				// A close already in flight (a repeated key, the scrim) — swallow
+				// the key without acting so the table's Escape stays out.
+				if (!qvClosing) void popQvNav();
+				e.preventDefault();
+				e.stopPropagation();
+				return;
+			}
+			if (e.key !== 'Enter' || !showHref) return;
 			if (isInteractiveTarget(e.target) || isTypingTarget(e.target)) return;
 			e.preventDefault();
 			e.stopPropagation();
