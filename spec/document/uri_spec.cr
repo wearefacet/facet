@@ -64,6 +64,31 @@ describe Facet::Document::DocURI do
     uri.to_s.should eq(original)
   end
 
+  # ── Named ids (email-shaped) ────────────────────────────────────────
+
+  it "parses a URN whose id is an account email" do
+    uri = Facet::Document::DocURI.parse("urn:facet:iam:Account:jean@amplitude-solutions.com")
+    uri.should_not be_nil
+    u = uri.not_nil!
+    u.domain.should eq("iam")
+    u.doctype.should eq("Account")
+    u.opaque.should eq("jean@amplitude-solutions.com")
+  end
+
+  it "parses the dotted form of an email id with the id whole" do
+    uri = Facet::Document::DocURI.parse("iam.Account.jean@amplitude-solutions.com")
+    uri.should_not be_nil
+    u = uri.not_nil!
+    u.domain.should eq("iam")
+    u.doctype.should eq("Account")
+    u.opaque.should eq("jean@amplitude-solutions.com")
+  end
+
+  it "rejects an email id carrying a URI-reserved character" do
+    # `:` and `?` stay reserved by the URI grammar even for named ids.
+    Facet::Document::DocURI.parse("urn:facet:iam:Account:a?b@c.com").should be_nil
+  end
+
   # ── from_projection_id / to_projection_id ─────────────────────────────
 
   it "derives URN from a bare-ULID projection id" do

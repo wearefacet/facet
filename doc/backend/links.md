@@ -30,12 +30,14 @@ Two passes cover the realistic forms:
   to the next `)`, so a link title (`[Alice](urn:facet:… "t")`) still parses
   through the bare-token pass below.
 - **Bare `urn:facet:` tokens** — every URN-shaped run of characters
-  (`[A-Za-z0-9._:-]`, then an optional `?state=<alphanumeric>` q-component)
-  is parsed wherever it appears: bare mentions in prose, autolinks
-  (`<urn:facet:…>`), reference definitions (`[label]: urn:facet:…`), labels
-  containing `]` (no bracket balancing needed), and links with a title. A
-  trailing sentence `.` or `:` is trimmed before parsing — no real opaque id
-  ends with either.
+  (`[A-Za-z0-9._%@:+-]` — the `@`/`+` carry the email-shaped named ids
+  `iam.Account` mints, see [`iam.md`](iam.md) → named-id create), then an
+  optional `?state=<alphanumeric>` q-component, is parsed wherever it
+  appears: bare mentions in prose, autolinks (`<urn:facet:…>`), reference
+  definitions (`[label]: urn:facet:…`), labels containing `]` (no bracket
+  balancing needed), and links with a title. A trailing sentence `.` or
+  `:` is trimmed before parsing — no real opaque id ends with either (an
+  email id cannot either).
 
 Not recognized: dotted-form mentions **without** a link or `urn:` prefix
 (`hr.Employee.01AAA` in prose would over-match, so it is out of scope),
@@ -165,7 +167,7 @@ Invariants:
 
 - `domain` matches `^_?[a-z0-9][a-z0-9\-]*$` (lowercase alphanumeric with dashes, may start with `_` for drafts).
 - `Doctype` matches `^[A-Z][a-zA-Z0-9]*$` (CamelCase).
-- `opaque` matches `^[A-Za-z0-9._-]+$` — typically a ULID, but `core.DocType` and `core.Domain` registrations use the qualified `{domain}.{Doctype}` or the bare domain name respectively.
+- `opaque` matches `^[A-Za-z0-9._%@+-]+$` — typically a ULID, but `core.DocType` and `core.Domain` registrations use the qualified `{domain}.{Doctype}` or the bare domain name respectively, and `iam.Account` rows use the account's lowercased email (named-id create; `:` and `?` stay reserved by the URI grammar). The dotted reference form takes the id as the tail after the first two dots, so an email id keeps its own dots.
 - Optional `?state={mutation_ulid}` q-component pins the reference to a historical state of the document. For `links` extraction the q-component is preserved verbatim if present (so a link to a historical state and a link to the current state of the same document are **distinct** URNs).
 
 `DocURI.parse` accepts both the canonical URN form and the legacy dotted storage form (`hr.Employee.01J5X…`, `hr.Employee`), so existing reference field values that predate the URN scheme still work.

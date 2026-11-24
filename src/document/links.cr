@@ -161,7 +161,8 @@ module Facet
       #    (`[label]: urn:facet:…`), link labels containing `]`, and links
       #    with a title, none of which the bracket scanner can see. The
       #    token ends at the first character outside the URN charset, so a
-      #    sentence period after a URN is trimmed before parsing.
+      #    sentence period after a URN is trimmed before parsing (no real
+      #    opaque id ends with `.` or `:` — an email id cannot either).
       #
       # Both passes append canonical URNs; `extract_from_content` dedupes.
       private def self.extract_longtext_value(value : JSON::Any, urns : Array(String)) : Nil
@@ -201,7 +202,7 @@ module Facet
 
       # Pass 2 — bare `urn:facet:` tokens. Reads the maximal run of URN
       # charset characters (NSS segments joined by `:`, opaque ids holding
-      # `.`/`_`/`-`), then an optional `?state=` q-component. Trailing
+      # `.`/`_`/`-`/`@`/`+`), then an optional `?state=` q-component. Trailing
       # sentence punctuation the charset admits (`.` and `:`) is trimmed —
       # no real opaque id ends with either.
       private def self.extract_urn_tokens(text : String, urns : Array(String)) : Nil
@@ -244,9 +245,10 @@ module Facet
       end
 
       # True when `ch` may appear in a URN token: NSS segments joined by `:`
-      # (domain lowercase-dash, doctype CamelCase, opaque `[A-Za-z0-9._-]`).
+      # (domain lowercase-dash, doctype CamelCase, opaque `[A-Za-z0-9._%@+-]`
+      # — the `@`/`+` carry the email-shaped named ids `iam.Account` mints).
       private def self.urn_char?(ch : Char) : Bool
-        ch.alphanumeric? || ch == '.' || ch == '_' || ch == '-' || ch == ':'
+        ch.alphanumeric? || ch == '.' || ch == '_' || ch == '-' || ch == ':' || ch == '@' || ch == '+'
       end
 
       # Finds the `]` that closes the `[` at `start`. Returns nil if none.

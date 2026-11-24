@@ -210,6 +210,22 @@ describe Facet::Document::Links do
       urns = Facet::Document::Links.extract_from_content(content, defn)
       urns.should be_empty
     end
+
+    it "extracts an email-id account URN from a markdown link, id whole" do
+      defn = longtext_defn
+      content = JSON.parse(%({"body": "Hey [@Jean](urn:facet:iam:Account:jean@amplitude-solutions.com)"}))
+
+      urns = Facet::Document::Links.extract_from_content(content, defn)
+      urns.should eq(["urn:facet:iam:Account:jean@amplitude-solutions.com"])
+    end
+
+    it "trims a trailing sentence period from a bare email-id URN" do
+      defn = longtext_defn
+      content = JSON.parse(%({"body": "Ping urn:facet:iam:Account:jean@amplitude-solutions.com."}))
+
+      urns = Facet::Document::Links.extract_from_content(content, defn)
+      urns.should eq(["urn:facet:iam:Account:jean@amplitude-solutions.com"])
+    end
   end
 
   describe ".extract_from_content with nested schemas" do

@@ -138,7 +138,7 @@ A bare `doc_ref` without the `domain.Doctype` prefix is rejected at send time, s
 
 `data/seeds/core.Comment/script.lua` ships the one seeded notification producer: a mention scan in the `core.Comment` create and update hooks.
 
-- **Scan:** every `urn:facet:iam:Account:` URN in `body` with a length-26 id segment (link and bare forms), deduped. The author is skipped; system contexts (no actor) never notify.
+- **Scan:** every `urn:facet:iam:Account:` URN in `body` (link and bare forms), deduped. Account ids are the account's email, lowercased (named-id create), so the scan accepts the practical email charset (`@ . _ - +` beside the alphanumerics) and trims a trailing `.` or `-` — bare-form sentence punctuation no real id ends with. The scan is a heuristic; the enqueue-time account existence check is the validator, and an overrun fails there, contained. The author is skipped; system contexts (no actor) never notify.
 - **Create** notifies every mention. **Update** notifies net-new ids only, on a real body change — a mention kept through an edit stays silent; a removed and re-added one notifies again (the hook diffs the previous body's scan).
 - **Title:** `<actor label> mentioned you[ on <host label>]` — the actor label from the caller's account document, the host label from the comment's `target` document (first non-empty conventional name field — the Lua surface cannot render a doctype's `display_name` template). Both clipped to 80 chars.
 - **Routing:** `doc_ref` is the comment's qualified `target`, so the notification points at the host document; `kind = "comment_mention"`, `icon = "at-sign"`.
