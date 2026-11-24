@@ -364,6 +364,10 @@ The fresh ULID per merge is what keeps `projections.state` (the ETag token) hone
 
 The merged row carries the new write's `cause_*` and `emitted_at`, and replays correctly from any snapshot before it — `Audit::Rollback` to the merged row restores state `Z`. Chained merges work: after a merge the stored row is `X→Z`, and the next write composes it by the same rules.
 
+A burst that returns a field to its pre-window value (`X→Y→X`) still leaves one row. The composition is mechanical: it keeps the second write's entries and never re-diffs against the pre-window content, so the merged row can store a diff that is a no-op against `X` — a literal `set` that names the value the field already had. The `patch∘patch` path collapses the same way: the re-diff of two identical strings degrades to a literal. The row is kept by decision — the write happened, its `updated` event went out, and the ETag moved — and replay stays correct, because applying the stored diff to `X` changes nothing and a rollback to the merged row restores `Z = X`.
+
+One guard trims the shape before coalescing: a write whose diff is empty against the live content writes no row and emits no event. The response carries the current `projections.state` as the mutation id, so the ETag the caller sees does not move. The audit log shows at most one row for such a burst, and never the intermediate value.
+
 ---
 
 ## Computed-field recompute
