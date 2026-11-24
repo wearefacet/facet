@@ -45,6 +45,19 @@ Run `bin/ameba` before and after testing. Split large methods to stay under cycl
 
   The test database must be up for any spec run: `make test_db_up` starts it (idempotent; leave it up between runs). Run `make test` once at the end, as the final gate before you mark the task complete.
 
+- **Never pipe a full-suite run into `tail`, `head`, or `grep`.** The failure summary prints at the end of the output. A truncating pipe deletes it. A narrow grep pattern misses the failure text. Each mistake costs one full re-run (10 minutes or more). Redirect the complete output to a log file first, then inspect the file:
+
+  ```sh
+  make test > tmp/crystal.log 2>&1
+  echo "exit: $?"
+  tail -50 tmp/crystal.log                        # final summary: "N examples, X failures, Y errors"
+  grep -nE "Failure|Failed|Error" tmp/crystal.log # failing examples; add -A5 for assertion detail
+  ```
+
+  - Keep the redirect (`2>&1`), not a pipe. Then `$?` is the exit code of the suite, not of the last pipe command.
+  - A single-file run follows the same pattern: `crystal spec spec/<dir>/<file>_spec.cr > tmp/crystal.log 2>&1`.
+  - Read the log again with new `tail`/`grep` commands as often as you need. Do not re-run the suite to see its output again. `tmp/` at the repo root is gitignored scratch space.
+
 - **Never use `before_all` hooks.** `before_all` is fundamentally broken in this project:
   - The Kemal handler chain is a singleton — calling `call_api` or `Kemal.config.setup` inside `before_all` reassigns `next` pointers on handler instances that may still be walked, causing stack overflows.
   - `before_all` runs outside the per-test DB lifecycle (template clone + global truncation). Any data seeded in `before_all` is wiped by the global `before_each` truncation, making the hook silently useless.

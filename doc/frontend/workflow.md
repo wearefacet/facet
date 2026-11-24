@@ -416,6 +416,16 @@ The frontend test suite has two layers. There is no separate component-test laye
   - Accessibility runs in `error` mode (see `frontend/.storybook/preview.ts`): every story runs an axe scan and a violation fails that story's test. Pre-existing violations carry an explicit meta-level `a11y: { test: 'todo' }` override in `*.stories.svelte` (grep for `test: 'todo'`) — clear those starting with the primitives (`src/lib/components/primitives/`), then the features; when the last override is gone, remove the mechanism comment in `preview.ts`.
 - **E2E a11y smoke** — `e2e/tests/smoke.e2e.ts` runs an `@axe-core/playwright` scan of the signed-in dashboard and fails on `critical` violations (audit 22).
 - **E2E** — browser journeys against the real stack live in the top-level [`e2e/`](../../e2e/README.md) package (`dockerized Playwright stacks with Caddy, backend, PostgreSQL and Redis; one scenario file = one throwaway stack`). This `frontend/` package keeps no Playwright config or script; the `playwright`/`@playwright/test` devDependencies stay only because `@vitest/browser-playwright` needs them as its browser provider.
+- **Run the full suite with its output captured.** `pnpm test` runs both Vitest projects and takes several minutes. Do not pipe the run into `tail`, `head`, or `grep`. The failed-test summary and the unhandled-rejection list print at the end of the output. Truncation and narrow filters delete them, and each mistake costs one full re-run. Redirect the complete output to a log file first, then inspect the file:
+
+  ```sh
+  pnpm test > tmp/vitest.log 2>&1
+  echo "exit: $?"
+  tail -50 tmp/vitest.log                          # summary: "Test Files  X failed", "Tests  Y failed"
+  grep -inE "fail|unhandled|error" tmp/vitest.log  # failing tests, assertion diffs, unhandled rejections
+  ```
+
+  Keep the redirect (`2>&1`), not a pipe. Then `$?` is the exit code of the suite. Read the log again with new `tail`/`grep` commands as often as you need; do not re-run the suite to see its output again. `tmp/` is gitignored scratch space at any level; `../tmp/` keeps frontend and backend logs together.
 
 ### Component development
 
