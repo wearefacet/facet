@@ -52,9 +52,12 @@ const tableDraft = (overrides: Partial<CollectionViewDraft> = {}): CollectionVie
 	fields: FLAT_FIELDS,
 	kanbanMode: 'values',
 	groupBy: '',
+	laneOrder: [],
+	hiddenLanes: [],
 	lanes: [],
 	sortField: '',
 	sortDesc: true,
+	allowMove: false,
 	sortFields: [],
 	...overrides
 });
@@ -477,6 +480,116 @@ describe('collectionView/config — editor config helpers', () => {
 		});
 	});
 
+	describe('buildConfig — kanban lane presentation', () => {
+		/** Fields whose status enum carries declared values. */
+		const valuedFields: FieldDef[] = [
+			field('title', 'string', { title: 'Deal Title' }),
+			field('status', 'enum', {
+				operators: ['eq'],
+				values: [{ key: 'open', label: 'Open' }, { key: 'won', label: 'Won' }, { key: 'lost' }]
+			})
+		];
+
+		it('persists a lane order that differs from the declaration order', () => {
+			const draft = tableDraft({
+				surface: 'kanban',
+				kanbanMode: 'values',
+				groupBy: 'status',
+				fields: valuedFields,
+				laneOrder: ['won', 'open', 'lost']
+			});
+			expect(buildConfig(draft).kanban?.lane_order).toEqual(['won', 'open', 'lost']);
+		});
+
+		it('omits the lane order when it matches the declaration order', () => {
+			const draft = tableDraft({
+				surface: 'kanban',
+				kanbanMode: 'values',
+				groupBy: 'status',
+				fields: valuedFields,
+				laneOrder: ['open', 'won', 'lost']
+			});
+			expect('lane_order' in (buildConfig(draft).kanban ?? {})).toBe(false);
+		});
+
+		it('normalizes the draft order: appends unlisted keys and drops stale ones', () => {
+			const draft = tableDraft({
+				surface: 'kanban',
+				kanbanMode: 'values',
+				groupBy: 'status',
+				fields: valuedFields,
+				laneOrder: ['lost', 'ghost']
+			});
+			expect(buildConfig(draft).kanban?.lane_order).toEqual(['lost', 'open', 'won']);
+		});
+
+		it('persists hidden lanes and omits them when none are hidden', () => {
+			const hidden = tableDraft({
+				surface: 'kanban',
+				kanbanMode: 'values',
+				groupBy: 'status',
+				fields: valuedFields,
+				hiddenLanes: ['lost', 'ghost']
+			});
+			expect(buildConfig(hidden).kanban?.hidden_lanes).toEqual(['lost']);
+
+			const none = tableDraft({
+				surface: 'kanban',
+				kanbanMode: 'values',
+				groupBy: 'status',
+				fields: valuedFields
+			});
+			expect('hidden_lanes' in (buildConfig(none).kanban ?? {})).toBe(false);
+		});
+
+		it('drops the lane overrides when the group-by field no longer resolves', () => {
+			const draft = tableDraft({
+				surface: 'kanban',
+				kanbanMode: 'values',
+				groupBy: 'ghost',
+				fields: valuedFields,
+				laneOrder: ['won'],
+				hiddenLanes: ['open']
+			});
+			const kanban = buildConfig(draft).kanban ?? {};
+			expect('lane_order' in kanban).toBe(false);
+			expect('hidden_lanes' in kanban).toBe(false);
+		});
+
+		it('writes the lane overrides in values mode only', () => {
+			const draft = tableDraft({
+				surface: 'kanban',
+				kanbanMode: 'custom',
+				groupBy: 'status',
+				fields: valuedFields,
+				laneOrder: ['won'],
+				hiddenLanes: ['open'],
+				lanes: [{ label: 'Low', filter: { probability__lt: 50 } }]
+			});
+			const kanban = buildConfig(draft).kanban ?? {};
+			expect('lane_order' in kanban).toBe(false);
+			expect('hidden_lanes' in kanban).toBe(false);
+		});
+
+		it('persists allow_move only when enabled', () => {
+			const enabled = tableDraft({
+				surface: 'kanban',
+				kanbanMode: 'values',
+				groupBy: 'status',
+				fields: valuedFields,
+				allowMove: true
+			});
+			expect(buildConfig(enabled).kanban?.allow_move).toBe(true);
+
+			const disabled = tableDraft({
+				surface: 'kanban',
+				kanbanMode: 'custom',
+				lanes: [{ label: 'Low', filter: { probability__lt: 50 } }]
+			});
+			expect('allow_move' in (buildConfig(disabled).kanban ?? {})).toBe(false);
+		});
+	});
+
 	describe('buildPayload', () => {
 		it('sets owner_id only for a personal view with a viewer', () => {
 			const draft = tableDraft();
@@ -616,6 +729,49 @@ describe('collectionView/config — editor config helpers', () => {
 			// Custom mode has no group-by requirement.
 			const custom = validateDraft(tableDraft({ surface: 'kanban', kanbanMode: 'custom' }));
 			expect(custom.groupByError).toBeNull();
+		});
+
+		it('rejects a values-mode draft whose lanes are all hidden', () => {
+			const fields = [
+				field('status', 'enum', {
+					operators: ['eq'],
+					values: [{ key: 'open' }, { key: 'won' }]
+				})
+			];
+			const allHidden = validateDraft(
+				tableDraft({
+					surface: 'kanban',
+					kanbanMode: 'values',
+					groupBy: 'status',
+					fields,
+					hiddenLanes: ['open', 'won']
+				})
+			);
+			expect(allHidden.lanesError).toBeTruthy();
+			expect(allHidden.canSave).toBe(false);
+
+			const oneVisible = validateDraft(
+				tableDraft({
+					surface: 'kanban',
+					kanbanMode: 'values',
+					groupBy: 'status',
+					fields,
+					hiddenLanes: ['open']
+				})
+			);
+			expect(oneVisible.lanesError).toBeNull();
+			expect(oneVisible.canSave).toBe(true);
+
+			// Custom mode hides nothing — the check is values-mode only.
+			const custom = validateDraft(
+				tableDraft({
+					surface: 'kanban',
+					kanbanMode: 'custom',
+					hiddenLanes: ['open'],
+					lanes: [{ label: 'Low', filter: { probability__lt: 50 } }]
+				})
+			);
+			expect(custom.lanesError).toBeNull();
 		});
 
 		it('rejects a group-by field whose field cannot serve the lanes eq filter', () => {

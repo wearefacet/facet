@@ -5,6 +5,9 @@ import { describe, it, expect } from 'vitest';
 import {
 	lanesFromEnum,
 	lanesFromGroupBy,
+	groupByLaneKeys,
+	laneKey,
+	applyLaneOverrides,
 	mergeLaneFilters,
 	laneWriteTarget,
 	validateLanes
@@ -76,6 +79,80 @@ describe('kanban/lanes — pure lane logic', () => {
 				{ label: 'True', color: hashColor('true'), filter: { completed__eq: 'true' } },
 				{ label: 'False', color: hashColor('false'), filter: { completed__eq: 'false' } }
 			]);
+		});
+	});
+
+	describe('groupByLaneKeys', () => {
+		it('lists the enum value keys in declaration order', () => {
+			const field = enumField([{ key: 'b' }, { key: 'a' }]);
+			expect(groupByLaneKeys(field)).toEqual(['b', 'a']);
+		});
+
+		it('lists the boolean wire values', () => {
+			const field: FieldDef = { key: 'completed', type: 'boolean' };
+			expect(groupByLaneKeys(field)).toEqual(['true', 'false']);
+		});
+
+		it('returns an empty list for empty or missing values', () => {
+			expect(groupByLaneKeys(enumField([]))).toEqual([]);
+			expect(groupByLaneKeys(enumField(undefined))).toEqual([]);
+		});
+	});
+
+	describe('laneKey', () => {
+		it('reads the value of the single equality filter', () => {
+			expect(laneKey(lane('Open', { status__eq: 'open' }))).toBe('open');
+		});
+
+		it('returns null for a multi-key, non-eq, non-string, or empty filter', () => {
+			expect(laneKey(lane('Multi', { status__eq: 'open', value__lte: 5 }))).toBeNull();
+			expect(laneKey(lane('Band', { value__lte: 5 }))).toBeNull();
+			expect(laneKey(lane('N', { value__eq: 5 }))).toBeNull();
+			expect(laneKey(lane('Empty', {}))).toBeNull();
+		});
+	});
+
+	describe('applyLaneOverrides', () => {
+		const derived = (): KanbanLane[] => [
+			lane('Open', { status__eq: 'open' }),
+			lane('Won', { status__eq: 'won' }),
+			lane('Lost', { status__eq: 'lost' })
+		];
+
+		it('keeps declaration order without overrides', () => {
+			expect(applyLaneOverrides(derived())).toEqual(derived());
+			expect(applyLaneOverrides(derived(), [], [])).toEqual(derived());
+		});
+
+		it('orders the lanes by the stored order', () => {
+			const out = applyLaneOverrides(derived(), ['lost', 'open', 'won']);
+			expect(out.map((l) => l.label)).toEqual(['Lost', 'Open', 'Won']);
+		});
+
+		it('hides the stored keys', () => {
+			const out = applyLaneOverrides(derived(), undefined, ['won']);
+			expect(out.map((l) => l.label)).toEqual(['Open', 'Lost']);
+		});
+
+		it('appends keys the order does not list, keeping declaration order', () => {
+			const out = applyLaneOverrides(derived(), ['won']);
+			expect(out.map((l) => l.label)).toEqual(['Won', 'Open', 'Lost']);
+		});
+
+		it('ignores stale order and hidden keys the field no longer declares', () => {
+			const out = applyLaneOverrides(derived(), ['ghost', 'lost', 'open'], ['ghost', 'open']);
+			expect(out.map((l) => l.label)).toEqual(['Lost', 'Won']);
+		});
+
+		it('never lists a lane twice on a duplicated order entry', () => {
+			const out = applyLaneOverrides(derived(), ['open', 'open', 'won']);
+			expect(out.map((l) => l.label)).toEqual(['Open', 'Won', 'Lost']);
+		});
+
+		it('keeps a lane without a key visible and unplaced', () => {
+			const withExpression = [...derived(), lane('Low', { probability__lt: 50 })];
+			const out = applyLaneOverrides(withExpression, ['lost']);
+			expect(out.map((l) => l.label)).toEqual(['Lost', 'Open', 'Won', 'Low']);
 		});
 	});
 

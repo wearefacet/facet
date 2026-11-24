@@ -12,7 +12,14 @@
 	import type { KanbanViewConfig, KanbanLane as KanbanLaneDef } from '$lib/collectionView/types.js';
 	import { loadDoctypeViewByKind } from '$lib/doctype/loadDocumentView.js';
 	import { errorMessage } from '$lib/datasource/bannerError.js';
-	import { lanesFromGroupBy, mergeLaneFilters } from './lanes.js';
+	import { can } from '$lib/permissions.svelte';
+	import { toast } from '$lib/toast.svelte.js';
+	import {
+		applyLaneOverrides,
+		lanesFromGroupBy,
+		laneWriteTarget,
+		mergeLaneFilters
+	} from './lanes.js';
 	import KanbanLane from './KanbanLane.svelte';
 
 	type DocItem = DocumentResponse<Record<string, unknown>>;
@@ -42,10 +49,13 @@
 	 * shared with the peek drawer and chat cards); without it the cards
 	 * render the identity body alone.
 	 *
-	 * Read-only in this first version: no drag and drop. The groundwork is
-	 * in place — lane containers key by index and cards carry
-	 * `data-doc-id` — and `laneWriteTarget` (lanes.ts) already computes the
-	 * write target a future move would PATCH.
+	 * Drag & drop: when the view sets `allow_move` and the viewer holds
+	 * `update` on the doctype, cards drag between lanes and the drop PATCHes
+	 * the target lane's value through a document update (the write target
+	 * `laneWriteTarget` computes from the lane filter). Lanes without one
+	 * writable `field__eq` filter accept no drops. The move is optimistic and
+	 * reverts with a toast on failure; both lanes refetch quietly on success
+	 * to restore the canonical sort and counts.
 	 */
 	let {
 		driver,
@@ -93,9 +103,81 @@
 		return ok.length > 0 ? ok : undefined;
 	});
 	const lanes = $derived.by<KanbanLaneDef[]>(() => {
-		if (config.mode === 'values') return groupByField ? lanesFromGroupBy(groupByField) : [];
+		if (config.mode === 'values') {
+			return groupByField
+				? applyLaneOverrides(lanesFromGroupBy(groupByField), config.lane_order, config.hidden_lanes)
+				: [];
+		}
 		return config.lanes ?? [];
 	});
+
+	// ── Drag & drop moves ─────────────────────────────────
+	/** Moves enabled — the view opts in and the viewer may update the
+	 *  doctype. UI affordance only; the WriteEnforcer re-checks the PATCH. */
+	const canMove = $derived(
+		config.allow_move === true && can(`${doctype.domain}.${doctype.doctype}`, 'update')
+	);
+	/** Per-lane write target — null lanes accept no drops. */
+	const moveTargets = $derived.by(() =>
+		lanes.map((lane) => (canMove ? laneWriteTarget(lane, doctype.fields) : null))
+	);
+	/** The card currently dragged — null when no drag is active. */
+	let dragging = $state<{ docId: string; sourceIndex: number } | null>(null);
+	/** One move at a time — concurrent optimistic moves would fight over the
+	 *  lane state. Drops while a move is pending are ignored. */
+	let movePending = $state(false);
+
+	function onCardDragStart(index: number, docId: string): void {
+		dragging = { docId, sourceIndex: index };
+	}
+
+	function onDragEnd(): void {
+		dragging = null;
+	}
+
+	/**
+	 * Drop a card on lane `index`: PATCH the target lane's value, with an
+	 * optimistic move and a revert + toast on failure. A quiet refetch of
+	 * both lanes follows success — the canonical sort position and the
+	 * capped counts come back from the server.
+	 */
+	async function onLaneDrop(index: number, docId: string): Promise<void> {
+		const target = moveTargets[index];
+		const drag = dragging;
+		if (!target || movePending || !drag || drag.docId !== docId) return;
+		dragging = null;
+		if (drag.sourceIndex === index) return;
+		const sourceState = laneStates[drag.sourceIndex];
+		const targetState = laneStates[index];
+		const doc = sourceState?.items.find((it) => it.meta.id === docId);
+		if (!sourceState || !targetState || !doc) return;
+		const previous = { source: sourceState, target: targetState };
+		// Optimistic move — the card lands at the target's tail; the refetch
+		// after the PATCH restores the canonical order.
+		laneStates[drag.sourceIndex] = {
+			...sourceState,
+			items: sourceState.items.filter((it) => it.meta.id !== docId),
+			count: sourceState.count === null ? null : Math.max(0, sourceState.count - 1)
+		};
+		laneStates[index] = {
+			...targetState,
+			items: [...targetState.items, doc],
+			count: targetState.count === null ? null : targetState.count + 1
+		};
+		movePending = true;
+		try {
+			await datasource.doc(docId).update({ [target.field]: target.value });
+			const my = fetchSeq;
+			refetchLane(drag.sourceIndex, my);
+			refetchLane(index, my);
+		} catch (err) {
+			laneStates[drag.sourceIndex] = previous.source;
+			laneStates[index] = previous.target;
+			toast({ message: errorMessage(err, m.common_save_failed()), variant: 'error' });
+		} finally {
+			movePending = false;
+		}
+	}
 
 	// ── Data source ────────────────────────────────────────────────────────
 	const datasource = $derived(
@@ -176,6 +258,16 @@
 		fetchLane(datasource, config, lane, index, cap, my);
 	}
 
+	/** Re-fetch one lane at its current cap, keeping its items visible while
+	 *  the fetch runs (the loading marker joins the stack's tail). */
+	function refetchLane(index: number, my: number): void {
+		const lane = lanes[index];
+		const st = laneStates[index];
+		if (!lane || !st) return;
+		laneStates[index] = { ...st, loading: true, error: null };
+		fetchLane(datasource, config, lane, index, st.cap, my);
+	}
+
 	// ── Card template (loaded once per mount; card kind only) ─────────────
 	let cardTemplate = $state<TemplateNode | null>(null);
 	let templateSeq = 0;
@@ -209,6 +301,14 @@
 					{cardTemplate}
 					onShowMore={() => showMore(i)}
 					{onCardClick}
+					cardDraggable={canMove}
+					droppable={canMove &&
+						moveTargets[i] !== null &&
+						dragging !== null &&
+						dragging.sourceIndex !== i}
+					onCardDragStart={(docId) => onCardDragStart(i, docId)}
+					{onDragEnd}
+					onDrop={(docId) => onLaneDrop(i, docId)}
 				/>
 			{/if}
 		{/each}

@@ -20,6 +20,11 @@
 	 * full (`items.length === cap` — the table's next-page rule); clicking
 	 * it bumps the lane's fetch cap and re-fetches only this lane. The
 	 * count badge keeps showing the capped `meta.count`.
+	 *
+	 * Drag & drop: when `droppable` is set the lane is an active drop target
+	 * (write target resolved, a drag is in flight, not the source lane) and
+	 * highlights while a card hovers over it; the drop hands the card id to
+	 * `onDrop`. Cards drag from the lane when `cardDraggable` is set.
 	 */
 	let {
 		lane,
@@ -32,7 +37,12 @@
 		driver,
 		cardTemplate = null,
 		onShowMore,
-		onCardClick
+		onCardClick,
+		cardDraggable = false,
+		droppable = false,
+		onCardDragStart,
+		onDragEnd,
+		onDrop
 	}: {
 		/** The lane definition (label, optional colour, filter). */
 		lane: KanbanLane;
@@ -56,15 +66,62 @@
 		onShowMore?: () => void;
 		/** Fired when a card's identity head is clicked. */
 		onCardClick?: (docId: string) => void;
+		/** Whether this lane's cards can start a drag. */
+		cardDraggable?: boolean;
+		/** Whether this lane accepts a drop right now (drives the highlight
+		 *  and the drop handling). */
+		droppable?: boolean;
+		/** Fired on a card's `dragstart` with the card's document id. */
+		onCardDragStart?: (docId: string) => void;
+		/** Fired when a dragged card's drag session ends (drop or cancel). */
+		onDragEnd?: () => void;
+		/** Fired when a card drops on this lane, with the card's document id. */
+		onDrop?: (docId: string) => void;
 	} = $props();
 
 	// Lane containers are keyed by index (see Kanban.svelte) and cards carry
-	// `data-doc-id`, so a later drag-and-drop stage can resolve the write
-	// target without a config change.
+	// `data-doc-id`, so a move resolves the write target by lane position.
 	const showMore = $derived(!loading && error === null && items.length > 0 && items.length === cap);
+
+	// ── Drop target ─────────────────────────────────────
+	let dragOver = $state(false);
+
+	function handleDragOver(e: DragEvent): void {
+		if (!droppable) return;
+		e.preventDefault();
+		if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+		dragOver = true;
+	}
+
+	function handleDragLeave(e: DragEvent): void {
+		// Child elements (cards) fire dragleave as the pointer crosses them —
+		// keep the highlight while the pointer stays inside the lane.
+		const related = e.relatedTarget as Node | null;
+		if (related && e.currentTarget instanceof Node && e.currentTarget.contains(related)) return;
+		dragOver = false;
+	}
+
+	function handleDrop(e: DragEvent): void {
+		dragOver = false;
+		if (!droppable) return;
+		e.preventDefault();
+		const docId = e.dataTransfer?.getData('text/plain');
+		if (docId) onDrop?.(docId);
+	}
 </script>
 
-<div class="kb-col">
+<!-- The drop target is progressive enhancement on the lane — pointer-only
+	drag-and-drop (see KanbanCard); the lane's data stays reachable through
+	the list surfaces without it. -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+	class="kb-col"
+	class:kb-droppable={droppable}
+	class:kb-drag-over={dragOver}
+	ondragover={handleDragOver}
+	ondragleave={handleDragLeave}
+	ondrop={handleDrop}
+>
 	<div class="kb-col-head">
 		<span class="kb-dot" style={`background: ${lane.color ?? 'var(--text-3)'};`} aria-hidden="true"
 		></span>
@@ -83,7 +140,16 @@
 			<div class="kb-placeholder">{m.kanban_lane_empty()}</div>
 		{:else}
 			{#each items as doc (doc.meta.id)}
-				<KanbanCard {doc} {doctype} {driver} {cardTemplate} {onCardClick} />
+				<KanbanCard
+					{doc}
+					{doctype}
+					{driver}
+					{cardTemplate}
+					{onCardClick}
+					draggable={cardDraggable}
+					onDragStart={() => onCardDragStart?.(doc.meta.id)}
+					{onDragEnd}
+				/>
 			{/each}
 			{#if loading}
 				<div class="kb-placeholder">{m.list_views_loading()}</div>
@@ -109,6 +175,15 @@
 		flex-direction: column;
 		min-height: 200px;
 		min-width: 0;
+	}
+
+	.kb-col.kb-droppable {
+		border-style: dashed;
+	}
+
+	.kb-col.kb-drag-over {
+		border-color: var(--accent);
+		box-shadow: 0 0 0 3px var(--accent-weak);
 	}
 
 	.kb-col-head {

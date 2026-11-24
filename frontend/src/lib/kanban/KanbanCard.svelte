@@ -21,15 +21,19 @@
 	 * has no `card` template the body is omitted and the card is the
 	 * identity alone — full-page templates never mount in a compact card.
 	 *
-	 * The root carries `data-doc-id` so a later drag-and-drop stage can key
-	 * moved cards without touching this markup.
+	 * The root carries `data-doc-id` and, when `draggable` is set, starts an
+	 * HTML5 drag carrying the document id — the lane drop PATCHes the target
+	 * lane's value from it.
 	 */
 	let {
 		doc,
 		doctype,
 		driver,
 		cardTemplate = null,
-		onCardClick
+		onCardClick,
+		draggable = false,
+		onDragStart,
+		onDragEnd
 	}: {
 		/** The document response straight from the lane's `list()` call. */
 		doc: DocumentResponse<Record<string, unknown>>;
@@ -41,6 +45,12 @@
 		cardTemplate?: TemplateNode | null;
 		/** Fired when the card's identity head is clicked. */
 		onCardClick?: (docId: string) => void;
+		/** Whether the card starts an HTML5 drag. */
+		draggable?: boolean;
+		/** Fired on the card's `dragstart`. */
+		onDragStart?: () => void;
+		/** Fired when the drag session ends (drop or cancel). */
+		onDragEnd?: () => void;
 	} = $props();
 
 	const displayName = $derived(
@@ -50,9 +60,28 @@
 	function open(): void {
 		onCardClick?.(doc.meta.id);
 	}
+
+	function handleDragStart(e: DragEvent): void {
+		if (e.dataTransfer) {
+			e.dataTransfer.setData('text/plain', doc.meta.id);
+			e.dataTransfer.effectAllowed = 'move';
+		}
+		onDragStart?.();
+	}
 </script>
 
-<div class="kb-card" data-doc-id={doc.meta.id}>
+<!-- Drag-and-drop is pointer-only in this version — the drag handlers are
+	progressive enhancement on top of the card, whose interactive paths (open
+	via the identity head) stay keyboard-reachable. -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+	class="kb-card"
+	class:kb-card-draggable={draggable}
+	data-doc-id={doc.meta.id}
+	{draggable}
+	ondragstart={handleDragStart}
+	ondragend={() => onDragEnd?.()}
+>
 	<button type="button" class="kb-card-head" onclick={open} title={displayName}>
 		<DoctypeIcon icon={doctype.icon} color={doctype.color} size={11} active />
 		<span class="kb-card-title">{displayName}</span>
@@ -88,6 +117,10 @@
 	.kb-card:hover {
 		border-color: var(--border-strong);
 		box-shadow: var(--sh-2);
+	}
+
+	.kb-card.kb-card-draggable {
+		cursor: grab;
 	}
 
 	.kb-card-head {

@@ -248,6 +248,95 @@
 </Story>
 
 <Story
+	name="CreateKanbanValuesLaneControls"
+	play={async ({ canvasElement: _canvasElement }) => {
+		await sleep(50);
+		const canvas = within(document.body);
+		await fireEvent.click(canvas.getByRole('button', { name: /Kanban/ }));
+		await sleep(20);
+		await fireEvent.click(canvas.getByRole('button', { name: 'Next' }));
+		await sleep(20);
+		// Choose the group-by field; the Lanes list appears with one row per
+		// declared value, in declaration order.
+		await userEvent.click(canvas.getByRole('combobox', { name: 'Group by' }));
+		await sleep(20);
+		const body = within(document.body);
+		await userEvent.click(body.getAllByRole('option', { name: /Status/ })[0]);
+		await sleep(20);
+		const laneRows = () => [...document.body.querySelectorAll('.kb-vlane')];
+		expect(laneRows().map((r) => r.querySelector('.kb-vlane-label')?.textContent?.trim())).toEqual([
+			'Open',
+			'Won',
+			'Lost',
+			'Abandoned'
+		]);
+		// Hide the Lost lane through its visibility toggle (row 3).
+		const lostRow = laneRows().find((r) => r.textContent?.includes('Lost'))!;
+		await fireEvent.click(lostRow.querySelector('button[role="switch"]')!);
+		await sleep(20);
+		expect(lostRow.classList.contains('kb-vlane-hidden')).toBe(true);
+		// Move Won up one position.
+		const wonRow = laneRows().find((r) => r.textContent?.includes('Won'))!;
+		await fireEvent.click(wonRow.querySelector('button[aria-label="Move up"]')!);
+		await sleep(20);
+		expect(laneRows().map((r) => r.querySelector('.kb-vlane-label')?.textContent?.trim())).toEqual([
+			'Won',
+			'Open',
+			'Lost',
+			'Abandoned'
+		]);
+		// Hide-all is blocked: hiding every lane keeps the save button off.
+		for (const key of ['Open', 'Won', 'Abandoned']) {
+			const row = laneRows().find((r) => r.textContent?.includes(key))!;
+			await fireEvent.click(row.querySelector('button[role="switch"]')!);
+		}
+		await sleep(20);
+		await expect(canvas.getByText('At least one lane must stay visible')).toBeVisible();
+		// Re-show Lost — the error clears and the move toggle is next.
+		const lostRowAgain = laneRows().find((r) => r.textContent?.includes('Lost'))!;
+		await fireEvent.click(lostRowAgain.querySelector('button[role="switch"]')!);
+		await sleep(20);
+		await expect(canvas.queryByText('At least one lane must stay visible')).toBeNull();
+		await fireEvent.click(canvas.getByRole('switch', { name: 'Allow card moves' }));
+		await userEvent.type(canvas.getByRole('textbox', { name: /Name/ }), 'Pipeline v2');
+		await sleep(10);
+		await fireEvent.click(canvas.getByRole('button', { name: 'Create view' }));
+		await sleep(40);
+
+		// The stored config carries the authored order, the hidden key, and
+		// the move opt-in.
+		const after = await driver
+			.domain('core')
+			.doctype('DocType')
+			.doc('crm.Deal')
+			.children('collection_view')
+			.list({ items: 500 });
+		const created = after.data
+			.map((d) => d.data)
+			.find((v) => (v as { name?: string }).name === 'Pipeline v2') as
+			| { config?: { kanban?: Record<string, unknown> } }
+			| undefined;
+		expect(created).toBeTruthy();
+		expect(created?.config?.kanban?.lane_order).toEqual(['won', 'open', 'lost', 'abandoned']);
+		expect(created?.config?.kanban?.hidden_lanes).toEqual(['open', 'won', 'abandoned']);
+		expect(created?.config?.kanban?.allow_move).toBe(true);
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={adminManifest}>
+			<div style="position: relative; width: 100%; min-height: 700px;">
+				<CollectionViewEditor
+					{driver}
+					doctype={dealDef}
+					parentDocId="crm.Deal"
+					viewerId="iam.Account.viewer"
+				/>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<Story
 	name="CreateKanbanCustomValidated"
 	play={async ({ canvasElement: _canvasElement }) => {
 		await sleep(50);

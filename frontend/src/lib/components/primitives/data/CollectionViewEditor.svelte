@@ -184,17 +184,23 @@
 		doctype.fields.filter((f) => !f.read_only && !f.write_only && (f.operators?.length ?? 0) > 0)
 	);
 
-	// ── Kanban config state ──────────────────────────────────────────
+	// ── Kanban config state ──────────────────────────────────
 	// svelte-ignore state_referenced_locally — initial value from the prop.
 	let kanbanMode = $state<'values' | 'custom'>(view?.config?.kanban?.mode ?? 'values');
 	// svelte-ignore state_referenced_locally — initial value from the prop.
 	let groupBy = $state(view?.config?.kanban?.group_by ?? '');
+	// svelte-ignore state_referenced_locally — initial value from the prop.
+	let laneOrder = $state<string[]>(view?.config?.kanban?.lane_order ?? []);
+	// svelte-ignore state_referenced_locally — initial value from the prop.
+	let hiddenLanes = $state<string[]>(view?.config?.kanban?.hidden_lanes ?? []);
 	// svelte-ignore state_referenced_locally — initial value from the prop.
 	let lanes = $state<KanbanLane[]>(
 		view?.config?.kanban?.lanes
 			? view.config.kanban.lanes.map((lane) => ({ ...lane, filter: { ...lane.filter } }))
 			: []
 	);
+	// svelte-ignore state_referenced_locally — initial value from the prop.
+	let allowMove = $state(view?.config?.kanban?.allow_move === true);
 	// The card sort draft composes back to the one-entry `sort` array; the
 	// leading `-` maps to the descending direction.
 	// svelte-ignore state_referenced_locally — initial value from the prop.
@@ -221,9 +227,12 @@
 		fields: doctype.fields,
 		kanbanMode,
 		groupBy,
+		laneOrder,
+		hiddenLanes,
 		lanes,
 		sortField,
 		sortDesc,
+		allowMove,
 		sortFields: sortableFields(doctype.fields)
 	});
 	const validation = $derived(validateDraft(draft));
@@ -404,9 +413,12 @@
 								{driver}
 								bind:kanbanMode
 								bind:groupBy
+								bind:laneOrder
+								bind:hiddenLanes
 								bind:lanes
 								bind:sortField
 								bind:sortDesc
+								bind:allowMove
 								bind:filters
 								{filterableFields}
 								{groupByError}

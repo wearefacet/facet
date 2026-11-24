@@ -13,7 +13,7 @@
 import * as m from '$lib/paraglide/messages';
 import { SYSTEM_TIMESTAMP_FIELD_DEFS, hasOperator } from '$lib/doctype/filters.js';
 import { humanizeLabel } from '$lib/calendar/discriminator.js';
-import { validateLanes } from '$lib/kanban/lanes.js';
+import { validateLanes, groupByLaneKeys } from '$lib/kanban/lanes.js';
 import { isSortableField } from '$lib/doctype/types.js';
 import { CALENDAR_DISCRIMINATOR_TYPES } from './types.js';
 import type {
@@ -76,12 +76,20 @@ export interface CollectionViewDraft {
 	kanbanMode: 'values' | 'custom';
 	/** Kanban values mode: the enum field key whose values become lanes. */
 	groupBy: string;
+	/** Kanban values mode: the authored lane order — the value keys, display
+	 *  order. Complete against the group-by field's declared values; the
+	 *  editor normalizes it when the field changes. */
+	laneOrder: string[];
+	/** Kanban values mode: the hidden lane keys (the values not shown). */
+	hiddenLanes: string[];
 	/** Kanban custom mode: ordered lane list. */
 	lanes: KanbanLane[];
 	/** Kanban card sort field; empty means the surface default. */
 	sortField: string;
 	/** Kanban card sort direction (descending when true — the `-` prefix). */
 	sortDesc: boolean;
+	/** Kanban: drag & drop moves between lanes enabled. */
+	allowMove: boolean;
 	/** Defs the sort picker offers — the sortable subset of the pickable
 	 *  fields. `buildConfig` drops a `sortField` that no longer resolves
 	 *  here (removed field, or a type the backend refuses to sort). */
@@ -244,6 +252,26 @@ export function buildConfig(draft: CollectionViewDraft): CollectionViewConfig {
 		const kanban: KanbanViewConfig = { mode: draft.kanbanMode, page_size: 25 };
 		if (draft.kanbanMode === 'values') {
 			kanban.group_by = draft.groupBy.trim();
+			// Lane order and visibility persist only against the field's current
+			// declared values; stale keys (an enum value removed since) drop so
+			// the stored config never carries keys the board cannot resolve.
+			const field = draft.fields.find((f) => f.key === kanban.group_by);
+			const declared = field ? groupByLaneKeys(field) : [];
+			if (declared.length > 0) {
+				const declaredSet = new Set(declared);
+				const authoredSet = new Set(draft.laneOrder);
+				const order = [
+					...draft.laneOrder.filter((k) => declaredSet.has(k)),
+					// Keys the draft order misses keep declaration order — append
+					// them so the stored order is always complete.
+					...declared.filter((k) => !authoredSet.has(k))
+				];
+				const sameOrder =
+					order.length === declared.length && order.every((k, i) => k === declared[i]);
+				if (!sameOrder) kanban.lane_order = order;
+				const hidden = draft.hiddenLanes.filter((k) => declaredSet.has(k));
+				if (hidden.length > 0) kanban.hidden_lanes = hidden;
+			}
 		} else {
 			kanban.lanes = draft.lanes.map((lane) => {
 				const copy: KanbanLane = { label: lane.label, filter: { ...lane.filter } };
@@ -251,6 +279,9 @@ export function buildConfig(draft: CollectionViewDraft): CollectionViewConfig {
 				return copy;
 			});
 		}
+		// Persisted only when on — views saved before the option existed keep
+		// their read-only boards.
+		if (draft.allowMove) kanban.allow_move = true;
 		kanban.filters = dropUnknownFilter(draft.filters, draft.filterableFields);
 		const sortField = draft.sortField.trim();
 		// One sort entry — the `-` prefix composes the descending direction.
@@ -306,7 +337,8 @@ export interface DraftValidation {
 	endFieldError: string | null;
 	/** Kanban values mode: the group-by field is required. */
 	groupByError: string | null;
-	/** Kanban custom mode: at least one lane is required. */
+	/** Kanban custom mode: at least one lane is required. Values mode: at
+	 *  least one lane must stay visible. */
 	lanesError: string | null;
 	/** Kanban custom mode: per-lane errors, by lane index. */
 	laneErrors: { index: number; error: string }[];
@@ -315,11 +347,26 @@ export interface DraftValidation {
 }
 
 /**
+ * True when the values-mode draft hides every declared lane — the board
+ * would render nothing, so the editor blocks save. An unresolvable or
+ * value-less group-by field skips the check (its own validation owns that).
+ */
+function allLanesHidden(draft: CollectionViewDraft): boolean {
+	const field = draft.fields.find((f) => f.key === draft.groupBy.trim());
+	if (!field) return false;
+	const declared = groupByLaneKeys(field);
+	if (declared.length === 0) return false;
+	const hidden = new Set(draft.hiddenLanes);
+	return declared.every((k) => hidden.has(k));
+}
+
+/**
  * Validate the draft: the name is required, table views need at least one
  * column, calendar views need a discriminator (and end field) that serve
  * the surface's window filter, and kanban views need a group-by field that
  * serves the lanes' equality filter (values mode) or complete lanes (custom
- * mode). The capability checks fire only on keys the pickers cannot offer —
+ * mode); values mode must also keep at least one lane visible. The
+ * capability checks fire only on keys the pickers cannot offer —
  * a stored view whose field lost its `filters:` capability since it was
  * saved. The `saving` flag stays component UI state and is not part of
  * this check.
@@ -354,9 +401,13 @@ export function validateDraft(draft: CollectionViewDraft): DraftValidation {
 					? null
 					: m.list_editor_group_by_capability();
 	const lanesError =
-		draft.surface === 'kanban' && draft.kanbanMode === 'custom' && draft.lanes.length === 0
-			? m.list_editor_lanes_required()
-			: null;
+		draft.surface !== 'kanban'
+			? null
+			: draft.kanbanMode === 'custom' && draft.lanes.length === 0
+				? m.list_editor_lanes_required()
+				: draft.kanbanMode === 'values' && allLanesHidden(draft)
+					? m.list_editor_lanes_all_hidden()
+					: null;
 	const laneErrors =
 		draft.surface === 'kanban' && draft.kanbanMode === 'custom' ? validateLanes(draft.lanes) : [];
 	const canSave =

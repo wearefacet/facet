@@ -6,11 +6,12 @@
  *
  * Everything here is a plain function over the doctype schema and the
  * persisted {@link KanbanLane} shape — no Svelte reactivity, no data
- * access. The surface shell (`Kanban.svelte`) calls {@link lanesFromEnum}
- * to resolve values-mode lanes and {@link mergeLaneFilters} to build each
- * lane's query; the editor calls {@link validateLanes} to gate save, and
- * {@link laneWriteTarget} is the groundwork for a future drag-and-drop
- * move.
+ * access. The surface shell (`Kanban.svelte`) calls {@link lanesFromGroupBy}
+ * and {@link applyLaneOverrides} to resolve the board's lanes and
+ * {@link mergeLaneFilters} to build each lane's query; the editor calls
+ * {@link validateLanes} to gate save and {@link groupByLaneKeys} for the
+ * values-mode lane list; {@link laneWriteTarget} computes the write target
+ * a drag-and-drop move PATCHes.
  */
 
 import * as m from '$lib/paraglide/messages';
@@ -24,6 +25,72 @@ import type { KanbanLane } from '$lib/collectionView/types.js';
  */
 export function lanesFromGroupBy(field: FieldDef): KanbanLane[] {
 	return field.type === 'boolean' ? lanesFromBoolean(field) : lanesFromEnum(field);
+}
+
+/**
+ * The group-by field's lane keys in declaration order — the enum value keys,
+ * or `['true', 'false']` for a boolean. The key of a lane is the value its
+ * equality filter matches (see {@link laneKey}); the editor and
+ * {@link buildConfig} compare the authored order against this list.
+ */
+export function groupByLaneKeys(field: FieldDef): string[] {
+	if (field.type === 'boolean') return ['true', 'false'];
+	return (field.values ?? []).map((v) => v.key);
+}
+
+/**
+ * A values-mode lane's key — the value its single `field__eq` filter
+ * matches, or null when the filter is not exactly one equality entry on a
+ * string value. Every lane {@link lanesFromGroupBy} derives carries a key;
+ * custom lanes generally do not.
+ */
+export function laneKey(lane: KanbanLane): string | null {
+	const entries = Object.entries(lane.filter);
+	if (entries.length !== 1) return null;
+	const [key, value] = entries[0];
+	const idx = key.lastIndexOf('__');
+	if (idx < 0 || key.slice(idx + 2) !== 'eq') return null;
+	return typeof value === 'string' ? value : null;
+}
+
+/**
+ * Apply the stored values-mode lane presentation — `lane_order` and
+ * `hidden_lanes` — over the derived lanes. Hidden lanes drop out; the
+ * remaining lanes sort into the stored order, with any key the order does
+ * not list keeping declaration order after the listed ones. Stale keys (the
+ * enum changed since the view was saved) are ignored, so the board always
+ * renders every visible derived lane.
+ */
+export function applyLaneOverrides(
+	derived: KanbanLane[],
+	laneOrder?: string[],
+	hiddenLanes?: string[]
+): KanbanLane[] {
+	const hidden = new Set(hiddenLanes ?? []);
+	const visible = derived.filter((lane) => {
+		const key = laneKey(lane);
+		return key === null || !hidden.has(key);
+	});
+	if (!laneOrder || laneOrder.length === 0) return visible;
+	const byKey = new Map<string, KanbanLane>();
+	for (const lane of visible) {
+		const key = laneKey(lane);
+		if (key !== null) byKey.set(key, lane);
+	}
+	const out: KanbanLane[] = [];
+	const placed = new Set<string>();
+	for (const key of laneOrder) {
+		const lane = byKey.get(key);
+		if (lane && !placed.has(key)) {
+			out.push(lane);
+			placed.add(key);
+		}
+	}
+	for (const lane of visible) {
+		const key = laneKey(lane);
+		if (key === null || !placed.has(key)) out.push(lane);
+	}
+	return out;
 }
 
 /**
@@ -78,7 +145,8 @@ export function mergeLaneFilters(
 }
 
 /**
- * The write target a lane implies, for a future drag-and-drop move.
+ * The write target a lane implies for a drag-and-drop move — the PATCH the
+ * target lane's drop writes.
  *
  * Returns `{ field, value }` only when the lane filter is exactly one
  * `field__eq` entry and the field exists, is writable (not `read_only` /

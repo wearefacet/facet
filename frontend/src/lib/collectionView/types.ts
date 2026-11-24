@@ -133,6 +133,27 @@ export interface KanbanViewConfig {
 	/** Custom mode: explicit lane list. Render order = array order. */
 	lanes?: KanbanLane[];
 	/**
+	 * Values mode: display order of the lanes, as the group-by field's value
+	 * keys (the enum value keys; `'true'` / `'false'` for a boolean). Keys
+	 * missing from the list keep declaration order, appended after the listed
+	 * ones; keys that no longer resolve are ignored. Absent = declaration
+	 * order.
+	 */
+	lane_order?: string[];
+	/**
+	 * Values mode: lane keys hidden from the board. A hidden lane neither
+	 * renders nor fetches — its documents show nowhere on the board.
+	 */
+	hidden_lanes?: string[];
+	/**
+	 * Drag & drop between lanes, writing the lane's value through a document
+	 * update. Absent or false keeps the board read-only (the default, so
+	 * views saved before the option existed stay read-only). A move also
+	 * needs the viewer's `update` permission on the doctype and a lane whose
+	 * filter is one writable `field__eq` entry.
+	 */
+	allow_move?: boolean;
+	/**
 	 * View-level base filter, merged into every lane query (e.g.
 	 * `status__ne` narrows the whole board). On an exact filter-key
 	 * collision the lane filter wins.
