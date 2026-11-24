@@ -335,7 +335,9 @@ async function listProducerGrants(
 > {
 	const body = await getJson(
 		request,
-		`/Api/core/DomainGrant?consumer_domain__eq=${encodeURIComponent(`core.Domain.${consumer}`)}`,
+		// The list grammar admits filters only in the bracket form
+		// (`filters[field__op]=value`) — a bare `field__op=value` is a 422.
+		`/Api/core/DomainGrant?filters[consumer_domain__eq]=${encodeURIComponent(`core.Domain.${consumer}`)}`,
 		`the grant list filtered to the ${consumer} consumer`
 	);
 	// The collection wire shape is { data, meta } per row — the document id
@@ -506,7 +508,25 @@ test('draft and publish: draft from crm, replicate inert, publish, edge flows, o
 	let sourceCompanyId = '';
 	let sourceCompanyRef = '';
 
-	// ── 1. Draft from crm (§4 step 1) ───────────────────────────────────
+	// ── 1. Draft from crm (§4 step 1) ───────────────────────────────
+	// F04-01: `Domain::Draft.create_from` requires the caller to be a listed
+	// `core.DomainEditor` of the source domain — an All create verdict no
+	// longer forks a foreign domain. The stack seeds no editors on `crm`, so
+	// the arrange grants the admin membership before the UI click.
+	await phase('arrange: the admin is a listed editor of crm (draft-from gate)', async () => {
+		const me = (await getJson(request, '/Api/iam/me', 'the admin profile')) as unknown as {
+			account: { id: string };
+		};
+		expect(me.account.id, 'the profile names the account id').toBeTruthy();
+		await createDoc(
+			request,
+			'core',
+			'DomainEditor',
+			{ account: `iam.Account.${me.account.id}`, domain: SOURCE },
+			'granting the admin editorship of crm'
+		);
+	});
+
 	await phase('draft: the admin drafts the live crm domain from the Builder', async () => {
 		draftId = await draftFromLiveDomain(page, 'CRM');
 	});

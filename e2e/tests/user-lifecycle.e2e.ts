@@ -177,7 +177,9 @@ test('user lifecycle: create, bootstrap, disable, recover', async ({ page, brows
 		await expect(roleSelect).toBeVisible();
 		await roleSelect.click();
 		await roleSelect.fill('editor');
-		const roleOption = page.getByRole('option', { name: 'Editor' });
+		// `exact` keeps the locator away from the seeded "Production Editor"
+		// option, whose accessible name contains "Editor".
+		const roleOption = page.getByRole('option', { name: 'Editor', exact: true });
 		await expect(roleOption).toBeVisible();
 		await roleOption.click();
 		await page.getByRole('button', { name: 'Assign role' }).click();
