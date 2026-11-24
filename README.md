@@ -49,7 +49,7 @@ AI has made building a business app a matter of hours. Running it safely has not
 
 ## Status
 
-This is still in beta; a release can contain breaking changes. See [`CHANGELOG.md`](CHANGELOG.md).
+This is still in beta: features are complete enough to build on, and the surfaces you use day to day keep improving — expect UI and UX refinements as we respond to feedback. See [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Installation
 
