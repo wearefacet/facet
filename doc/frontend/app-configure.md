@@ -92,7 +92,7 @@ type Props = {
 
 The parent owns the `grants` `$state` array and binds it. The editor mutates the array in place (add/remove grant entries, change the access level, flip `required`). Per the workflow doc's deep-mutation rule, the mutation handlers and the derived summary live in the same component so the summary re-renders from the same scope as the mutations.
 
-The editor renders a **domain segmented rail** with grant counts per domain, a **bulk-set row** for the active domain, a **segmented control** (None / Read / Write / Full) per doctype, a **required-flag row** under the segmented control (see below), nested **children under their parent** with inherit-by-default + explicit override + clamp, and **named actions as toggle-pills** that only render when the effective level is above None. A lock icon marks sensitive doctypes.
+The editor renders a **domain segmented rail** with grant counts per domain, a **bulk-set row** for the active domain, a **segmented control** (None / Read / Write / Full) per doctype, a **required-flag row** under the segmented control (see below), nested **children under their parent** with inherit-by-default + explicit override + clamp, and **named actions as toggle-pills** on root cards and child rows alike, rendered only when the effective level is above None. A lock icon marks sensitive doctypes. A named action granted on an entry with no explicit grant yet (an inherited child) seeds that entry from the displayed level and its flags — override-on-touch, so activating a pill never demotes the level the picker shows.
 
 ### Required flags on core actions
 

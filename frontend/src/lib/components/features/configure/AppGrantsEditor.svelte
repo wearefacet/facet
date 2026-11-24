@@ -270,11 +270,16 @@
 	): void {
 		let grant = grantFor(entry.target);
 		if (!grant) {
-			// Adding a named action implicitly creates a read grant so the
+			// Adding a named action implicitly creates a core grant so the
 			// summary makes sense ("export contacts" implies "see contacts").
-			// Clamped to the parent ceiling for child doctypes.
-			const base = clampChildLevel('read', parentCeiling(entry));
-			grant = { target: entry.target, actions: levelToActions(base) };
+			// The base is the entry's effective level with its effective flags —
+			// for an inherited child that preserves the displayed level and its
+			// required flags instead of demoting the entry to a bare optional
+			// read. (The pills render only above none, so the base is never
+			// `none` in practice; levelToActions returns [] and the named action
+			// still lands.)
+			const base = clampChildLevel(effectiveLevel(entry), parentCeiling(entry));
+			grant = { target: entry.target, actions: levelToActions(base, coreRequireds(entry)) };
 			grants.push(grant);
 		}
 		const existing = grant.actions.find((a) => a.name === namedAction.name);
@@ -543,6 +548,39 @@
 											{/each}
 										</div>
 									</div>
+									{#if child.namedActions && child.namedActions.length > 0}
+										<div class="grants-card-named grants-child-named">
+											<div class="grants-card-named-label">{m.apps_grants_named_label()}</div>
+											<div class="grants-named-pills">
+												{#each child.namedActions as namedAction (namedAction.name)}
+													{@const active = namedActionActive(child, namedAction.name)}
+													<span class="grants-named-pill" class:grants-named-pill-on={active}>
+														<button
+															type="button"
+															class="grants-named-pill-toggle"
+															aria-pressed={active}
+															onclick={() => toggleNamedAction(child, namedAction)}
+														>
+															{namedAction.label}
+														</button>
+														{#if active}
+															<label class="grants-named-pill-required">
+																<Toggle
+																	checked={namedActionRequired(child, namedAction.name)}
+																	onchange={() => toggleRequired(child.target, namedAction.name)}
+																/>
+																<span
+																	>{namedActionRequired(child, namedAction.name)
+																		? m.apps_grants_required()
+																		: m.apps_grants_optional()}</span
+																>
+															</label>
+														{/if}
+													</span>
+												{/each}
+											</div>
+										</div>
+									{/if}
 								{/if}
 							</div>
 						{/each}
@@ -984,6 +1022,13 @@
 	/* Children keep the pills but drop the separator — the row sits directly
 	   under the child's own segmented control, inside its bordered row. */
 	.grants-child .grants-required-row-compact {
+		padding-top: 2px;
+		border-top: none;
+	}
+
+	/* The named-action block mirrors the root card's, minus the separator —
+	   the child row already separates its segments from the required row. */
+	.grants-child .grants-child-named {
 		padding-top: 2px;
 		border-top: none;
 	}
