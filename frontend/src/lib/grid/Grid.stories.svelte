@@ -496,6 +496,47 @@
 />
 
 <Story
+	name="DragSelect"
+	args={{ ...storyArgs(editDriver(), dealColumns.slice(0, 4)) }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		// A press on a cell arms the drag: a held-button pass over the cells
+		// below extends the range — the mouse drag-select.
+		const anchor = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
+		anchor.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }));
+		const far = canvasElement.querySelector('[data-row="2"][data-col="1"]')!;
+		far.dispatchEvent(new MouseEvent('mouseenter', { buttons: 1 }));
+		await sleep(100); // the range paints on the flush after the dispatch
+		expect(far.getAttribute('aria-selected')).toBe('true');
+		// The press ends wherever the pointer is — the drag disarms.
+		window.dispatchEvent(new MouseEvent('mouseup'));
+		await sleep(50);
+		const strayed = canvasElement.querySelector('[data-row="4"][data-col="3"]')!;
+		strayed.dispatchEvent(new MouseEvent('mouseenter', { buttons: 1 }));
+		await sleep(50);
+		expect(strayed.getAttribute('aria-selected')).toBe('false');
+		// An enum pick closes its editor under the held button. The press
+		// belongs to the editor — the cells exposed underneath must not
+		// sweep-select, and the pick commits as one cell.
+		const status = canvasElement.querySelector('[data-row="0"][data-col="1"]')!;
+		await userEvent.dblClick(status);
+		const option = [...status.querySelectorAll('.enum-opt')].find((b) =>
+			b.textContent?.includes('Cadrage')
+		)!;
+		option.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }));
+		await sleep(150);
+		const row = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(row.status).toBe('framing');
+		const below = canvasElement.querySelector('[data-row="3"][data-col="0"]')!;
+		below.dispatchEvent(new MouseEvent('mouseenter', { buttons: 1 }));
+		await sleep(50);
+		expect(below.getAttribute('aria-selected')).toBe('false');
+		expect(canvasElement.querySelectorAll('[aria-selected="true"]').length).toBe(1);
+		window.dispatchEvent(new MouseEvent('mouseup'));
+	}}
+/>
+
+<Story
 	name="FrozenColumns"
 	args={{ selectable: true, frozen: 2 }}
 	play={async ({ canvasElement }) => {

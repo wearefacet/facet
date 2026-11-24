@@ -112,8 +112,19 @@
 		background: var(--surface-2);
 	}
 
-	.period-editor :global(.pp-wrap) {
+	/* The floating frame replaces the picker's chrome: no nested box border,
+	   no committed-text footer, no second Clear — the head owns the clear. */
+	.period-editor :global(.pp-box) {
 		border: none;
 		padding: 0;
+	}
+
+	.period-editor :global(.pp-box:focus-within) {
+		box-shadow: none;
+	}
+
+	.period-editor :global(.pp-foot),
+	.period-editor :global(.pp-actions) {
+		display: none;
 	}
 </style>

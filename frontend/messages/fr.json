@@ -1628,6 +1628,7 @@
 	"grid_range_cells": "{count} cellules",
 	"grid_fx_read_only": "Calculé — lecture seule",
 	"grid_editor_aria": "Modifier {field}",
+	"grid_enum_filter": "Filtrer",
 	"grid_coerce_integer": "Saisir un nombre entier",
 	"grid_coerce_bounds_between": "La valeur doit être entre {min} et {max}",
 	"grid_coerce_bounds_min": "La valeur doit être au moins {min}",

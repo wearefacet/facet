@@ -34,6 +34,7 @@
 		filter,
 		recordMeta,
 		onpick,
+		hideType = false,
 		...rest
 	}: {
 		label?: string;
@@ -78,6 +79,12 @@
 		 * parent's token qualification).
 		 */
 		onpick?: (pick: { id: string; label: string; doctype: string | null }) => void;
+		/**
+		 * Hide the locked doctype prefix in forced mode — for embedding surfaces
+		 * that already name the doctype (the grid cell editor's column header),
+		 * where the prefix would eat the width the search input needs.
+		 */
+		hideType?: boolean;
 	} = $props();
 
 	const mode = $derived(doctype ? 'forced' : doctypes?.length ? 'constrained' : 'open');
@@ -487,25 +494,32 @@
 				aria-haspopup="listbox"
 				aria-controls={typeOpen ? listboxTypeId : recOpen ? listboxRecId : undefined}
 			>
-				<!-- ── Type selector (left part) ─────────────────────────────────────── -->
+				<!-- ── Type selector (left part) ─────────────────────────────────── -->
 				{#if mode === 'forced'}
-					<div class="ref-type ref-type-locked" aria-label={typeLabel}>
-						<DoctypeIcon icon={iconOf(doctype ?? null)} color={tint(doctype ?? '')} shadow active />
-						<span class="ref-tlabel">{typeLabel}</span>
-						<svg
-							class="ref-lock"
-							width="12"
-							height="12"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							aria-hidden="true"
-							><rect x="5" y="11" width="14" height="9" rx="2" /><path
-								d="M8 11V8a4 4 0 0 1 8 0v3"
-							/></svg
-						>
-					</div>
+					{#if !hideType}
+						<div class="ref-type ref-type-locked" aria-label={typeLabel}>
+							<DoctypeIcon
+								icon={iconOf(doctype ?? null)}
+								color={tint(doctype ?? '')}
+								shadow
+								active
+							/>
+							<span class="ref-tlabel">{typeLabel}</span>
+							<svg
+								class="ref-lock"
+								width="12"
+								height="12"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								aria-hidden="true"
+								><rect x="5" y="11" width="14" height="9" rx="2" /><path
+									d="M8 11V8a4 4 0 0 1 8 0v3"
+								/></svg
+							>
+						</div>
+					{/if}
 				{:else}
 					<button
 						class="ref-type"

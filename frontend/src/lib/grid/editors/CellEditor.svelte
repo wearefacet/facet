@@ -59,11 +59,24 @@
 		else rest.oncancel();
 	}
 
-	/** The two floating editors — the frame grows past the cell box. */
+	/** The two floating editors — the frame grows past the cell box. The
+	 *  period pair also widens past the cell: two bound pickers do not fit
+	 *  one column, and clipping them would hide the End bound. */
 	const floating = $derived(field.type === 'longtext' || field.type === 'period' || field.type === 'dateperiod');
+	const wide = $derived(field.type === 'period' || field.type === 'dateperiod');
 </script>
 
-<div class="cell-editor" class:floating>
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- A press inside the editor belongs to the editor: the shell stops it
+	from reaching the grid's cells, so it never arms the drag-select (the
+	enum list closes the editor under the held button — without this, the
+	cells exposed underneath sweep-select). -->
+<div
+	class="cell-editor"
+	class:floating
+	class:wide
+	onmousedown={(e) => e.stopPropagation()}
+>
 	{#if field.type === 'longtext'}
 		<LongTextEditor {field} {label} {...rest} ondraft={handleDraft} oncommit={handleCommit} oncancel={handleCancel} />
 	{:else if field.type === 'enum'}
@@ -110,5 +123,12 @@
 		box-shadow: 0 8px 24px rgba(16, 24, 40, 0.25);
 		padding: 6px;
 		align-items: flex-start;
+	}
+
+	/* The period frame sizes to its two bound pickers — wider than the cell. */
+	.cell-editor.floating.wide {
+		right: auto;
+		width: max-content;
+		max-width: min(92vw, 560px);
 	}
 </style>

@@ -3,30 +3,47 @@
 
 <!--
 	The enum editor — a filter-as-you-type listbox over the field's declared
-	values (the design mock's combobox). Typing narrows by key or label;
-	ArrowDown / ArrowUp move the highlight, Enter picks it (an empty draft
-	commits `null` — the clear), Tab picks and moves right, Escape cancels.
-	Options reuse the cell's chip rendering: declared colour as tint + dot,
-	label in the theme ink.
+	values (the design mock's combobox). The stored value stays visible as a
+	chip beside the filter input, and its option carries the check mark and
+	the opening highlight. Typing narrows by key or label; ArrowDown /
+	ArrowUp move the highlight, Enter picks it. An empty draft keeps the
+	stored value (open + Enter never wipes); the chip's ✕ is the clear.
+	Tab picks and moves right, Escape cancels. Options reuse the cell's chip
+	rendering: declared colour as tint + dot, label in the theme ink.
 -->
 
 <script lang="ts">
 	import type { CellEditorProps, CommitMove } from './types.js';
 	import { coerceScalar } from '../coerce.js';
 	import { humanize } from '$lib/doctype/types.js';
+	import * as m from '$lib/paraglide/messages';
 
-	// The stored value never seeds the filter — the listbox opens on the
-	// full declared set (the design mock's combobox behaviour).
-	let { field, seed = null, label, ondraft, oncommit, oncancel }: CellEditorProps = $props();
+	let { field, value, seed = null, label, ondraft, oncommit, oncancel }: CellEditorProps = $props();
 
 	let inputEl = $state<HTMLInputElement | null>(null);
+
+	// The filter opens on the full declared set — the stored value shows as
+	// the chip, not as filter text.
 	// svelte-ignore state_referenced_locally — seed-only: the editor mounts
-	// fresh per open; the filter starts from the seed char, then the input
-	// owns it.
+	// fresh per open; the filter starts empty (or from the seed char), then
+	// the input owns it.
 	let draft = $state(seed ?? '');
-	let active = $state(0);
+	// svelte-ignore state_referenced_locally — seed-only: the highlight
+	// starts on the stored value's option, then the keyboard owns it.
+	let active = $state(
+		Math.max(0, (field.values ?? []).findIndex((e) => e.key === (typeof value === 'string' ? value : '')))
+	);
 
 	const ariaLabel = $derived(label ?? field.title ?? field.key);
+
+	/** The stored value at open time — the chip, the check mark, and the
+	 *  keep-on-empty commit rule all read it. */
+	const currentKey = $derived(typeof value === 'string' && value !== '' ? value : null);
+	const currentEntry = $derived(
+		currentKey ? field.values?.find((e) => e.key === currentKey) : undefined
+	);
+	const currentLabel = $derived(currentKey ? (currentEntry?.label ?? humanize(currentKey)) : '');
+	const currentColor = $derived(currentKey ? (currentEntry?.color ?? 'var(--text-3)') : 'transparent');
 
 	/** The declared values narrowed by the draft — key or label, either case. */
 	const options = $derived.by(() => {
@@ -60,11 +77,21 @@
 		oncommit(key, move);
 	}
 
+	/** The chip's ✕ — one click clears the field and closes. */
+	function clearAll(): void {
+		ondraft?.(null, true);
+		oncommit(null, null);
+	}
+
 	function commitActiveOrClear(move: CommitMove): void {
 		if (draft.trim() === '') {
-			// An empty draft commits the clear — never the first option.
-			ondraft?.(null, true);
-			oncommit(null, move);
+			// An empty draft keeps the stored value — open + Enter never wipes.
+			// Without a stored value it commits the clear (a no-op close).
+			if (currentKey) pick(currentKey, move);
+			else {
+				ondraft?.(null, true);
+				oncommit(null, move);
+			}
 			return;
 		}
 		const current = options[active];
@@ -108,8 +135,27 @@
 		const entry = field.values?.find((e) => e.key === key);
 		return entry?.label ?? humanize(key);
 	}
+
+	/** `aria-activedescendant` target for the highlighted option. */
+	const activeId = $derived(options.length > 0 ? `grid-enum-opt-${active}` : undefined);
 </script>
 
+{#if currentKey}
+	<span class="enum-current">
+		<span class="enum-dot" style={`background: ${currentColor}`}></span>
+		<span class="enum-current-label">{currentLabel}</span>
+		<button
+			type="button"
+			class="enum-current-clear"
+			aria-label={m.common_clear()}
+			onmousedown={(e) => {
+				// mousedown keeps the input's focus from blurring first.
+				e.preventDefault();
+				clearAll();
+			}}
+		>✕</button>
+	</span>
+{/if}
 <input
 	bind:this={inputEl}
 	use:focusEnd
@@ -121,6 +167,8 @@
 	aria-expanded="true"
 	aria-controls="grid-enum-listbox"
 	aria-autocomplete="list"
+	aria-activedescendant={activeId}
+	placeholder={m.grid_enum_filter()}
 	oninput={() => {
 		active = 0;
 		publish();
@@ -134,8 +182,9 @@
 				type="button"
 				class="enum-opt"
 				class:active={i === active}
+				id={`grid-enum-opt-${i}`}
 				role="option"
-				aria-selected={i === active}
+				aria-selected={entry.key === currentKey}
 				onmousedown={(e) => {
 					// mousedown keeps the input's focus from blurring first.
 					e.preventDefault();
@@ -145,6 +194,9 @@
 			>
 				<span class="enum-dot" style={`background: ${optionColor(entry.key)}`}></span>
 				{optionLabel(entry.key)}
+				{#if entry.key === currentKey}
+					<span class="enum-check" aria-hidden="true">✓</span>
+				{/if}
 			</button>
 		</li>
 	{:else}
@@ -168,6 +220,52 @@
 
 	.cell-input:focus {
 		outline: none;
+	}
+
+	.cell-input::placeholder {
+		color: var(--text-3);
+	}
+
+	/* The stored value stays visible while the editor is open. */
+	.enum-current {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		flex: none;
+		max-width: 62%;
+		padding: 2px 4px 2px 8px;
+		border-radius: 999px;
+		background: var(--surface-2);
+		font-size: 12px;
+		color: var(--text);
+	}
+
+	.enum-current-label {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.enum-current-clear {
+		all: unset;
+		display: grid;
+		place-items: center;
+		width: 14px;
+		height: 14px;
+		border-radius: 50%;
+		font-size: 9px;
+		line-height: 1;
+		color: var(--text-3);
+		cursor: pointer;
+	}
+
+	.enum-current-clear:hover {
+		color: var(--danger);
+		background: var(--surface);
+	}
+
+	.enum-current-clear:focus-visible {
+		outline: 2px solid var(--accent);
 	}
 
 	.enum-list {
@@ -206,6 +304,12 @@
 
 	.enum-opt.active {
 		background: var(--accent-weak);
+	}
+
+	.enum-check {
+		margin-left: auto;
+		font-size: 11px;
+		color: var(--accent);
 	}
 
 	.enum-dot {

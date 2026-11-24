@@ -273,6 +273,10 @@
 	const selRange = $derived(selection.range);
 	const selSize = $derived(selection.size(selRange));
 
+	/** A primary press started on a grid cell or gutter and is still down.
+	 *  Only it arms the drag-select (see `cellMouseEnter`). */
+	let pressArmed = false;
+
 	const maxRow = $derived(items.length - 1);
 	const maxCol = $derived(columns.length - 1);
 
@@ -289,6 +293,9 @@
 		if (editing && (editing.r !== r || editing.c !== c)) {
 			editorApi?.commitFromOutside();
 		}
+		// This press arms the drag-select — a press inside the open editor
+		// never reaches here (the editor's shell stops it).
+		pressArmed = true;
 		if (e.shiftKey) {
 			selection.extendTo(r, c, maxRow, maxCol);
 		} else {
@@ -296,8 +303,12 @@
 		}
 	}
 
-	/** Drag-select: the primary button is already down, hovering extends. */
+	/** Drag-select: the primary button is already down, hovering extends.
+	 *  Only a press that started on the grid's own cells may drag — the enum
+		list closes its editor under the held button, and the cells exposed
+		underneath must not sweep-select. */
 	function cellMouseEnter(r: number, c: number, e: MouseEvent) {
+		if (!pressArmed) return;
 		if ((e.buttons & 1) === 0) return;
 		if (e.shiftKey) return;
 		selection.extendTo(r, c, maxRow, maxCol);
@@ -307,6 +318,7 @@
 	function gutterMouseDown(r: number, e: MouseEvent) {
 		if (maxCol < 0) return;
 		if (editing) editorApi?.commitFromOutside();
+		pressArmed = true;
 		if (e.shiftKey && selRange) {
 			selection.extendTo(r, maxCol, maxRow, maxCol);
 		} else {
@@ -806,7 +818,10 @@
 				.join(' · ') || null
 		);
 	}
-</script>
+	</script>
+
+<!-- The press ends wherever the pointer is — the drag disarms globally. -->
+<svelte:window onmouseup={() => (pressArmed = false)} />
 
 <div class="grid-wrap">
 	{#if doctype}

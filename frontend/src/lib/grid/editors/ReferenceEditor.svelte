@@ -66,6 +66,7 @@
 			filter={field.filter}
 			{driver}
 			placeholder={ariaLabel}
+			hideType
 		/>
 	{:else}
 		<input

@@ -1628,6 +1628,7 @@
 	"grid_range_cells": "{count} cells",
 	"grid_fx_read_only": "Computed — read-only",
 	"grid_editor_aria": "Edit {field}",
+	"grid_enum_filter": "Filter",
 	"grid_coerce_integer": "Enter a whole number",
 	"grid_coerce_bounds_between": "Value must be between {min} and {max}",
 	"grid_coerce_bounds_min": "Value must be at least {min}",
