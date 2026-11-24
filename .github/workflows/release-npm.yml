@@ -114,12 +114,16 @@ jobs:
             console.log(`Tarball contents OK (${paths.length} files)`);
           '
 
-      - name: Publish to npm
+      - name: Stage the release for approval
         working-directory: ${{ env.PACKAGE_DIR }}
         run: |
-          # Node 22 bundles npm 10; OIDC trusted publishing needs npm >= 11.5.1.
+          # Staged publishing (npm >= 11.15.0): the trusted publisher allows
+          # staging, not direct publish. A maintainer approves the version in
+          # the npm console (Staged Packages) and it goes live. Approving does
+          # not carry --tag, so re-apply the dist-tag afterwards:
+          #   npm dist-tag add <pkg>@<version> <NPM_DIST_TAG>
           npm install -g npm@^11
-          npm publish --access public --tag "$NPM_DIST_TAG"
+          npm stage publish --access public --tag "$NPM_DIST_TAG"
 
       - name: GitHub release
         run: gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes

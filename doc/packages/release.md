@@ -53,8 +53,14 @@ A version that contains a `-` (for example `0.0.2-beta.1`) is a prerelease. It p
 | Gates | `pnpm lint`, `pnpm check`, `pnpm test` — the release runs its own gates and does not depend on a previous CI run |
 | Build | `pnpm build` (`tsc`; `vite build` + `tsc` for chat) — `dist/` is gitignored, so the tarball needs a fresh build |
 | Smoke | CLI start (`node dist/index.js --help`, cli only); `npm pack --dry-run` with a file-list check (all packages) |
-| Publish | Upgrade npm to `^11`, then `npm publish --access public --tag <dist-tag>` |
+| Publish | Upgrade npm to `^11`, then `npm stage publish --access public --tag <dist-tag>` |
 | GitHub Release | `gh release create --verify-tag --generate-notes` |
+
+The publish is **staged**: the trusted publisher allows staging, not direct publish. A maintainer approves the version in the npm console (**Staged Packages** tab) and it goes live. Approval does not carry the `--tag`, so re-apply the dist-tag afterwards:
+
+```bash
+npm dist-tag add @facetapp/cli@0.1.0 latest
+```
 
 The tarball check allows only `dist/`, `README.md`, and `LICENSE` (npm always adds `package.json`), and requires `dist/index.js` — the entry point.
 
@@ -62,7 +68,7 @@ The tarball check allows only `dist/`, `README.md`, and `LICENSE` (npm always ad
 
 The workflow holds no npm token. The publish runs through OIDC trusted publishing with `id-token: write`:
 
-- Requires npm ≥ 11.5.1 and Node ≥ 22.14.0. Node 22 bundles npm 10, so the workflow installs `npm@^11` before the publish step.
+- Requires npm ≥ 11.15.0 (staged publishing) and Node ≥ 22.14.0. The workflow installs `npm@^11` before the publish step.
 - Provenance is generated automatically on publishes from GitHub Actions. No flag is needed.
 - Fallback: a granular automation token in the `NPM_TOKEN` secret, with `--provenance` on the publish command.
 
