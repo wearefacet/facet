@@ -8,8 +8,17 @@
 	mirrors the `Table`'s data machinery (toolbar, capped count, pagination,
 	schema-aware cells) and adds the spreadsheet layer: an active cell with a
 	shift-extendable range, keyboard navigation, TSV copy, sticky frozen
-	columns, and the Σ row of server aggregates. Editing lands in a later
-	phase — this build reads.
+	columns, and the Σ row of server aggregates.
+
+	Editing (the editors phase): a writable column over a writable field,
+	under the viewer's `update` grant, opens the per-type cell editor —
+	Enter / F2 / double-click on the value, a typed char replaces it. Booleans
+	flip in place with no edit mode. Writes go through the per-row write
+	queue (one PATCH per row, cap 4) with a session undo stack (⌘Z). A
+	rejected cell keeps the typed text under a local error state — Esc
+	reverts; a 403 reverts, toasts, and locks the row read-only for the
+	session. A refetch re-applies in-flight cell values and leaves the open
+	editor open.
 -->
 
 <script lang="ts" generics="T">
@@ -25,9 +34,17 @@
 	import { errorMessage } from '$lib/datasource/bannerError.js';
 	import { isTypingTarget } from '$lib/shortcuts.svelte';
 	import { copyText } from '$lib/clipboard.js';
+	import { toast } from '$lib/toast.svelte.js';
+	import { can } from '$lib/permissions.svelte';
+	import { DataSourceError } from '$lib/datasource/types.js';
+	import type { DocumentResponse } from '$lib/datasource/types.js';
 	import { createSelection } from './selection.svelte.js';
 	import { cellCopyText, serializeTSV } from './clipboard.js';
 	import { fetchSummaries, type FieldSummary } from './summary.js';
+	import { createWriteQueue } from './writeQueue.js';
+	import { valueEquals } from './coerce.js';
+	import CellEditor from './editors/CellEditor.svelte';
+	import type { CommitMove } from './editors/types.js';
 	import type { GridColumn, GridProps } from './types.js';
 
 	let {
@@ -156,6 +173,21 @@
 			}
 			// A refetch that shrank the data pulls the selection back in bounds.
 			selection.clampTo(items.length - 1, columns.length - 1);
+			// The re-query never clobbers a cell in flight or under a local
+			// error: the pending values re-apply on top of the refreshed rows,
+			// and the open editor stays open (its draft is its own).
+			if (pending.size > 0) {
+				const reapply = new Map<string, Map<string, CellPending>>();
+				for (const [rowId, inner] of pending) reapply.set(rowId, new Map(inner));
+				items = items.map((row) => {
+					const rowId = rowKey(row);
+					const inner = reapply.get(rowId);
+					if (!inner) return row;
+					const next = { ...(row as Record<string, unknown>) };
+					for (const [key, entry] of inner) next[key] = entry.value;
+					return next as T;
+				});
+			}
 			// The Σ row answers per column with the same filters — a failed
 			// column aggregate leaves its cell empty (fetchSummaries drops it).
 			if (summaryColumns.length > 0) {
@@ -252,6 +284,11 @@
 	});
 
 	function cellMouseDown(r: number, c: number, e: MouseEvent) {
+		// A mousedown on another cell commits the open editor first — the
+		// spreadsheet norm. An unparseable draft cancels instead.
+		if (editing && (editing.r !== r || editing.c !== c)) {
+			editorApi?.commitFromOutside();
+		}
 		if (e.shiftKey) {
 			selection.extendTo(r, c, maxRow, maxCol);
 		} else {
@@ -269,11 +306,269 @@
 	/** Gutter click selects the whole row (all data columns of the row). */
 	function gutterMouseDown(r: number, e: MouseEvent) {
 		if (maxCol < 0) return;
+		if (editing) editorApi?.commitFromOutside();
 		if (e.shiftKey && selRange) {
 			selection.extendTo(r, maxCol, maxRow, maxCol);
 		} else {
 			selection.setFocus(r, 0, maxRow, maxCol);
 			selection.extendTo(r, maxCol, maxRow, maxCol);
+		}
+	}
+
+	// ── Cell editing (the editors phase) ─────────────────────────────────
+
+	/** The field types a cell editor can write. Containers, `data`, `file`,
+	 *  `secret` never edit in the grid — the peek drawer owns them. */
+	const WRITABLE_FIELD_TYPES = new Set([
+		'string',
+		'longtext',
+		'integer',
+		'money',
+		'date',
+		'datetime',
+		'period',
+		'dateperiod',
+		'enum',
+		'boolean',
+		'reference',
+		'color',
+		'duration',
+		'phone',
+		'url'
+	]);
+
+	/** The open editor: its row, column, and the seed char (type-to-edit). */
+	let editing = $state<{ r: number; c: number; seed: string | null } | null>(null);
+	/** The open shell's API — the outside-commit request goes through it. */
+	let editorApi: { commitFromOutside(): void } | null = $state(null);
+	/** The scrolling frame — cell focus restore looks cells up here. */
+	let gridEl: HTMLElement | null = $state(null);
+
+	/** Per-cell write state, keyed rowId → colKey. `saving` dims the cell;
+	 *  `error` keeps the typed text under an error frame — Esc reverts. */
+	interface CellPending {
+		status: 'saving' | 'error';
+		value: unknown;
+		/** The pre-write value — the Esc revert of a failed cell. */
+		before?: unknown;
+		/** The failure message (the 422's text) — the cell's tooltip. */
+		message?: string;
+	}
+	let pending = $state<Map<string, Map<string, CellPending>>>(new Map());
+	/** Rows the session locks read-only after a 403 — the backend denied the
+	 *  write; the UI stops offering it. */
+	let lockedRows = $state<Set<string>>(new Set());
+
+	/** One PATCH per row, at most 4 rows in flight, undo entries recorded
+	 *  from the `before` diffs the callers pass. */
+	const writeQueue = createWriteQueue((rowId, diff) => datasource.doc(rowId).update(diff));
+
+	function pendingFor(rowId: string, key: string): CellPending | undefined {
+		return pending.get(rowId)?.get(key);
+	}
+
+	function setPending(rowId: string, key: string, entry: CellPending | null): void {
+		const outer = new Map(pending);
+		if (entry == null) {
+			const inner = outer.get(rowId);
+			if (!inner) return;
+			const next = new Map(inner);
+			next.delete(key);
+			if (next.size === 0) outer.delete(rowId);
+			else outer.set(rowId, next);
+		} else {
+			const next = new Map(outer.get(rowId) ?? new Map<string, CellPending>());
+			next.set(key, entry);
+			outer.set(rowId, next);
+		}
+		pending = outer;
+	}
+
+	/** Rows with a write in flight — their computed (`data`) cells dim. */
+	const savingRows = $derived.by(() => {
+		const set = new Set<string>();
+		for (const [rowId, inner] of pending) {
+			for (const entry of inner.values()) {
+				if (entry.status === 'saving') {
+					set.add(rowId);
+					break;
+				}
+			}
+		}
+		return set;
+	});
+
+	/** Whether the column's field is writable at all — the column flag
+	 *  (`editable: false`) and the system timestamp columns also gate. */
+	function colEditable(col: GridColumn): boolean {
+		if (col.editable === false) return false;
+		if (!doctype || SYSTEM_TS_KEYS.has(col.key)) return false;
+		const field = fieldFor(col);
+		if (!field) return false;
+		if (field.read_only || field.write_only) return false;
+		if (!WRITABLE_FIELD_TYPES.has(field.type)) return false;
+		return can(`${doctype.domain}.${doctype.doctype}`, 'update');
+	}
+
+	/** Per-cell editability — the column gate plus the row's 403 lock. */
+	function cellWritable(item: T, col: GridColumn): boolean {
+		if (!colEditable(col)) return false;
+		return !lockedRows.has(rowKey(item));
+	}
+
+	function openEditor(seed: string | null): void {
+		const focus = selection.focus;
+		if (!focus || editing) return;
+		const col = columns[focus.col];
+		const item = items[focus.row];
+		if (!col || !item) return;
+		if (fieldFor(col)?.type === 'boolean') return; // booleans have no edit mode
+		if (!cellWritable(item, col)) return;
+		editing = { r: focus.row, c: focus.col, seed };
+	}
+
+	function closeEditor(): void {
+		editing = null;
+	}
+
+	/** Set one cell in the row store — the optimistic apply and the revert. */
+	function applyCell(rowId: string, key: string, value: unknown, updatedAt?: string): void {
+		items = items.map((row) => {
+			if (rowKey(row) !== rowId) return row;
+			const next = { ...(row as Record<string, unknown>), [key]: value };
+			if (updatedAt != null) next.updated_at = updatedAt;
+			return next as T;
+		});
+	}
+
+	/**
+	 * Write one cell: optimistic apply, one queued PATCH, then the response
+	 * settles it. A 403 reverts, toasts, and locks the row for the session;
+	 * any other failure (422, network) keeps the typed value on the cell
+	 * under the error state — Esc reverts.
+	 */
+	async function commitCell(r: number, c: number, value: unknown): Promise<void> {
+		const col = columns[c];
+		const item = items[r];
+		if (!col || !item) return;
+		const rowId = rowKey(item);
+		const before = (item as Record<string, unknown>)[col.key];
+		if (valueEquals(before, value)) return; // a no-op never PATCHes
+		applyCell(rowId, col.key, value);
+		setPending(rowId, col.key, { status: 'saving', value });
+		try {
+			const saved = (await writeQueue.push(rowId, { [col.key]: value }, {
+				before: { [col.key]: before }
+			})) as DocumentResponse<T> | undefined;
+			setPending(rowId, col.key, null);
+			if (saved?.meta) {
+				applyCell(rowId, col.key, value, saved.meta.updated_at);
+				// Computed columns refresh from the PATCH response — the
+				// backend recomputed them server-side on this write.
+				const content = saved.data as Record<string, unknown> | undefined;
+				if (doctype && content) {
+					for (const field of doctype.fields) {
+						if (field.type === 'data' && field.key in content) {
+							applyCell(rowId, field.key, content[field.key]);
+						}
+					}
+				}
+			}
+		} catch (err) {
+			if (err instanceof DataSourceError && err.status === 403) {
+				setPending(rowId, col.key, null);
+				applyCell(rowId, col.key, before);
+				const next = new Set(lockedRows);
+				next.add(rowId);
+				lockedRows = next;
+				toast({ message: errorMessage(err, m.common_save_failed()), variant: 'error' });
+			} else {
+				setPending(rowId, col.key, {
+					status: 'error',
+					value,
+					before,
+					message: errorMessage(err, m.common_save_failed())
+				});
+			}
+		}
+	}
+
+	/** Booleans have no edit mode — the flip IS the write (the Table's
+	 *  inline toggle, generalized through the queue). */
+	function flipBoolean(r: number, c: number): void {
+		const col = columns[c];
+		const item = items[r];
+		if (!col || !item || !cellWritable(item, col)) return;
+		if (fieldFor(col)?.type !== 'boolean') return;
+		const current = (item as Record<string, unknown>)[col.key];
+		void commitCell(r, c, current !== true);
+	}
+
+	/** ⌘Z — invert the newest committed op. Cells the row no longer carries
+	 *  (changed since) skip; the rest reverts through the queue, unrecorded. */
+	async function undoLast(): Promise<void> {
+		const entry = writeQueue.popUndo();
+		if (!entry) return;
+		const r = items.findIndex((row) => rowKey(row) === entry.rowId);
+		if (r < 0) return;
+		const row = items[r] as Record<string, unknown>;
+		let skipped = false;
+		for (const [key, after] of Object.entries(entry.after)) {
+			if (!valueEquals(row[key], after)) skipped = true;
+		}
+		if (skipped) {
+			toast({ message: m.grid_undo_skipped(), variant: 'error' });
+		}
+		for (const [key, after] of Object.entries(entry.after)) {
+			if (!valueEquals(row[key], after)) continue;
+			const c = columns.findIndex((col) => col.key === key);
+			if (c >= 0) await commitCell(r, c, entry.before[key]);
+		}
+	}
+
+	/** The editor's commit — close, write, then move as the key asked. A
+	 *  keyboard commit refocuses a cell: the unmounting input drops focus
+	 *  to the body, and the next chord (⌘Z, Esc) must still reach the grid. */
+	function handleEditorCommit(value: unknown, move: CommitMove): void {
+		const current = editing;
+		closeEditor();
+		if (!current) return;
+		void commitCell(current.r, current.c, value);
+		if (move === 'down') selection.move(1, 0, false, maxRow, maxCol);
+		else if (move === 'right') selection.move(0, 1, false, maxRow, maxCol);
+		if (move != null) {
+			const f = selection.focus;
+			if (f) refocusCell(f.row, f.col);
+		}
+	}
+
+	function handleEditorCancel(): void {
+		const current = editing;
+		closeEditor();
+		if (current) refocusCell(current.r, current.c);
+	}
+
+	/** Put the DOM focus back on a cell — the keyboard lives there. */
+	function refocusCell(r: number, c: number): void {
+		gridEl?.querySelector<HTMLElement>(`[data-row="${r}"][data-col="${c}"]`)?.focus();
+	}
+
+	/** A failed cell's Esc — drop the typed value, restore the pre-write
+	 *  one. Every error cell reverts: the commit moved the selection, so
+	 *  the failed cell is usually not the focused one. */
+	function revertErrorCells(): void {
+		if (pending.size === 0) return;
+		const reverts: { rowId: string; key: string; before: unknown }[] = [];
+		for (const [rowId, inner] of pending) {
+			for (const [key, entry] of inner) {
+				if (entry.status === 'error') {
+					reverts.push({ rowId, key, before: entry.before });
+				}
+			}
+		}
+		for (const rev of reverts) {
+			applyCell(rev.rowId, rev.key, rev.before);
+			setPending(rev.rowId, rev.key, null);
 		}
 	}
 
@@ -307,8 +602,17 @@
 			void copySelection();
 			return;
 		}
+		// Undo — the session stack's inverse PATCH. No redo.
+		if ((e.metaKey || e.ctrlKey) && (key === 'z' || key === 'Z')) {
+			e.preventDefault();
+			void undoLast();
+			return;
+		}
 		if (e.metaKey || e.ctrlKey || e.altKey) return;
 		const extend = e.shiftKey && key.startsWith('Arrow');
+		const focus = selection.focus;
+		const focusCol = focus != null ? columns[focus.col] : undefined;
+		const focusRowItem = focus != null ? items[focus.row] : undefined;
 		switch (key) {
 			case 'ArrowDown':
 				e.preventDefault();
@@ -335,17 +639,62 @@
 				selection.setFocus(maxRow, 0, maxRow, maxCol);
 				break;
 			case 'Enter':
+				// Editing takes Enter over on a writable cell; elsewhere it
+				// keeps opening the row like the table's Enter does.
+				if (
+					focus &&
+					focusCol &&
+					focusRowItem &&
+					cellWritable(focusRowItem, focusCol) &&
+					fieldFor(focusCol)?.type !== 'boolean'
+				) {
+					e.preventDefault();
+					openEditor(null);
+				} else if (focusItem && onRowClick) {
+					e.preventDefault();
+					onRowClick(focusItem);
+				}
+				break;
+			case 'F2':
+				e.preventDefault();
+				openEditor(null);
+				break;
 			case ' ':
-				// Read-only build: open the row like the table's Enter does.
-				if (focusItem && onRowClick) {
+				// Space flips a writable boolean in place; elsewhere it opens
+				// the peek drawer (the object types' only affordance).
+				if (
+					focus &&
+					focusCol &&
+					focusRowItem &&
+					cellWritable(focusRowItem, focusCol) &&
+					fieldFor(focusCol)?.type === 'boolean'
+				) {
+					e.preventDefault();
+					flipBoolean(focus.row, focus.col);
+				} else if (focusItem && onRowClick) {
 					e.preventDefault();
 					onRowClick(focusItem);
 				}
 				break;
 			case 'Escape':
+				// A failed cell reverts first; the next Escape clears the range.
+				revertErrorCells();
 				selection.clear();
 				break;
 			default:
+				// A printable char starts the editor with that char — the
+				// spreadsheet's type-to-replace. Booleans have no edit mode.
+				if (
+					key.length === 1 &&
+					focus &&
+					focusCol &&
+					focusRowItem &&
+					cellWritable(focusRowItem, focusCol) &&
+					fieldFor(focusCol)?.type !== 'boolean'
+				) {
+					e.preventDefault();
+					openEditor(key);
+				}
 				break;
 		}
 	}
@@ -486,6 +835,7 @@
 			aria-colcount={columns.length + (selectable ? 1 : 0)}
 			tabindex="0"
 			onkeydown={handleKeydown}
+			bind:this={gridEl}
 		>
 			<!-- header -->
 			<div class="g-row g-head" role="row">
@@ -592,6 +942,8 @@
 							selRange!.rowEnd === r &&
 							selRange!.colStart === c &&
 							selRange!.colEnd === c}
+						{@const cellEntry = pendingFor(rowKey(item), col.key)}
+						{@const isEditing = editing?.r === r && editing?.c === c}
 						<div
 							class="g-cell {colAlign(col)}"
 							class:frozen={sticky != null}
@@ -599,6 +951,10 @@
 							class:in-range={inRange && !isFocus}
 							class:focused={isFocus}
 							class:computed={isComputed(col)}
+							class:saving={cellEntry?.status === 'saving'}
+							class:cell-error={cellEntry?.status === 'error'}
+							class:stale={isComputed(col) && savingRows.has(rowKey(item))}
+							class:editing={isEditing}
 							style={sticky != null ? `left: ${sticky}px` : ''}
 							role="gridcell"
 							tabindex="-1"
@@ -606,10 +962,25 @@
 							aria-colindex={c + 1}
 							data-row={r}
 							data-col={c}
+							title={cellEntry?.status === 'error' ? cellEntry.message : undefined}
 							onmousedown={(e) => cellMouseDown(r, c, e)}
 							onmouseenter={(e) => cellMouseEnter(r, c, e)}
+							ondblclick={() => openEditor(null)}
 						>
-							{@render dataCell(item, col)}
+							{#if isEditing}
+								<CellEditor
+									field={fieldFor(col)!}
+									label={col.label}
+									value={(item as Record<string, unknown>)[col.key]}
+									seed={editing!.seed}
+									{driver}
+									oncommit={handleEditorCommit}
+									oncancel={handleEditorCancel}
+									bind:this={editorApi}
+								/>
+							{:else}
+								{@render dataCell(item, col, r, c)}
+							{/if}
 						</div>
 					{/each}
 				</div>
@@ -732,9 +1103,10 @@
 	{/if}
 </div>
 
-{#snippet dataCell(item: T, col: GridColumn)}
+{#snippet dataCell(item: T, col: GridColumn, r: number, c: number)}
 	{@const value = (item as Record<string, unknown>)[col.key]}
 	{@const field = fieldFor(col)}
+	{@const writable = cellWritable(item, col)}
 	<FieldValue {value} fieldType={field?.type ?? null} fieldDef={field} detectIsoDates>
 		{#snippet referenceCell(ref, fd)}
 			<Capsule
@@ -761,9 +1133,26 @@
 			</span>
 		{/snippet}
 		{#snippet booleanCell(v)}
-			<span class="cell-bool" class:on={v === true} title={String(v)}>
-				{v === true ? '✓' : '✕'}
-			</span>
+			{#if writable}
+				<!-- The Table's inline toggle, generalized: the flip IS the
+					write — no edit mode, one queued PATCH, optimistic. -->
+				<button
+					type="button"
+					class="cell-bool"
+					class:on={v === true}
+					aria-pressed={v === true}
+					aria-label={m.table_bool_toggle_aria({ field: col.label ?? col.key })}
+					title={m.table_bool_toggle_aria({ field: col.label ?? col.key })}
+					disabled={pendingFor(rowKey(item), col.key)?.status === 'saving'}
+					onclick={() => flipBoolean(r, c)}
+				>
+					{v === true ? '✓' : '✕'}
+				</button>
+			{:else}
+				<span class="cell-bool" class:on={v === true} title={String(v)}>
+					{v === true ? '✓' : '✕'}
+				</span>
+			{/if}
 		{/snippet}
 		{#snippet plainCell(v)}
 			<span class="cell-text">{String(v)}</span>
@@ -956,6 +1345,50 @@
 
 	.g-cell.computed {
 		color: var(--text-2);
+	}
+
+	/* ── Editing states ── */
+
+	/* A cell with a write in flight dims — the value is not settled yet. */
+	.g-cell.saving {
+		opacity: 0.55;
+	}
+
+	/* A rejected cell keeps the typed value under an error frame; the
+		tooltip (the cell's title) carries the 422's message. */
+	.g-cell.cell-error {
+		box-shadow: inset 0 0 0 2px var(--danger);
+	}
+
+	/* Computed cells dim while a source cell in their row saves — the value
+		they show is about to go stale; the PATCH response refreshes it. */
+	.g-cell.stale {
+		opacity: 0.45;
+	}
+
+	/* The open editor: the cell stops clipping so the pickers' panels show,
+		and the frame rises above the frozen columns. */
+	.g-cell.editing {
+		overflow: visible;
+		z-index: 20;
+	}
+
+	.g-cell.editing.frozen {
+		z-index: 20;
+	}
+
+	/* Writable booleans read as buttons — the flip is one click. */
+	button.cell-bool {
+		cursor: pointer;
+		border: 0;
+		background: none;
+		font: inherit;
+		padding: 0;
+	}
+
+	button.cell-bool:disabled {
+		cursor: default;
+		opacity: 0.6;
 	}
 
 	/* ── Σ row ── */

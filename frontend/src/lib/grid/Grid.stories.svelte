@@ -6,19 +6,49 @@
 	import { expect, fn, userEvent, within } from 'storybook/test';
 	import Grid from '$lib/grid/Grid.svelte';
 	import { MockDataDriver } from '$lib/datasource/MockDriver.js';
+	import { DataSourceError } from '$lib/datasource/types.js';
+	import { setPermissions } from '$lib/permissions.svelte';
 	import { parseDoctypeDef, type DoctypeDef } from '$lib/doctype/types.js';
 	import type { GridColumn } from '$lib/grid/types.js';
+	import type { DataSource } from '$lib/datasource/interface.js';
+
+	// The edit affordances gate on the viewer's `update` grant — the module
+	// grants everything so the editing stories can drive the write path.
+	setPermissions({ '*.*': ['*'] });
 
 	/**
 	 * A purpose-built fixture driver — 8 `crm.GridDeal` rows shaped like the
 	 * design mock's opportunity board (title, status enum, money, integer,
-	 * computed fx, date, boolean). The grid stories do not reuse `crm.Deal`:
-	 * the boolean column and the state variety (nulls, mixed statuses) need
-	 * their own seed, and a distinct doctype sidesteps the storybook page's
-	 * shared doctype-views cache (the `DocumentCard` stories rule).
+	 * computed fx, date, boolean) plus the full editable-type set the
+	 * editing stories walk through: longtext, datetime, period, dateperiod,
+	 * duration, reference, colour, url. The grid stories do not reuse
+	 * `crm.Deal`: the boolean column and the state variety (nulls, mixed
+	 * statuses) need their own seed, and a distinct doctype sidesteps the
+	 * storybook page's shared doctype-views cache (the `DocumentCard`
+	 * stories rule).
 	 */
 	function makeGridDriver(): MockDataDriver {
 		const d = new MockDataDriver();
+		// The reference target — three contacts the `owner` picker searches.
+		// The `search` template makes the corpus searchable (the D3 rule: no
+		// template matches nothing), and `name` doubles as the display label.
+		d.registerDoctype('crm', 'GridContact', {
+			doctype: 'GridContact',
+			domain: 'crm',
+			icon: 'user',
+			color: '#7986CB',
+			fields: {
+				name: { key: 'name', type: 'string', title: 'Nom', required: true }
+			},
+			search: '{{ name }}',
+			children: [],
+			actions: []
+		});
+		void d.domain('crm').doctype('GridContact', [
+			{ id: 'crm.GridContact.1', name: 'Thomas Lefèvre' },
+			{ id: 'crm.GridContact.2', name: 'Nina Bergström' },
+			{ id: 'crm.GridContact.3', name: 'Paulo Mendes' }
+		]);
 		d.registerDoctype('crm', 'GridDeal', {
 			doctype: 'GridDeal',
 			domain: 'crm',
@@ -48,6 +78,19 @@
 				},
 				weighted: { key: 'weighted', type: 'data', title: 'CA pondéré', compute: 'x' },
 				close_date: { key: 'close_date', type: 'date', title: 'Clôture prévue' },
+				due_at: { key: 'due_at', type: 'datetime', title: 'Échéance' },
+				term: { key: 'term', type: 'period', title: 'Période' },
+				sprint: { key: 'sprint', type: 'dateperiod', title: 'Sprint' },
+				effort: { key: 'effort', type: 'duration', title: 'Effort' },
+				owner: {
+					key: 'owner',
+					type: 'reference',
+					title: 'Responsable',
+					doctype: 'crm.GridContact'
+				},
+				tint: { key: 'tint', type: 'color', title: 'Couleur' },
+				notes: { key: 'notes', type: 'longtext', title: 'Notes' },
+				site: { key: 'site', type: 'url', title: 'Site' },
 				won: { key: 'won', type: 'boolean', title: 'Gagné' }
 			},
 			children: [],
@@ -62,6 +105,14 @@
 				probability: 50,
 				weighted: 65000,
 				close_date: '2027-01-31',
+				due_at: '2027-01-15T17:00:00Z',
+				term: { start: '2026-11-01T00:00:00Z', end: '2027-01-31T23:59:59Z' },
+				sprint: { start: '2026-12-01', end: '2026-12-21' },
+				effort: 5400,
+				owner: 'crm.GridContact.1',
+				tint: '#3FB39A',
+				notes: 'Client souhaite un pilote sur deux sites avant signature.',
+				site: 'https://meridian.example.com',
 				won: false
 			},
 			{
@@ -72,6 +123,12 @@
 				probability: 80,
 				weighted: 36000,
 				close_date: '2026-12-20',
+				due_at: '2026-12-18T09:30:00Z',
+				sprint: { start: '2026-12-01', end: '2026-12-14' },
+				effort: 9000,
+				owner: 'crm.GridContact.2',
+				tint: '#6E93E0',
+				notes: 'Devis à remettre avant le comité achats de janvier.',
 				won: false
 			},
 			{
@@ -82,6 +139,8 @@
 				probability: 10,
 				weighted: 8500,
 				close_date: '2027-03-31',
+				effort: 16200,
+				owner: 'crm.GridContact.3',
 				won: false
 			},
 			{
@@ -92,6 +151,9 @@
 				probability: 25,
 				weighted: 8000,
 				close_date: '2027-02-15',
+				term: { start: '2027-01-01T00:00:00Z', end: '2027-02-15T23:59:59Z' },
+				effort: 7200,
+				tint: '#F0A830',
 				won: false
 			},
 			{
@@ -102,6 +164,10 @@
 				probability: 40,
 				weighted: 27200,
 				close_date: '2027-02-28',
+				due_at: '2027-02-01T08:00:00Z',
+				sprint: { start: '2027-01-04', end: '2027-01-29' },
+				effort: 27000,
+				owner: 'crm.GridContact.1',
 				won: false
 			},
 			{
@@ -112,6 +178,12 @@
 				probability: 90,
 				weighted: 19600,
 				close_date: '2026-12-15',
+				due_at: '2026-12-10T12:00:00Z',
+				effort: 3600,
+				owner: 'crm.GridContact.2',
+				tint: '#E8743B',
+				notes: 'Le pilote facturation tourne — 340 factures traitées.',
+				site: 'https://optilog.example.com',
 				won: true
 			},
 			{
@@ -122,6 +194,7 @@
 				probability: 10,
 				weighted: 1500,
 				close_date: '2027-04-30',
+				effort: 1800,
 				won: false
 			},
 			{
@@ -131,12 +204,22 @@
 				value: { value: '97000', currency: 'USD' },
 				probability: 30,
 				weighted: 29100,
+				term: { start: '2026-12-01T00:00:00Z', end: '2027-03-31T23:59:59Z' },
+				effort: 45000,
+				owner: 'crm.GridContact.3',
 				won: false
 			}
 		]);
-		void d
-			.domain('core')
-			.doctype('DocType', [{ id: 'crm.GridDeal', doctype: 'GridDeal', domain: 'crm' }]);
+		void d.domain('core').doctype('DocType', [
+			{ id: 'crm.GridDeal', doctype: 'GridDeal', domain: 'crm' },
+			{
+				id: 'crm.GridContact',
+				doctype: 'GridContact',
+				domain: 'crm',
+				color: '#7986CB',
+				search: '{{ name }}'
+			}
+		]);
 		return d;
 	}
 
@@ -178,6 +261,73 @@
 		{ key: 'won', label: 'Gagné', width: '96px', align: 'center', editable: false }
 	];
 
+	/**
+	 * Every editable type in one strip — the manual playground. The grid
+	 * treats a writable column as editable unless `false`; the fixture's
+	 * `weighted` (`data`) column stays read-only behind its fx badge.
+	 */
+	const allTypeColumns: GridColumn[] = [
+		{ key: 'title', label: 'Opportunité', width: '240px' },
+		{ key: 'status', label: 'Statut', width: '170px' },
+		{ key: 'value', label: 'CA prévisionnel', width: '180px', align: 'right' },
+		{ key: 'probability', label: 'Probabilité', width: '120px', align: 'right' },
+		{ key: 'close_date', label: 'Clôture', width: '150px' },
+		{ key: 'due_at', label: 'Échéance', width: '200px' },
+		{ key: 'term', label: 'Période', width: '220px' },
+		{ key: 'sprint', label: 'Sprint', width: '200px' },
+		{ key: 'effort', label: 'Effort', width: '130px', align: 'right' },
+		{ key: 'owner', label: 'Responsable', width: '180px' },
+		{ key: 'tint', label: 'Couleur', width: '130px' },
+		{ key: 'notes', label: 'Notes', width: '240px' },
+		{ key: 'site', label: 'Site', width: '200px' },
+		{ key: 'weighted', label: 'CA pondéré', width: '160px', align: 'right', summary: 'sum' },
+		{ key: 'won', label: 'Gagné', width: '96px', align: 'center' }
+	];
+
+	/** The editing stories' strips — one editor column, always data-col 0. */
+	const one = (key: string, label: string, width: string, extra?: Partial<GridColumn>): GridColumn[] => [
+		{ key, label, width, ...extra }
+	];
+
+	/** The editing stories' arg set — a fresh driver, one strip, the schema. */
+	function storyArgs(
+		bundle: { driver: MockDataDriver; ds: DataSource<Record<string, unknown>> },
+		columns?: GridColumn[]
+	) {
+		return {
+			columns: columns ?? allTypeColumns,
+			datasource: bundle.ds,
+			doctype: dealDef,
+			driver: bundle.driver,
+			rowKey: (item: unknown) => String((item as Record<string, unknown>).id),
+			onRowClick: fn()
+		};
+	}
+
+	/**
+	 * The 422 story's arg set — the same fresh driver, but `doc(id).update`
+	 * rejects with the backend's conflict error when the title carries the
+	 * trigger word. `Object.create` keeps the datasource's prototype chain:
+	 * only the one method shadows.
+	 */
+	function errorStoryArgs() {
+		const bundle = editDriver();
+		const failing = Object.create(bundle.ds) as DataSource<Record<string, unknown>>;
+		failing.doc = (id: string) => {
+			const ref = bundle.ds.doc(id);
+			const wrapped = Object.create(ref);
+			wrapped.update = (diff: unknown) => {
+				const title = (diff as Record<string, unknown>).title;
+				if (typeof title === 'string' && title.toLowerCase().includes('boom')) {
+					return Promise.reject(new DataSourceError(422, 'Ce titre est déjà pris'));
+				}
+				return ref.update(diff);
+			};
+			return wrapped;
+		};
+		return storyArgs({ driver: bundle.driver, ds: failing }, one('title', 'Opportunité', '280px'));
+	}
+
 	/** A driver with the GridDeal schema and zero documents — the empty state. */
 	function makeEmptyDriver(): MockDataDriver {
 		const d = new MockDataDriver();
@@ -186,6 +336,28 @@
 		if (raw) d.registerDoctype('crm', 'GridDeal', raw);
 		void d.domain('core').doctype('DocType', []);
 		return d;
+	}
+
+	/**
+	 * A fresh driver + datasource per editing story — each story mutates its
+	 * own store, so the plays never read another story's writes and the
+	 * shared `gridDriver` keeps its seed for the read-only stories.
+	 */
+	function editDriver(): { driver: MockDataDriver; ds: DataSource<Record<string, unknown>> } {
+		const driver = makeGridDriver();
+		const ds = driver
+			.domain('crm')
+			.doctype('GridDeal') as unknown as DataSource<Record<string, unknown>>;
+		return { driver, ds };
+	}
+
+	/** Read one row's content back through a datasource. */
+	async function stored(
+		ds: DataSource<unknown>,
+		id: string
+	): Promise<Record<string, unknown>> {
+		const res = await ds.doc(id).show();
+		return res.data as Record<string, unknown>;
 	}
 
 	/** Wait long enough for the page fetch + Σ aggregates to settle. */
@@ -373,5 +545,341 @@
 		expect(weighted.querySelector('.head-sort')).toBeNull();
 		await userEvent.click(weighted);
 		expect(args.onSort).toHaveBeenCalledTimes(1);
+	}}
+/>
+
+// ═══════════════════════════════════════════════════════════════════════
+// Editing stories — one per cell editor, plus the flip, the 422 state,
+// and the undo. Each story drives a fresh driver, so its writes never
+// leak into another story's seed. The edited column is always data-col 0.
+// ═══════════════════════════════════════════════════════════════════════
+
+<Story
+	name="TextEdit"
+	args={{ ...storyArgs(editDriver(), one('title', 'Opportunité', '300px')) }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		// Click the title cell, then type — the first char opens the editor
+		// with that seed (type-to-replace), the rest fills the draft.
+		const cell = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
+		await userEvent.click(cell);
+		await userEvent.keyboard('Nouveau titre');
+		// The editor is open over the cell — Enter commits and moves down.
+		await userEvent.keyboard('{Enter}');
+		await sleep(100);
+		expect(cell.textContent).toContain('Nouveau titre');
+		// The PATCH went through the datasource — the mock store holds it.
+		const row = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(row.title).toBe('Nouveau titre');
+	}}
+/>
+
+<Story
+	name="LongTextEdit"
+	args={{ ...storyArgs(editDriver(), one('notes', 'Notes', '280px')) }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		// Double-click opens the floating textarea on the current value.
+		const cell = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
+		await userEvent.dblClick(cell);
+		const textarea = cell.querySelector('textarea')!;
+		expect(textarea.value).toContain('pilote sur deux sites');
+		// A bare Enter inserts a line; ⌘↵ commits.
+		await userEvent.type(textarea, '{Enter}');
+		await userEvent.type(textarea, 'Deuxième ligne.');
+		await userEvent.keyboard('{Meta>}{Enter}{/Meta}');
+		await sleep(100);
+		const row = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(row.notes).toBe(
+			'Client souhaite un pilote sur deux sites avant signature.\nDeuxième ligne.'
+		);
+	}}
+/>
+
+<Story
+	name="EnumEdit"
+	args={{ ...storyArgs(editDriver(), one('status', 'Statut', '180px')) }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		// Double-click opens the filter listbox on the declared values.
+		const cell = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
+		await userEvent.dblClick(cell);
+		const input = cell.querySelector('input')!;
+		// Typing narrows by key or label; Enter picks the highlighted one.
+		// `devis` matches exactly one declared value (Devis envoyé).
+		await userEvent.type(input, 'devis');
+		const list = canvasElement.querySelector('[role="listbox"]')!;
+		expect(list.querySelectorAll('.enum-opt').length).toBe(1);
+		expect(list.textContent).toContain('Devis envoyé');
+		await userEvent.keyboard('{Enter}');
+		await sleep(100);
+		expect(cell.textContent).toContain('Devis envoyé');
+		const row = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(row.status).toBe('quote');
+	}}
+/>
+
+<Story
+	name="IntegerEdit"
+	args={{ ...storyArgs(editDriver(), one('probability', 'Probabilité', '150px', { align: 'right' })) }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		const cell = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
+		await userEvent.click(cell);
+		// Type-to-replace: the first char opens the editor with the seed.
+		await userEvent.keyboard('150');
+		// Above the declared max — the commit blocks, the editor stays open.
+		await userEvent.keyboard('{Enter}');
+		await sleep(50);
+		const editor = cell.querySelector('input')!;
+		expect(editor.className).toContain('invalid');
+		// Escape cancels — the cell keeps its stored value.
+		await userEvent.keyboard('{Escape}');
+		await sleep(50);
+		expect(cell.textContent).toContain('50');
+		// A valid entry commits — the editor reopens on a fresh click (the
+		// Escape cleared the selection).
+		await userEvent.click(cell);
+		await userEvent.keyboard('66');
+		await userEvent.keyboard('{Enter}');
+		await sleep(100);
+		const row = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(row.probability).toBe(66);
+	}}
+/>
+
+<Story
+	name="DurationEdit"
+	args={{ ...storyArgs(editDriver(), one('effort', 'Effort', '170px', { align: 'right' })) }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		// The free-form parser takes `3h 15m`; the committed value is seconds.
+		const cell = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
+		await userEvent.click(cell);
+		await userEvent.keyboard('3h 15m');
+		// The live hint shows the parsed total while typing.
+		expect(cell.textContent).toContain('3h');
+		await userEvent.keyboard('{Enter}');
+		await sleep(100);
+		const row = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(row.effort).toBe(11700);
+	}}
+/>
+
+<Story
+	name="MoneyEdit"
+	args={{ ...storyArgs(editDriver(), one('value', 'CA prévisionnel', '220px', { align: 'right' })) }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		// Double-click opens MoneyInput — currency chip + amount.
+		const cell = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
+		await userEvent.dblClick(cell);
+		const amount = cell.querySelector<HTMLInputElement>('input.money-amount')!;
+		expect(amount.value).not.toBe('');
+		// Replace the amount; the currency stays USD.
+		await userEvent.clear(amount);
+		await userEvent.type(amount, '51000');
+		await userEvent.keyboard('{Enter}');
+		await sleep(100);
+		const row = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(row.value).toEqual({ value: '51000', currency: 'USD' });
+	}}
+/>
+
+<Story
+	name="DateEdit"
+	args={{ ...storyArgs(editDriver(), one('close_date', 'Clôture prévue', '190px')) }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		// Double-click opens the compact segment field; the year segment
+		// holds the focus. Typing fills and auto-advances.
+		const cell = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
+		await userEvent.dblClick(cell);
+		const year = cell.querySelector<HTMLInputElement>('input.dtp-seg-y')!;
+		expect(document.activeElement).toBe(year);
+		// The segments hold the stored date, and the keystroke simulation
+		// skips full inputs — clear each segment, then type it.
+		await userEvent.clear(year);
+		await userEvent.type(year, '2028');
+		const month = cell.querySelector<HTMLInputElement>('input[aria-label="month"]')!;
+		await userEvent.clear(month);
+		await userEvent.type(month, '03');
+		const day = cell.querySelector<HTMLInputElement>('input[aria-label="day"]')!;
+		await userEvent.clear(day);
+		await userEvent.type(day, '15');
+		await userEvent.keyboard('{Enter}');
+		await sleep(100);
+		const row = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(row.close_date).toBe('2028-03-15');
+	}}
+/>
+
+<Story
+	name="PeriodEdit"
+	args={{ ...storyArgs(editDriver(), one('sprint', 'Sprint', '260px')) }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		// Double-click opens the floating two-bound picker (dateperiod —
+		// calendar dates, never timezone-converted).
+		const cell = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
+		await userEvent.dblClick(cell);
+		// The Start bound's year segment holds the focus. The segments hold
+		// the stored range — clear each, then type it.
+		const inputs = [...cell.querySelectorAll<HTMLInputElement>('input.dtp-seg')];
+		expect(inputs.length).toBe(6);
+		await userEvent.clear(inputs[0]!);
+		await userEvent.type(inputs[0]!, '2027');
+		await userEvent.clear(inputs[1]!);
+		await userEvent.type(inputs[1]!, '02');
+		await userEvent.clear(inputs[2]!);
+		await userEvent.type(inputs[2]!, '02');
+		// The End bound — the picker's own segment inputs, in DOM order.
+		await userEvent.clear(inputs[3]!);
+		await userEvent.type(inputs[3]!, '2027');
+		await userEvent.clear(inputs[4]!);
+		await userEvent.type(inputs[4]!, '02');
+		await userEvent.clear(inputs[5]!);
+		await userEvent.type(inputs[5]!, '28');
+		await userEvent.keyboard('{Enter}');
+		await sleep(100);
+		const row = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(row.sprint).toEqual({ start: '2027-02-02', end: '2027-02-28' });
+	}}
+/>
+
+<Story
+	name="ReferenceEdit"
+	args={{ ...storyArgs(editDriver(), one('owner', 'Responsable', '220px')) }}
+	// A11y backlog (audit 22): the selected chip nests the ✕ button inside
+	// the role=button row — the same nested-interactive finding logged on
+	// the picker's own stories. Fix the picker structure, then remove this.
+	parameters={{ a11y: { test: 'todo' } }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		// Double-click opens the ReferencePicker — it hydrates the stored
+		// record's label through the driver.
+		const cell = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
+		await userEvent.dblClick(cell);
+		// The picker hydrates the stored record — its chip shows first; the
+		// ✕ affordance starts the edit and reveals the search input.
+		await userEvent.click(cell.querySelector('button.ref-clear')!);
+		const input = cell.querySelector<HTMLInputElement>('input.ref-input')!;
+		// Search narrows to one contact; Enter picks it and the focus lands
+		// on the chip; a second Enter commits the cell.
+		await userEvent.type(input, 'Nina');
+		await sleep(500); // the search debounces 220ms
+		await userEvent.keyboard('{Enter}'); // pick the record
+		await sleep(100);
+		await userEvent.keyboard('{Enter}'); // commit the cell
+		await sleep(100);
+		const row = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(row.owner).toBe('crm.GridContact.2');
+	}}
+/>
+
+<Story
+	name="ColorEdit"
+	args={{ ...storyArgs(editDriver(), one('tint', 'Couleur', '170px')) }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		// The bare hex input carries a live swatch.
+		const cell = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
+		await userEvent.click(cell);
+		await userEvent.keyboard('6e93e0');
+		// The swatch previews the parsed colour before the commit (the DOM
+		// serializes the hex to its rgb form).
+		const swatch = cell.querySelector('.color-swatch')!;
+		expect(swatch.getAttribute('style')).toContain('110, 147, 224');
+		await userEvent.keyboard('{Enter}');
+		await sleep(100);
+		const row = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(row.tint).toBe('#6E93E0');
+	}}
+/>
+
+<Story
+	name="BooleanFlip"
+	args={{ ...storyArgs(editDriver(), one('won', 'Gagné', '130px', { align: 'center' })) }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		// Booleans have no edit mode — the flip is one click, one PATCH.
+		const cell = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
+		const button = cell.querySelector('button.cell-bool')!;
+		expect(button.getAttribute('aria-pressed')).toBe('false');
+		await userEvent.click(button);
+		await sleep(100);
+		expect(cell.querySelector('button.cell-bool')!.getAttribute('aria-pressed')).toBe('true');
+		const row = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(row.won).toBe(true);
+		// A second click flips back — each click is one PATCH.
+		await userEvent.click(cell.querySelector('button.cell-bool')!);
+		await sleep(100);
+		const after = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(after.won).toBe(false);
+	}}
+/>
+
+<Story
+	name="EditError422"
+	args={{ ...errorStoryArgs() }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		// A driver that 422s titles carrying the trigger word.
+		const cell = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
+		await userEvent.click(cell);
+		await userEvent.keyboard('boom deal');
+		await userEvent.keyboard('{Enter}');
+		await sleep(100);
+		// The cell keeps the typed text under the error frame + tooltip.
+		expect(cell.textContent).toContain('boom deal');
+		expect(cell.className).toContain('cell-error');
+		expect(cell.getAttribute('title')).toContain('pris');
+		// Escape reverts — the typed text drops, the stored value returns.
+		await userEvent.keyboard('{Escape}');
+		await sleep(100);
+		expect(cell.className).not.toContain('cell-error');
+		expect(cell.textContent).not.toContain('boom deal');
+		const row = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(row.title).toBe('Déploiement plateforme qualité Meridian');
+	}}
+/>
+
+<Story
+	name="UndoEdit"
+	args={{ ...storyArgs(editDriver(), one('title', 'Opportunité', '300px')) }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		// Commit a retitle, then ⌘Z inverts it through the queue.
+		const cell = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
+		await userEvent.click(cell);
+		await userEvent.keyboard('Retitre');
+		await userEvent.keyboard('{Enter}');
+		await sleep(100);
+		expect(cell.textContent).toContain('Retitre');
+		await userEvent.keyboard('{Control>}z{/Control}');
+		await sleep(100);
+		expect(cell.textContent).toContain('Déploiement');
+		const row = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(row.title).toBe('Déploiement plateforme qualité Meridian');
+	}}
+/>
+
+<Story
+	name="AllTypes"
+	args={{
+		...storyArgs(editDriver()),
+		selectable: true,
+		frozen: 1
+	}}
+	play={async ({ canvasElement }) => {
+		await sleep(400);
+		// The manual playground — every editable type in one strip. A smoke
+		// check: the fx badge still marks the computed column read-only and
+		// the boolean column renders its flip (no editable:false here).
+		const headers = [...canvasElement.querySelectorAll('[role="columnheader"]')];
+		expect(
+			headers.find((h) => h.textContent?.includes('CA pondéré'))?.querySelector('.fx')
+		).toBeTruthy();
+		expect(canvasElement.querySelector('[data-row="0"] button.cell-bool')).toBeTruthy();
 	}}
 />
