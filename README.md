@@ -49,7 +49,7 @@ AI has made building a business app a matter of hours. Running it safely has not
 
 ## Status
 
-This is a V1 beta; a release can contain breaking changes. See [`CHANGELOG.md`](CHANGELOG.md).
+This is still in beta; a release can contain breaking changes. See [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Installation
 
