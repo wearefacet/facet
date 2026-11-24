@@ -2,7 +2,7 @@
 
 The embeddable assistant chat for Facet apps: a package a host application installs to mount a chat scoped to one `app.App` assistant. It is a standalone package, separate from the SvelteKit frontend and the Crystal backend; it ships the chat as two Svelte 5 custom elements, a one-call JS facade, the HTTP/SSE driver, and an in-memory mock.
 
-> **Source-only for now.** `@facetapp/chat` is not on the npm registry yet — `npm view @facetapp/chat` answers `404`. The install line in [`packages/chat/README.md`](../../packages/chat/README.md) resolves once a maintainer publishes the package by tag (see [`release.md`](release.md)). Until then, consume the source under `packages/chat/` directly.
+> **Source-only for now.** `@facetapp/chat` is not on the npm registry yet — `npm view @facetapp/chat` answers `404`. The install line in [`packages/chat/README.md`](../../packages/chat/README.md) resolves once a maintainer publishes the package by tag (see [`release.md`](release.md) → Current registry state). Until then, consume the source under `packages/chat/` directly.
 
 Publishing the package to npm is a separate concern: see [`release.md`](release.md). User-facing documentation lives in [`packages/chat/README.md`](../../packages/chat/README.md) — it ships in the npm tarball. This doc covers the module layout and the contracts behind it.
 

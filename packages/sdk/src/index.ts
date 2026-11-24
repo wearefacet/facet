@@ -61,19 +61,12 @@ export type {
 	UploadOptions
 } from './artifacts.js';
 export type {
-
 	FrameHandler,
-
 	RealtimeHandle,
-
 	RealtimeOptions,
-
 	RealtimeSocket,
-
 	RealtimeWebSocketConstructor,
-
 	RefusalHandler,
 	ReconnectHandler,
-
 	WsFrame
 } from './realtime.js';

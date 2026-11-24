@@ -9,9 +9,21 @@ How the npm packages under `packages/` reach the npm registry: a maintainer push
 | `.github/workflows/release-npm.yml` | The release workflow — tag mapping, guard, gates, build, smoke, publish, GitHub Release |
 | `packages/*/package.json` | The metadata the workflow reads and npm requires (`version`, `repository`, `publishConfig.access`, `prepublishOnly` build guard) |
 
+## Current registry state
+
+| Package | On npm | Version | Dist-tag | Trusted publisher |
+| ---- | ---- | ---- | ---- | ---- |
+| `@facetapp/cli` | yes | `0.0.1` (`0.0.3` in `package.json`) | `latest` | not configured |
+| `@facetapp/sdk` | no (`404`) | — | — | not configured |
+| `@facetapp/chat` | no (`404`) | — | — | not configured |
+
+`@facetapp/cli` is stale: it was published by hand on 2026-10-23 at `0.0.1`, the `package.json` has said `0.0.3` since, and no `cli-v*` tag was ever pushed. `0.1.0` is its first tagged release.
+
+`@facetapp/sdk` and `@facetapp/chat` have never been published, so each needs the one-time setup below before its first tag.
+
 ## Release flow
 
-After the version-bump PR merges, a maintainer cuts the release with two commands:
+After the version-bump PR merges, a maintainer cuts each package release with two commands (one pair per package):
 
 ```bash
 git tag cli-v0.1.0
@@ -58,9 +70,11 @@ The workflow holds no npm token. The publish runs through OIDC trusted publishin
 
 Sequence matters. A trusted-publisher configuration expires 2 days after creation without a first publish, and its settings page exists only after the package is on npm. The sequence applies per package — a package whose first version went out by hand must ship its next version through a tag, because npm rejects a second publish of the same version.
 
-1. One maintainer runs the first publish by hand from the package directory: `npm publish --access public` (2FA). This puts the package on npm.
-2. Configure the trusted publisher in the npm console: Packages → the package → Settings → Trusted publishing. Fill in the GitHub organization, the repository, and the workflow filename `release-npm.yml`. Select **Allow npm publish**. The fields are case-sensitive and npm does not validate them at save — a typo shows up only at publish time.
+1. One maintainer runs the first publish by hand from the package directory: `npm publish --access public` (2FA). This puts the package on npm. For a first publish this is the only way — the trusted-publisher settings page does not exist yet.
+2. Configure the trusted publisher in the npm console: Packages → the package → Settings → Trusted publishing. Fill in the GitHub organization (`wearefacet`), the repository (`facet`), and the workflow filename `release-npm.yml`. Select **Allow npm publish**. The fields are case-sensitive and npm does not validate them at save — a typo shows up only at publish time.
 3. Push a rehearsal prerelease tag within 2 days of the configuration. The first workflow publish validates the configuration before it expires.
+
+A package that is already on npm (like `@facetapp/cli`) skips step 1: configure the trusted publisher, then push its tag.
 
 Recommended hardening: in the npm console, package settings → Publishing access → require two-factor authentication and disallow tokens (trusted publishers keep working through OIDC). In GitHub, a tag ruleset that limits `cli-v*` pushes to maintainers.
 

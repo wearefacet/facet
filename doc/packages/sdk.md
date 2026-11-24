@@ -2,7 +2,7 @@
 
 The TypeScript SDK for Facet apps. It wraps the Facet HTTP API and the WebSocket real-time bridge for code running outside Facet — browser apps served by `App::Hosting` and backend apps on Node. It has its own `package.json` and lockfile, and no workspace file at the repo root.
 
-> **Source-only for now.** `@facetapp/sdk` is not on the npm registry yet — `npm view @facetapp/sdk` answers `404`. The install line in [`packages/sdk/README.md`](../../packages/sdk/README.md) resolves once a maintainer publishes the package by tag (see [`release.md`](release.md)). Until then, consume the source under `packages/sdk/` directly.
+> **Source-only for now.** `@facetapp/sdk` is not on the npm registry yet — `npm view @facetapp/sdk` answers `404`. The install line in [`packages/sdk/README.md`](../../packages/sdk/README.md) resolves once a maintainer publishes the package by tag (see [`release.md`](release.md) → Current registry state). Until then, consume the source under `packages/sdk/` directly.
 
 Publishing the package to npm is a separate concern: see [`release.md`](release.md).
 

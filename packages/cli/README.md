@@ -5,7 +5,7 @@ Command-line interface for [Facet](https://github.com/wearefacet/facet). It depl
 No install step is required. Run it through pnpx, pinned to the current release:
 
 ```
-pnpx @facetapp/cli@0.0.3 <command>
+pnpx @facetapp/cli@0.1.0 <command>
 ```
 
 Requires Node 20 or newer.

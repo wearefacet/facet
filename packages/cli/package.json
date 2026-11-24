@@ -1,6 +1,6 @@
 {
 	"name": "@facetapp/cli",
-	"version": "0.0.3",
+	"version": "0.1.0",
 	"description": "Command-line interface for Facet.",
 	"license": "BUSL-1.1",
 	"repository": {
