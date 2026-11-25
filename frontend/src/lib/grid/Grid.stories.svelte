@@ -287,9 +287,12 @@
 	];
 
 	/** The editing stories' strips — one editor column, always data-col 0. */
-	const one = (key: string, label: string, width: string, extra?: Partial<GridColumn>): GridColumn[] => [
-		{ key, label, width, ...extra }
-	];
+	const one = (
+		key: string,
+		label: string,
+		width: string,
+		extra?: Partial<GridColumn>
+	): GridColumn[] => [{ key, label, width, ...extra }];
 
 	/** The editing stories' arg set — a fresh driver, one strip, the schema. */
 	function storyArgs(
@@ -347,17 +350,14 @@
 	 */
 	function editDriver(): { driver: MockDataDriver; ds: DataSource<Record<string, unknown>> } {
 		const driver = makeGridDriver();
-		const ds = driver
-			.domain('crm')
-			.doctype('GridDeal') as unknown as DataSource<Record<string, unknown>>;
+		const ds = driver.domain('crm').doctype('GridDeal') as unknown as DataSource<
+			Record<string, unknown>
+		>;
 		return { driver, ds };
 	}
 
 	/** Read one row's content back through a datasource. */
-	async function stored(
-		ds: DataSource<unknown>,
-		id: string
-	): Promise<Record<string, unknown>> {
+	async function stored(ds: DataSource<unknown>, id: string): Promise<Record<string, unknown>> {
 		const res = await ds.doc(id).show();
 		return res.data as Record<string, unknown>;
 	}
@@ -457,6 +457,8 @@
 		const first = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
 		await userEvent.click(first);
 		expect(first.getAttribute('aria-selected')).toBe('true');
+		// The press focuses the grid's own cell — never an inner control.
+		expect(document.activeElement).toBe(first);
 		// ArrowDown moves the focus; shift+arrows extend the range into a
 		// 2×2 block (down to row 2, then up-left under shift re-anchors the
 		// rectangle around both rows and both first columns).
@@ -464,6 +466,12 @@
 		await userEvent.keyboard('{Shift>}{ArrowUp}{ArrowRight}{/Shift}');
 		const selected = canvasElement.querySelectorAll('[aria-selected="true"]');
 		expect(selected.length).toBe(4); // 2 rows × 2 columns
+		// The DOM focus rides the selection — the focused element is the cell
+		// the amber ring paints, and the user-agent outline stays off it (the
+		// grid's own ring is the one focus indicator).
+		const focusCell = canvasElement.querySelector('[data-row="0"][data-col="1"]')!;
+		expect(document.activeElement).toBe(focusCell);
+		expect(getComputedStyle(focusCell).outlineStyle).toBe('none');
 		// The footer chip counts the range and its numeric stats.
 		const chip = canvasElement.querySelector('.sel-chip');
 		expect(chip?.textContent).toContain('4');
@@ -591,11 +599,10 @@
 	}}
 />
 
-// ═══════════════════════════════════════════════════════════════════════
-// Editing stories — one per cell editor, plus the flip, the 422 state,
-// and the undo. Each story drives a fresh driver, so its writes never
-// leak into another story's seed. The edited column is always data-col 0.
-// ═══════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════ // Editing stories — one
+per cell editor, plus the flip, the 422 state, // and the undo. Each story drives a fresh driver, so
+its writes never // leak into another story's seed. The edited column is always data-col 0. //
+═══════════════════════════════════════════════════════════════════════
 
 <Story
 	name="TextEdit"
@@ -664,7 +671,9 @@
 
 <Story
 	name="IntegerEdit"
-	args={{ ...storyArgs(editDriver(), one('probability', 'Probabilité', '150px', { align: 'right' })) }}
+	args={{
+		...storyArgs(editDriver(), one('probability', 'Probabilité', '150px', { align: 'right' }))
+	}}
 	play={async ({ canvasElement, args }) => {
 		await sleep(400);
 		const cell = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
@@ -711,7 +720,9 @@
 
 <Story
 	name="MoneyEdit"
-	args={{ ...storyArgs(editDriver(), one('value', 'CA prévisionnel', '220px', { align: 'right' })) }}
+	args={{
+		...storyArgs(editDriver(), one('value', 'CA prévisionnel', '220px', { align: 'right' }))
+	}}
 	play={async ({ canvasElement, args }) => {
 		await sleep(400);
 		// Double-click opens MoneyInput — currency chip + amount.

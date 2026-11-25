@@ -166,5 +166,10 @@ validation). A `grid` surface passes the backend gate unvalidated today; the fro
 - The enum chip carries the value colour in the tinted background and dot, and the label in
   the theme ink — the design mock's value-coloured text fails AA contrast on the light
   theme.
+- The grid owns the focus indicator: a pointer press focuses the pressed cell (never an
+  inner control), a keyboard move carries the DOM focus to the new focus cell, and the
+  cells paint no user-agent outline — the focused cell's ring is the one highlight. The
+  UA outline would only paint while the window is focused, so it read as a stray
+  highlight that vanished on screenshots.
 - The stories seed explicit column sets, not `defaultColumns` — the fixture loader sorts
   the schema fields alphabetically, so the seeded set shifts with the fixture.

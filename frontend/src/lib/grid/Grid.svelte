@@ -289,6 +289,11 @@
 	});
 
 	function cellMouseDown(r: number, c: number, e: MouseEvent) {
+		// The press keeps its focus inside the grid: the browser default would
+		// park it on the pressed inner control (a reference capsule, the
+		// boolean toggle), and the next keyboard move would light the
+		// user-agent focus ring there while the selection ring sits elsewhere.
+		e.preventDefault();
 		// A mousedown on another cell commits the open editor first — the
 		// spreadsheet norm. An unparseable draft cancels instead.
 		if (editing && (editing.r !== r || editing.c !== c)) {
@@ -302,6 +307,7 @@
 		} else {
 			selection.setFocus(r, c, maxRow, maxCol);
 		}
+		refocusCell(r, c);
 	}
 
 	/** Drag-select: the primary button is already down, hovering extends.
@@ -536,6 +542,11 @@
 		if (move != null) {
 			const f = selection.focus;
 			if (f) refocusCell(f.row, f.col);
+		} else {
+			// A pointer commit (a pick in the open enum list, the outside
+			// commit) carries no move — the unmounting input would drop focus
+			// to the body and the next chord would miss the grid.
+			refocusCell(current.r, current.c);
 		}
 	}
 
@@ -545,9 +556,23 @@
 		if (current) refocusCell(current.r, current.c);
 	}
 
-	/** Put the DOM focus back on a cell — the keyboard lives there. */
-	function refocusCell(r: number, c: number): void {
-		gridEl?.querySelector<HTMLElement>(`[data-row="${r}"][data-col="${c}"]`)?.focus();
+	/** Put the DOM focus back on a cell — the keyboard lives there. False
+	 *  when the cell is gone (a refetch shrank the page). */
+	function refocusCell(r: number, c: number): boolean {
+		const el = gridEl?.querySelector<HTMLElement>(`[data-row="${r}"][data-col="${c}"]`);
+		if (!el) return false;
+		el.focus();
+		return true;
+	}
+
+	/** A keyboard move carries the DOM focus to the new focus cell — the
+	 *  selection ring and the focused element never disagree, and the view
+	 *  follows the move. A gone cell falls back to the container so the
+	 *  next keypress still reaches the grid. */
+	function focusAfterMove(): void {
+		const f = selection.focus;
+		if (!f) return;
+		if (!refocusCell(f.row, f.col)) gridEl?.focus();
 	}
 
 	/** A failed cell's Esc — drop the typed value, restore the pre-write
@@ -614,26 +639,32 @@
 			case 'ArrowDown':
 				e.preventDefault();
 				selection.move(1, 0, extend, maxRow, maxCol);
+				focusAfterMove();
 				break;
 			case 'ArrowUp':
 				e.preventDefault();
 				selection.move(-1, 0, extend, maxRow, maxCol);
+				focusAfterMove();
 				break;
 			case 'ArrowRight':
 				e.preventDefault();
 				selection.move(0, 1, extend, maxRow, maxCol);
+				focusAfterMove();
 				break;
 			case 'ArrowLeft':
 				e.preventDefault();
 				selection.move(0, -1, extend, maxRow, maxCol);
+				focusAfterMove();
 				break;
 			case 'Home':
 				e.preventDefault();
 				selection.setFocus(0, 0, maxRow, maxCol);
+				focusAfterMove();
 				break;
 			case 'End':
 				e.preventDefault();
 				selection.setFocus(maxRow, 0, maxRow, maxCol);
+				focusAfterMove();
 				break;
 			case 'Enter':
 				// Editing takes Enter over on a writable cell; elsewhere it
@@ -917,6 +948,12 @@
 							role="gridcell"
 							tabindex="-1"
 							aria-colindex={1}
+							onmousedown={(e) => {
+								// Same rule as the data cells — the checkbox never keeps
+								// the pointer's focus; the cell takes it.
+								e.preventDefault();
+								e.currentTarget.focus();
+							}}
 						>
 							<Checkbox.Root
 								checked={checkedSet.has(rowKey(item))}
@@ -1341,6 +1378,15 @@
 	.g-cell.focused {
 		box-shadow: inset 0 0 0 2px var(--accent);
 		z-index: 1;
+	}
+
+	/* The grid paints its own focus indicator (the `focused` ring above).
+	   The user-agent outline would add a second ring — on the focused cell,
+	   or on whatever inner control an earlier press left focused — and that
+	   UA ring only paints while the window is focused, so it reads as a
+	   stray highlight that comes and goes. */
+	.g-cell:focus-visible {
+		outline: none;
 	}
 
 	.g-cell.computed {
