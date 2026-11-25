@@ -52,6 +52,8 @@ module Facet
     # theft: the session is deleted and a `refresh_reuse` `iam.LoginEvent` is
     # written. The same machinery backs `IAM::Refresh`.
     module Refresh
+      Log = ::Log.for("facet.oauth.refresh")
+
       # The refresh endpoint's error type. The shared `OAuth::EndpointError`
       # with a 401 default — a failed refresh is an authentication failure
       # (the base's default of 400 is the right fit for the other endpoints).
@@ -188,8 +190,14 @@ module Facet
           cnf_jkt: cnf_jkt,
         )
 
-        IAM::Helpers.write_login_event(db, session.account_id, "app_refresh",
-          "Role=#{session.active_role}", app: session.app)
+        # Successful refreshes write no LoginEvent: an app session refreshes
+        # on a clock, so per-refresh rows would flood the audit log, and
+        # retention never frees them (a LoginEvent document holds a single
+        # mutation). This log line is the per-refresh trace.
+        Log.info do
+          "App refresh ok (account_id=#{session.account_id}, " \
+          "session=#{session_id}, app=#{session.app}, role=#{session.active_role})"
+        end
 
         issue(session_id, new_refresh_id, payload, cnf_jkt)
       end
@@ -267,8 +275,10 @@ module Facet
           aud: resource,
         )
 
-        IAM::Helpers.write_login_event(db, session.account_id, "mcp_refresh",
-          "Role=#{session.active_role}")
+        Log.info do
+          "MCP refresh ok (account_id=#{session.account_id}, " \
+          "session=#{session_id}, role=#{session.active_role})"
+        end
 
         issue(session_id, new_refresh_id, payload, cnf_jkt)
       end

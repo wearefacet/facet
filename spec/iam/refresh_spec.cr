@@ -146,7 +146,7 @@ describe Facet::IAM::Refresh do
     end
   end
 
-  it "writes a refresh event" do
+  it "writes no refresh LoginEvent (the backend log carries the trace)" do
     with_db do |db|
       ctx = create_session_and_refresh_token(db)
 
@@ -156,7 +156,7 @@ describe Facet::IAM::Refresh do
         "SELECT content FROM projections WHERE domain = 'iam' AND doc_type = 'LoginEvent' AND deleted_at IS NULL",
         as: JSON::Any
       )
-      events.any? { |e| e["event"]?.try(&.as_s) == "refresh" }.should be_true
+      events.any? { |e| e["event"]?.try(&.as_s) == "refresh" }.should be_false
     end
   end
 

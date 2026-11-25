@@ -544,7 +544,7 @@ The event enum gained four app-session event types:
 | Event type | Written by | Reason |
 |---|---|---|
 | `consent_granted` | `OAuth::Authorize.issue_code` | An account confirmed the consent screen and elected a role for an app |
-| `app_refresh` | `OAuth::Refresh` (success) and `IAM::Refresh` (when `session.app` is set) | An app access token was rotated successfully |
+| `app_refresh` | — | Historical name, no writer. A successful refresh runs on a clock, so its rows would flood the log, and retention compaction never frees them (a LoginEvent document holds a single mutation). The backend log (`facet.oauth.refresh`) carries the per-refresh trace; the enum keeps the name for historical rows |
 | `refresh_failed` | `OAuth::Refresh` at the 7 live-state revalidation failure sites | Refresh refused: account gone, role unassigned, role gone, app gone, app not `active`, role no longer usable, effective scope empty. The session is killed and the event is written before the raise |
 | `layer1_denied` | `IAM::Helpers.write_layer1_denial` (called from the document services) | An app-scoped identity was refused at the Layer-1 grant pre-check. The event is written fail-silent so audit never breaks a refused request. The `details` field carries `"<action> on <domain>.<doctype> refused by app grant"` |
 

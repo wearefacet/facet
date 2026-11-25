@@ -22,7 +22,12 @@ module Facet
     # with `cookie: false`; a cookie-mode session rejects `cookie: false`.
     # A mismatch answers `422` before any state changes: no rotation, no
     # grace entry, no delete, no event (B-278).
+    #
+    # A successful refresh writes no LoginEvent — it runs on a clock, so the
+    # rows would flood the audit log. The backend log carries the trace.
     module Refresh
+      Log = ::Log.for("facet.iam.refresh")
+
       record TokensEmitted,
         result : TokenEmitter::Result
 
@@ -123,15 +128,26 @@ module Facet
           visible_tags: visible_tags,
         )
 
-        # Write a refresh event
-        Helpers.write_login_event(db, session.account_id, "refresh",
-          "Role: #{effective_role}",
-          app: app_for_event(session))
+        # Successful refreshes write no LoginEvent: a session refreshes on a
+        # clock (the access-token TTL), so per-refresh rows would flood the
+        # audit log. Retention never frees those rows — a LoginEvent document
+        # holds a single mutation, and compaction refuses a cut at idx 1.
+        # This log line is the per-refresh trace; the reuse and failure
+        # events keep their LoginEvent rows.
+        Log.info { refresh_trace(session, session_id, effective_role) }
 
         TokensEmitted.new(result: emit_result)
       end
 
-      # ── Private ──────────────────────────────────────────────────────
+      # ── Private ──────────────────────────────────────────────────
+
+      # The per-refresh trace line. App-scoped sessions carry the app id.
+      private def self.refresh_trace(session : RedisSession::Session, session_id : String, effective_role : String) : String
+        app = app_for_event(session)
+        app_part = app ? ", app=#{app}" : ""
+        "Refresh ok (account_id=#{session.account_id}, " \
+        "session=#{session_id}, role=#{effective_role}#{app_part})"
+      end
 
       # Returns the `422` error when the request's `cookie` flag does not
       # match the session's stored delivery mode; `nil` when the request may
