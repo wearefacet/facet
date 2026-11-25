@@ -68,6 +68,24 @@ describe('cellCopyText', () => {
 		expect(cellCopyText(field('integer'), 60)).toBe('60');
 	});
 
+	it('copies range cells as the two stored bounds joined with the arrow', () => {
+		// A `period`'s bounds are the stored UTC instants — never converted.
+		expect(
+			cellCopyText(field('period'), { start: '2026-11-01T00:00:00Z', end: '2027-01-31T23:59:59Z' })
+		).toBe('2026-11-01T00:00:00Z → 2027-01-31T23:59:59Z');
+		// A `dateperiod`'s bounds are calendar dates, verbatim.
+		expect(cellCopyText(field('dateperiod'), { start: '2026-12-01', end: '2026-12-21' })).toBe(
+			'2026-12-01 → 2026-12-21'
+		);
+	});
+
+	it('copies a half-set range as empty text', () => {
+		expect(cellCopyText(field('period'), { start: '2026-11-01T00:00:00Z', end: null })).toBe('');
+		expect(cellCopyText(field('dateperiod'), { start: '', end: '2026-12-21' })).toBe('');
+		// A malformed value never yields `[object Object]`.
+		expect(cellCopyText(field('period'), 'garbage')).toBe('garbage');
+	});
+
 	it('falls back to String for a field-less column', () => {
 		expect(cellCopyText(null, 'text')).toBe('text');
 		expect(cellCopyText(null, 42)).toBe('42');

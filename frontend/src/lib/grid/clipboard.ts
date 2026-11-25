@@ -13,7 +13,10 @@ import type { FieldDef } from '$lib/doctype/types.js';
  * parses the same grammar, so copied cells land where they came from.
  *
  * Copy text is the raw stored form, not the display form: a money cell
- * copies `120000`, an enum copies its key, a date copies its ISO value.
+ * copies `120000`, an enum copies its key, a date copies its ISO value. A
+ * range cell (`period` / `dateperiod`) copies its two stored bounds joined
+ * with the arrow the paste grammar speaks — a `period`'s bounds are the
+ * stored UTC instants, a `dateperiod`'s the calendar dates verbatim.
  * Display strings (`€ 120,000.00`) would re-parse badly on paste and drift
  * per locale. Empty cells copy as empty text, so a copied block re-pastes
  * to the same shape.
@@ -46,6 +49,18 @@ export function cellCopyText(field: FieldDef | null, value: unknown): string {
 			if (typeof value !== 'object' || value === null) return String(value);
 			const amount = (value as Record<string, unknown>).value;
 			return amount == null ? '' : String(amount);
+		}
+		case 'period':
+		case 'dateperiod': {
+			// The two stored bounds — never the display form (a `period`'s
+			// bounds would drift through a timezone conversion). A bound
+			// that is missing or malformed drops: half a range names no
+			// value, and `[object Object]` never belongs in a copied cell.
+			if (typeof value !== 'object' || value === null) return String(value);
+			const start = (value as Record<string, unknown>).start;
+			const end = (value as Record<string, unknown>).end;
+			if (start == null || end == null || start === '' || end === '') return '';
+			return `${String(start)} → ${String(end)}`;
 		}
 		default:
 			return String(value);

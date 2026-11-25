@@ -92,7 +92,8 @@ footer pattern (range, rows-per-page, pagination). On top of that it adds:
   range. Esc clears. Enter and Space open the peek drawer, except on a writable cell where
   editing takes over.
 - **Copy** — ⌘C serializes the range as TSV in the raw stored form (money copies
-  `120000`, enums copy the key).
+  `120000`, enums copy the key, a range cell copies its two stored bounds as
+  `start → end` — a `period`'s UTC instants, a `dateperiod`'s calendar dates).
 - **Σ row** — columns with a `summary` run one parallel `list({ aggregate, field })` call
   each over the whole filtered set (`summary.ts`); `count` summaries share one call. A
   failed aggregate leaves its Σ cell empty.
@@ -103,6 +104,12 @@ footer pattern (range, rows-per-page, pagination). On top of that it adds:
   session undo stack (⌘Z). A rejected cell keeps the typed text under a local error state
   (Esc reverts); a 403 reverts, raises a toast, and locks the row read-only for the
   session. A refetch re-applies in-flight cell values and leaves the open editor open.
+  The `longtext`, `datetime`, and period editors float over the cell — five datetime
+  segments (or two bound pickers) never fit one column — and the datetime and period
+  frames show the parsed value while typing: the stored UTC form (a `period`'s
+  `start → end`) the complete entry will commit; a partial edit holds the last complete
+  value. A `date` cell edits in the cell box — a calendar date never converts, so the
+  segments are the value.
 
 ## Editor
 

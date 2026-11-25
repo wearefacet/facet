@@ -9,9 +9,9 @@
 	cell takes the mousedown, the shell commits the live draft (or cancels
 	an unparseable one), so a stray click never eats the typed text.
 
-	The `longtext` and `period` editors float above the cell; the rest fill
-	the cell box. The grid mounts one shell per open editor and drives the
-	write through `oncommit`.
+	The `longtext` and the datetime-range editors float above the cell; the
+	rest fill the cell box. The grid mounts one shell per open editor and
+	drives the write through `oncommit`.
 -->
 
 <script lang="ts">
@@ -59,11 +59,19 @@
 		else rest.oncancel();
 	}
 
-	/** The two floating editors — the frame grows past the cell box. The
-	 *  period pair also widens past the cell: two bound pickers do not fit
-	 *  one column, and clipping them would hide the End bound. */
-	const floating = $derived(field.type === 'longtext' || field.type === 'period' || field.type === 'dateperiod');
-	const wide = $derived(field.type === 'period' || field.type === 'dateperiod');
+	/** The floating editors — the frame grows past the cell box. The
+	 *  datetime picker and the period pair also widen past the cell: five
+	 *  segments (or two bound pickers) never fit one column, and clipping
+	 *  them would hide the time part (or the End bound). */
+	const floating = $derived(
+		field.type === 'longtext' ||
+			field.type === 'datetime' ||
+			field.type === 'period' ||
+			field.type === 'dateperiod'
+	);
+	const wide = $derived(
+		field.type === 'datetime' || field.type === 'period' || field.type === 'dateperiod'
+	);
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->

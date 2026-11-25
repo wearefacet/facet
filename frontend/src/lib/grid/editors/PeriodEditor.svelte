@@ -113,7 +113,9 @@
 	}
 
 	/* The floating frame replaces the picker's chrome: no nested box border,
-	   no committed-text footer, no second Clear — the head owns the clear. */
+	   no second Clear — the head owns the clear. The committed-text foot
+	   stays: the parsed `start → end` pair the bounds will commit, the same
+	   rule the datetime editor's parsed line follows. */
 	.period-editor :global(.pp-box) {
 		border: none;
 		padding: 0;
@@ -123,7 +125,6 @@
 		box-shadow: none;
 	}
 
-	.period-editor :global(.pp-foot),
 	.period-editor :global(.pp-actions) {
 		display: none;
 	}

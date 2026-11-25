@@ -11,6 +11,8 @@
 	import { parseDoctypeDef, type DoctypeDef } from '$lib/doctype/types.js';
 	import type { GridColumn } from '$lib/grid/types.js';
 	import type { DataSource } from '$lib/datasource/interface.js';
+	import { wallToUtcIso, type Wall } from '$lib/zonedTime.js';
+	import { displayTimezone } from '$lib/settings.svelte';
 
 	// The edit affordances gate on the viewer's `update` grant — the module
 	// grants everything so the editing stories can drive the write path.
@@ -785,6 +787,78 @@
 		await sleep(100);
 		const row = await stored(args.datasource, 'crm.GridDeal.1');
 		expect(row.sprint).toEqual({ start: '2027-02-02', end: '2027-02-28' });
+	}}
+/>
+
+<Story
+	name="DatetimeEdit"
+	args={{ ...storyArgs(editDriver(), one('due_at', 'Échéance', '220px')) }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		// Double-click opens the floating datetime frame — five segments plus
+		// the buttons never fit one column. The year segment holds the focus.
+		const cell = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
+		await userEvent.dblClick(cell);
+		const year = cell.querySelector<HTMLInputElement>('input.dtp-seg-y')!;
+		expect(document.activeElement).toBe(year);
+		// Wall-clock entry — the segments convert through the display
+		// timezone on commit, so the expected UTC form comes from the same
+		// conversion (never a hardcoded offset).
+		const expected = wallToUtcIso({ y: 2028, m: 3, d: 15, h: 9, mi: 30 }, displayTimezone());
+		await userEvent.clear(year);
+		await userEvent.type(year, '2028');
+		const month = cell.querySelector<HTMLInputElement>('input[aria-label="month"]')!;
+		await userEvent.clear(month);
+		await userEvent.type(month, '03');
+		const day = cell.querySelector<HTMLInputElement>('input[aria-label="day"]')!;
+		await userEvent.clear(day);
+		await userEvent.type(day, '15');
+		const hour = cell.querySelector<HTMLInputElement>('input[aria-label="hour"]')!;
+		await userEvent.clear(hour);
+		await userEvent.type(hour, '09');
+		const minute = cell.querySelector<HTMLInputElement>('input[aria-label="minute"]')!;
+		await userEvent.clear(minute);
+		await userEvent.type(minute, '30');
+		// The parsed line shows the stored UTC form the segments commit.
+		expect(cell.querySelector('.parsed-hint')?.textContent).toContain(expected);
+		await userEvent.keyboard('{Enter}');
+		await sleep(100);
+		const row = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(row.due_at).toBe(expected);
+	}}
+/>
+
+<Story
+	name="DatetimePeriodEdit"
+	args={{ ...storyArgs(editDriver(), one('term', 'Période', '220px')) }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		// Double-click opens the floating two-bound picker in datetime mode —
+		// ten segment inputs, five per bound, converting through the display
+		// timezone on commit.
+		const cell = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
+		await userEvent.dblClick(cell);
+		const inputs = [...cell.querySelectorAll<HTMLInputElement>('input.dtp-seg')];
+		expect(inputs.length).toBe(10);
+		const tz = displayTimezone();
+		const startWall: Wall = { y: 2027, m: 2, d: 1, h: 8, mi: 0 };
+		const endWall: Wall = { y: 2027, m: 2, d: 28, h: 23, mi: 59 };
+		const order = ['2027', '02', '01', '08', '00', '2027', '02', '28', '23', '59'];
+		for (let i = 0; i < order.length; i++) {
+			await userEvent.clear(inputs[i]!);
+			await userEvent.type(inputs[i]!, order[i]!);
+		}
+		// The committed-text foot shows the parsed pair in the stored form.
+		expect(cell.querySelector('.pp-committed')?.textContent).toBe(
+			`${wallToUtcIso(startWall, tz)} → ${wallToUtcIso(endWall, tz)}`
+		);
+		await userEvent.keyboard('{Enter}');
+		await sleep(100);
+		const row = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(row.term).toEqual({
+			start: wallToUtcIso(startWall, tz),
+			end: wallToUtcIso(endWall, tz)
+		});
 	}}
 />
 
