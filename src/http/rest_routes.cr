@@ -394,10 +394,10 @@ module Facet
       # through) — also when the host doctype itself is unknown, or the
       # segment miss is surfaced as an error by the resolver.
       private def self.resolve_sidecar_doctype(domain : String, root_doctype : String, segment : String) : {String?, String?}
-        qualified, err = Database.with_db { |db| Document::SidecarHandler.resolve_sidecar_ref(db, domain, root_doctype, segment) }
-        return {nil, nil} if err || qualified.nil?
+        sidecar_ref, err = Database.with_db { |db| Document::SidecarHandler.resolve_sidecar_ref(db, domain, root_doctype, segment) }
+        return {nil, nil} if err || sidecar_ref.nil?
 
-        Document::SidecarHandler.split_qualified(qualified)
+        Document::SidecarHandler.split_qualified(sidecar_ref.doctype)
       end
 
       # POST: single segment → action or child create; multi → nested child create.

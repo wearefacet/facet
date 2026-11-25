@@ -19,11 +19,11 @@ The IAM subsystem handles authentication (password + MFA), federated login throu
 | `src/iam/auth_state.cr` | `AuthState` — volatile operational state (`auth_state` table): atomic TOTP step guard |
 | `src/iam/backup_codes.cr` | `BackupCodes` — single-use MFA backup codes (`mfa_backup_codes` table): digest-only storage, atomic single-use consume |
 | `src/iam/account_patch.cr` | `AccountPatch` — flips account document fields with the system principal |
-| `src/iam/helpers.cr` | `Helpers` — account finders (`find_account_by_email`, `find_account_by_id`; one shared row reader behind both), role content, permission manifests (role manifest + effective manifest for app-scoped callers), link validity phrase (`link_validity_text`), JWT claim helpers, login-event writers. The writer stamps the subject account as the mutation actioner; a synthetic principal keeps `system` (see the `iam.LoginEvent` seed row below) |
+| `src/iam/helpers.cr` | `Helpers` — account finders (`find_account_by_email`, `find_account_by_id`; one shared row reader behind both), role content, permission manifests (role manifest + effective manifest for app-scoped callers), link validity phrase (`link_validity_text`), JWT claim helpers, login-event writers. Every claim read verifies the ES256 signature (`verified_jwt_claim`); the unverified payload decode is gone (S1). The writer stamps the subject account as the mutation actioner; a synthetic principal keeps `system` (see the `iam.LoginEvent` seed row below) |
 | `src/iam/api_key.cr` | `ApiKey` — static bearer keys (`fct_…`): token generation, SHA-256-only storage, per-request verification with pair liveness checks, list/revoke. Rows with `app_id` set are app-owned keys (backend apps) — see [`app-system.md`](app-system.md#backend-apps-—-service-account-+-api-key) |
 | `src/iam/jwt.cr` | `JWT` — ES256 JWT sign/verify with algorithm pinning |
 | `src/iam/redis_session.cr` | `RedisSession` — Redis session create/load/rotate/delete, app sessions, per-app listing and revocation |
-| `src/iam/login_throttle.cr` | `LoginThrottle` — login lockout flag and brute-force attempt counters (password, per-IP, MFA verify) |
+| `src/iam/login_throttle.cr` | `LoginThrottle` — login lockout flag and brute-force attempt counters (password, per-IP, MFA verify, change-password, MFA-challenge issue) and the one-live-challenge tracker |
 | `src/iam/pwd_change_token.cr` | `PwdChangeToken` — one-shot password-change bootstrap tokens (`pwd_change:{token}`) |
 | `src/iam/enroll_token.cr` | `EnrollToken` — one-shot enroll-at-login tokens (`enroll:{token}`) |
 | `src/iam/token_emitter.cr` | `TokenEmitter` — builds Result record, response bodies, HttpOnly cookies |
@@ -34,7 +34,7 @@ The IAM subsystem handles authentication (password + MFA), federated login throu
 | `src/iam/enroll.cr` | `Enroll` — enroll-at-login verify: first TOTP code → `mfa_enabled` flip → session emission |
 | `src/iam/session_emit.cr` | `SessionEmit` — shared token-emission step for every path that authenticates without a session (login, challenge, enroll, OIDC) |
 | `src/iam/invite.cr` | `Invite` — credential bootstrap: temporary password, invite link, credential-states read |
-| `src/iam/refresh.cr` | `Refresh` — token rotation with reuse detection (stale/grace/valid) |
+| `src/iam/refresh.cr` | `Refresh` — token rotation with reuse detection (stale/grace/valid); refuses an app-scoped session with `403` (S2) |
 | `src/iam/logout.cr` | `Logout` — session deletion + logout event |
 | `src/iam/password_reset.cr` | `PasswordReset` — request (anti-enumeration + email) + confirm (single-use `reset`-slot token; first-credential bootstrap with auto-login) |
 | `src/iam/app_launcher.cr` | `AppLauncher` — dashboard launcher: lists `app.App` registrations the active role may see (active, not marked `no_launcher`), each flagged `usable` (grant-satisfiable) |
@@ -120,9 +120,13 @@ end
 6. MFA gate — if the account document's `mfa_enabled` field is true and TOTP enabled in config, create Redis challenge
 7. Token emission — create session, build permission manifest, emit via `TokenEmitter`
 
+**Identity comes from the verified context (S1).** A route helper never trusts an unverified `auth_token` cookie claim. `AuthHandler` verifies the ES256 signature and pins the result on `Fiber.current.auth_context`. `HTTP::Gates.require_account` and `require_role` read the account id and role from that context. When `AuthHandler` is disabled (test mode) no context exists, and the gate verifies the token signature itself through `IAM::Helpers.extract_account_id` / `extract_role`. A claim read from a raw token always goes through `IAM::Helpers.verified_jwt_claim`, which verifies the signature first and returns `nil` on a tampered or foreign-signed token. The system bypass, the preview capability, and the anonymous fallback all refuse.
+
 **Failed attempts and the audit log.** A wrong password increments the attempt counters (`LoginThrottle`) and returns `401` with `remaining_attempts` in the error `meta` — the same signal the MFA challenge answers carry. Only the lockout writes an `iam.LoginEvent` row: per-attempt rows are too many, so the design keeps them out of the event log. Every failed attempt goes to the backend log instead (`facet.iam.login`, `warn` level: account id, client IP, remaining attempts). An organization that needs per-attempt auditing reads the backend log.
 
 If `must_change_pw` is true on the account document, the pipeline short-circuits between steps 4 and 5 with `PasswordChangeRequired`. The accompanying `change_token` is a one-shot Redis credential (TTL `iam.change_password_expiration`, default 24h) consumed by `POST /Api/iam/change-password`. **The route always requires `old_password` alongside `change_token` (and `new_password`)** — the old password is verified against the stored hash on both authorization paths (bootstrap token and authenticated session) so the failure surface stays identical. Per-IP attempt counters are incremented only when `ip` is non-nil.
+
+**Change-password throttle (S1).** `/Api/iam/change-password` is public on the bootstrap path, so a wrong `old_password` must not be an unbounded oracle. A per-account counter (`LoginThrottle.change_password_attempts`) refuses with `429 "Too many attempts. Try again later."` after `MAX_CHANGE_PASSWORD_ATTEMPTS` = 5 failures in the 5-minute window. The gate runs on both authorization paths (bootstrap `change_token` and authenticated session) and checks the count before the bcrypt comparison, so a stolen session token cannot probe faster than a stolen change token. A wrong password increments the counter; a correct one resets it.
 
 **`pending` is password-login-only.** `pre_auth_checks` accepts `pending` alongside `active` — an invited account completes its bootstrap through the login pipeline. The acceptance lives here exclusively: `ApiKey.verify` and every app-token liveness check require `status == "active"`.
 
@@ -150,6 +154,9 @@ end
 The `method` parameter selects the factor: `"totp"` (default) validates against the sealed `mfa` slot; `"backup_code"` consumes one of the account's single-use backup codes (`IAM::BackupCodes`) — the self-recovery path when the authenticator is lost. Both methods share the same challenge record, expiry, and attempt limiter: a wrong answer (including a replayed or already-used code) burns one attempt, and at zero the challenge dies, the account locks out, and the event is `lockout`.
 
 **Security features:**
+- One live challenge per account — a new login replaces (and deletes) the previous challenge (`LoginThrottle.track_active_challenge`), so a stale challenge cannot be answered in parallel.
+- Challenge-creation cap — a per-account counter (`LoginThrottle.challenge_issue_attempts`) refuses the login with `429` after `MAX_CHALLENGE_ISSUES` = 5 challenges in the window and sets the lockout, so repeated logins cannot refill the guess budget.
+- Lockout blocks every live challenge — the lockout gate runs before verification, so a lockout raised by an exhausted challenge refuses every challenge the account still holds (S3).
 - Replay protection (TOTP) — `AuthState.try_advance_totp_step`: an atomic conditional upsert on `auth_state.last_totp_step` (`… WHERE last_totp_step IS NULL OR last_totp_step < $step`); 0 rows affected = replay. This closes the TOCTOU race where two concurrent requests with the same TOTP code both passed the read-side check.
 - Replay protection (backup code) — the consume is its own guard: one atomic `UPDATE … WHERE used_at IS NULL`, so a code works exactly once no matter how many concurrent requests race with it.
 - Challenge expiry — Redis TTL (5 minutes)
@@ -176,6 +183,8 @@ The refresh token is an opaque `session_id.refresh_id` pair. On rotation:
 - A token that matches neither deletes the session and writes a `refresh_reuse` audit event
 
 The reuse kill revokes the session immediately; the access token already issued against it stays valid to its TTL (the same rule as explicit revocation — see the `DELETE /Api/iam/sessions/:session_id` route below).
+
+**App-scoped sessions are refused (S2).** A session whose `app` field is set (app/MCP-scoped) answers `403 "App sessions cannot refresh here. Use the OAuth token endpoint."` before any rotation — before reuse detection, so the refusal never mutates session state. `IAM::Refresh` mints a full user token, which would raise the app ceiling (grant ∩ role) to the account's whole role. An app session refreshes through `OAuth::Refresh` instead, which pins the role and re-validates the grant. The session is left intact, so the holder still refreshes it on that path.
 
 **Delivery-mode gate (B-278):**
 The session stores how login delivered its tokens (`cookie` vs `body`). Refresh rejects a mismatch with `422` before any state changes: the refresh id does not rotate, the session stays, and the grace-window state is untouched. A body-mode session (login with `cookie: false`) refreshes only with `cookie: false` — the absent flag and `cookie: true` both answer `422`. A cookie-mode session answers `422` to `cookie: false`; the absent flag or `cookie: true` behave as before (cookies set, manifest body without tokens). The gate runs before reuse detection, so a mismatched request can never delete a session.
@@ -393,6 +402,14 @@ lockout flag and the brute-force attempt counters. Spec:
 | `.increment_mfa_verify_attempts(account_id)` | `Int32` | Increments the MFA verify attempt count |
 | `.get_mfa_verify_attempts(account_id)` | `Int32` | Reads the MFA verify attempt count |
 | `.reset_mfa_verify_attempts(account_id)` | `Nil` | Resets the MFA verify counter (on success) |
+| `.increment_change_password_attempts(account_id)` | `Int32` | Increments the change-password `old_password` attempt count |
+| `.get_change_password_attempts(account_id)` | `Int32` | Reads the change-password attempt count |
+| `.reset_change_password_attempts(account_id)` | `Nil` | Resets the change-password counter (on success) |
+| `.increment_challenge_issues(account_id)` | `Int32` | Increments the MFA-challenge creation count |
+| `.get_challenge_issues(account_id)` | `Int32` | Reads the MFA-challenge creation count |
+| `.reset_challenge_issues(account_id)` | `Nil` | Resets the challenge-creation counter (after a passed challenge) |
+| `.track_active_challenge(account_id, challenge_id, ttl = 300)` | `String?` | Names the live challenge, deleting the previous one; returns the replaced id or `nil` |
+| `.clear_active_challenge(account_id, challenge_id)` | `Nil` | Deletes a passed or exhausted challenge and clears the tracking key |
 
 Each counter sets its TTL on the first increment and expires after the
 window (default 300 s); a later increment does not extend it. The counters and
@@ -407,14 +424,16 @@ the `login_lockout` flag are distinct keys with independent TTLs — the flag's
 | `pwd_attempts:{account}` | Failed password attempts for the account — the counter that feeds the lockout (at `MAX_PWD_ATTEMPTS` = 10, the next pre-auth check sets the lockout flag and answers `429`) |
 | `pwd_attempts:ip:{ip}` | Failed password attempts from one client IP address — `{ip}` is the resolved client IP (`Util::ClientIp`, see [`util-client-ip.md`](util-client-ip.md); a bare host, never the socket port). At `MAX_IP_ATTEMPTS` = 20, login refuses with `429`; it does not set the lockout flag |
 | `mfa_verify_attempts:{account}` | Failed MFA verify attempts at the enroll-verify endpoint (at 5, that endpoint answers `429`; it does not set the lockout flag). Also used after sign-in by the standalone TOTP verify endpoint (`IAM::MFA.verify`) |
+| `change_password_attempts:{account}` | Failed `old_password` attempts at `/Api/iam/change-password` (at 5, the route answers `429`; it does not set the lockout flag) |
+| `challenge_issue_attempts:{account}` | MFA challenges opened by repeated logins in the window (at 5, the next login answers `429` and sets the lockout flag) |
+| `challenge_active:{account}` | The account's current live challenge id; a new login replaces (and deletes) the previous challenge |
 
 The login-challenge MFA lockout (too many invalid TOTP codes) sets the same
 `login_lockout` flag directly; its attempt counter lives in the challenge
 hash, not in these keys. The enroll-at-login lockout works the same way: its
 attempt counter lives on the one-shot `enroll:{token}` hash.
 
-**Operator runbook — clearing a lockout.** To clear a full lockout, delete
-all four families — the lockout flag plus every counter the gates read. For
+**Operator runbook — clearing a lockout.** To clear a full lockout, delete every family the gates read — the lockout flag plus the password, MFA, change-password, and challenge counters. For
 a password-only clear, delete the three password families
 (`login_lockout:{account}`, `pwd_attempts:{account}`, `pwd_attempts:ip:{ip}`)
 and keep `mfa_verify_attempts:{account}` so the MFA limiter stays intact.
@@ -579,11 +598,11 @@ All routes are under `/Api/iam`. State-changing requests require the `X-Requeste
 | `POST` | `/Api/iam/login` | `Login.call` | Authenticate with email + password. The session and the throttle state live in Redis, so a Redis outage answers `503` with the dependency named (see [`http-layer.md`](http-layer.md) → Dependency unavailable (503)) instead of an opaque 500 |
 | `POST` | `/Api/iam/challenge` | `Challenge.call` | Complete MFA challenge (TOTP code or single-use backup code) |
 | `POST` | `/Api/iam/mfa/enroll/verify` | `Enroll.verify` | Complete enroll-at-login (public — the one-shot enroll token is the authorization) |
-| `POST` | `/Api/iam/refresh` | `Refresh.call` | Rotate tokens |
+| `POST` | `/Api/iam/refresh` | `Refresh.call` | Rotate tokens (browser sessions only — an app-scoped session answers `403`, see `OAuth::Refresh`) |
 | `POST` | `/Api/iam/logout` | `Logout.call` | Destroy session + clear cookies |
 | `GET` | `/Api/iam/me` | (route inline) | Current account profile, token expiration, and nav data |
 | `GET` | `/Api/iam/apps` | `AppLauncher.launcher_apps` | Launcher apps for the active role (active, not marked `no_launcher`), each flagged `usable` (grant-satisfiable) |
-| `POST` | `/Api/iam/change-password` | (route inline) | Change password (bootstrap via `change_token` or authenticated session) |
+| `POST` | `/Api/iam/change-password` | (route inline) | Change password (bootstrap via `change_token` or authenticated session); per-account throttle, `429` after 5 wrong `old_password` attempts in 5 minutes |
 | `POST` | `/Api/iam/password-reset/request` | `PasswordReset.request` | Anti-enumeration reset-link request |
 | `POST` | `/Api/iam/password-reset/confirm` | `PasswordReset.confirm` | Validate reset token + set new password (first credential auto-logs in; no session under `always` enforcement — the sign-in holds at enrollment) |
 | `POST` | `/Api/iam/accounts/:id/temporary-password` | `Invite.generate_temporary_password` | Operator action — temporary password, plaintext returned once (RBAC: `provision_credentials`) |
@@ -628,7 +647,7 @@ body (see below).
 - **Logout** — No body; session extracted from `auth_token` cookie JWT.
 - **Me** — GET, no body. Returns `{"account": {"id", "email", "display_name", "mfa_enabled", "mfa_enforcement"}, "active_role", "available_roles", "expires_at", "permissions", "scopes", "assistant", "connectivity"}`. The `expires_at` field is the Unix timestamp of the access token's `exp` claim. `mfa_enabled` is the account document field; `mfa_enforcement` is the configured mode (`preferred` or `always`). The `available_roles` field is the account's assigned roles (the ids the frontend's Switch Role submenu lists). The `permissions` field is the **credential's permission manifest** (a map of `"domain.Doctype"` → actions), which the frontend uses to filter the sidebar nav model by RBAC — see **Permission manifest** below. The manifest follows the credential: a session caller (or a self-service key) reads the active role's own manifest; an app-scoped caller — an app token (`typ: "app"`) or an app-owned API key — reads the resolved grant ∩ role instead (`IAM::Helpers.build_effective_manifest` over the `AuthContext#app_grant` scope `AuthHandler` resolves per request). From the app's perspective a document its grant does not name does not exist, so the effective manifest carries only concrete keys (plus the domain-wildcard form a collapsed wildcard grant target produces), no `*.*` fallback, and no doctype outside the grant; carve-outs fold per granted action, and a fold that covers the key's own path removes the action — a carved doctype does not appear at all (see **Effective manifest** below). The `scopes` field is the per-(doctype, action) scope-alias manifest mirroring the Lua `ctx.actor.scopes` — `scopes[dt][action]` is `[]` when the permission is unrestricted (e.g. general-capable `create`) or `["mine", …]` when scoped — so the frontend can render affordances `can()` cannot express (e.g. the General/Personal toggle in the CollectionView editor). The `connectivity` field is the active role's connectivity channel list (`mcp`, `webhook`, `api`, `assistant`); a missing role reads as `[]`. The frontend hides the affordances the channels govern (Settings → API keys, the webhooks entry). The `assistant` block carries `{access, configured, token_budget, name}` — `access` is the **active role's** `connectivity ∋ 'assistant'` answer (one role per request, read off the role content the route already loads), ANDed for an app-scoped caller with the app's own `assistant_enabled` flag — the same AND `Assistant::App::Gate.allowed?` applies on the conversation create route (a missing app row fails closed) — `configured` reports whether an API key resolves installation-wide (sealed `assistant.api_key` slot, then the file's `!env?` value — `AssistantView.configured?`; `false` keeps the dock visible but the frontend disables conversation creation with an explanatory message; see [`assistant.md`](assistant.md) → Configured state), while `token_budget` is the **largest budget over the account's held roles** (`Assistant::Access.effective_budget`); `null` means unlimited. `name` is the instance's assistant display name (`assistant.name` on `core.SystemSettings`, resolved through `AssistantView.display_name` — the file tier always yields a value, default `Assistant`). Protected by `AuthHandler` — returns 401 if the access token is missing or invalid.
 - **Apps** — GET, no body. Returns a JSON array of launchable app summaries: `[{"id", "slug", "display_name", "description"?}]`. An app is listed when it is enabled (`status == "active"`) and the active role satisfies every required grant action (`GrantResolver.role_usable?`). The `compatible_roles` field on `app.App` is metadata only and is not consulted. Protected by `AuthHandler` — returns 401 if the access token is missing or invalid.
-- **Change password** — POST body: `{"change_token": "...", "old_password": "...", "new_password": "..."}` (bootstrap path) OR `{"old_password": "...", "new_password": "..."}` with a valid `auth_token` (authenticated path). `change_token` is single-use on success.
+- **Change password** — POST body: `{"change_token": "...", "old_password": "...", "new_password": "..."}` (bootstrap path) OR `{"old_password": "...", "new_password": "..."}` with a valid `auth_token` (authenticated path). `change_token` is single-use on success. Both paths share a per-account throttle: 5 wrong `old_password` attempts in the 5-minute window answer `429` before the password comparison.
 - **Password reset request** — POST body: `{"email": "..."}`. Always returns `{"ok": true}` — anti-enumeration.
 - **Password reset confirm** — POST body: `{"token": "...", "new_password": "...", "cookie": true?}`. Returns `200 {"ok": true}` on an existing credential, the login-shaped token/cookie response on a first credential (operator invite accepted), 401 if token is invalid/expired, 422 on a short password. Under MFA enforcement `always` with an un-enrolled account, a first credential returns `200 {"ok": true}` with no session — the invite is accepted, and the sign-in that follows holds at the enrollment step (B-141).
 - **Temporary password** — POST (no body). Gate chain mirrors `mfa/disable`: CSRF check, `AuthHandler`, `provision_credentials` on `iam.Account`, system bypass rejected. Returns `200 {"temporary_password": "K7M4-9XQ2-WBTD-H3PN"}` — the plaintext, revealed exactly once. 422 for a missing account, a service account, or a `suspended`/`disabled` account.

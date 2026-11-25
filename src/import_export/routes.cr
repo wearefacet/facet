@@ -366,7 +366,7 @@ module Facet
           end
 
           begin
-            Document::FilterCompiler.compile(defn, req.filters)
+            Document::FilterCompiler.compile(defn, req.filters, auth_context: req.auth)
           rescue ex : Util::FilterClauses::MoneyFilterError
             next ServiceError.new(422, ex.message.to_s)
           rescue ex : Util::FilterClauses::FilterGrammarError

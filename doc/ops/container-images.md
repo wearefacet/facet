@@ -71,7 +71,11 @@ tag and [`../backend/assistant.md`](../backend/assistant.md) → Configured
 state.
 
 `DATABASE_URL` and `APP_ENV` stay env-only — the backend reads them outside
-YAML.
+YAML. `JWT_SIGNING_KEY` is env-only too: it holds the ES256 access-token
+signing key (a P-256 private key in PEM form) and is required by
+`docker/compose.prod.yml`. Without it, each boot mints a temporary key and
+invalidates outstanding access tokens. See [`../backend/iam.md`](../backend/iam.md)
+→ `Facet::IAM::JWT`.
 
 A mounted config file must be readable by the image user (uid 10001) — a
 root-owned `600` mount fails the boot with `File::AccessDeniedError`. The

@@ -69,6 +69,8 @@ Every other path — unknown slug, missing `slug` param, draft or disabled app, 
 
 **Stateless by decision.** The registration keeps no record. The MCP branch of `Authorize` / `Token` treats `client_id` as an opaque string bound to the authorization code (MCP is not an app — no `app.App` row, no `GrantResolver`), so the consent screen, PKCE, and the code's `client_id` / `redirect_uri` bindings carry the security. A persisted registry would buy a client name on the consent screen and a revocation list, at the cost of spam management; revisit if consent-screen identity matters.
 
+**Redirect shape re-checked (S7).** The MCP branch has no `app.App` registered list to match against, so the shape rule is the whole admission rule. `Authorize.validate_mcp_redirect_uri` re-runs it at consent (`build_mcp_consent`) and again at code issue (`issue_mcp_code`): `https` on any host, `http` on a loopback host only, no fragment, userinfo, or query. A violation raises `InvalidRequest` — a JSON request error, never a redirect. Residual risk: the shape rule does not bind the redirect URI to the client (no client record exists); PKCE (S256) is the binding that stops code theft in that case.
+
 The contract:
 
 - **Request** — a JSON client-metadata document (RFC 7591 §2). `redirect_uris` is required; every entry must pass the shared shape rule (`Util::RedirectUri.valid_shape?`, through `RedirectUri.valid_shape?`): `https` on any host, or `http` on a loopback host only (`localhost`, any `*.localhost` subdomain, `127.0.0.1`, `::1`), the `*` loopback-port form included. `token_endpoint_auth_method` must be `none` when present. `grant_types` / `response_types` must sit inside the supported set. Unknown members are ignored.
@@ -88,6 +90,8 @@ The token endpoint serves two grants with different pacing, so each gets its own
 The floor: `OAuth::Refresh` rejects a refresh presented sooner than `REFRESH_FLOOR_S = 10` seconds after the session's current refresh token was issued, with `429 {"error": "slow_down"}`. The client backs off and retries. The stamp lives on the session — `IAM::RedisSession.refresh_issued_at`, written at session creation and re-written at every rotation. A missing or unparseable stamp fails open.
 
 The floor applies on both refresh paths — the app path (`Refresh.call`) and the MCP path (`Refresh.call_mcp`). It is a pacing guard, not a revocation: the session survives a `slow_down`, and rotation + reuse detection + live-state re-validation stay the enforcement points.
+
+**App sessions refresh only here (S2).** An app-scoped session refreshes through `OAuth::Refresh`, never through `POST /Api/iam/refresh`. The IAM route refuses a session whose `app` field is set with `403` before any rotation, because it would mint the account's whole role instead of the app ceiling (grant ∩ role). `OAuth::Refresh` pins the role and re-validates the grant on every refresh, so the app reach stays bounded.
 
 ### Client binding on app refresh tokens
 
@@ -201,7 +205,7 @@ A working client lives at `e2e/fixtures/miniapp/index.html` — PKCE plus DPoP i
 - **Re-validation at token time.** `Token.call` consumes the code, then re-reads the `app.App` projection and re-runs `GrantResolver.role_usable?` + `resolve`. An app disabled or a grant narrowed between authorize (≤60s earlier) and the token exchange yields `invalid_grant`. The brief's atomic-consume rule means this path still invalidates the code.
 - **Delegated app tokens are not connectivity-gated.** The role `connectivity` field gates the programmatic channels (`mcp`, `webhook`, `api`, `assistant` — see [`iam.md`](iam.md) → Roles); the delegated app branch is browser-session-mediated and is never gated by it — `validate_election` checks account-held + live only, and the channel check lives in the MCP branch alone (`issue_mcp_code`, `Refresh.call_mcp`). The MCP-branch check is the shared `IAM::Helpers.mcp_channel?` derivation — the same helper the consent screen (`build_mcp_consent`) and the `/Api/_mcp/endpoints` directory run, so the consent gate, the code issuance, and the endpoint listing can never disagree on which roles can open MCP.
 - **Fail-closed enforcement.** `AuthHandler.build_app_auth_context` returns `nil` (HTTP 401) when the app is missing/non-active, the role is missing, the role is not usable, or the effective scope is empty.
-- **CORS by exact origin match.** `OAuth::Cors` echoes the request `Origin` only when it appears in `app.App.allowed_origins` for at least one `active` app. No `*` is used — browsers ignore `Access-Control-Allow-Origin: *` when `Authorization` is in `Access-Control-Allow-Headers`.
+- **CORS by exact origin match.** `OAuth::Cors` echoes the request `Origin` only when it appears in `app.App.allowed_origins` for at least one `active` app. No `*` is used — browsers ignore `Access-Control-Allow-Origin: *` when `Authorization` is in `Access-Control-Allow-Headers`. Each `allowed_origins` entry is shape-validated at create and update by the `app.App` Lua hook (`util.valid_origin`): a bare origin (`scheme://host[:port]`) with no path, userinfo, query, fragment, or wildcard, `https` on any host, `http` on a loopback host only (S6). The list still holds several origins — the CORS model is unchanged; only the per-entry shape is enforced.
 
 ## Consent screen always displayed
 

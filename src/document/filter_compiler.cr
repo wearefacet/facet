@@ -11,6 +11,7 @@ require "../util/time_helper"
 require "../util/money"
 require "../util/money_filter_value"
 require "../doctype/doctype_definition"
+require "../rbac/read_enforcer"
 
 module Facet
   module Document
@@ -129,16 +130,29 @@ module Facet
       # Raises `Util::FilterClauses::MoneyFilterError` on a malformed money
       # filter (non-decimal amount, unknown ticker, mixed-currency
       # `__between` bounds) and `Util::FilterClauses::FilterGrammarError`
-      # when a filter key names an unknown field or an unserved operator,
-      # or an array-valued operator receives a value of the wrong shape
-      # (reason `malformed_filter_value`, B-41).
+      # when a filter key names an unknown field, an unserved operator, or
+      # a field the active role cannot see, or an array-valued operator
+      # receives a value of the wrong shape (reason
+      # `malformed_filter_value`, B-41).
+      #
+      # `auth_context` is the caller's identity. It decides field
+      # visibility. It defaults to the system principal, which sees every
+      # field. A caller that enforces its own row-level gate passes
+      # `skip_visibility_check: true` with `skip_capability_check: true`
+      # for internal integrity filters (the sidecar `target` lookup, the
+      # reference check).
       def self.compile(
         definition : Doctype::DoctypeDefinition,
         filters : Hash(String, JSON::Any),
         offset : Int32 = 0,
         skip_capability_check : Bool = false,
+        auth_context : RBAC::AuthContext = RBAC::AuthContext.system,
+        skip_visibility_check : Bool = false,
       ) : {Array(String), Array(::DB::Any)}
-        validate_filters!(filters, definition, skip_capability_check: skip_capability_check)
+        validate_filters!(filters, definition,
+          skip_capability_check: skip_capability_check,
+          auth_context: auth_context,
+          skip_visibility_check: skip_visibility_check)
         normalized_filters = normalize_datetime_query_filters(filters, definition)
         buckets = partition_filters(normalized_filters, definition)
 
@@ -204,13 +218,19 @@ module Facet
       # ── Private ──────────────────────────────────────────────────────────
 
       # Rejects every filter key the partition below would drop silently:
-      # a field that is not declared on the doctype (and is not a system
-      # column or `search`), a known field whose operator suffix its
-      # family does not serve, or an array-valued operator given a value
-      # of the wrong shape. The strictness mirrors
+      # a field the active role cannot see, a field that is not declared on
+      # the doctype (and is not a system column or `search`), a known field
+      # whose operator suffix its family does not serve, or an array-valued
+      # operator given a value of the wrong shape. The strictness mirrors
       # `agent_tools/read.cr`'s filter validation — a typo must answer 422,
       # never return unfiltered rows (B-20), and a malformed array value
       # must answer 422, never read as "nothing matches" (B-41).
+      #
+      # Field visibility runs first: a filter on a field the caller cannot
+      # see answers 403, never a 422 that names the field's type contract.
+      # Without this gate a caller reads a hidden value from the row count,
+      # the row order, or a count aggregate (S4). The gate mirrors the
+      # aggregate field gate and the write guard.
       #
       # A bare key (no `__` separator) is its own production: `parse_filter_key`
       # maps it to the `eq` suffix, so it is checked against
@@ -222,9 +242,16 @@ module Facet
         filters : Hash(String, JSON::Any),
         definition : Doctype::DoctypeDefinition,
         skip_capability_check : Bool = false,
+        auth_context : RBAC::AuthContext = RBAC::AuthContext.system,
+        skip_visibility_check : Bool = false,
       ) : Nil
         filters.each do |key, value|
           field, op_suffix = Util::FilterSet.parse_filter_key(key)
+          unless skip_visibility_check
+            invisible = invisible_field_error(field, definition, auth_context)
+            raise invisible if invisible
+          end
+
           allowed = allowed_operators(definition, field, skip_capability_check: skip_capability_check)
           if allowed.nil?
             raise Util::FilterClauses::FilterGrammarError.new(key, "unknown_filter_field",
@@ -265,6 +292,27 @@ module Facet
                     "Filter operator '#{op_suffix}' is not served for field '#{field}': the field declares no filter capability. Add a `filters:` capability to the field in the doctype definition (for example `filters: [equality]`), then re-deploy the doctype."
                   end
         Util::FilterClauses::FilterGrammarError.new(key, "unsupported_filter_operator", message)
+      end
+
+      # The 403 for a filter field the active role cannot see, or `nil`.
+      # A field the definition does not declare is not this gate's
+      # concern — the unknown-field check answers it with a 422 that names
+      # no type. System columns and `search` carry no tags and stay
+      # visible. The check is a pure tag test on the definition, so it
+      # reads no row.
+      private def self.invisible_field_error(
+        field : String,
+        definition : Doctype::DoctypeDefinition,
+        auth_context : RBAC::AuthContext,
+      ) : Util::FilterClauses::FilterGrammarError?
+        return nil if field == "search" || SYSTEM_TIMESTAMP_FIELDS.includes?(field)
+
+        field_def = definition.fields[field]?
+        return nil if field_def.nil?
+        return nil if RBAC::ReadEnforcer.field_visible?(auth_context, field_def)
+
+        Util::FilterClauses::FilterGrammarError.new(field, "invisible_filter_field",
+          "field '#{field}' is not visible to the active role")
       end
 
       # Every filter target the compiler serves for the doctype: fields

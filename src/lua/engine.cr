@@ -15,6 +15,9 @@ module Facet
     # - An instruction-count hook prevents infinite loops.
     # - A time-limit hook prevents excessive CPU usage.
     # - A custom memory allocator prevents OOM via `lua_setallocf`.
+    # - The `string.*` pattern functions are wrapped so a C-side match is
+    #   deadline-checked and size-bounded (S8 — the count hook never fires
+    #   inside a C call).
     #
     # ```
     # engine = Facet::Lua::Engine.new
@@ -196,6 +199,41 @@ module Facet
       # Mask for lua_sethook: count instructions (LUA_MASKCOUNT = 1 << 3).
       LUA_MASKCOUNT = 8
 
+      # ── Pattern-match bound (S8) ────────────────────────────────────
+      #
+      # The count hook fires between VM instructions. A Lua pattern match
+      # runs inside a C function (`string.find` / `match` / `gmatch` /
+      # `gsub`), where no hook fires, so one pathological pattern would hold
+      # the single-threaded event loop past both the instruction and the
+      # time budget. A C call cannot be interrupted from Crystal, so a
+      # before/after deadline check cannot stop a match that is already
+      # backtracking. The wrappers installed by `install_pattern_guards!`
+      # therefore refuse an over-complex pattern and an over-size subject
+      # BEFORE entering the C matcher, so the pathological case never runs.
+      #
+      # Backtracking cost grows with the number of quantifiers in a pattern
+      # (each `*`, `+`, `-`, `?` is a backtrack point). A pattern with `k`
+      # quantifiers over a subject of `n` bytes costs up to `O(n^k)`. Capping
+      # the quantifier count caps that exponent; capping the subject caps
+      # `n`. Together they bound the worst-case work well below the time
+      # budget. Doctype scripts match identifiers, slugs, and field values —
+      # a handful of quantifiers on a short subject — so these caps are
+      # generous for real scripts.
+      #
+      # Upper bound on a subject or pattern string handed to a Lua pattern
+      # call.
+      PATTERN_SIZE_LIMIT = 65_536
+
+      # Upper bound on the number of quantifiers in a pattern. A pattern at
+      # or below this count backtracks in bounded polynomial time on a
+      # subject within `PATTERN_SIZE_LIMIT`.
+      PATTERN_QUANTIFIER_LIMIT = 8
+
+      # The `string.*` functions whose C-side pattern match the dispatcher
+      # guards. `find` / `match` / `gmatch` / `gsub` all run a pattern match
+      # inside a C call, where the count hook never fires.
+      GUARDED_STRING_FUNCTIONS = ["find", "match", "gmatch", "gsub"]
+
       @@combined_hook : LibLua::Hook = ->(state : LibLua::State, ar : LibLua::Debug*) {
         LibLua.getallocf(state, out ud)
         tracker = ud.as(SandboxTracker*)
@@ -222,9 +260,148 @@ module Facet
         end
       }
 
+      # The C entry every guarded `string.*` wrapper calls: a dispatcher that
+      # runs the original function named by its light-userdata upvalue (the
+      # `String` pointer set at install time). It checks the deadline, bounds
+      # the subject, refuses an over-complex pattern, then calls the named
+      # original with the wrapper's arguments and returns its results.
+      #
+      # A count hook does not fire inside the original C call, and Crystal
+      # cannot interrupt it, so the guards run BEFORE the call — see
+      # `PATTERN_SIZE_LIMIT` and `PATTERN_QUANTIFIER_LIMIT`.
+      @@guarded_dispatch_cfun : LibLua::CFunction = ->(state : LibLua::State) {
+        Engine.pattern_dispatch(state)
+      }
+
+      # Runs one guarded `string.*` call. Upvalue 1 names the original
+      # (`"find"`, `"match"`, `"gmatch"`, `"gsub"`); the arguments are the
+      # caller's.
+      def self.pattern_dispatch(state : LibLua::State) : Int32
+        Engine.check_pattern_deadline(state)
+
+        # The function name rides a light-userdata upvalue (a `String` pointer
+        # owned by `@pattern_names`), so the dispatcher never trusts a
+        # caller-side argument for the function selection.
+        name = Box(String).unbox(LibLua.touserdata(state, ::Lua.registry_index - 1))
+
+        # The subject is argument 1 and the pattern is argument 2 for every
+        # guarded function. `lua_rawlen` on a non-string is 0, so a non-string
+        # argument is not size-bounded here; the original raises its own
+        # argument-type error.
+        if LibLua.rawlen(state, 1) > PATTERN_SIZE_LIMIT
+          LibLua.pushstring(state, "pattern subject exceeds the #{PATTERN_SIZE_LIMIT}-byte limit")
+          LibLua.error(state)
+          return 0
+        end
+
+        # Refuse an over-complex pattern before the C matcher runs. A pattern
+        # with too many quantifiers backtracks past the time budget inside a
+        # single C call that cannot be interrupted, so the check must happen
+        # here, not after. A non-string pattern is left to the original's own
+        # type error.
+        if pattern = read_string_arg(state, 2)
+          if quantifier_count(pattern) > PATTERN_QUANTIFIER_LIMIT
+            LibLua.pushstring(state, "pattern is too complex: at most #{PATTERN_QUANTIFIER_LIMIT} quantifiers are allowed")
+            LibLua.error(state)
+            return 0
+          end
+        end
+
+        # Call the named original with the wrapper's arguments. The original
+        # is the function this wrapper replaced, captured in a protected
+        # registry table (`__facet_string_originals`) at install time — never
+        # `string.<name>`, which is the wrapper and would recurse.
+        #
+        # Stack before: [arg1 .. argN]. Pushing the originals table, the
+        # original, and N copies of the args makes it
+        # [arg1 .. argN, originals, original, arg1 .. argN]; `pcallk`
+        # consumes `original` + the N arg copies and leaves the results on
+        # top: [arg1 .. argN, originals, r1 .. rM].
+        arg_count = LibLua.gettop(state)
+        LibLua.getfield(state, ::Lua.registry_index, "__facet_string_originals")
+        LibLua.getfield(state, -1, name) # pushes the original, keeps the table
+        (1..arg_count).each { |i| LibLua.pushvalue(state, i) }
+        status = LibLua.pcallk(state, arg_count, -1, 0, 0, nil)
+        if status != 0
+          LibLua.error(state)
+          return 0
+        end
+
+        # The C function returns the top N values as its results. Only the
+        # original's results may remain, so drop the leading args and the
+        # originals table, keeping the `M` results on top: rotate them to the
+        # bottom, then truncate.
+        total = LibLua.gettop(state)
+        result_count = total - arg_count - 1 # [args(N) | originals(1) | results(M)]
+        if result_count > 0
+          LibLua.rotate(state, 1, result_count) # results first, args+originals after
+        end
+        LibLua.settop(state, result_count)
+
+        Engine.check_pattern_deadline(state)
+
+        result_count
+      end
+
+      # Reads stack index `index` as a String when it holds a string value
+      # (numbers coerce, like Lua), else nil.
+      private def self.read_string_arg(state : LibLua::State, index : Int32) : String?
+        return nil if LibLua.isstring(state, index) == 0
+        ptr = LibLua.tolstring(state, index, out len)
+        return nil if ptr.null?
+        String.new(ptr, len)
+      end
+
+      # Counts the backtrack points in a Lua pattern: an unescaped `*`, `+`,
+      # `-`, or `?` (a `%`-escaped character is a literal, not a quantifier).
+      # This is the exponent of the pattern's worst-case backtracking cost, so
+      # capping it bounds the work of the C match call.
+      private def self.quantifier_count(pattern : String) : Int32
+        count = 0
+        escaped = false
+        pattern.each_char do |ch|
+          if escaped
+            escaped = false
+            next
+          end
+          if ch == '%'
+            escaped = true
+          elsif ch.in?('*', '+', '-', '?')
+            count += 1
+          end
+        end
+        count
+      end
+
+      # Raises the time-limit error when the tracker's deadline has passed.
+      # A non-sandboxed engine has no tracker, so the check is a no-op.
+      def self.check_pattern_deadline(state : LibLua::State) : Nil
+        LibLua.getallocf(state, out ud)
+        return if ud.null?
+        tracker = ud.as(SandboxTracker*)
+        return unless tracker.value.time_limit > 0
+        elapsed = (Time.instant - tracker.value.start_instant).total_seconds
+        if elapsed > tracker.value.time_limit
+          LibLua.pushstring(state, "time limit exceeded (#{tracker.value.time_limit}s)")
+          LibLua.error(state)
+        end
+      end
+
       # ── Instance ───────────────────────────────────────────────────────
 
       @tracker_ptr : Pointer(Void)
+
+      # Keeps the guarded `string.*` wrapper name strings alive for the
+      # engine's lifetime (each dispatcher closure holds a pointer to one).
+      @pattern_names = [] of String
+
+      # Boxed name pointers, stable for the engine's lifetime.
+      @pattern_boxes = [] of Void*
+
+      # The wrappers are installed lazily, on the first `run`. Installing them
+      # needs the error handler, which the shard's `Stack` builds by running
+      # its own chunk — and the shard refuses to run chunks on an empty stack.
+      @pattern_guards_installed = false
 
       # Creates a new sandboxed Engine with the given sandbox limits.
       #
@@ -259,6 +436,7 @@ module Facet
       private def run_chunk(trace_name : String, &)
         Facet::Telemetry.trace trace_name do |_span|
           validate_open!
+          install_pattern_guards_once!
           reset_hook_state!
           stack = stack_not_nil!
           yield stack
@@ -419,6 +597,52 @@ module Facet
         )
 
         LibLua.setallocf(state, @@memory_allocator, @tracker_ptr)
+      end
+
+      # Installs the `string.*` pattern-match guards (S8). Each guarded
+      # function is wrapped in a closure that bounds the subject and pattern
+      # size and checks the deadline before and after the C call. See
+      # `@@guarded_dispatch_cfun` and `PATTERN_SIZE_LIMIT`.
+      private def install_pattern_guards! : Nil
+        state = stack_not_nil!.state
+
+        # The originals are captured before any wrapper replaces them. This
+        # runs once, on the first `run` (see `install_pattern_guards_once!`),
+        # and the `string` table is already loaded by then. The originals
+        # table sits at stack index 1 and the string table at index 2 while
+        # each function is copied on top and stored into the table.
+        LibLua.createtable(state, 0, GUARDED_STRING_FUNCTIONS.size) # index 1
+        LibLua.getglobal(state, "string")                           # index 2
+        GUARDED_STRING_FUNCTIONS.each do |name|
+          LibLua.pushvalue(state, 2)       # [originals, string, string]
+          LibLua.getfield(state, -1, name) # [originals, string, string, fn]
+          LibLua.setfield(state, 1, name)  # originals[name] = fn
+          LibLua.settop(state, 2)          # [originals, string]
+        end
+        LibLua.pushvalue(state, 1) # [originals, string, originals]
+        LibLua.setfield(state, ::Lua.registry_index, "__facet_string_originals")
+        LibLua.settop(state, -3) # []
+
+        # One dispatcher closure per name, with the name string as its
+        # light-userdata upvalue. It is installed as `string.<name>`, so a
+        # script call reaches the dispatcher with its own arguments.
+        LibLua.getglobal(state, "string")
+        GUARDED_STRING_FUNCTIONS.each do |name|
+          @pattern_names << name
+          name_ptr = Box.box(name)
+          @pattern_boxes << name_ptr
+          LibLua.pushlightuserdata(state, name_ptr)
+          LibLua.pushcclosure(state, @@guarded_dispatch_cfun, 1)
+          LibLua.setfield(state, -2, name) # string[name] = closure
+        end
+        LibLua.settop(state, -2) # drop the string table
+      end
+
+      # Installs the `string.*` guards on the first run only.
+      private def install_pattern_guards_once! : Nil
+        return if @pattern_guards_installed
+        @pattern_guards_installed = true
+        install_pattern_guards!
       end
 
       # Installs the combined instruction-count and wall-clock time hook.

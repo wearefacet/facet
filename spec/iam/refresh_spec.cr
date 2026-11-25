@@ -160,6 +160,42 @@ describe Facet::IAM::Refresh do
     end
   end
 
+  it "refuses an app-scoped session — no upgrade to a full user token (S2)" do
+    with_db do |db|
+      account_id = create_test_account(db)
+      session_id, refresh_id = Facet::IAM::RedisSession.create_app_session(
+        account_id: account_id, active_role: "iam.Roles.admin",
+        app: "01FAKEAPP0000000000000", client_id: "cid_fake_app")
+
+      result = Facet::IAM::Refresh.call(db, "#{session_id}.#{refresh_id}")
+      result.should be_a(Facet::ServiceError)
+      err = result.as(Facet::ServiceError)
+      err.status.should eq(403)
+      err.message.should contain("App sessions cannot refresh")
+
+      # The session survives — the holder still refreshes it on the OAuth path.
+      session = Facet::IAM::RedisSession.load(session_id)
+      session.should_not be_nil
+      session.not_nil!.refresh_id.should eq(refresh_id)
+    end
+  end
+
+  it "answers the app-session refusal before rotating (theft path untouched)" do
+    with_db do |db|
+      account_id = create_test_account(db)
+      session_id, _refresh_id = Facet::IAM::RedisSession.create_app_session(
+        account_id: account_id, active_role: "iam.Roles.admin",
+        app: "01FAKEAPP0000000000000", client_id: "cid_fake_app")
+
+      # A stale refresh id would normally trip reuse detection and delete the
+      # session. The app gate runs first, so the session stays.
+      result = Facet::IAM::Refresh.call(db, "#{session_id}.stale-id")
+      result.should be_a(Facet::ServiceError)
+      result.as(Facet::ServiceError).status.should eq(403)
+      Facet::IAM::RedisSession.load(session_id).should_not be_nil
+    end
+  end
+
   describe "token delivery mode (B-278)" do
     it "refreshes a body-mode session with cookie: false and returns both tokens" do
       with_db do |db|

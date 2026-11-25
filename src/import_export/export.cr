@@ -156,12 +156,19 @@ module Facet
         rescue ex : Util::FilterClauses::MoneyFilterError
           return Facet::ServiceError.new(422, ex.message.to_s)
         rescue ex : Util::FilterClauses::FilterGrammarError
+          # A field the active role cannot see answers 403, matching the list
+          # and aggregate gates — never the 422 shape that names the field's
+          # type contract (S4). The other refusals answer 422 with the
+          # structured detail.
+          if ex.reason == "invisible_filter_field"
+            return Facet::ServiceError.new(403, ex.message.to_s)
+          end
           return Facet::ServiceError.new(422, ex.message.to_s, details: [
             ValidationError.new(field: ex.filter_key, code: ex.reason, message: ex.message.to_s),
           ])
         end
 
-        order_clause = order_clause_for(sort, definition)
+        order_clause = order_clause_for(sort, definition, auth_context)
         return order_clause if order_clause.is_a?(Facet::ServiceError)
 
         file = File.tempfile("facet-export", ".#{format}")
@@ -188,9 +195,9 @@ module Facet
       # multi-entry sorts keep every expression. An entry the definition
       # cannot serve answers `422` through `build_order_clause` (B-158);
       # the caller surfaces it instead of running in the wrong order.
-      private def self.order_clause_for(sort : Array(String)?, definition : Doctype::DoctypeDefinition) : String? | Facet::ServiceError
+      private def self.order_clause_for(sort : Array(String)?, definition : Doctype::DoctypeDefinition, auth_context : RBAC::AuthContext) : String? | Facet::ServiceError
         return nil if sort.nil? || sort.empty?
-        clause = Document::List.build_order_clause(sort, definition)
+        clause = Document::List.build_order_clause(sort, definition, auth_context)
         return clause if clause.is_a?(Facet::ServiceError)
         clause.gsub(/\s+/, " ").downcase == "id asc" ? nil : clause
       end
@@ -217,7 +224,7 @@ module Facet
         where_clauses.concat(scope_clauses)
         all_params.concat(scope_params)
 
-        filter_clauses, filter_params = FilterCompiler.compile(definition, filters, offset: all_params.size)
+        filter_clauses, filter_params = FilterCompiler.compile(definition, filters, offset: all_params.size, auth_context: auth_context)
         where_clauses.concat(filter_clauses)
         all_params.concat(filter_params)
 

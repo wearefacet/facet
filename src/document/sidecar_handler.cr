@@ -136,8 +136,8 @@ module Facet
         filter = {"#{sidecar_ref.column}__eq" => JSON::Any.new("#{host_domain}.#{host_doctype}.#{host_id}")}
         # The `target` lookup is an internal integrity filter, not a user
         # query: it runs against the known host row, so it bypasses the
-        # authored `filters` capability gate and validates against the type's
-        # runtime ceiling only.
+        # authored `filters` capability gate and the field-visibility gate,
+        # and validates against the type's runtime ceiling only.
         result = Document::List.call(db, sidecar_domain, sidecar_doctype, filters: filter, auth_context: auth_ctx, page: page, items_per_page: items_per_page, skip_authorization: true, skip_filter_capability_check: true)
         # No aggregate is requested on this path, so the aggregate member of
         # `Document::List.call`'s return union never occurs. The case keeps
@@ -166,18 +166,23 @@ module Facet
         sidecar_id : String,
         auth_ctx : RBAC::AuthContext,
       ) : Facet::Document::Read::Result | Facet::ServiceError
-        qualified, err = resolve_sidecar_ref(db, host_domain, host_doctype, segment)
-        return err if err
+        resolved = resolve_sidecar_ref(db, host_domain, host_doctype, segment)
+        if err = resolved[1]
+          return err
+        end
+        sidecar_ref = resolved[0].as(Doctype::SidecarRef)
 
         if RBAC::ReadEnforcer.read_denied?(host_domain, host_doctype, auth_ctx)
           return Facet::ServiceError.new(403, "Forbidden")
         end
         return Facet::ServiceError.new(404, "Not found") unless RBAC::ReadEnforcer.parent_authorized?(db, host_domain, host_doctype, host_id, auth_ctx)
 
-        sidecar_domain, sidecar_doctype = split_qualified(qualified.as(String))
+        sidecar_domain, sidecar_doctype = split_qualified(sidecar_ref.doctype)
         unless RBAC::ReadEnforcer.sidecar_authorized?(db, host_domain, host_doctype, sidecar_domain, sidecar_doctype, auth_ctx)
           return Facet::ServiceError.new(403, "Forbidden")
         end
+
+        return Facet::ServiceError.new(404, "Not found") unless sidecar_targets_host?(db, sidecar_domain, sidecar_doctype, sidecar_ref.column, sidecar_id, host_reference(host_domain, host_doctype, host_id))
 
         Document::Read.call(db, sidecar_domain, sidecar_doctype, sidecar_id, auth_ctx, skip_authorization: true)
       end
@@ -198,16 +203,21 @@ module Facet
         body : String,
         auth_ctx : RBAC::AuthContext,
       ) : Facet::Document::Update::Result | Facet::ServiceError
-        qualified, err = resolve_sidecar_ref(db, host_domain, host_doctype, segment)
-        return err if err
+        resolved = resolve_sidecar_ref(db, host_domain, host_doctype, segment)
+        if err = resolved[1]
+          return err
+        end
+        sidecar_ref = resolved[0].as(Doctype::SidecarRef)
 
         if RBAC::ReadEnforcer.read_denied?(host_domain, host_doctype, auth_ctx)
           return Facet::ServiceError.new(403, "Forbidden")
         end
         return Facet::ServiceError.new(404, "Not found") unless RBAC::ReadEnforcer.parent_authorized?(db, host_domain, host_doctype, host_id, auth_ctx)
 
-        sidecar_domain, sidecar_doctype = split_qualified(qualified.as(String))
+        sidecar_domain, sidecar_doctype = split_qualified(sidecar_ref.doctype)
         return Facet::ServiceError.new(403, "Forbidden") unless RBAC::WriteEnforcer.authorize_sidecar_update(db, host_domain, host_doctype, sidecar_domain, sidecar_doctype, auth_ctx)
+
+        return Facet::ServiceError.new(404, "Not found") unless sidecar_targets_host?(db, sidecar_domain, sidecar_doctype, sidecar_ref.column, sidecar_id, host_reference(host_domain, host_doctype, host_id))
 
         Document::Update.call(db, sidecar_domain, sidecar_doctype, sidecar_id, body, auth_ctx, skip_authorization: true)
       end
@@ -224,32 +234,39 @@ module Facet
         sidecar_id : String,
         auth_ctx : RBAC::AuthContext,
       ) : Facet::Document::Delete::Result | Facet::ServiceError
-        qualified, err = resolve_sidecar_ref(db, host_domain, host_doctype, segment)
-        return err if err
+        resolved = resolve_sidecar_ref(db, host_domain, host_doctype, segment)
+        if err = resolved[1]
+          return err
+        end
+        sidecar_ref = resolved[0].as(Doctype::SidecarRef)
 
         if RBAC::ReadEnforcer.read_denied?(host_domain, host_doctype, auth_ctx)
           return Facet::ServiceError.new(403, "Forbidden")
         end
         return Facet::ServiceError.new(404, "Not found") unless RBAC::ReadEnforcer.parent_authorized?(db, host_domain, host_doctype, host_id, auth_ctx)
 
-        sidecar_domain, sidecar_doctype = split_qualified(qualified.as(String))
+        sidecar_domain, sidecar_doctype = split_qualified(sidecar_ref.doctype)
         return Facet::ServiceError.new(403, "Forbidden") unless RBAC::WriteEnforcer.authorize_sidecar_delete(db, host_domain, host_doctype, sidecar_domain, sidecar_doctype, auth_ctx)
+
+        return Facet::ServiceError.new(404, "Not found") unless sidecar_targets_host?(db, sidecar_domain, sidecar_doctype, sidecar_ref.column, sidecar_id, host_reference(host_domain, host_doctype, host_id))
 
         Document::Delete.call(db, sidecar_domain, sidecar_doctype, sidecar_id, auth_ctx, skip_authorization: true)
       end
 
-      # Resolves the qualified sidecar doctype for the per-document handlers.
-      # Returns `{qualified, nil}` on success, or `{nil, error}` — the error
-      # is the shape the handlers surface for an unknown host or segment.
-      # Public so `RestRoutes` resolves the sidecar doctype through the same
-      # path (it swallows the error and falls through to the nested-children
-      # matcher).
+      # Resolves the sidecar reference declared by the host doctype for the
+      # per-document handlers. Returns `{ref, nil}` on success, or
+      # `{nil, error}` — the error is the shape the handlers surface for an
+      # unknown host or segment. The per-document paths need the reference
+      # itself, because they bind the sidecar row to the host through the
+      # `column` it declares. Public so `RestRoutes` resolves the sidecar
+      # doctype through the same path (it swallows the error and falls
+      # through to the nested-children matcher).
       def self.resolve_sidecar_ref(
         db : DB::Connection,
         host_domain : String,
         host_doctype : String,
         segment : String,
-      ) : {String?, Facet::ServiceError?}
+      ) : {Doctype::SidecarRef?, Facet::ServiceError?}
         host_defn = HTTP::Helpers.fetch_doctype_defn(db, "#{host_domain}.#{host_doctype}")
         if host_defn.nil?
           return {nil, Facet::ServiceError.new(404, "Unknown doctype: #{host_domain}.#{host_doctype}")}
@@ -260,7 +277,43 @@ module Facet
           return {nil, Facet::ServiceError.new(404, "Unknown sidecar '#{segment}'")}
         end
 
-        {sidecar_ref.doctype, nil}
+        {sidecar_ref, nil}
+      end
+
+      # The qualified reference token a sidecar row stores in its `target`
+      # column for this host record.
+      private def self.host_reference(host_domain : String, host_doctype : String, host_id : String) : String
+        "#{host_domain}.#{host_doctype}.#{host_id}"
+      end
+
+      # True when the sidecar row exists and its `target` reference points
+      # at this host record. The per-document nested route binds the two
+      # here: the collection path binds them with a `target__eq` filter
+      # (`list`), and the per-document path must bind them the same way,
+      # or a caller who can read one host record reaches any sidecar by id
+      # (S5). The lookup is a direct projection read — an internal
+      # integrity check on one known row, so it needs no filter grammar and
+      # no capability or visibility gate. It takes `FOR SHARE` when the
+      # session can take a row lock, so a concurrent re-point cannot commit
+      # between the check and the caller's write; a read-only session
+      # (the read path) cannot lock, and needs none. A tombstone answers
+      # `false` — `Document::Read/Update/Delete` own the lifecycle answer,
+      # and a deleted sidecar is not reachable through its host.
+      private def self.sidecar_targets_host?(
+        db : DB::Connection,
+        sidecar_domain : String,
+        sidecar_doctype : String,
+        column : String,
+        sidecar_id : String,
+        expected_target : String,
+      ) : Bool
+        lock = db.query_one("SHOW transaction_read_only", as: String) == "on" ? "" : " FOR SHARE"
+        target = db.query_one?(
+          "SELECT content->>$4 FROM projections WHERE domain = $1 AND doc_type = $2 AND id = $3 AND deleted_at IS NULL#{lock}",
+          sidecar_domain, sidecar_doctype, sidecar_id, column,
+          as: String?
+        )
+        !target.nil? && target == expected_target
       end
 
       # Splits a qualified doctype id on the FIRST dot only. Delegates to

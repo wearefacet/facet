@@ -203,6 +203,14 @@ the sidecar's `target` reference filter from the path, the create sets
 `target` from the path; every one delegates to the matching
 `Document::*` service with `skip_authorization: true`.
 
+The per-document operations (`read`, `update`, `delete`) also bind the
+sidecar id to the URL's host record: the sidecar's `target` reference must
+equal `{host_domain}.{host_doctype}.{host_id}` (`sidecar_targets_host?`).
+A mismatch, a missing row, or a tombstone answers the same non-disclosing
+`404` as the host read gate, so a caller who can read one host record
+cannot reach a sidecar of another host by id. The collection `list` path
+binds the same way through its `target__eq` integrity filter.
+
 | method     | signature (abridged)                                                                                                                                                                                                                                                                       | returns                                       |
 | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------- |
 | `create`   | `create(db, host_domain, host_doctype, host_id, segment, body : JSON::Any, auth_ctx) : Result \| ServiceError`                                                                                                                                                                            | creates one sidecar record, `404`/`400`/`422`/`403` on failure        |

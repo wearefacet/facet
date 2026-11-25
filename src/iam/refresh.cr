@@ -58,13 +58,16 @@ module Facet
           return Facet::ServiceError.new(401, "Session expired or not found")
         end
 
-        # 3. Delivery-mode gate. Runs before reuse detection so a mismatched
+        # 3. Gate checks. An app session must not refresh here (it would
+        # upgrade the app ceiling to the full role — see
+        # `app_session_refusal`), and the request's delivery mode must match
+        # the one login stored. Both run before reuse detection so a refused
         # request never mutates session state — not even the theft response.
-        if err = delivery_mismatch(session, cookie)
+        if err = pre_rotation_refusal(session, cookie)
           return err
         end
 
-        # 4. Reuse detection
+        # 5. Reuse detection
         case RedisSession.validate_refresh_id(session, presented_refresh_id)
         when :valid
           # Normal case — proceed
@@ -80,14 +83,14 @@ module Facet
           return Facet::ServiceError.new(401, "Session revoked due to token reuse")
         end
 
-        # 5. Re-run login checks: account must exist and be enabled
+        # 6. Re-run login checks: account must exist and be enabled
         account = Helpers.find_account_by_id(db, session.account_id)
         if account.nil?
           RedisSession.delete(session_id)
           return Facet::ServiceError.new(401, "Account not found")
         end
 
-        # 6. Resolve the active role. A roleless account's session runs under
+        # 7. Resolve the active role. A roleless account's session runs under
         # the anonymous role (B-120); an explicit role switch to a role the
         # account does not hold still fails.
         effective_role = role || session.active_role
@@ -96,23 +99,23 @@ module Facet
           return Facet::ServiceError.new(403, "Role not assigned")
         end
 
-        # 7. Verify the role document exists
+        # 8. Verify the role document exists
         role_content = Helpers.find_role_content(db, effective_role)
         if role_content.nil?
           return Facet::ServiceError.new(403, "Role not found or disabled")
         end
 
-        # 8. Rotate the session
+        # 9. Rotate the session
         new_refresh_id = RedisSession.rotate(session_id, active_role: effective_role)
         if new_refresh_id.nil?
           return Facet::ServiceError.new(500, "Session rotation failed")
         end
 
-        # 9. Build permission manifest
+        # 10. Build permission manifest
         manifest = Helpers.build_permission_manifest(role_content)
         visible_tags = Helpers.build_visible_tags(role_content)
 
-        # 10. Emit new tokens
+        # 11. Emit new tokens
         emit_result = TokenEmitter.emit(
           cookie: cookie,
           account_id: session.account_id,
@@ -147,6 +150,27 @@ module Facet
         app_part = app ? ", app=#{app}" : ""
         "Refresh ok (account_id=#{session.account_id}, " \
         "session=#{session_id}, role=#{effective_role}#{app_part})"
+      end
+
+      # Returns the refusal for a request that must not rotate the session:
+      # an app-scoped session (its `app` field is set), or a delivery mode
+      # that does not match the one login stored. `nil` when the request may
+      # proceed.
+      private def self.pre_rotation_refusal(session : RedisSession::Session, cookie : Bool) : Facet::ServiceError?
+        app_session_refusal(session) || delivery_mismatch(session, cookie)
+      end
+
+      # Returns the `403` error when the session belongs to an app (its `app`
+      # field is set); `nil` for a browser session. `IAM::Refresh` mints a
+      # full user token, so an app-scoped session must not refresh here: its
+      # reach is the app ceiling (grant ∩ role), while this route would mint
+      # the account's whole role. App sessions refresh through
+      # `OAuth::Refresh`, which pins the role and re-validates the grant. The
+      # session is left intact — the holder still refreshes it on that path.
+      private def self.app_session_refusal(session : RedisSession::Session) : Facet::ServiceError?
+        return nil if session.app.empty?
+        Facet::ServiceError.new(403,
+          "App sessions cannot refresh here. Use the OAuth token endpoint.")
       end
 
       # Returns the `422` error when the request's `cookie` flag does not

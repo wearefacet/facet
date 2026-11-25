@@ -51,7 +51,7 @@ fields:
   allowed_origins:
     type: array
     title: "Allowed Origins"
-    description: "Origins permitted for CORS on the token endpoint and the API. Each entry is a bare origin (scheme + host + optional port)."
+    description: "Origins permitted for CORS on the token endpoint and the API. Each entry is a bare origin (scheme + host + optional port), https on any host or http on a loopback host. The scheme + host must equal the app's own host (or be a loopback origin): the CORS handler echoes a registered origin with credentials, so an arbitrary origin would let a third-party page call the API with the viewer's cookies. Validated by the create/update Lua hook."
     items:
       type: string
   service_role_id:

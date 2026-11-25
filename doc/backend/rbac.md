@@ -297,6 +297,8 @@ Fields carry free-form sensitivity `tags` (defined on `FieldDefinition`). The ac
 
 A field aggregate runs the tag check only for a caller that holds a read grant on the doctype. On a non-metadata doctype, a caller with no read grant at all answers 403 before any field check runs (`ReadEnforcer.list_denied?` — see Class-level vs row-level denial above). The structural metadata doctypes keep the empty-set aggregate for every field name — their lists never answer 403 (B-86), and `ReadEnforcer.read_denied?` reports the gate state (pure permission arithmetic, no database access); `Document::List` serves `Aggregate.empty_field_result` for it.
 
+**Filters and sorting follow the same rule (S4).** A filter or a sort on a field the active role cannot see answers `403` (reason `invisible_filter_field` for a filter, the visibility message for a sort) — the same answer as the aggregate gate, before any type validation. `Document::List` and `Document::Export` apply the gate; internal integrity filters and sorts (`skip_authorization` / `skip_capability_check` / `skip_visibility_check`) stay exempt. The visibility rule thus covers reads, writes, transitions, aggregates, masks, CSV export, filters, and sorting. See [`document.md`](document.md) → `Document::List` → Filter syntax / Sort fields.
+
 ### Definition and domain visibility (metadata gate)
 
 `core.DocType` definitions and `core.Domain` rows are render-time metadata: the application builds the sidebar nav, every form, and every route load from them. A role that holds grants on a doctype's documents but no `read` line on `core.DocType` used to resolve an empty definition registry — every granted surface answered a misleading 404 (B-86).

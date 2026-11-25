@@ -126,14 +126,24 @@ The Lua lifecycle hooks (`script.lua`) enforce the authoring rules:
      YAML config; an allowlist match passes before the deny-list is
      consulted. The same gate re-runs at delivery time and on `/test`, so
      a URL that turns private after authoring (DNS re-pointing) is caught
-     at the dial; the residual gap is one DNS TTL wide (see
-     `Webhook::TargetCheck`'s header comment). Crystal's `HTTP::Client`
+     at the dial. Crystal's `HTTP::Client`
      does not follow redirects — if redirect following is ever enabled
      for webhooks, every hop must re-run the gate. Resolution goes
      through the `TargetCheck.resolver` proc (default: real `Addrinfo`
      lookup); specs swap it via `with_fake_resolver`
      (`spec/support/webhook_helper.cr`) so the suite stays
      DNS-independent.
+
+**Pinned dial (S9).** The gate runs once at check time and would leave a
+window if the transport resolved the host again at dial time: a rebinding
+resolver could answer public at check time and private at dial time. To
+close it, `Webhook::Transport.post` resolves the host through the gate
+(`TargetCheck.checked_address`) and dials the address the gate accepted
+(`post_pinned`), while keeping the original hostname for TLS SNI and the
+`Host` header. A hostname-only `allowed_hosts` entry (string-matched, no
+DNS) has no address to pin to; the transport then dials by name
+(`post_unpinned`), which is the operator-approved internal case. The
+DNS-rebinding window is thus closed for every resolved host.
 
 actions: {}  # no named actions — enable/disable is `PATCH enabled=true|false`.
 ```

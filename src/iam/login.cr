@@ -42,6 +42,14 @@ module Facet
       # Per-IP maximum failed password attempts before lockout.
       MAX_IP_ATTEMPTS = 20
 
+      # Maximum MFA challenges an account may open in the window before the
+      # login locks it out (see `create_mfa_challenge`).
+      MAX_CHALLENGE_ISSUES = 5
+
+      # MFA challenge lifetime (seconds). Shared with the active-challenge
+      # tracking key.
+      CHALLENGE_TTL = 300
+
       # Attempts to authenticate an account.
       #
       # * `db` — database connection
@@ -167,7 +175,8 @@ module Facet
         end
 
         if mfa_gate_active?(db, account[:mfa_enabled])
-          challenge_id = create_mfa_challenge(account_id, resolved_role, cookie, user_agent, ip)
+          challenge_id = create_mfa_challenge(db, account_id, resolved_role, cookie, user_agent, ip)
+          return challenge_id if challenge_id.is_a?(Facet::ServiceError)
           return MFARequired.new(challenge_id: challenge_id)
         end
 
@@ -308,13 +317,27 @@ module Facet
       end
 
       # Creates an MFA challenge in Redis.
+      #
+      # Two guards keep parallel challenges from multiplying the guess
+      # budget: an account holds at most one live challenge (a new login
+      # replaces the previous one), and a per-account counter caps the number
+      # of challenges opened in the window (`MAX_CHALLENGE_ISSUES`). Once the
+      # cap is reached the login refuses with 429 and sets the lockout — the
+      # same lockout the challenge limiter raises on exhaustion.
       private def self.create_mfa_challenge(
+        db : DB::Connection,
         account_id : String,
         active_role : String,
         cookie_requested : Bool,
         user_agent : String?,
         ip : String?,
-      ) : String
+      ) : String | Facet::ServiceError
+        if LoginThrottle.get_challenge_issues(account_id) >= MAX_CHALLENGE_ISSUES
+          LoginThrottle.set_lockout(account_id)
+          Helpers.write_login_event(db, account_id, "lockout", "Too many MFA challenges opened")
+          return Facet::ServiceError.new(429, "Too many attempts. Try again later.")
+        end
+
         challenge_id = Util::ScriptHelpers.ulid
         r = RedisSession.redis
         r.hset(
@@ -327,7 +350,11 @@ module Facet
           "user_agent", user_agent || "",
           "ip", ip || "",
         )
-        r.expire("challenge:#{challenge_id}", 300)
+        r.expire("challenge:#{challenge_id}", CHALLENGE_TTL)
+        LoginThrottle.increment_challenge_issues(account_id)
+        # Only one live challenge per account: the previous one dies now, so a
+        # stale challenge cannot be answered in parallel.
+        LoginThrottle.track_active_challenge(account_id, challenge_id, CHALLENGE_TTL)
         challenge_id
       end
 

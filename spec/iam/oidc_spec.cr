@@ -669,47 +669,56 @@ describe Facet::IAM::OIDC::Identity do
 
   it "re-resolves instead of duplicating when JIT collides on the email" do
     with_db do |db|
-      seed_test_roles(db)
-      Facet::Doctype::Seed.ensure_doctype(db, "iam", "Roles")
-      Facet::Doctype::Seed.ensure_doctype(db, "iam", "Account")
+      # The spec-only unique index below must not leak into later spec files
+      # that create two default-email accounts in one example (the per-example
+      # TRUNCATE clears rows, not indexes). Without the drop the suite is
+      # order-dependent: `iam` before `agent_tools` collides. `ensure` runs it
+      # even when an assertion above fails.
+      begin
+        seed_test_roles(db)
+        Facet::Doctype::Seed.ensure_doctype(db, "iam", "Roles")
+        Facet::Doctype::Seed.ensure_doctype(db, "iam", "Account")
 
-      # The spec template never materializes managed indexes (the singleton
-      # pool is not initialized during template seeding), so the DB-level
-      # unique enforcement the JIT race relies on does not exist here. This
-      # index is exactly what production's `unique_btree` looks like.
-      db.exec(<<-SQL)
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_spec_iam_account_email
-        ON projections ((content->>'email'))
-        WHERE domain = 'iam' AND doc_type = 'Account' AND deleted_at IS NULL
-      SQL
+        # The spec template never materializes managed indexes (the singleton
+        # pool is not initialized during template seeding), so the DB-level
+        # unique enforcement the JIT race relies on does not exist here. This
+        # index is exactly what production's `unique_btree` looks like.
+        db.exec(<<-SQL)
+          CREATE UNIQUE INDEX IF NOT EXISTS idx_spec_iam_account_email
+          ON projections ((content->>'email'))
+          WHERE domain = 'iam' AND doc_type = 'Account' AND deleted_at IS NULL
+        SQL
 
-      provider = test_provider(db)
-      race_claims = claims("sub-race", "race@example.test", verified: true)
+        provider = test_provider(db)
+        race_claims = claims("sub-race", "race@example.test", verified: true)
 
-      results = Channel(Facet::IAM::TokenEmitter::Result | Facet::ServiceError).new
-      2.times do
-        spawn do
-          Facet::Database.with_db do |fiber_db|
-            results.send(OIDC::Identity.authenticate(fiber_db, provider, race_claims))
+        results = Channel(Facet::IAM::TokenEmitter::Result | Facet::ServiceError).new
+        2.times do
+          spawn do
+            Facet::Database.with_db do |fiber_db|
+              results.send(OIDC::Identity.authenticate(fiber_db, provider, race_claims))
+            end
           end
         end
+        first = results.receive
+        second = results.receive
+
+        ids = db.query_all(
+          "SELECT id FROM projections WHERE domain = 'iam' AND doc_type = 'Account' AND deleted_at IS NULL",
+          as: String
+        )
+        ids.size.should eq(1)
+
+        first.should be_a(Facet::IAM::TokenEmitter::Result)
+        second.should be_a(Facet::IAM::TokenEmitter::Result)
+        first.as(Facet::IAM::TokenEmitter::Result).account_id.should eq(ids[0])
+        second.as(Facet::IAM::TokenEmitter::Result).account_id.should eq(ids[0])
+
+        # Exactly one provisioning happened; the loser re-resolved.
+        oidc_event_details(db, "oidc_provisioned").size.should eq(1)
+      ensure
+        db.exec("DROP INDEX IF EXISTS idx_spec_iam_account_email")
       end
-      first = results.receive
-      second = results.receive
-
-      ids = db.query_all(
-        "SELECT id FROM projections WHERE domain = 'iam' AND doc_type = 'Account' AND deleted_at IS NULL",
-        as: String
-      )
-      ids.size.should eq(1)
-
-      first.should be_a(Facet::IAM::TokenEmitter::Result)
-      second.should be_a(Facet::IAM::TokenEmitter::Result)
-      first.as(Facet::IAM::TokenEmitter::Result).account_id.should eq(ids[0])
-      second.as(Facet::IAM::TokenEmitter::Result).account_id.should eq(ids[0])
-
-      # Exactly one provisioning happened; the loser re-resolved.
-      oidc_event_details(db, "oidc_provisioned").size.should eq(1)
     end
   end
 end

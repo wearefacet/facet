@@ -32,6 +32,7 @@ def app_body(slug : String, overrides : String = "{}") : String
     "client_type": "public",
     "redirect_uris": ["https://crm.example.com/oauth/callback"],
     "allowed_origins": ["https://crm.example.com"],
+    "host": "crm.example.com",
     "status": "draft",
     "compatible_roles": ["iam.Roles.admin"],
     "grants": [
@@ -44,8 +45,8 @@ def app_body(slug : String, overrides : String = "{}") : String
 end
 
 # Creates an app as the system principal and returns the resulting projection.
-def create_app(db, slug = "crm-portal-#{unique_suffix}")
-  body = app_body(slug)
+def create_app(db, slug = "crm-portal-#{unique_suffix}", overrides : String = "{}")
+  body = app_body(slug, overrides)
   result = Facet::Document::Create.call(db, "app", "App", body, Facet::RBAC::AuthContext.system)
   {slug, expect_create_success(result).projection}
 end
@@ -172,8 +173,13 @@ describe "app.App registration (Phase 1)" do
 
     it "produces distinct client_ids for distinct apps" do
       with_db do |db|
-        _, proj_a = create_app(db, "a-#{unique_suffix}")
-        _, proj_b = create_app(db, "b-#{unique_suffix}")
+        # `host` is unique across apps, so each app carries its own host and a
+        # matching origin (the origin gate requires the origin's scheme + host
+        # to equal the app's own host).
+        suffix_a = unique_suffix
+        suffix_b = unique_suffix
+        _, proj_a = create_app(db, "a-#{suffix_a}", %({"host": "a-#{suffix_a}.example.com", "allowed_origins": ["https://a-#{suffix_a}.example.com"]}))
+        _, proj_b = create_app(db, "b-#{suffix_b}", %({"host": "b-#{suffix_b}.example.com", "allowed_origins": ["https://b-#{suffix_b}.example.com"]}))
         proj_a.content["client_id"].as_s.should_not eq(proj_b.content["client_id"].as_s)
       end
     end
@@ -517,6 +523,77 @@ describe "app.App host field (deployment serving)" do
       # Absent host is fine — an app without one is never dispatched.
       no_host = create_host_app(db, nil)
       expect_create_success(no_host)
+    end
+  end
+end
+
+describe "app.App allowed_origins (CORS origin gate)" do
+  before_each do
+    with_db { |db| seed_app_doctypes(db) }
+  end
+
+  it "accepts well-formed origins (https any host, http loopback, several entries)" do
+    with_db do |db|
+      body = %({
+        "slug": "origins-ok-#{unique_suffix}",
+        "name": "Origins OK",
+        "host": "crm.example.com",
+        "allowed_origins": ["https://crm.example.com", "http://localhost:5173", "https://partner.example.org:8443"]
+      })
+      result = Facet::Document::Create.call(db, "app", "App", body, Facet::RBAC::AuthContext.system)
+      proj = expect_create_success(result).projection
+      proj.content["allowed_origins"].as_a.map(&.as_s).should eq(
+        ["https://crm.example.com", "http://localhost:5173", "https://partner.example.org:8443"])
+    end
+  end
+
+  it "rejects a malformed origin shape (path, wildcard, http on a remote host, bare host, bad port)" do
+    with_db do |db|
+      ["https://crm.example.com/path", "https://*.crm.example.com", "http://crm.example.com",
+       "https://crm.example.com:99999", "crm.example.com"].each do |bad|
+        body = %({
+          "slug": "origins-bad-#{unique_suffix}",
+          "name": "Origins Bad",
+          "host": "crm.example.com",
+          "allowed_origins": [#{bad.to_json}]
+        })
+        result = Facet::Document::Create.call(db, "app", "App", body, Facet::RBAC::AuthContext.system)
+        err = expect_create_error(result, 422)
+        err.details.not_nil!.any?(&.message.includes?("bare origin")).should be_true, "expected shape rejection: #{bad}"
+      end
+    end
+  end
+
+  it "rejects a non-array allowed_origins" do
+    with_db do |db|
+      body = %({
+        "slug": "origins-type-#{unique_suffix}",
+        "name": "Origins Type",
+        "allowed_origins": "https://crm.example.com"
+      })
+      result = Facet::Document::Create.call(db, "app", "App", body, Facet::RBAC::AuthContext.system)
+      err = expect_create_error(result, 422)
+      err.details.not_nil!.any?(&.message.includes?("must be an array")).should be_true
+    end
+  end
+
+  it "rejects a malformed origin introduced by update (422)" do
+    with_db do |db|
+      create = %({
+        "slug": "origins-upd-#{unique_suffix}",
+        "name": "Origins Update",
+        "host": "crm.example.com",
+        "allowed_origins": ["https://crm.example.com"]
+      })
+      proj = expect_create_success(
+        Facet::Document::Create.call(db, "app", "App", create, Facet::RBAC::AuthContext.system)).projection
+
+      upd = Facet::Document::Update.call(
+        db, "app", "App", proj.id,
+        %({"allowed_origins": ["https://evil.example.com/path"]}),
+        Facet::RBAC::AuthContext.system)
+      err = expect_update_error(upd, 422)
+      err.details.not_nil!.any?(&.message.includes?("bare origin")).should be_true
     end
   end
 end

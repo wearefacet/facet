@@ -27,6 +27,11 @@ module Facet
     # `HTTP::Helpers.require_csrf` with the API-key-bearer bypass. A rejected
     # request answers `403` with the shared JSON error body.
     module Routes
+      # Maximum failed `old_password` attempts at `/Api/iam/change-password`
+      # before the account is throttled (429). Matches the login-challenge
+      # limiter (5 attempts, 5-minute window).
+      MAX_CHANGE_PASSWORD_ATTEMPTS = 5
+
       # Registers all IAM routes on the Kemal router. Grouped by concern —
       # one private method per group, each holding only the route
       # declarations. Each route block calls one `handle_*` method that
@@ -363,7 +368,7 @@ module Facet
       # access token is missing or invalid.
       private def self.handle_apps(env) : Nil
         Facet::HTTP::Helpers.require_account(env) || return
-        active_role = require_role(env) || return
+        active_role = Facet::HTTP::Helpers.require_role(env) || return
 
         apps = Database.with_db(:read_only) do |db|
           Facet::IAM::AppLauncher.launcher_apps(db, active_role)
@@ -809,6 +814,13 @@ module Facet
       #   2. Authenticated: a valid access token (session-based change).
       # The `old_password` is always verified against the stored hash to
       # keep the failure surface identical across both paths.
+      #
+      # The route is public (no session needed on the bootstrap path), so a
+      # wrong `old_password` must not be an unbounded oracle: a per-account
+      # attempt counter (`LoginThrottle`) refuses with 429 after
+      # `MAX_CHANGE_PASSWORD_ATTEMPTS` failures in the window. The counter
+      # runs on both paths, so a stolen session token cannot probe faster
+      # than a stolen change token.
       private def self.handle_change_password(env) : Nil
         body = guard(env) || return
         parsed = Facet::HTTP::Helpers.parse_json_object(env, body) || return
@@ -824,6 +836,11 @@ module Facet
         token = parsed["change_token"]?.try(&.as_s?)
         account_id = resolve_change_password_account(env, token) || return
 
+        # Throttle gate — refuse before the bcrypt burn once the window is full.
+        if Facet::IAM::LoginThrottle.get_change_password_attempts(account_id) >= MAX_CHANGE_PASSWORD_ATTEMPTS
+          return Facet::HTTP::Helpers.error_response(env, 429, "Too many attempts. Try again later.")
+        end
+
         # Verify the old password against the stored hash. A missing slot
         # (`nil`) and a mismatch (`false`) both fail — the nil path burns a
         # dummy bcrypt comparison so both cost the same time.
@@ -831,9 +848,11 @@ module Facet
           Facet::Secrets.verify(db2, "iam.Account.#{account_id}", "password", old_password)
         end
         unless verified
+          Facet::IAM::LoginThrottle.increment_change_password_attempts(account_id)
           return Facet::HTTP::Helpers.error_response(env, 403, "Current password is incorrect")
         end
 
+        Facet::IAM::LoginThrottle.reset_change_password_attempts(account_id)
         apply_password_change(account_id, new_password, token)
         Event::Publisher.flush
 
@@ -1194,47 +1213,64 @@ module Facet
         context.account_id
       end
 
-      # Extracts the caller identity for the profile reads. The presented
-      # access token (cookie or Bearer JWT) is the identity source when one
-      # rides the request — its claims are the exact `sub` / `role` the login
-      # minted, and this keeps the route answerable in test mode where
-      # `AuthHandler` is disabled and no context is pinned on the fiber. A
-      # static API key carries no JWT, so for those callers the auth context
-      # (`Fiber.current.auth_context`, set by AuthHandler) is the only identity
-      # source — unlike `HTTP::Helpers.require_account`, which decodes JWT
-      # claims only and 401s a key caller. Writes the 401 and returns `nil`
-      # when neither source names a real, non-anonymous account: the system
-      # bypass, the preview capability, the anonymous fallback, and a missing
-      # context all refuse.
+      # Extracts the caller identity for the profile reads. The verified auth
+      # context (`Fiber.current.auth_context`, set by `AuthHandler` after the
+      # JWT signature check) is the identity source. The identity never comes
+      # from an unverified token claim, so a forged `auth_token` cookie cannot
+      # name another account. A static API key carries no JWT — the context is
+      # its only identity source too.
+      #
+      # In test mode `AuthHandler` is disabled and no context is pinned; the
+      # route then verifies the presented token's signature itself
+      # (`Helpers.extract_account_id` — ES256, never a raw decode) so it stays
+      # answerable with a real identity.
+      #
+      # A presented token whose verified `sub` names a different account than
+      # the context's principal is a mismatch and is rejected (403): the two
+      # credentials disagree, so neither is trusted. Writes the error and
+      # returns `nil` when neither source names a real, non-anonymous account:
+      # the system bypass, the preview capability, the anonymous fallback, and
+      # a missing context all refuse.
       private def self.require_caller(env) : NamedTuple(account_id: String, role_name: String, channel: String, token_role: String?, context: Facet::RBAC::AuthContext)?
         context = Facet::HTTP::Helpers.auth_context(env)
         principal = context.principal
-        token_account = Helpers.extract_account_id(env)
-        token_role = Helpers.extract_role(env)
-        token_typ = Helpers.decode_jwt_claim(env, "typ")
 
         machine_principal = principal.is_a?(Facet::RBAC::Principal::Real) &&
                             principal.account_id != "anonymous"
-        context_role = machine_principal ? principal.as(Facet::RBAC::Principal::Real).active_role.role_id : ""
-        account_id = token_account || (machine_principal ? principal.account_id : nil)
+        account_id = machine_principal ? principal.account_id : nil
+        # Test mode: no pinned principal — the verified token names the caller.
+        account_id ||= Helpers.extract_account_id(env) unless Facet::HTTP::AuthHandler.enabled?
         unless account_id
           Facet::HTTP::Helpers.error_response(env, 401, "Authentication required")
           return nil
         end
 
-        # One channel name per authentication channel: a `typ: "access"`
-        # token is the browser session; any other presented token (an app
-        # token, an MCP bearer) is machine-shaped. A key caller presents no
-        # token, so the context provenance decides — an API key, an app
-        # token, or an MCP session all read `api`, and a real principal
-        # carrying none of those tags authenticated through a browser
-        # session.
-        machine = if token_account
-                    !token_typ.nil? && token_typ != Facet::IAM::JWT::ACCESS_TOKEN_TYP
-                  else
-                    !(context.api_key_id || context.app_id || context.acting_role).nil?
-                  end
+        # A presented token must name the same account the context verified.
+        # The decoded claim is signature-checked (`Helpers.extract_account_id`).
+        token_account = Helpers.extract_account_id(env)
+        if token_account && token_account != account_id
+          Facet::HTTP::Helpers.error_response(env, 403, "Forbidden")
+          return nil
+        end
+
+        context_role = machine_principal ? principal.as(Facet::RBAC::Principal::Real).active_role.role_id : ""
+        machine = machine_channel?(env, context, token_account)
+        token_role = Helpers.extract_role(env)
         {account_id: account_id, role_name: context_role, channel: machine ? "api" : "session", token_role: token_role, context: context}
+      end
+
+      # True when the request is machine-shaped. A presented non-`access`
+      # token (an app token, an MCP bearer) is machine-shaped; a key caller
+      # presents no token, so the context provenance decides — an API key, an
+      # app token, or an MCP session all read `api`, and a real principal
+      # carrying none of those tags authenticated through a browser session.
+      private def self.machine_channel?(env, context : Facet::RBAC::AuthContext, token_account : String?) : Bool
+        if token_account
+          typ = Helpers.decode_jwt_claim(env, "typ")
+          !typ.nil? && typ != Facet::IAM::JWT::ACCESS_TOKEN_TYP
+        else
+          !(context.api_key_id || context.app_id || context.acting_role).nil?
+        end
       end
 
       # Resolves the qualified role reference (`iam.Roles.admin`) for the
@@ -1254,17 +1290,6 @@ module Facet
           return ref if content.as_h["name"]?.try(&.as_s?) == role_name
         end
         nil
-      end
-
-      # Extracts the `role` claim from the access token, or writes the 401
-      # error and returns `nil`. Use with `|| next`.
-      private def self.require_role(env) : String?
-        role = Helpers.extract_role(env)
-        if role.nil?
-          Facet::HTTP::Helpers.error_response(env, 401, "Authentication required")
-          return nil
-        end
-        role
       end
 
       # Writes a `Facet::ServiceError` as its JSON error response. A thin

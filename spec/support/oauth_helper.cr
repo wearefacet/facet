@@ -53,6 +53,7 @@ def create_test_app(
   client_type = "public",
   grants : Array(Hash(String, JSON::Any)) = [] of Hash(String, JSON::Any),
   owner_id : String? = nil,
+  host : String? = nil,
 ) : {String, String} # {doc_id, client_id}
   # `slug` is unique: appending a random suffix keeps parallel tests isolated.
   unique_slug = "#{slug}-#{Facet::Util::ScriptHelpers.ulid.downcase[0..12]}"
@@ -67,6 +68,7 @@ def create_test_app(
     no_launcher:     no_launcher,
     grants:          grants,
     owner_id:        owner_id,
+    host:            host,
   }.to_json
 
   result = Facet::Document::Create.call(

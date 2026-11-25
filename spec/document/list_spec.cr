@@ -1709,6 +1709,82 @@ describe Facet::Document::List do
     end
   end
 
+  # ── Field visibility on filters and sorts (S4) ──────────────────────
+  #
+  # The read mask hides a tagged field, but a filter or a sort on it still
+  # answers questions about its values (row count, pagination total, row
+  # order). Both gates answer the same 403 as the aggregate field gate.
+
+  it "answers 403 for a filter on a field the active role cannot see (S4)" do
+    with_temp_doctype("listfiltvis") do |db, domain, doctype|
+      ensure_domain(db, domain)
+      create_schema = %({"doctype": "#{doctype}", "domain": "#{domain}", "fields": {"name": {"type": "string"}, "salary": {"type": "integer", "filters": ["comparison"], "tags": ["confidential"]}}})
+      expect_create_success(Facet::Document::Create.call(db, "core", "DocType", create_schema, Facet::RBAC::AuthContext.system))
+      expect_create_success(Facet::Document::Create.call(db, domain, doctype, %({"name": "a", "salary": 10}), Facet::RBAC::AuthContext.system))
+
+      ctx = sum_tagged_caller(domain, doctype, ["default"])
+      result = Facet::Document::List.call(db, domain, doctype,
+        filters: {"salary__gt" => JSON::Any.new("5")}, auth_context: ctx)
+      result.should be_a(Facet::ServiceError)
+      err = result.as(Facet::ServiceError)
+      err.status.should eq(403)
+      err.message.should contain("not visible")
+      err.message.should eq("field 'salary' is not visible to the active role")
+    end
+  end
+
+  it "answers 403 for a sort on a field the active role cannot see (S4)" do
+    with_temp_doctype("listsortvis") do |db, domain, doctype|
+      ensure_domain(db, domain)
+      create_schema = %({"doctype": "#{doctype}", "domain": "#{domain}", "fields": {"name": {"type": "string"}, "salary": {"type": "integer", "tags": ["confidential"]}}})
+      expect_create_success(Facet::Document::Create.call(db, "core", "DocType", create_schema, Facet::RBAC::AuthContext.system))
+      expect_create_success(Facet::Document::Create.call(db, domain, doctype, %({"name": "a", "salary": 10}), Facet::RBAC::AuthContext.system))
+
+      ctx = sum_tagged_caller(domain, doctype, ["default"])
+      result = Facet::Document::List.call(db, domain, doctype, sort: ["-salary"], auth_context: ctx)
+      result.should be_a(Facet::ServiceError)
+      err = result.as(Facet::ServiceError)
+      err.status.should eq(403)
+      err.message.should eq("field 'salary' is not visible to the active role")
+      # The type contract never leaks through the denial.
+      err.message.should_not contain("sortable")
+    end
+  end
+
+  it "keeps filtering and sorting a field the active role can see (S4)" do
+    with_temp_doctype("listsortvisok") do |db, domain, doctype|
+      ensure_domain(db, domain)
+      create_schema = %({"doctype": "#{doctype}", "domain": "#{domain}", "fields": {"salary": {"type": "integer", "filters": ["comparison"], "tags": ["confidential"]}}})
+      expect_create_success(Facet::Document::Create.call(db, "core", "DocType", create_schema, Facet::RBAC::AuthContext.system))
+      [10, 30, 20].each do |n|
+        expect_create_success(Facet::Document::Create.call(db, domain, doctype, %({"salary": #{n}}), Facet::RBAC::AuthContext.system))
+      end
+
+      ctx = sum_tagged_caller(domain, doctype, ["default", "confidential"])
+      result = Facet::Document::List.call(db, domain, doctype,
+        filters: {"salary__gt" => JSON::Any.new("15")}, sort: ["salary"], auth_context: ctx)
+      result.should be_a(Facet::Document::List::Result)
+      values = result.as(Facet::Document::List::Result).items.map(&.content.["salary"].as_i64)
+      values.should eq([20_i64, 30_i64])
+    end
+  end
+
+  it "aggregate:count answers 403 for a filter on a hidden field (S4)" do
+    with_temp_doctype("listcountvis") do |db, domain, doctype|
+      ensure_domain(db, domain)
+      create_schema = %({"doctype": "#{doctype}", "domain": "#{domain}", "fields": {"salary": {"type": "integer", "filters": ["comparison"], "tags": ["confidential"]}}})
+      expect_create_success(Facet::Document::Create.call(db, "core", "DocType", create_schema, Facet::RBAC::AuthContext.system))
+      expect_create_success(Facet::Document::Create.call(db, domain, doctype, %({"salary": 99}), Facet::RBAC::AuthContext.system))
+
+      ctx = sum_tagged_caller(domain, doctype, ["default"])
+      result = Facet::Document::List.call(db, domain, doctype,
+        filters: {"salary__gt" => JSON::Any.new("5")}, auth_context: ctx, aggregate: "count")
+      err = result.as(Facet::ServiceError)
+      err.status.should eq(403)
+      err.message.should contain("not visible")
+    end
+  end
+
   it "aggregate:sum lets the system principal sum a view-tagged field" do
     with_temp_doctype("sumtagsys") do |db, domain, doctype|
       ensure_domain(db, domain)

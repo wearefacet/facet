@@ -175,6 +175,8 @@ The engine is sandboxed to prevent escape from doctype scripts:
 
 **Memory limit** — a custom allocator installed via `lua_setallocf` tracks and caps total Lua heap allocations. When the limit is exceeded, the allocator returns NULL (OOM), which causes Lua to raise a memory error. Default: 32 MB.
 
+**Pattern-match guards** — the instruction and time hooks do not fire inside a Lua C call, and `string.find`, `string.match`, `string.gmatch`, and `string.gsub` run their pattern match inside a C call. One pathological pattern would hold the single-threaded event loop past both budgets. `install_pattern_guards!` wraps those four functions with a dispatcher that runs before the C matcher: a subject above `PATTERN_SIZE_LIMIT` (65,536 bytes) is refused, and a pattern above `PATTERN_QUANTIFIER_LIMIT` (8 unescaped `*`, `+`, `-`, `?` — `quantifier_count`) is refused with "pattern is too complex". Capping the quantifier count caps the backtracking exponent and capping the subject caps the length, so the worst-case work stays well below the time budget. Doctype scripts match identifiers, slugs, and short field values, so the caps are generous for real scripts.
+
 All three limits are per engine. The budget state lives in a heap tracker that the allocator owns; the instruction hook reads it back from the Lua state with `lua_getallocf`. Two overlapping runs — a script paused on a db call while another engine starts — keep separate budgets: one run cannot reset or stretch the other's counters.
 
 All three limits are configurable via the `lua:` section in `config.{env}.yml`:

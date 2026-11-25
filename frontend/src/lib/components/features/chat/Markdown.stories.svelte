@@ -3,6 +3,7 @@
 
 <script lang="ts" module>
 	import { defineMeta } from '@storybook/addon-svelte-csf';
+	import { expect, within } from 'storybook/test';
 	import Markdown from './Markdown.svelte';
 
 	const { Story } = defineMeta({
@@ -91,6 +92,63 @@
 	args={{
 		content:
 			'Here is a diagram:\n\n![Facet logo](https://placehold.co/320x120?text=example+image)\n\nCaption text after.'
+	}}
+	play={async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		// An https image renders a real <img> with its remote source.
+		const img = canvas.getByRole('img', { name: 'Facet logo' });
+		await expect(img).toHaveAttribute('src', 'https://placehold.co/320x120?text=example+image');
+	}}
+/>
+
+<Story
+	name="LinkSchemesAllowed"
+	args={{
+		content:
+			'Read the [https link](https://example.com/page) or send an [email](mailto:team@example.com).'
+	}}
+	play={async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		// https and mailto stay anchors with their scheme intact.
+		await expect(canvas.getByRole('link', { name: 'https link' })).toHaveAttribute(
+			'href',
+			'https://example.com/page'
+		);
+		await expect(canvas.getByRole('link', { name: 'email' })).toHaveAttribute(
+			'href',
+			'mailto:team@example.com'
+		);
+	}}
+/>
+
+<Story
+	name="JavascriptLinkNeutralized"
+	args={{
+		content: 'Do not click [this](javascript:alert(1)) or [that](JAVASCRIPT:alert(2)).'
+	}}
+	play={async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		// No anchor is emitted for a javascript: scheme; the text stays.
+		await expect(canvas.queryAllByRole('link')).toHaveLength(0);
+		await expect(canvas.getByText('Do not click this or that.')).toBeVisible();
+		// The raw scheme never reaches the DOM as an href.
+		await expect(canvasElement.querySelector('a')).toBeNull();
+	}}
+/>
+
+<Story
+	name="RemoteImageNeutralized"
+	args={{
+		content:
+			'Blocked: ![tracker](javascript:alert(1)) and ![data](data:image/png;base64,iVBORw0KGgo=) and ![relative](/logo.png).'
+	}}
+	play={async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		// No <img> is emitted for a javascript:, data: or relative source,
+		// so the browser never fetches it. The alt text stays readable.
+		await expect(canvas.queryAllByRole('img')).toHaveLength(0);
+		await expect(canvasElement.querySelector('img')).toBeNull();
+		await expect(canvas.getByText('Blocked: tracker and data and relative.')).toBeVisible();
 	}}
 />
 

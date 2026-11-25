@@ -68,6 +68,11 @@ module Facet
       # …) 422 as unknown fields.
       PARENT_FILTER_KEY = "parent_id__eq"
 
+      # The filter-grammar reason for a filter on a field the active role
+      # cannot see. `FilterCompiler` raises it; this service answers `403`
+      # for it.
+      INVISIBLE_FIELD_CODE = "invisible_filter_field"
+
       # Lists documents for the given domain/doctype.
       #
       # Requires an `auth_context` for RBAC authorization. Scope predicates
@@ -167,7 +172,7 @@ module Facet
           compiled = compile_where(db, domain, doc_type, defn, filters, auth_context, parent_id, skip_authorization: skip_authorization, include_deleted: include_deleted, named_scope: named_scope, authorize_path: authorize_path, authorize_root_id: authorize_root_id, skip_filter_capability_check: skip_filter_capability_check)
           return compiled if compiled.is_a?(Facet::ServiceError)
           where_sql, all_params = compiled
-          order_sql = build_order_clause(sort, defn)
+          order_sql = build_order_clause(sort, defn, auth_context, skip_authorization)
           return order_sql if order_sql.is_a?(Facet::ServiceError)
 
           if aggregate == "count"
@@ -270,11 +275,16 @@ module Facet
         AggregateResult.new(value: value, count: count)
       end
 
-      # One builder for the two filter-compilation failures — both answer
-      # 422; a filter-key refusal (unknown field, unserved operator) also
-      # carries the structured detail so clients can branch on the code
-      # (`unknown_filter_field` / `unsupported_filter_operator`).
+      # One builder for the filter-compilation failures. A field the active
+      # role cannot see answers `403` with the aggregate gate's message (S4)
+      # — never the `422` shape that names the field's type contract. The
+      # other refusals answer `422`; a filter-key refusal (unknown field,
+      # unserved operator) also carries the structured detail so clients can
+      # branch on the code (`unknown_filter_field` /
+      # `unsupported_filter_operator`).
       private def self.filter_error(message : String, field : String?, code : String?) : Facet::ServiceError
+        return Facet::ServiceError.new(403, message) if code == INVISIBLE_FIELD_CODE
+
         details = if field && code
                     [ValidationError.new(field: field, code: code, message: message)]
                   end
@@ -429,7 +439,7 @@ module Facet
         # the bare `search` filter is pulled out and re-added as a search /
         # display_name / id contains probe so the picker keeps working there.
         fallback_filters, search_fallback = extract_search_fallback(definition, filters)
-        filter_clauses, filter_params = FilterCompiler.compile(definition, fallback_filters, offset: all_params.size, skip_capability_check: skip_filter_capability_check)
+        filter_clauses, filter_params = FilterCompiler.compile(definition, fallback_filters, offset: all_params.size, skip_capability_check: skip_filter_capability_check, auth_context: auth_context, skip_visibility_check: skip_authorization)
         where_clauses.concat(filter_clauses)
         all_params.concat(filter_params)
         add_search_fallback_clause(where_clauses, all_params, search_fallback)
@@ -614,9 +624,20 @@ module Facet
       # field whose type cannot sort answers `422 unsortable_field` — the
       # same strict contract the filter grammar holds. An empty sort list
       # answers `"id ASC"`.
+      #
+      # A field the active role cannot see answers `403` (S4). Without the
+      # gate a caller reads a hidden value from the row order. The
+      # visibility test runs before the type test, so the error never names
+      # the hidden field's type. `skip_authorization` exempts a caller that
+      # already enforced its own row-level gate (`SidecarHandler.list`,
+      # `SidecarHandler.read`), the same exemption the aggregate field gate
+      # uses. `auth_context` defaults to the system principal, which sees
+      # every field.
       def self.build_order_clause(
         sort : Array(String),
         definition : Doctype::DoctypeDefinition,
+        auth_context : RBAC::AuthContext = RBAC::AuthContext.system,
+        skip_authorization : Bool = false,
       ) : String | Facet::ServiceError
         order_clauses = [] of String
         sort.each do |field|
@@ -633,6 +654,10 @@ module Facet
             field_def = definition.fields[col]?
             if field_def.nil?
               return sort_error("unknown_sort_field", col, "Unknown sort field '#{col}'")
+            end
+
+            unless skip_authorization || RBAC::ReadEnforcer.field_visible?(auth_context, field_def)
+              return Facet::ServiceError.new(403, "field '#{col}' is not visible to the active role")
             end
 
             expr = sort_expression_for(field_def, col, dir)

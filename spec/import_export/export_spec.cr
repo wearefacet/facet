@@ -211,6 +211,31 @@ describe Facet::Document::Export do
         data[0]["content"]["label"].as_s.should eq("x")
       end
     end
+
+    it "refuses a filter or sort on a field the caller cannot see (S4)" do
+      with_temp_doctype("expvis") do |db, domain, dt|
+        create_role_projection(db, "exp_vis_role", [permission_json("read", "#{domain}.#{dt}")])
+        create_account_projection(db, "exp_vis_account", ["exp_vis_role"])
+        ctx = caller_with_role(db, "exp_vis_account", "exp_vis_role")
+
+        create_export_doctype(db, domain, dt,
+          %({"label": {"type": "string"}, "salary": {"type": "integer", "tags": ["confidential"]}}))
+        create_export_doc(db, domain, dt, %({"label": "x", "salary": 99}))
+
+        # A hidden field in the filter narrows the set — the oracle the fix
+        # closes. The export must refuse it rather than run it.
+        filter_err = Export.call(db, domain, dt, "csv",
+          filters: {"salary__gte" => JSON::Any.new(1_i64)}, auth_context: ctx)
+        filter_err.should be_a(Facet::ServiceError)
+        filter_err.as(Facet::ServiceError).status.should eq(403)
+
+        # A hidden field in the sort leaks the order — same refusal.
+        sort_err = Export.call(db, domain, dt, "csv",
+          sort: ["-salary"], auth_context: ctx)
+        sort_err.should be_a(Facet::ServiceError)
+        sort_err.as(Facet::ServiceError).status.should eq(403)
+      end
+    end
   end
 
   describe "filters" do
