@@ -386,9 +386,9 @@ en_page = String.build do |io|
   io << "\n"
   io << "## Related\n"
   io << "\n"
-  io << "- [Named scopes](/build/named-scopes/)\n"
-  io << "- [Lists, filters and saved views (table, kanban, calendar)](/workspace/lists-filters-views/)\n"
-  io << "- [Use the REST API](/apps/rest-api/)\n"
+  io << "- [Named scopes](/build/model/access/named-scopes/)\n"
+  io << "- [Lists, filters and saved views (table, kanban, calendar)](/use/finding/lists-and-views/)\n"
+  io << "- [Use the REST API](/build/apps/data/rest-api/)\n"
 end
 
 fr_page = String.build do |io|

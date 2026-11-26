@@ -205,7 +205,16 @@ export const generated = [
 	'reference/health-metrics-names.md',
 	'reference/lua-api.md',
 	'reference/system-settings-keys.md',
-	'reference/webhook-payloads.md',
+];
+
+// Old sitemap URLs that never had a page in git: the old sitemap emitted
+// hreflang alternates for untranslated pages, so /fr/tutorials/* appears in
+// the sitemap without a fr twin. They redirect to the English target
+// (decision D8 fallback — when no fr twin exists, land on the English page).
+export const extraRedirects = [
+	['fr/tutorials/t1-run-facet', 'build/first-hour/run-facet'],
+	['fr/tutorials/t2-first-domain', 'build/first-hour/first-domain'],
+	['fr/tutorials/t4-team-access', 'build/first-hour/team-access'],
 ];
 
 export const tabs = ['discover', 'use', 'build', 'admin', 'reference'];

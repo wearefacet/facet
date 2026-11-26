@@ -177,7 +177,7 @@ private def generate : Nil
 
   ## Related
 
-  - [/operate/system-settings/](/operate/system-settings/)
+  - [/admin/configure/system-settings/](/admin/configure/system-settings/)
   MARKDOWN
 
   ov = "system-settings-keys"

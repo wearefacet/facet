@@ -315,7 +315,7 @@ private def generate : Nil
 
   ## Related
 
-  - [/operate/health-metrics-logs/](/operate/health-metrics-logs/)
+  - [/admin/keep-running/monitoring/](/admin/keep-running/monitoring/)
   MARKDOWN
 
   ov = "health-metrics-names"

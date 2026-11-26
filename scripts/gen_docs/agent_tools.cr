@@ -160,8 +160,8 @@ private def generate : Nil
 
   ## Related
 
-  - [/apps/agent-tools/](/apps/agent-tools/)
-  - [/apps/mcp-agents/](/apps/mcp-agents/)
+  - [/build/apps/agents/agent-tools/](/build/apps/agents/agent-tools/)
+  - [/build/apps/agents/mcp/](/build/apps/agents/mcp/)
   MARKDOWN
 
   ov = "agent-tools"

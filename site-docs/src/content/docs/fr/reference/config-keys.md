@@ -163,4 +163,4 @@ Plusieurs clés se valident au chargement et font échouer le démarrage en cas 
 
 ## Voir aussi
 
-- [/fr/operate/configuration-files/](/fr/operate/configuration-files/)
+- [/fr/admin/configure/configuration-files/](/fr/admin/configure/configuration-files/)

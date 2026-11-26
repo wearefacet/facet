@@ -23,5 +23,5 @@
   "col_rule": "Règle",
   "col_enforced": "Ce que le validateur applique",
   "related_heading": "Voir aussi",
-  "related_view_templates": "- [Modèles de vue](/fr/build/view-templates/) — comment écrire l’arbre que ce schéma décrit."
+  "related_view_templates": "- [Modèles de vue](/fr/build/model/views/document-pages/) — comment écrire l’arbre que ce schéma décrit."
 }

@@ -14,6 +14,6 @@
   "col_purpose": "Rôle",
   "col_params": "Paramètres",
   "related_heading": "Voir aussi",
-  "related_agent_tools": "- [/fr/apps/agent-tools/](/fr/apps/agent-tools/)",
-  "related_mcp_agents": "- [/fr/apps/mcp-agents/](/fr/apps/mcp-agents/)"
+  "related_agent_tools": "- [/fr/build/apps/agents/agent-tools/](/fr/build/apps/agents/agent-tools/)",
+  "related_mcp_agents": "- [/fr/build/apps/agents/mcp/](/fr/build/apps/agents/mcp/)"
 }

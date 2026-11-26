@@ -354,7 +354,7 @@ rule_row_md = rules.map { |r| "| #{esc(r.rule)} | #{esc(r.detail)} |" }
 parts << (["| Rule | What the validator enforces |", "| --- | --- |"] + rule_row_md).join("\n")
 
 parts << "## Related"
-parts << "- [View templates](/build/view-templates/) — how to author the tree this schema describes."
+parts << "- [View templates](/build/model/views/document-pages/) — how to author the tree this schema describes."
 
 # ── French page ──────────────────────────────────────────────────────────
 

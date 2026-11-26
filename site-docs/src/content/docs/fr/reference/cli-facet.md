@@ -45,5 +45,5 @@ Chaque autre commande ne prend que ses options préfixées d’un tiret, et la c
 
 ## Voir aussi
 
-- [Amorçage et tâches CLI](/fr/operate/bootstrap-cli/)
-- [Premiers pas avec le CLI dev](/fr/apps/quickstart-dev-cli/)
+- [Amorçage et tâches CLI](/fr/admin/install/bootstrap/)
+- [Premiers pas avec le CLI dev](/fr/build/apps/quickstart/)

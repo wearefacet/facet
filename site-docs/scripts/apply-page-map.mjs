@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { rows, retires, stubs, generated, urlMap } from './page-map.mjs';
+import { rows, retires, stubs, generated, urlMap, extraRedirects } from './page-map.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'); // site-docs/
 const docs = path.join(root, 'src', 'content', 'docs');
@@ -122,6 +122,10 @@ function writeRedirects(frBase) {
 		if (frBase.has(`src/content/docs/${frFile}`) || frBase.has(`src/content/docs/${frIndex}`)) {
 			entries[`/fr/${oldUrl}`] = `/fr/${newUrl}`;
 		}
+	}
+	// Sitemap-only URLs (no fr twin ever existed) point at the English target.
+	for (const [oldUrl, newUrl] of extraRedirects) {
+		entries[`/${oldUrl}`] = `/${newUrl}`;
 	}
 	const sorted = Object.fromEntries(Object.entries(entries).sort(([a], [b]) => a.localeCompare(b)));
 	const banner =

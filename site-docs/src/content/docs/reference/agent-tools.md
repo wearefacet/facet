@@ -61,5 +61,5 @@ front-matter of each skill file.
 
 ## Related
 
-- [/apps/agent-tools/](/apps/agent-tools/)
-- [/apps/mcp-agents/](/apps/mcp-agents/)
+- [/build/apps/agents/agent-tools/](/build/apps/agents/agent-tools/)
+- [/build/apps/agents/mcp/](/build/apps/agents/mcp/)

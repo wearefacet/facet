@@ -211,8 +211,8 @@ en_page = <<-MARKDOWN
 
   ## Related
 
-  - [Field types (guide)](/build/field-types/)
-  - [Designing doctypes](/build/designing-doctypes/)
+  - [Field types (guide)](/build/model/data/field-types/)
+  - [Designing doctypes](/build/model/data/design-doctypes/)
   - [Filter operators](/reference/filter-operators/)
   MARKDOWN
 

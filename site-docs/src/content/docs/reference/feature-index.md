@@ -221,8 +221,8 @@ This page maps every feature ID in the inventory (158 features in 10 areas) to t
 
 ## Related
 
-- [Getting started](/start/)
+- [Getting started](/discover/)
 - [Build domains](/build/)
-- [Govern access](/govern/)
-- [Build apps](/apps/)
-- [Operate](/operate/)
+- [Govern access](/admin/)
+- [Build apps](/build/apps/)
+- [Operate](/admin/)

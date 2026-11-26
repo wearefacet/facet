@@ -1164,4 +1164,4 @@ Chaque nœud d’entrée spécialisé accepte un ensemble de types de champs. Un
 
 ## Voir aussi
 
-- [Modèles de vue](/fr/build/view-templates/) — comment écrire l’arbre que ce schéma décrit.
+- [Modèles de vue](/fr/build/model/views/document-pages/) — comment écrire l’arbre que ce schéma décrit.

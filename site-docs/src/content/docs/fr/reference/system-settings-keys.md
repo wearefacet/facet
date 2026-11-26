@@ -60,4 +60,4 @@ Les clés secrètes n’apparaissent jamais dans une réponse d’API de lecture
 
 ## Voir aussi
 
-- [/fr/operate/system-settings/](/fr/operate/system-settings/)
+- [/fr/admin/configure/system-settings/](/fr/admin/configure/system-settings/)

@@ -10,7 +10,7 @@
   "col_normalization": "Normalisation",
   "col_operators": "Opérateurs de filtre",
   "related_heading": "Voir aussi",
-  "related_guide": "- [Types de champs (guide)](/fr/build/field-types/)",
-  "related_designing": "- [Concevoir des doctypes](/fr/build/designing-doctypes/)",
+  "related_guide": "- [Types de champs (guide)](/fr/build/model/data/field-types/)",
+  "related_designing": "- [Concevoir des doctypes](/fr/build/model/data/design-doctypes/)",
   "related_operators": "- [Opérateurs de filtre](/fr/reference/filter-operators/)"
 }

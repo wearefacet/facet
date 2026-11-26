@@ -37,7 +37,7 @@
   "col_meaning": "Signification",
   "col_key": "Clé",
   "related_heading": "Voir aussi",
-  "related_named_scopes": "- [Périmètres nommés](/fr/build/named-scopes/)",
-  "related_lists": "- [Listes, filtres et vues enregistrées (tableau, kanban, calendrier)](/fr/workspace/lists-filters-views/)",
-  "related_rest": "- [Utiliser l'API REST](/fr/apps/rest-api/)"
+  "related_named_scopes": "- [Périmètres nommés](/fr/build/model/access/named-scopes/)",
+  "related_lists": "- [Listes, filtres et vues enregistrées (tableau, kanban, calendrier)](/fr/use/finding/lists-and-views/)",
+  "related_rest": "- [Utiliser l'API REST](/fr/build/apps/data/rest-api/)"
 }

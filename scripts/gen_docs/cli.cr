@@ -151,8 +151,8 @@ en_page = <<-MARKDOWN
 
   ## Related
 
-  - [Bootstrap and CLI tasks](/operate/bootstrap-cli/)
-  - [Quickstart with the dev CLI](/apps/quickstart-dev-cli/)
+  - [Bootstrap and CLI tasks](/admin/install/bootstrap/)
+  - [Quickstart with the dev CLI](/build/apps/quickstart/)
   MARKDOWN
 
 fr_page = <<-MARKDOWN

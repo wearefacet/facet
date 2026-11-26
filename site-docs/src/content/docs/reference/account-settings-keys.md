@@ -34,5 +34,5 @@ value of its own follows the instance's system settings:
 
 ## Related
 
-- [/workspace/settings-sessions-api-keys/](/workspace/settings-sessions-api-keys/)
-- [/operate/system-settings/](/operate/system-settings/)
+- [/use/account/](/use/account/)
+- [/admin/configure/system-settings/](/admin/configure/system-settings/)

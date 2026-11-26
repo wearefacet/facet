@@ -297,7 +297,7 @@ private def generate : Nil
 
   ## Related
 
-  - [/operate/configuration-files/](/operate/configuration-files/)
+  - [/admin/configure/configuration-files/](/admin/configure/configuration-files/)
   MARKDOWN
 
   ov = "config-keys"

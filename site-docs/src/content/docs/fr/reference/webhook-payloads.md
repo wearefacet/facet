@@ -1,4 +1,5 @@
 ---
+type: reference
 title: Payloads des webhooks
 description: Champs du payload de webhook, en-tête de signature et vérification de la signature.
 audience: [developer, operator]

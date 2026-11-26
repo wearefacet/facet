@@ -109,8 +109,8 @@ private def generate : Nil
 
   ## Related
 
-  - [/workspace/settings-sessions-api-keys/](/workspace/settings-sessions-api-keys/)
-  - [/operate/system-settings/](/operate/system-settings/)
+  - [/use/account/](/use/account/)
+  - [/admin/configure/system-settings/](/admin/configure/system-settings/)
   MARKDOWN
 
   fr_rows = registered.to_a.sort.map do |path|

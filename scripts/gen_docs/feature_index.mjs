@@ -133,7 +133,7 @@ function collectPages(dir, base = dir) {
   return pages;
 }
 
-// build/field-types.md -> /build/field-types/ ; start/index.md -> /start/
+// build/field-types.md -> /build/model/data/field-types/ ; start/index.md -> /discover/
 function pageUrl(page) {
   const noExt = page.replace(/\.mdx?$/, '');
   const parts = noExt.split('/');
@@ -261,11 +261,11 @@ function emit(locale) {
     out.push(ov.related_apps);
     out.push(ov.related_operate);
   } else {
-    out.push('- [Getting started](/start/)');
+    out.push('- [Getting started](/discover/)');
     out.push('- [Build domains](/build/)');
-    out.push('- [Govern access](/govern/)');
-    out.push('- [Build apps](/apps/)');
-    out.push('- [Operate](/operate/)');
+    out.push('- [Govern access](/admin/)');
+    out.push('- [Build apps](/build/apps/)');
+    out.push('- [Operate](/admin/)');
   }
   out.push('');
   return out.join('\n');

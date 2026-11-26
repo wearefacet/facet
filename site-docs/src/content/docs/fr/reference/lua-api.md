@@ -80,6 +80,6 @@ Chaque fonction `document.*` lève une erreur Lua rattrapable en cas d’échec.
 
 ## Voir aussi
 
-- [Scripts de cycle de vie et garde-fous](/fr/build/lifecycle-scripts-guards/) — où s’exécutent create, update, delete et les actions.
-- [Hooks d’événements](/fr/build/event-hooks/) — les hooks de domaine qui partagent cette surface.
-- [Sidecars](/fr/build/sidecars/) — doctypes de pièces jointes gérés par le système, avec leurs propres hooks.
+- [Scripts de cycle de vie et garde-fous](/fr/build/model/behaviour/scripts-and-guards/) — où s’exécutent create, update, delete et les actions.
+- [Hooks d’événements](/fr/build/model/automation/event-hooks/) — les hooks de domaine qui partagent cette surface.
+- [Sidecars](/fr/build/model/relations/comments-attachments/) — doctypes de pièces jointes gérés par le système, avec leurs propres hooks.

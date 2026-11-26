@@ -137,5 +137,5 @@ Options:
 
 ## Related
 
-- [Quickstart: the dev CLI](/apps/quickstart-dev-cli/) — install-free first deploy.
-- [Hosting and deploying apps](/apps/hosting-deploy/) — what a deployment is and how activation works.
+- [Quickstart: the dev CLI](/build/apps/quickstart/) — install-free first deploy.
+- [Hosting and deploying apps](/build/apps/host/deploy/) — what a deployment is and how activation works.

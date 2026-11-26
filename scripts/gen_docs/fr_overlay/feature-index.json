@@ -7,9 +7,9 @@
   "col_pages": "Pages",
   "excluded_note": "Exclu de la documentation utilisateur",
   "related_heading": "Voir aussi",
-  "related_start": "- [Pour commencer](/fr/start/)",
+  "related_start": "- [Pour commencer](/fr/discover/)",
   "related_build": "- [Construire des domaines](/fr/build/)",
-  "related_govern": "- [Gouverner l'accès](/fr/govern/)",
-  "related_apps": "- [Construire des apps](/fr/apps/)",
-  "related_operate": "- [Opérer](/fr/operate/)"
+  "related_govern": "- [Gouverner l'accès](/fr/admin/)",
+  "related_apps": "- [Construire des apps](/fr/build/apps/)",
+  "related_operate": "- [Opérer](/fr/admin/)"
 }

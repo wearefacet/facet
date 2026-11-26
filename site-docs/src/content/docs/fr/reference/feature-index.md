@@ -221,8 +221,8 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 
 ## Voir aussi
 
-- [Pour commencer](/fr/start/)
+- [Pour commencer](/fr/discover/)
 - [Construire des domaines](/fr/build/)
-- [Gouverner l'accès](/fr/govern/)
-- [Construire des apps](/fr/apps/)
-- [Opérer](/fr/operate/)
+- [Gouverner l'accès](/fr/admin/)
+- [Construire des apps](/fr/build/apps/)
+- [Opérer](/fr/admin/)

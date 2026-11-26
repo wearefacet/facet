@@ -9,6 +9,6 @@
   "help_heading": "## Sortie d'aide",
   "help_intro": "Les blocs ci-dessous sont les textes d'aide capturés du paquet.",
   "related_heading": "Voir aussi",
-  "related_quickstart": "- [Premiers pas avec le CLI dev](/fr/apps/quickstart-dev-cli/) — premier déploiement sans installation.",
-  "related_hosting": "- [Héberger et déployer des apps](/fr/apps/hosting-deploy/) — ce qu'est un déploiement et comment fonctionne l'activation."
+  "related_quickstart": "- [Premiers pas avec le CLI dev](/fr/build/apps/quickstart/) — premier déploiement sans installation.",
+  "related_hosting": "- [Héberger et déployer des apps](/fr/build/apps/host/deploy/) — ce qu'est un déploiement et comment fonctionne l'activation."
 }

@@ -79,4 +79,4 @@ Chaque nom de métrique émis par le serveur, avec son type d’exposition. Le m
 
 ## Voir aussi
 
-- [/fr/operate/health-metrics-logs/](/fr/operate/health-metrics-logs/)
+- [/fr/admin/keep-running/monitoring/](/fr/admin/keep-running/monitoring/)

@@ -409,9 +409,9 @@ parts << "## math"
 parts << md_table(math_rows)
 parts << "## Related"
 parts << [
-  "- [Lifecycle scripts and guards](/build/lifecycle-scripts-guards/) — where create, update, delete, and actions run.",
-  "- [Event hooks](/build/event-hooks/) — the domain hooks that share this surface.",
-  "- [Sidecars](/build/sidecars/) — system-managed attachment doctypes with their own hooks.",
+  "- [Lifecycle scripts and guards](/build/model/behaviour/scripts-and-guards/) — where create, update, delete, and actions run.",
+  "- [Event hooks](/build/model/automation/event-hooks/) — the domain hooks that share this surface.",
+  "- [Sidecars](/build/model/relations/comments-attachments/) — system-managed attachment doctypes with their own hooks.",
 ].join("\n")
 
 # ── French page ──────────────────────────────────────────────────────────

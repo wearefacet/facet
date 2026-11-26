@@ -1,4 +1,5 @@
 ---
+type: reference
 title: Webhook payloads
 description: Webhook payload fields, the signature header, and how to verify the signature.
 audience: [developer, operator]
