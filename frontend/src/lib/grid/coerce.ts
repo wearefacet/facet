@@ -27,7 +27,16 @@ export type CoerceResult = { ok: true; value: unknown } | { ok: false; error: st
 
 /** The field types this text coercion covers. Other types mount a picker
  *  that emits its own well-formed value and never pass through here. */
-const COERCIBLE_TYPES = new Set(['string', 'longtext', 'phone', 'url', 'integer', 'duration', 'enum', 'color']);
+const COERCIBLE_TYPES = new Set([
+	'string',
+	'longtext',
+	'phone',
+	'url',
+	'integer',
+	'duration',
+	'enum',
+	'color'
+]);
 
 /** `#RGB` / `#RRGGBB`, with or without the leading hash. */
 const HEX_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
@@ -43,7 +52,11 @@ export function parseHexColor(raw: string): string | null {
 	const withHash = text.startsWith('#') ? text : `#${text}`;
 	if (!HEX_RE.test(withHash)) return null;
 	let hex = withHash.slice(1);
-	if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
+	if (hex.length === 3)
+		hex = hex
+			.split('')
+			.map((c) => c + c)
+			.join('');
 	return `#${hex.toUpperCase()}`;
 }
 
@@ -120,7 +133,10 @@ export function coerceScalar(field: FieldDef, raw: string): CoerceResult {
 			if (text === '') return { ok: true, value: null };
 			const seconds = parseDuration(text);
 			if (seconds == null) return { ok: false, error: m.grid_coerce_duration() };
-			if ((field.min != null && seconds < field.min) || (field.max != null && seconds > field.max)) {
+			if (
+				(field.min != null && seconds < field.min) ||
+				(field.max != null && seconds > field.max)
+			) {
 				return boundsError(field);
 			}
 			return { ok: true, value: seconds };
