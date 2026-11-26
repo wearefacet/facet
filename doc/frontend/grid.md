@@ -24,7 +24,7 @@ them), but no app surface mounts the grid yet.
 - `frontend/src/lib/grid/summary.ts` — per-column Σ aggregate calls and response
   normalization.
 - `frontend/src/lib/grid/writeQueue.ts` — per-row write batching, concurrency cap, and the
-  session undo stack.
+  action-scoped session undo/redo history.
 - `frontend/src/lib/grid/coerce.ts` — raw text → typed value for the text editors and the
   paste path.
 - `frontend/src/lib/grid/editors/` — the per-type cell editors over the existing form
@@ -98,12 +98,17 @@ footer pattern (range, rows-per-page, pagination). On top of that it adds:
   `start → end` — a `period`'s UTC instants, a `dateperiod`'s calendar dates). A native
   paste on the focused cell reads the same grammar back — Excel's copy dialect included
   (`\r\n` row breaks, quoted multi-line cells, `TRUE`/`FALSE`, thousands-separated
-  decimals like `1,234.56` / `1 234,56`). The block lands with its top-left at the
+  decimals like `1,234.56` / `1 234,56`, currency-formatted amounts like `$ 85,000.00` /
+  `1 200,00 €` — the token strips and the cell keeps its own currency). The block lands
+  with its top-left at the
   selection's top-left and never leaves the loaded page: rows and columns past it are
   skipped, as are read-only cells (one toast counts them). A cell whose text does not
-  coerce keeps its value and takes the error frame (Esc drops it, and so does a later
-  paste that coerces on the same cell); each touched row sends one PATCH, so
-  ⌘Z reverts one row per press. After the paste the selection covers the pasted block.
+  coerce keeps its value and takes the error frame (Esc drops it; the frames reset on
+  every paste — they always reflect the latest attempt — and a paste mark fades out on
+  its own, a 5 s hold then a 3 s ease; write errors keep the Esc-revert contract and do
+  not fade); each touched row sends one PATCH. One paste is one undo unit — a single
+  ⌘Z reverts the whole block, ⌘⇧Z re-applies it. After the paste the selection covers
+  the pasted block.
 - **Σ row** — columns with a `summary` run one parallel `list({ aggregate, field })` call
   each over the whole filtered set (`summary.ts`); `count` summaries share one call. A
   failed aggregate leaves its Σ cell empty.
@@ -111,7 +116,10 @@ footer pattern (range, rows-per-page, pagination). On top of that it adds:
   `CellEditor` for the field type (the editors wrap the existing form inputs: `MoneyInput`,
   `DatetimePicker`, `ReferencePicker`, and so on). Booleans flip in place with no edit
   mode. Writes go through `writeQueue.ts` — one PATCH per row, concurrency cap 4, with a
-  session undo stack (⌘Z). A rejected cell keeps the typed text under a local error state
+  stacked session history (⌘Z undo, ⌘⇧Z / ⌘Y redo). One user gesture is one undo unit:
+  a cell commit, a boolean flip, or a whole pasted block — and an undo write never
+  records itself, so ⌘Z walks the stack instead of toggling the last state. A rejected
+  cell keeps the typed text under a local error state
   (Esc reverts); a 403 reverts, raises a toast, and locks the row read-only for the
   session. A refetch re-applies in-flight cell values and leaves the open editor open.
   The `longtext`, `datetime`, and period editors float over the cell — five datetime
@@ -169,8 +177,12 @@ validation). A `grid` surface passes the backend gate unvalidated today; the fro
 - The surface has a filter bar (the table rule) — the grid is a working surface, not a
   read-only projection.
 - One row height (40 px); no density config.
-- The toolbar has no undo or fill buttons — undo is keyboard-only (⌘Z), and fill is the
-  fill handle in a later phase.
+- The toolbar has no undo or fill buttons — undo and redo are keyboard-only (⌘Z, ⌘⇧Z / ⌘Y),
+  and fill is the fill handle in a later phase.
+- Undo and redo skip keys a row no longer carries (another actor or a later action
+  changed them) with one error toast per press — `grid_undo_skipped` / `grid_redo_skipped`.
+- Undo of an action whose PATCH is still in flight is safe: the queue serializes per row,
+  and the straggler op's entry lands after the press — the next ⌘Z picks it up.
 - Fill down and the ghost new-row line are later phases; `allow_create` is authored
   already and stays off unless the view opts in.
 - Paste reads the ISO grammar and the copy forms — the stored raw values, ` → ` ranges,

@@ -995,6 +995,19 @@ its writes never // leak into another story's seed. The edited column is always 
 		await userEvent.keyboard('{Control>}z{/Control}');
 		await sleep(100);
 		expect(cell.textContent).toContain('Déploiement');
+		// The stack: a second ⌘Z is a no-op — the undo write never records
+		// itself. ⌘⇧Z re-applies the edit, and ⌘Z inverts it again.
+		await userEvent.keyboard('{Control>}z{/Control}');
+		await sleep(100);
+		expect(cell.textContent).toContain('Déploiement');
+		await userEvent.keyboard('{Control>}{Shift>}z{/Shift}{/Control}');
+		await sleep(100);
+		expect(cell.textContent).toContain('Retitre');
+		const redone = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(redone.title).toBe('Retitre');
+		await userEvent.keyboard('{Control>}z{/Control}');
+		await sleep(100);
+		expect(cell.textContent).toContain('Déploiement');
 		const row = await stored(args.datasource, 'crm.GridDeal.1');
 		expect(row.title).toBe('Déploiement plateforme qualité Meridian');
 	}}
@@ -1080,8 +1093,9 @@ its writes never // leak into another story's seed. The edited column is always 
 		for (const t of [...getToasts()]) dismissToast(t.id);
 		// A second paste over the same cells clears the stale frames — even
 		// when the write is a no-op: the enum cell takes the value the row
-		// already holds, and row 1 is a full no-op block.
-		const repaste = 'Titre A2\treview\t100\t0\r\nTitre B\tpilot\t1,200.00\t0';
+		// already holds, row 1 is a full no-op block, and the amounts carry
+		// the currency tokens Excel copies in the cell format.
+		const repaste = 'Titre A2\treview\t$ 100\t0\r\nTitre B\tpilot\t€ 1,200.00\t0';
 		const secondEvent = new Event('paste', { bubbles: true }) as ClipboardEvent;
 		Object.defineProperty(secondEvent, 'clipboardData', { value: { getData: () => repaste } });
 		cell.dispatchEvent(secondEvent);
@@ -1098,8 +1112,70 @@ its writes never // leak into another story's seed. The edited column is always 
 		const secondMessages = getToasts().map((t) => t.message);
 		expect(secondMessages).toContain('2 read-only cells skipped');
 		expect(secondMessages).not.toContain('2 cells could not be read — marked on the grid');
+		// The paste mark's fade: a fresh invalid paste re-marks instantly and
+		// holds; after the hold the fading phase eases the frame out. (The
+		// final drop is a real-time decay — the full 8s timeline runs in the
+		// browser probe; the 10s story budget cannot hold both phases.)
+		for (const t of [...getToasts()]) dismissToast(t.id);
+		const enumCell = canvasElement.querySelector('[data-row="0"][data-col="1"]')!;
+		await userEvent.click(enumCell);
+		const fadeTsv = 'inconnu\r\ninconnu';
+		const fadeEvent = new Event('paste', { bubbles: true }) as ClipboardEvent;
+		Object.defineProperty(fadeEvent, 'clipboardData', { value: { getData: () => fadeTsv } });
+		enumCell.dispatchEvent(fadeEvent);
+		await sleep(150);
+		expect(enumCell.className).toContain('cell-error');
+		expect(enumCell.className).not.toContain('cell-fading');
+		await sleep(5400);
+		expect(enumCell.className).toContain('cell-fading');
 		// Clean the shared toast stack for later stories.
 		for (const t of [...getToasts()]) dismissToast(t.id);
+	}}
+/>
+
+<Story
+	name="PasteUndoRedo"
+	args={{ ...storyArgs(editDriver(), pasteColumns) }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		// One paste = one undo unit: a single ⌘Z reverts both pasted rows
+		// whatever order their PATCHes resolved in, and ⌘⇧Z re-applies the
+		// whole block.
+		const cell = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
+		await userEvent.click(cell);
+		const tsv = 'Colle A\tpilot\t1250.5\t0\r\nColle B\tframing\t1,200.00\t0';
+		const event = new Event('paste', { bubbles: true }) as ClipboardEvent;
+		Object.defineProperty(event, 'clipboardData', { value: { getData: () => tsv } });
+		cell.dispatchEvent(event);
+		await sleep(150);
+		expect(cell.textContent).toContain('Colle A');
+		// One ⌘Z — both rows land back on their seed values.
+		await userEvent.keyboard('{Control>}z{/Control}');
+		await sleep(150);
+		const undoneFirst = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(undoneFirst.title).toBe('Déploiement plateforme qualité Meridian');
+		expect(undoneFirst.status).toBe('review');
+		expect(undoneFirst.value).toEqual({ value: '130000', currency: 'USD' });
+		const undoneSecond = await stored(args.datasource, 'crm.GridDeal.2');
+		expect(undoneSecond.title).toBe('Audit achats Groupe Vallon');
+		expect(undoneSecond.status).toBe('quote');
+		expect(undoneSecond.value).toEqual({ value: '45000', currency: 'EUR' });
+		// ⌘⇧Z re-applies the block — both rows, one press.
+		await userEvent.keyboard('{Control>}{Shift>}z{/Shift}{/Control}');
+		await sleep(150);
+		const redoneFirst = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(redoneFirst.title).toBe('Colle A');
+		expect(redoneFirst.status).toBe('pilot');
+		expect(redoneFirst.value).toEqual({ value: '1250.5', currency: 'USD' });
+		const redoneSecond = await stored(args.datasource, 'crm.GridDeal.2');
+		expect(redoneSecond.title).toBe('Colle B');
+		expect(redoneSecond.status).toBe('framing');
+		expect(redoneSecond.value).toEqual({ value: '1200.00', currency: 'EUR' });
+		// The redone group is undoable again.
+		await userEvent.keyboard('{Control>}z{/Control}');
+		await sleep(150);
+		const again = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(again.title).toBe('Déploiement plateforme qualité Meridian');
 	}}
 />
 

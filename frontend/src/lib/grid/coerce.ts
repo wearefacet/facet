@@ -284,6 +284,21 @@ export function parseDecimalText(raw: string): string | null {
 	return DECIMAL_RE.test(normalized) ? normalized : null;
 }
 
+/** A currency token — a symbol or an ISO-style code — plus its spacing. */
+const CURRENCY_LEAD_RE = /^(?:[$€£¥₩₹]|[A-Z]{3})\s*/;
+const CURRENCY_TRAIL_RE = /\s*(?:[$€£¥₩₹]|[A-Z]{3})$/;
+
+/**
+ * The money paste grammar: Excel copies an amount in its cell format, so
+ * the text may carry a leading or trailing currency token — `$ 85,000.00`,
+ * `1 200,00 €`, `USD 1,200.00`. The token drops; the cell keeps its own
+ * currency. A token with no number behind it still fails.
+ */
+function parseMoneyText(text: string): string | null {
+	const stripped = text.replace(CURRENCY_LEAD_RE, '').replace(CURRENCY_TRAIL_RE, '').trim();
+	return parseDecimalText(stripped === '' ? text : stripped);
+}
+
 /**
  * Coerce one pasted cell's text into the field's stored value shape — the
  * paste-side twin of `coerceScalar`. The types without a text editor gain
@@ -301,7 +316,7 @@ export function coercePaste(
 	switch (field.type) {
 		case 'money': {
 			if (text === '') return { ok: true, value: null };
-			const amount = parseDecimalText(text);
+			const amount = parseMoneyText(text);
 			if (amount == null) return { ok: false, error: m.grid_coerce_money() };
 			const current =
 				typeof options.current === 'object' && options.current !== null

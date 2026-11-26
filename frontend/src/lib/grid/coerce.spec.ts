@@ -208,6 +208,26 @@ describe('coercePaste', () => {
 		expect(coercePaste(money, 'cent').ok).toBe(false);
 	});
 
+	it('strips the currency token Excel copies in the cell format', () => {
+		expect(
+			coercePaste(money, '$ 85,000.00', { current: { value: '130000', currency: 'USD' } })
+		).toEqual({ ok: true, value: { value: '85000.00', currency: 'USD' } });
+		expect(coercePaste(money, '€ 1 200,00')).toEqual({
+			ok: true,
+			value: { value: '1200.00', currency: 'EUR' }
+		});
+		expect(coercePaste(money, '1,200.00 €')).toEqual({
+			ok: true,
+			value: { value: '1200.00', currency: 'EUR' }
+		});
+		expect(coercePaste(money, 'USD 1,200.00')).toEqual({
+			ok: true,
+			value: { value: '1200.00', currency: 'EUR' }
+		});
+		expect(coercePaste(money, 'Pilote').ok).toBe(false);
+		expect(coercePaste(money, 'EUR').ok).toBe(false);
+	});
+
 	it('takes dates verbatim in the ISO calendar form', () => {
 		expect(coercePaste(date, '2026-09-30')).toEqual({ ok: true, value: '2026-09-30' });
 		expect(coercePaste(date, '2026-02-30').ok).toBe(false);

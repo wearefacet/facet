@@ -1667,6 +1667,7 @@
 	"grid_paste_readonly": "{count} cellules en lecture seule ignorées",
 	"grid_paste_unreadable": "{count} cellules illisibles — marquées dans la grille",
 	"grid_undo_skipped": "La cellule a changé depuis la saisie — annulation ignorée",
+	"grid_redo_skipped": "La cellule a changé depuis l'annulation — rétablissement ignoré",
 	"table_rows_label": "Lignes :",
 	"table_pager_aria": "Pagination",
 	"table_pager_prev_aria": "Page précédente",

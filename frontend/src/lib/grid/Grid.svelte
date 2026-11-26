@@ -345,7 +345,9 @@
 	let gridEl: HTMLElement | null = $state(null);
 
 	/** Per-cell write state, keyed rowId → colKey. `saving` dims the cell;
-	 *  `error` keeps the typed text under an error frame — Esc reverts. */
+	 *  `error` keeps the typed text under an error frame — Esc reverts. A
+	 *  paste mark carries a `mark` token and fades out on a timer; a write
+	 *  error (422) carries none and stays until Esc or a newer write. */
 	interface CellPending {
 		status: 'saving' | 'error';
 		value: unknown;
@@ -353,6 +355,10 @@
 		before?: unknown;
 		/** The failure message (the 422's text) — the cell's tooltip. */
 		message?: string;
+		/** The paste-mark token the fade schedule keys off. */
+		mark?: number;
+		/** The mark's fade phase — the CSS eases the frame out. */
+		fading?: boolean;
 	}
 	let pending = $state<Map<string, Map<string, CellPending>>>(new Map());
 	/** Rows the session locks read-only after a 403 — the backend denied the
@@ -362,6 +368,10 @@
 	/** One PATCH per row, at most 4 rows in flight, undo entries recorded
 	 *  from the `before` diffs the callers pass. */
 	const writeQueue = createWriteQueue((rowId, diff) => datasource.doc(rowId).update(diff));
+
+	/** The user-gesture counter — one gesture (a cell commit, a flip, a
+	 *  whole pasted block) shares one action id, the undo unit's identity. */
+	let actionSeq = 0;
 
 	function pendingFor(rowId: string, key: string): CellPending | undefined {
 		return pending.get(rowId)?.get(key);
@@ -447,8 +457,14 @@
 	 * and locks it for the session; any other failure (422, network) keeps the
 	 * written values on the cells under the error state — Esc reverts. Keys
 	 * whose value already matches the row drop — a no-op never PATCHes.
+	 * `action` marks a user gesture: the resolved write records an undo
+	 * entry under it. Undo and redo writes omit it — they never record.
 	 */
-	async function commitDiff(r: number, changes: Record<string, unknown>): Promise<void> {
+	async function commitDiff(
+		r: number,
+		changes: Record<string, unknown>,
+		action?: number
+	): Promise<void> {
 		const item = items[r];
 		if (!item) return;
 		const rowId = rowKey(item);
@@ -467,7 +483,7 @@
 			setPending(rowId, key, { status: 'saving', value: effective[key] });
 		}
 		try {
-			const saved = (await writeQueue.push(rowId, effective, { before })) as
+			const saved = (await writeQueue.push(rowId, effective, { before, action })) as
 				| DocumentResponse<T>
 				| undefined;
 			for (const key of Object.keys(effective)) setPending(rowId, key, null);
@@ -510,10 +526,10 @@
 	}
 
 	/** One cell of a row — the editors' path onto the shared diff write. */
-	async function commitCell(r: number, c: number, value: unknown): Promise<void> {
+	async function commitCell(r: number, c: number, value: unknown, action?: number): Promise<void> {
 		const col = columns[c];
 		if (!col) return;
-		await commitDiff(r, { [col.key]: value });
+		await commitDiff(r, { [col.key]: value }, action);
 	}
 
 	/** Booleans have no edit mode — the flip IS the write (the Table's
@@ -524,28 +540,61 @@
 		if (!col || !item || !cellWritable(item, col)) return;
 		if (fieldFor(col)?.type !== 'boolean') return;
 		const current = (item as Record<string, unknown>)[col.key];
-		void commitCell(r, c, current !== true);
+		void commitCell(r, c, current !== true, ++actionSeq);
 	}
 
-	/** ⌘Z — invert the newest committed op. Cells the row no longer carries
-	 *  (changed since) skip; the rest reverts through the queue, unrecorded. */
-	async function undoLast(): Promise<void> {
-		const entry = writeQueue.popUndo();
-		if (!entry) return;
-		const r = items.findIndex((row) => rowKey(row) === entry.rowId);
-		if (r < 0) return;
-		const row = items[r] as Record<string, unknown>;
+	/** ⌘Z — invert the newest action, one gesture per press: a cell commit,
+	 *  a flip, or a whole pasted block. Cells the row no longer carries
+	 *  (changed since) skip; the rest reverts through the queue, unrecorded.
+	 *  The popped group moves to the redo stack — ⌘⇧Z re-applies it. */
+	async function undo(): Promise<void> {
+		const group = writeQueue.popUndoAction();
+		if (!group) return;
+		writeQueue.pushRedo(group);
 		let skipped = false;
-		for (const [key, after] of Object.entries(entry.after)) {
-			if (!valueEquals(row[key], after)) skipped = true;
+		for (const entry of group) {
+			const r = items.findIndex((row) => rowKey(row) === entry.rowId);
+			if (r < 0) {
+				skipped = true;
+				continue;
+			}
+			const row = items[r] as Record<string, unknown>;
+			const revert: Record<string, unknown> = {};
+			for (const [key, after] of Object.entries(entry.after)) {
+				if (!valueEquals(row[key], after)) skipped = true;
+				else revert[key] = entry.before[key];
+			}
+			if (Object.keys(revert).length > 0) void commitDiff(r, revert);
 		}
 		if (skipped) {
 			toast({ message: m.grid_undo_skipped(), variant: 'error' });
 		}
-		for (const [key, after] of Object.entries(entry.after)) {
-			if (!valueEquals(row[key], after)) continue;
-			const c = columns.findIndex((col) => col.key === key);
-			if (c >= 0) await commitCell(r, c, entry.before[key]);
+	}
+
+	/** ⌘⇧Z — re-apply the newest undone action. Cells the row no longer
+	 *  carries (changed since the undo) skip. The group returns to the undo
+	 *  stack, so ⌘Z inverts it again. */
+	async function redo(): Promise<void> {
+		const group = writeQueue.popRedo();
+		if (!group) return;
+		writeQueue.restoreUndo(group);
+		let skipped = false;
+		for (const entry of group) {
+			const r = items.findIndex((row) => rowKey(row) === entry.rowId);
+			if (r < 0) {
+				skipped = true;
+				continue;
+			}
+			const row = items[r] as Record<string, unknown>;
+			const apply: Record<string, unknown> = {};
+			for (const [key, before] of Object.entries(entry.before)) {
+				if (!valueEquals(row[key], before)) skipped = true;
+				else apply[key] = entry.after[key];
+			}
+			if (Object.keys(apply).length > 0) void commitDiff(r, apply);
+		}
+		if (skipped) {
+			toast({ message: m.grid_redo_skipped(), variant: 'error' });
 		}
 	}
 
@@ -556,7 +605,7 @@
 		const current = editing;
 		closeEditor();
 		if (!current) return;
-		void commitCell(current.r, current.c, value);
+		void commitCell(current.r, current.c, value, ++actionSeq);
 		if (move === 'down') selection.move(1, 0, false, maxRow, maxCol);
 		else if (move === 'right') selection.move(0, 1, false, maxRow, maxCol);
 		if (move != null) {
@@ -648,6 +697,34 @@
 		pasteBlock(text);
 	}
 
+	/** The cells the previous paste marked with a parse error. The next
+	 *  paste clears them first, so the frames always reflect the latest
+	 *  attempt instead of accumulating across retries. */
+	let pasteMarked: { rowId: string; key: string }[] = [];
+
+	/** The paste-mark fade timeline — a full-price hold, then a slow ease
+	 *  out. Long enough to read, gone without user action. */
+	const MARK_HOLD_MS = 5000;
+	const MARK_FADE_MS = 3000;
+	let markSeq = 0;
+
+	/** The fade schedule for one paste mark: after the hold, flip the
+	 *  `fading` phase (the CSS eases the frame out); after the fade, drop
+	 *  the entry. Both steps re-check the token — a re-marked cell or a
+	 *  real write on it owns the schedule from then on. */
+	function scheduleMarkFade(rowId: string, key: string, mark: number): void {
+		setTimeout(() => {
+			const entry = pendingFor(rowId, key);
+			if (entry?.status !== 'error' || entry.mark !== mark || entry.fading) return;
+			setPending(rowId, key, { ...entry, fading: true });
+			setTimeout(() => {
+				const final = pendingFor(rowId, key);
+				if (final?.status !== 'error' || final.mark !== mark) return;
+				setPending(rowId, key, null);
+			}, MARK_FADE_MS);
+		}, MARK_HOLD_MS);
+	}
+
 	/**
 	 * Land a pasted TSV block with its top-left at the selection's top-left.
 	 * The block never leaves the loaded page: rows and columns past it are
@@ -659,10 +736,17 @@
 		const block = parseTSV(text);
 		const range = selRange;
 		if (block.length === 0 || !range || items.length === 0) return;
+		// The previous attempt's frames drop here — a repeated Ctrl+V re-marks
+		// only what the new block still fails.
+		for (const { rowId, key } of pasteMarked) {
+			if (pendingFor(rowId, key)?.status === 'error') setPending(rowId, key, null);
+		}
+		pasteMarked = [];
 		const tz = displayTimezone();
 		let skipped = 0;
 		let failed = 0;
 		let landed = 0;
+		const action = ++actionSeq;
 		const rowWrites: { r: number; changes: Record<string, unknown> }[] = [];
 		for (let i = 0; i < block.length; i++) {
 			const r = range.rowStart + i;
@@ -697,12 +781,16 @@
 				});
 				if (!result.ok) {
 					failed++;
+					pasteMarked.push({ rowId, key: col.key });
+					const mark = ++markSeq;
 					setPending(rowId, col.key, {
 						status: 'error',
 						value: record[col.key],
 						before: record[col.key],
-						message: result.error
+						message: result.error,
+						mark
 					});
+					scheduleMarkFade(rowId, col.key, mark);
 					continue;
 				}
 				changes[col.key] = result.value;
@@ -719,7 +807,7 @@
 				landed += Object.keys(changes).length;
 			}
 		}
-		for (const { r, changes } of rowWrites) void commitDiff(r, changes);
+		for (const { r, changes } of rowWrites) void commitDiff(r, changes, action);
 		if (landed > 0) {
 			// The selection covers the pasted block (clamped into the page).
 			selection.setFocus(range.rowStart, range.colStart, maxRow, maxCol);
@@ -746,10 +834,18 @@
 			void copySelection();
 			return;
 		}
-		// Undo — the session stack's inverse PATCH. No redo.
+		// Undo / redo — the session history. ⌘Z walks back one action per
+		// press (a multi-row paste reverts in one press); ⌘⇧Z and ⌘Y walk
+		// forward.
 		if ((e.metaKey || e.ctrlKey) && (key === 'z' || key === 'Z')) {
 			e.preventDefault();
-			void undoLast();
+			if (e.shiftKey) void redo();
+			else void undo();
+			return;
+		}
+		if ((e.metaKey || e.ctrlKey) && (key === 'y' || key === 'Y')) {
+			e.preventDefault();
+			void redo();
 			return;
 		}
 		if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -982,7 +1078,7 @@
 	<div class="grid-scroll">
 		<div
 			class="grid"
-			style={`--grid-cols: ${gridTemplate}; --row-h: ${ROW_HEIGHT}px;`}
+			style={`--grid-cols: ${gridTemplate}; --row-h: ${ROW_HEIGHT}px; --mark-fade-ms: ${MARK_FADE_MS}ms;`}
 			role="grid"
 			aria-rowcount={items.length}
 			aria-colcount={columns.length + (selectable ? 1 : 0)}
@@ -1113,6 +1209,7 @@
 							class:computed={isComputed(col)}
 							class:saving={cellEntry?.status === 'saving'}
 							class:cell-error={cellEntry?.status === 'error'}
+							class:cell-fading={cellEntry?.fading === true}
 							class:stale={isComputed(col) && savingRows.has(rowKey(item))}
 							class:editing={isEditing}
 							style={sticky != null ? `left: ${sticky}px` : ''}
@@ -1527,6 +1624,15 @@
 		tooltip (the cell's title) carries the 422's message. */
 	.g-cell.cell-error {
 		box-shadow: inset 0 0 0 2px var(--danger);
+	}
+
+	/* A paste mark's fade phase — the frame eases out over the fade window
+		(after the hold) and the entry drops when it ends. The frame still
+		appears instantly: the transition lives on the fading state only.
+		base.css already stills every transition under reduced motion. */
+	.g-cell.cell-error.cell-fading {
+		box-shadow: inset 0 0 0 2px transparent;
+		transition: box-shadow var(--mark-fade-ms, 3000ms) ease;
 	}
 
 	/* Computed cells dim while a source cell in their row saves — the value

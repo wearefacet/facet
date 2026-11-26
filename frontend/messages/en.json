@@ -1667,6 +1667,7 @@
 	"grid_paste_readonly": "{count} read-only cells skipped",
 	"grid_paste_unreadable": "{count} cells could not be read — marked on the grid",
 	"grid_undo_skipped": "The cell changed since the edit — undo skipped",
+	"grid_redo_skipped": "The cell changed since the undo — redo skipped",
 	"table_rows_label": "Rows:",
 	"table_pager_aria": "Pagination",
 	"table_pager_prev_aria": "Previous page",
