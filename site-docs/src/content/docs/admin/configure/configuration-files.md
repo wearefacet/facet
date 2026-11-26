@@ -3,10 +3,10 @@ title: Configuration files
 description: Write the config file that boots the backend, inject secrets with the !env tag, and know which keys are hot.
 type: how-to
 audience: [operator]
-features: [PLT-01]
+features: [PLT-01, PLT-10]
 sidebar:
   order: 1
-verified_at: eee55a2
+verified_at: c34885a
 ---
 
 The server refuses to boot and names a missing config file. One YAML file
@@ -131,6 +131,18 @@ list ignores `X-Forwarded-For` on every request. Entries are bare hosts
 with no port. Keep the list exact — every entry can choose the client IP
 the server sees.
 :::
+
+### 5. Split database load with the cluster route table
+
+By default the backend opens one pool from `DATABASE_URL`, and every read
+and write shares it. A larger install splits load with the optional
+`database.cluster` route table. Each entry names one physical database and
+the resources it serves: a domain id, a `$`-prefixed subsystem tag, or
+`*`. Exactly one entry carries `*` — it serves the control plane and
+everything unrouted — and an entry can also name a read-only `replica`
+pool. Entries that share one URL keep separate pools, so two entries on
+one database give pool isolation without a second server.
+[System requirements](/admin/install/requirements/) shows a worked example.
 
 ## Example
 

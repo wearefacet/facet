@@ -72,7 +72,7 @@ enforce -> records
 | Primary purpose | Whatever the prompt asked for | The same app, standing on governed data |
 | Who builds what | You and the AI, at every layer: data, permissions, screens, hosting | The AI writes the screens; Facet already provides data, rights, history and hosting |
 | Data ownership & portability | Wherever the AI put it: a generated database, a spreadsheet, files on a laptop | Your own PostgreSQL; domain export/import, API, webhooks |
-| Hosting & data residency | You host it, or it sits on a free tier somewhere | Self-hosted (a small deployment runs on 2 vCPU and 2–4 GB RAM); your data location is your choice |
+| Hosting & data residency | You host it, or it sits on a free tier somewhere | Self-hosted; your data location is your choice. Size the host from your own load |
 | Deploying the app | A server, a pipeline, a domain, a certificate, and someone who knows how they fit together | Upload the built files to Facet. No server, no pipeline; any earlier version can be restored |
 | Permissions | Whatever was generated, if anything, and rarely reviewed | Roles with row and field grants; Facet checks them on every access path |
 | Audit & history | Only if someone asked for it, and then different in every app | Every change recorded by default: who, what, when; roll any document back |

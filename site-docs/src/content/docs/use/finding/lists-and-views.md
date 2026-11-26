@@ -3,10 +3,10 @@ type: how-to
 title: Lists, boards and calendars
 description: Open a list, switch between table, kanban and calendar layouts, filter it, and save the result as a view you can reopen in one click.
 audience: [user]
-features: [FE-03, DOM-21, DOM-30, FE-25]
+features: [FE-03, FE-08, DOM-21, DOM-30, FE-25]
 sidebar:
   order: 1
-verified_at: eee55a2
+verified_at: c34885a
 ---
 
 Your work lives in lists. Every record type opens one, and you pick the
@@ -93,6 +93,15 @@ cards follow the order saved in the view.
 Below the table, the pager moves through the pages. The label, for example
 `1–25 of 340`, shows where you are. The count caps at 1000 — beyond that the
 list shows `1000+`, and filters bring the number down.
+
+## Work the list from the keyboard
+
+The list answers to the keyboard as well as the mouse. `j` and `k` (or the
+arrow keys) move the highlight through the rows, and `Enter` opens the
+highlighted record — first in the preview, then as the full page. `Esc`
+clears the highlight, and `/` jumps to the search box. `C` starts a new
+record of this type. The letter keys rest while you type, so they never
+fire from a text field.
 
 ## Save your setup as a view
 
@@ -197,6 +206,8 @@ Then move to the right month with **Today** and the arrows.
   from a row or card.
 - [Search and the command palette](/use/finding/search/) — find records
   across every domain.
+- [Keyboard shortcuts](/use/finding/keyboard-shortcuts/) — the full map,
+  list and workspace alike.
 - [Import and export data](/use/documents/import-export/) — export exactly
   what the table shows.
 - [Roles: who sees and does what](/discover/how-it-works/roles/) — why some

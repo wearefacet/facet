@@ -6,7 +6,7 @@ audience: [operator]
 features: [PLT-04]
 sidebar:
   order: 4
-verified_at: eee55a2
+verified_at: c34885a
 ---
 
 The team starts uploading photos of damaged equipment, and you must decide
@@ -80,16 +80,22 @@ change the file during a restart window.
 
 | Key | Default | Meaning |
 | --- | --- | --- |
-| `artifact.max_upload_bytes` | `52428800` (50 MiB) | Hard cap on one upload. An oversized upload answers `413` before any disk write. |
+| `artifact.max_upload_bytes` | `52428800` (50 MiB) | Hard cap on one upload. An oversized upload answers `413` before any disk write. Config file only: a change needs a restart. |
 | `artifact.grant_ttl_seconds` | `3600` | Signed-URL TTL for documents and images. |
 | `artifact.grant_ttl_media_seconds` | `21600` | Signed-URL TTL for audio and video. |
-| `artifact.upload_grant_ttl_seconds` | `300` | TTL of a one-time signed upload URL for agent surfaces. |
+| `artifact.upload_grant_ttl_seconds` | `300` | TTL of a one-time signed upload URL for agent surfaces. Config file only: a change needs a restart. |
 | `artifact.prune_after_days` | `30` | Ownerless files become prune-eligible after this window. `0` keeps every file forever. |
 | `artifact.grant_prune_days` | `7` | Expired ephemeral grant rows leave the table after this window. `0` keeps every row forever. |
 
-All knobs except `storage` are hot keys. A settings save changes them from
-the next mint or prune run — see
+Four keys are hot: `grant_ttl_seconds`, `grant_ttl_media_seconds`,
+`prune_after_days`, and `grant_prune_days`. A settings save changes them
+from the next mint or prune run — see
 [System settings](/admin/configure/system-settings/).
+
+`max_upload_bytes` and `upload_grant_ttl_seconds` stay in the config file
+only: the settings registry holds no entry for them, so a change needs a
+restart. `storage.type` is read-only on the settings page — the storage
+adapter wires once per process, and a runtime switch is refused.
 
 ### 3. Rotate the signing secret
 

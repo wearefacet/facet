@@ -3,10 +3,10 @@ type: how-to
 title: Lists, boards and calendars
 description: Give a doctype's list page saved table, kanban, and calendar views.
 audience: [author]
-features: [DOM-21]
+features: [DOM-21, DOM-29, DOM-32]
 sidebar:
   order: 2
-verified_at: eee55a2
+verified_at: c34885a
 ---
 
 The Brightwater warehouse tracks forty rental items, and the maintenance
@@ -61,6 +61,17 @@ in `title_template`, for example `{{ name }}`. Only the doctype's own
 fields, the reserved `content` variable, and the system timestamps are
 allowed there.
 :::
+
+### Shape the lanes
+
+A values-mode board derives one lane per value of the group-by field, in
+the field's declared order. The view editor changes that presentation per
+view: move lanes up and down, and hide lanes with the visibility toggle —
+at least one lane must stay visible. Hidden lanes neither render nor
+fetch; the remaining lanes follow the stored order. Set **Allow card
+moves** to turn on drag-and-drop between lanes. A move writes through the
+normal document update, so the history records it and the usual update
+rights apply.
 
 ### Choose who sees the view
 

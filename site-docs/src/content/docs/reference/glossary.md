@@ -22,7 +22,9 @@ like any other change. Also called: named action.
 → [Named actions](/build/model/behaviour/named-actions/)
 
 **API key** — A secret token that authenticates a script or an app against
-the API. An administrator creates and revokes keys in the admin area.
+the API. Every account creates and revokes its own keys in the settings
+page; apps carry keys of their own, which administrators manage in the
+admin area.
 → [API keys](/admin/apps-access/api-keys/)
 
 **App** — An external program registered in Facet that calls the API for
@@ -43,9 +45,9 @@ The show page lists them under **Referenced by**.
 and views without code files.
 → [Drafts and publishing](/build/model/in-app/drafts-and-publishing/)
 
-**Bundle** — A folder of domain files (YAML, Lua, SQL) that defines a
-domain, ready for version control. Deploy it with the CLI or edit it in
-the domain watcher.
+**Bundle** — A folder of domain files (YAML, with Lua sidecars for
+scripts) that defines a domain, ready for version control. Deploy it with
+the CLI or edit it in the domain watcher.
 → [Domain bundles as files](/build/model/bundles/)
 
 **Collection view** — A saved way to list one doctype's records: table,

@@ -3,7 +3,7 @@ type: how-to
 title: React to events and schedules
 description: Run Lua event hooks automatically when documents change, and schedule jobs with cron.
 audience: [author]
-features: [AUT-02, AUT-08]
+features: [AUT-02, AUT-08, AUT-09]
 sidebar:
   order: 0
 verified_at: eee55a2

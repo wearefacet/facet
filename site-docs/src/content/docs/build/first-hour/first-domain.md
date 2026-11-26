@@ -8,7 +8,7 @@ sidebar:
   order: 2
 prev: /build/first-hour/run-facet/
 next: /build/first-hour/first-app/
-verified_at: eee55a2
+verified_at: c34885a
 ---
 
 You model the Brightwater equipment domain: the categories of gear, the
@@ -288,6 +288,17 @@ capabilities**.
 The name must be lowercase letters, digits, and dashes, and start with a
 letter. A name that starts with `_` is a draft name. Fix the **Domain id**
 on the draft's Overview tab and publish again.
+
+### Publish says the domain name is already in use
+
+A live domain already carries the name — demo data, or an earlier run of
+this tutorial. Facet refuses the first publish over an existing name, and
+the dialog then offers **Publish over {name}**. Confirm it only when you
+mean to replace that domain's structure: every doctype you changed must
+raise its schema version by one and carry a migration — see
+[Change a live domain safely](/build/model/change-a-live-domain/). To keep
+the existing domain, type another name in the dialog's target field and
+publish again.
 
 ### My change did not appear at once
 

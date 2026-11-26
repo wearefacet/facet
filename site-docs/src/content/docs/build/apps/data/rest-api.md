@@ -3,8 +3,8 @@ title: Use the REST API
 description: Use the REST API to create, read, update, list, and delete documents over plain HTTP — one envelope, one filter grammar.
 type: how-to
 audience: [developer]
-features: [DOC-01, DOC-02, DOC-03, DOC-04, PLT-13]
-verified_at: eee55a2
+features: [DOC-01, DOC-02, DOC-03, DOC-04, DOC-14, PLT-12, PLT-13]
+verified_at: c34885a
 sidebar:
   order: 0
 ---
@@ -271,6 +271,18 @@ entries take a `-` prefix for descending: `sort=-updated_at,id`.
 A second form exists for long filters: the `QUERY` method (step 6) carries
 the same parameters as a JSON body.
 
+### List a parent's children
+
+The nested route `GET /Api/<domain>/<Doctype>/<id>/<relationship>` lists
+one parent's children — for example `/Api/clients/Company/<id>/contacts`.
+It forwards the full list grammar: `filters`, `sort`, `page`, `items`,
+`select`, `aggregate`, `scope`, and `deleted`, with the flat route's
+defaults (page 1, 100 items) and the same validation — a malformed filter
+answers `422`, never an unfiltered result. The response ETag digests the
+whole request, so two different pages or orders never share a validator.
+Sidecar lists — comments and attachments — are the exception: they stay
+unpaginated.
+
 ### 5. Aggregate
 
 `aggregate=count` counts the full filtered set. It ignores `page` and
@@ -361,6 +373,14 @@ A body with a non-JSON `Content-Type` answers `415`. A malformed body answers
 defaults: page 1, 100 items, sort `id`. Responses carry
 `Accept-Query: application/json`, so a client can discover the format from
 any list response.
+
+## The machine-readable spec
+
+This surface has a machine-readable description: an OpenAPI file. The
+instance serves it at `GET /Api/openapi.json` to a signed-in caller —
+without a credential it answers `401`. The file covers a subset of the
+REST surface by decision; the reference page embeds it — see
+[REST API](/reference/rest-api/).
 
 ## Errors
 

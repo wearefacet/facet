@@ -3,7 +3,7 @@ type: explanation
 title: Schema evolution and lazy migration
 description: Change a doctype without a backfill; stored documents migrate on their next read.
 audience: [author, developer]
-features: [DOM-17]
+features: [DOM-17, DOM-26, DOM-27, DOM-28]
 sidebar:
   order: 2
 verified_at: eee55a2

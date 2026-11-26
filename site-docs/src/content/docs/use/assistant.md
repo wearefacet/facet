@@ -3,10 +3,10 @@ type: how-to
 title: Ask the assistant
 description: Open the assistant chat, ask about your records in everyday words, and let it make changes under your role.
 audience: [user]
-features: [FE-22, AI-01]
+features: [FE-22, AI-01, AI-10, AI-11]
 sidebar:
   order: 5
-verified_at: eee55a2
+verified_at: c34885a
 ---
 
 You know what you need — "which tents are free in June" — and you would
@@ -70,6 +70,10 @@ it catches up.
 The rail on the left lists your conversations. Select one to continue it,
 select **+ New** to start another, and use the toggle in the rail header to
 see archived ones. A finished answer carries a copy button.
+
+Each conversation shows a title. The assistant takes it from your first
+message; the rail's rename control sets a name of your own, and an empty
+name restores the automatic title with the next message.
 
 ## What it can do — under your role
 

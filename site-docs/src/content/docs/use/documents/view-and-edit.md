@@ -3,7 +3,7 @@ type: how-to
 title: Open and edit a document
 description: Open a record from a list or search, read its page, edit and save its fields, and delete it when needed.
 audience: [user]
-features: [FE-04, FE-05, DOC-13]
+features: [FE-04, FE-05, FE-24, DOC-13]
 sidebar:
   order: 1
 verified_at: eee55a2

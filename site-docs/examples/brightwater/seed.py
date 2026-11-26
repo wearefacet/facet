@@ -19,7 +19,7 @@ import http.cookiejar
 
 BASE = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:3000"
 ADMIN_EMAIL = "admin@example.tld"
-ADMIN_PASSWORD = "admin"
+ADMIN_PASSWORD = "adminadmin"  # honours the 8-character minimum every password change enforces
 
 # Fixed anchor: the Monday the example's bookings radiate from.
 ANCHOR = "2026-12-07"

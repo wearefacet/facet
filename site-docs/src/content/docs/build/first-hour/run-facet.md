@@ -8,7 +8,7 @@ sidebar:
   order: 1
 prev: /build/first-hour/
 next: /build/first-hour/first-domain/
-verified_at: eee55a2
+verified_at: c34885a
 ---
 
 You have the repository on your machine and you want Facet running in front
@@ -140,6 +140,11 @@ and continue**. The one-time password stops working the moment the change
 lands.
 
 ![The Set a new password screen asks for the current password and the new password twice.](/assets/screens/build/run-facet-3.png)
+
+The next screen can ask you to set up two-factor authentication: scan the
+code with an authenticator app on your phone, or choose **Skip for now**.
+You can enroll later — the steps are in
+[Sign in and secure your account](/use/first-day/sign-in/).
 
 You land on the dashboard, signed in as the admin.
 

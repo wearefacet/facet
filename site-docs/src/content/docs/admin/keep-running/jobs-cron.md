@@ -3,7 +3,7 @@ title: Background jobs and cron
 description: Run the background job queue and the nine cron tasks, and tune retries, leases, and schedules.
 type: how-to
 audience: [operator]
-features: [AUT-04, AUT-05]
+features: [AUT-04, AUT-05, AUT-10]
 verified_at: eee55a2
 sidebar:
   order: 2

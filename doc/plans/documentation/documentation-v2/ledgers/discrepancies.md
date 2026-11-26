@@ -982,3 +982,67 @@ row) and Doctype::Validation (label gate B-296);
 Found by WP 16 batch C. Docs impact: fixed in the rewrite — the page now
 splits the three cases (no `display_name`, no `search`, neither) with the
 root/child severity difference.
+
+## #46 — Newcomer report says a publish over an existing domain fails silently; the shipped dialog asks for an explicit overwrite confirmation
+
+Where: `frontend/src/lib/components/features/configure/PublishDialog.svelte`
+(and `frontend/src/lib/builderDraft.svelte.ts`), as shipped in every release
+since v0.2.0.
+
+Docs say (`build/model/in-app/drafts-and-publishing.md` §6): "Overwrite
+publish — the target domain exists. Facet asks for a confirmation
+(**Publish over {name}")".
+
+Code does: `publishDraft` maps a `409` to a distinct `conflict` outcome and
+never retries on its own; the dialog then shows *"A live domain named
+`orders` already exists"* with a **Publish over {name}** button, and only
+the confirmed second call carries `overwrite: true` (B-353). The storybook
+play `ConflictsThenConfirmsOverwrite` and the `builderDraft` specs pin this.
+
+Evidence: `frontend/src/lib/builderDraft.svelte.ts:364-372`,
+`frontend/src/lib/components/features/configure/PublishDialog.svelte:174-196`,
+`PublishDialog.stories.svelte` (ConflictsThenConfirmsOverwrite),
+`builderDraft.spec.ts` ("surfaces the 409 conflict…", "publishes with
+overwrite only on the explicit confirmed second call"). The WP 21 newcomer
+report (Task 8, 2026-11-26, shared instance) observed the opposite: `409`
+received, no UI reaction, no overwrite control. The files are identical
+between v0.2.2 and HEAD. Either the tested build predated B-353 or the
+report misread the dialog — worth one re-test on the freshly restored
+shared instance before the newcomer findings drive more fixes.
+
+Found by WP 21 fix round. Docs impact: none — the pages document the
+shipped confirmation flow.
+
+## #47 — The overwrite-publish version gate demands a bump for additive changes too; the "safe at the same version" table only covers the direct live-edit path
+
+Where: `site-docs/src/content/docs/build/model/change-a-live-domain.md`
+(§"Decide what kind of change it is") and
+`build/model/in-app/drafts-and-publishing.md` (§"Overwrite publish").
+
+Docs say: "Add a field — safe at the same version" (the change-a-live-domain
+table), while drafts-and-publishing.md §6 says an overwrite publish needs
+"every doctype you changed must bump its schema version by exactly one, with
+a migration for the step".
+
+Code does: the direct doctype-update path allows an additive edit at the
+same version (`Doctype::Update`), but the overwrite-publish gate is
+stricter: **any** draft doctype whose structure differs from the live one
+must carry `schema_version = live + 1` and a migration entry — an added
+field included (`src/domain/publish.cr:102-107`, error text at the gate:
+"Doctype changed structure: schema_version must be 2 (draft has 1) to
+publish over …"). A reader who adds a field in the Builder (the normal
+draft → publish route) therefore always pays the bump, whatever the table
+says.
+
+Evidence: `src/domain/publish.cr:102-107` (module doc: "each draft doctype
+whose structure differs from the live one must carry a `schema_version` of
+exactly `live + 1` and a migration entry for the step"); newcomer test
+Task 8 (2026-11-26): adding `insurance_value` to Item was refused at
+publish until the version was bumped and a no-op migration written.
+
+Found by WP 21 fix round (from the newcomer report). Docs impact: both
+pages are individually true of their own path; the gap is that no page
+tells the Builder author that the publish door re-adds the version cost for
+additive changes. Fix belongs to WP 16 (one sentence in the
+change-a-live-domain table or the drafts page). Maintainer triages; left
+open on purpose — it is a content decision, not a wording fix.

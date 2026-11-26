@@ -59,8 +59,8 @@ the picture picks it up on the next view.
 
 ## Example
 
-The Brightwater `equipment` domain has one aggregate root with an owned
-child and two references between same-domain doctypes. The picture reads:
+The Brightwater `equipment` domain has three aggregate roots, linked by
+two references between same-domain doctypes. The picture reads:
 
 *The equipment domain: three aggregate roots, linked by two references.*
 

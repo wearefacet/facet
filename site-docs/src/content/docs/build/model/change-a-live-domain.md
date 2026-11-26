@@ -6,7 +6,7 @@ audience: [author]
 features: [DOM-17, DOM-18]
 sidebar:
   order: 5
-verified_at: eee55a2
+verified_at: c34885a
 ---
 
 At Brightwater, the `rentals.Booking` doctype is live: fifteen bookings sit
@@ -122,6 +122,26 @@ rejections. It is never stored: the saved definition does not carry it, and
 the next save starts from the stored shape. It never relaxes the version
 rules. A forced edit may drop the stored migrations map — use it on a
 dev instance, where the next publish rebuilds everything.
+
+### Publish the draft over the live domain
+
+An overwrite publish asks for an explicit confirmation on both doors. In
+the Builder, Facet refuses the first publish onto an existing name
+(`409`), and the dialog then offers **Publish over {name}** — confirm it
+only when you mean to replace the live structure. Through the API, send
+the flag yourself:
+
+```sh
+curl -k -X POST "https://facet.localhost:3443/Api/core/Domain/<draft-id>/publish" \
+  -H "Authorization: Bearer $FACET_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"target_name": "rentals", "overwrite": true}'
+```
+
+Either way, every draft doctype whose structure differs from the live one
+must sit exactly one `schema_version` above the live version, with a
+migration entry for the step — the same gate the table in step 1
+describes.
 
 ## Example
 

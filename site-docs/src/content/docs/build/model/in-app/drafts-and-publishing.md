@@ -3,10 +3,10 @@ type: how-to
 title: Drafts, editors and publishing
 description: Open a draft domain, build with co-editors, and publish the structure to a live domain.
 audience: [author]
-features: [DOM-01, DOM-02, DOM-13, FE-13, FE-10]
+features: [DOM-01, DOM-02, DOM-13, DOM-31, FE-13, FE-10]
 sidebar:
   order: 1
-verified_at: eee55a2
+verified_at: c34885a
 ---
 
 <!-- screenshot: builder-new-domain-dialog -->
@@ -31,8 +31,10 @@ picture](/build/model/in-app/how-drafts-work/) has the one exception.
 
 - **The editor role.** Any account with the [`editor` role](/admin/people/roles-and-permissions/) can open a draft;
   you become its first editor.
-- **Edit rights on the live domain** to fork it into a draft. Use **Edit
-  existing** in the Builder.
+- **Your name on the domain's Editors tab** to fork a live domain with
+  **Edit existing**. A live domain lists no editors at first — not even the
+  administrator. Open **Configure → Domains**, open the domain, open
+  **Editors**, and add your account.
 - **An administrator for co-editors.** Only an administrator can change the
   editor list of a domain.
 
@@ -159,9 +161,14 @@ to a fresh domain instead.
 ### I cannot fork a live domain
 
 A domain with an open draft forks no second draft — Facet answers `409`.
-Discard or publish the first draft, then fork again. If Facet answers `403`,
-your role does not edit that domain; ask an administrator to add you on the
-**Editors** tab.
+Discard or publish the first draft, then fork again.
+
+If Facet answers `403` with *"You must be an editor of domain …"*, the
+domain's Editors list does not name you. Facet forks a live domain only
+for an account the domain lists as an editor, and the Administrator is no
+exception — a seeded domain starts with an empty list. Open
+**Configure → Domains**, open the domain's **Editors** tab, add your
+account, and fork again.
 
 ### My change did not appear at once
 

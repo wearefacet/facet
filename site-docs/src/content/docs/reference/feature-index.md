@@ -15,169 +15,169 @@ A writer or reviewer traces a feature to its pages — or finds the pages a chan
 
 | ID | Feature | Pages |
 | --- | --- | --- |
-| AI-01 | Workspace assistant | [The assistant: AI with your rights](/discover/how-it-works/assistant/), [Using the assistant](/use/assistant/) |
-| AI-02 | Domain-builder assistant | [Build with the assistant](/build/model/in-app/build-with-assistant/), [The assistant: AI with your rights](/discover/how-it-works/assistant/) |
+| AI-01 | Workspace assistant | [The assistant: AI with your rights](/discover/how-it-works/assistant/), [Ask the assistant](/use/assistant/) |
+| AI-02 | Domain-builder assistant | [Model your first domain](/build/first-hour/first-domain/), [Build with the assistant](/build/model/in-app/build-with-assistant/), [The assistant: AI with your rights](/discover/how-it-works/assistant/) |
 | AI-03 | Per-app assistant | [Embed the assistant in your app](/build/apps/host/embed-assistant/), [The assistant: AI with your rights](/discover/how-it-works/assistant/) |
-| AI-04 | Agent tool catalogue | [What agents can do](/build/apps/agents/agent-tools/), [Agent tools](/reference/agent-tools/) |
-| AI-05 | MCP resource server | [Connect agents over MCP](/build/apps/agents/mcp/), [The assistant: AI with your rights](/discover/how-it-works/assistant/) |
+| AI-04 | Agent tool catalogue | [What agents can do](/build/apps/agents/agent-tools/), [Connect an AI agent](/build/first-hour/connect-an-agent/), [Agent tools](/reference/agent-tools/) |
+| AI-05 | MCP resource server | [Connect agents over MCP](/build/apps/agents/mcp/), [Connect an AI agent](/build/first-hour/connect-an-agent/), [The assistant: AI with your rights](/discover/how-it-works/assistant/) |
 | AI-06 | Skill corpus | [What agents can do](/build/apps/agents/agent-tools/), [Build apps with a coding agent](/build/apps/agents/coding-agents/), [Build with the assistant](/build/model/in-app/build-with-assistant/), [Build domains with a coding agent](/build/model/in-files/with-a-coding-agent/) |
-| AI-07 | Usage ledger and limits | [Configuring the assistant](/admin/assistant/connect-a-model/), [Governing the assistant](/admin/assistant/govern/), [The assistant: AI with your rights](/discover/how-it-works/assistant/) |
-| AI-08 | Assistant configuration | [Configuring the assistant](/admin/assistant/connect-a-model/), [Governing the assistant](/admin/assistant/govern/), [The assistant: AI with your rights](/discover/how-it-works/assistant/) |
-| AI-09 | Stale-turn sweep | [Configuring the assistant](/admin/assistant/connect-a-model/) |
-| AI-10 | Conversation titles | — |
-| AI-11 | Reply-language directive | — |
+| AI-07 | Usage ledger and limits | [Connect a language model](/admin/assistant/connect-a-model/), [Govern the assistant](/admin/assistant/govern/), [AI and permissions, in detail](/admin/under-the-hood/ai-and-permissions/), [The assistant: AI with your rights](/discover/how-it-works/assistant/) |
+| AI-08 | Assistant configuration | [Connect a language model](/admin/assistant/connect-a-model/), [Govern the assistant](/admin/assistant/govern/), [AI and permissions, in detail](/admin/under-the-hood/ai-and-permissions/), [The assistant: AI with your rights](/discover/how-it-works/assistant/) |
+| AI-09 | Stale-turn sweep | [Connect a language model](/admin/assistant/connect-a-model/) |
+| AI-10 | Conversation titles | [Ask the assistant](/use/assistant/) |
+| AI-11 | Reply-language directive | [Ask the assistant](/use/assistant/) |
 
 ## APP — registered apps, OAuth, hosting, SDKs
 
 | ID | Feature | Pages |
 | --- | --- | --- |
-| APP-01 | App registry | [Register an app](/build/apps/connect/register/), [How apps work on Facet](/build/apps/how-apps-work/), [Quickstart](/build/apps/quickstart/), [Apps: built fast, replaced freely](/discover/how-it-works/apps/) |
-| APP-02 | OAuth 2.1 authorization server | [Sign users in](/build/apps/connect/user-login/), [Quickstart](/build/apps/quickstart/) |
+| APP-01 | App registry | [Register an app](/build/apps/connect/register/), [How apps work on Facet](/build/apps/how-apps-work/), [Quickstart](/build/apps/quickstart/), [Ship your first app](/build/first-hour/first-app/), [Apps: built fast, replaced freely](/discover/how-it-works/apps/) |
+| APP-02 | OAuth 2.1 authorization server | [Sign users in](/build/apps/connect/user-login/), [Quickstart](/build/apps/quickstart/), [Ship your first app](/build/first-hour/first-app/) |
 | APP-03 | DPoP proof binding | [Bind tokens to your app (DPoP)](/build/apps/connect/dpop/) |
-| APP-04 | Dynamic client registration | [Connect agents over MCP](/build/apps/agents/mcp/) |
-| APP-05 | Consent screen | [Sign users in](/build/apps/connect/user-login/) |
-| APP-06 | App hosting | [Deploying with containers](/admin/install/containers/), [Deploy to production](/admin/install/production/), [Deploy your app on Facet](/build/apps/host/deploy/), [Apps: built fast, replaced freely](/discover/how-it-works/apps/) |
+| APP-04 | Dynamic client registration | [Connect agents over MCP](/build/apps/agents/mcp/), [Connect an AI agent](/build/first-hour/connect-an-agent/) |
+| APP-05 | Consent screen | [Sign users in](/build/apps/connect/user-login/), [Ship your first app](/build/first-hour/first-app/) |
+| APP-06 | App hosting | [Run with containers](/admin/install/containers/), [Go to production](/admin/install/production/), [Deploy your app on Facet](/build/apps/host/deploy/), [Ship your first app](/build/first-hour/first-app/), [Apps: built fast, replaced freely](/discover/how-it-works/apps/) |
 | APP-07 | App API keys and service accounts | [Backend apps and service accounts](/build/apps/connect/backend-apps/) |
 | APP-08 | CORS for registered origins | [Allowed origins and CORS](/build/apps/connect/cors/) |
-| APP-09 | Developer CLI | [Deploy your app on Facet](/build/apps/host/deploy/), [Quickstart](/build/apps/quickstart/), [Facet app CLI](/reference/cli-npm/) |
-| APP-10 | TypeScript SDK | [The TypeScript SDK](/build/apps/data/sdk/) |
+| APP-09 | Developer CLI | [Deploy your app on Facet](/build/apps/host/deploy/), [Quickstart](/build/apps/quickstart/), [Ship your first app](/build/first-hour/first-app/), [Facet app CLI](/reference/cli-npm/) |
+| APP-10 | TypeScript SDK | [The TypeScript SDK](/build/apps/data/sdk/), [Ship your first app](/build/first-hour/first-app/) |
 | APP-11 | Chat embed | [Embed the assistant in your app](/build/apps/host/embed-assistant/) |
-| APP-12 | Dashboard app launcher | — |
+| APP-12 | Dashboard app launcher | [The dashboard](/use/first-day/dashboard/) |
 
 ## AUD — mutation log, audit, rollback
 
 | ID | Feature | Pages |
 | --- | --- | --- |
-| AUD-01 | Append-only mutation log | [The mutation log](/admin/under-the-hood/change-log/), [Documents: records with a memory](/discover/how-it-works/documents/), [Security and governance](/discover/security/) |
-| AUD-02 | Audit reading | [Auditing activity](/admin/history/audit/), [Security and governance](/discover/security/), [History and undo (rollback)](/use/documents/history-undo/) |
+| AUD-01 | Append-only mutation log | [The change log, in detail](/admin/under-the-hood/change-log/), [Documents: records with a memory](/discover/how-it-works/documents/), [Security and governance](/discover/security/) |
+| AUD-02 | Audit reading | [See who did what](/admin/history/audit/), [Security and governance](/discover/security/), [History and undo](/use/documents/history-undo/) |
 | AUD-03 | Audit redaction | [Hide a field from some roles](/admin/people/hidden-fields/), [Security and governance](/discover/security/) |
-| AUD-04 | Rollback | [Rolling back changes](/admin/history/roll-back/), [Documents: records with a memory](/discover/how-it-works/documents/), [Security and governance](/discover/security/), [History and undo (rollback)](/use/documents/history-undo/) |
-| AUD-05 | Write-time coalescing | [Retention: what is kept and for how long](/admin/history/retention/), [The mutation log](/admin/under-the-hood/change-log/), [Security and governance](/discover/security/) |
-| AUD-06 | Retention compaction | [Retention: what is kept and for how long](/admin/history/retention/), [Security and governance](/discover/security/) |
-| AUD-07 | Tombstone retention | [Retention: what is kept and for how long](/admin/history/retention/), [Security and governance](/discover/security/) |
-| AUD-08 | Provenance and cause metadata | [Auditing activity](/admin/history/audit/), [The mutation log](/admin/under-the-hood/change-log/), [Security and governance](/discover/security/) |
+| AUD-04 | Rollback | [Roll back a change](/admin/history/roll-back/), [Documents: records with a memory](/discover/how-it-works/documents/), [Security and governance](/discover/security/), [History and undo](/use/documents/history-undo/) |
+| AUD-05 | Write-time coalescing | [Retention: what is kept](/admin/history/retention/), [The change log, in detail](/admin/under-the-hood/change-log/), [Security and governance](/discover/security/) |
+| AUD-06 | Retention compaction | [Retention: what is kept](/admin/history/retention/), [Security and governance](/discover/security/) |
+| AUD-07 | Tombstone retention | [Retention: what is kept](/admin/history/retention/), [Security and governance](/discover/security/) |
+| AUD-08 | Provenance and cause metadata | [See who did what](/admin/history/audit/), [The change log, in detail](/admin/under-the-hood/change-log/), [Security and governance](/discover/security/) |
 | AUD-09 | Cluster-scope rollback | [Security and governance](/discover/security/) |
 
 ## AUT — events, hooks, webhooks, jobs, notifications, mail
 
 | ID | Feature | Pages |
 | --- | --- | --- |
-| AUT-01 | Event bus | [Health checks, metrics, tracing, logs](/admin/keep-running/monitoring/), [Events and delivery guarantees](/admin/under-the-hood/events-and-delivery/) |
-| AUT-02 | Domain event hooks | [Event and schedule hooks](/build/model/automation/event-hooks/) |
-| AUT-03 | Outbound webhooks | [Outbound webhooks](/build/model/automation/webhooks/), [Webhook payloads](/reference/webhook-payloads/) |
+| AUT-01 | Event bus | [Health, metrics and logs](/admin/keep-running/monitoring/), [Events and delivery guarantees](/admin/under-the-hood/events-and-delivery/) |
+| AUT-02 | Domain event hooks | [React to events and schedules](/build/model/automation/event-hooks/) |
+| AUT-03 | Outbound webhooks | [Send webhooks](/build/model/automation/webhooks/), [Webhook payloads](/reference/webhook-payloads/) |
 | AUT-04 | Background jobs | [Background jobs and cron](/admin/keep-running/jobs-cron/) |
 | AUT-05 | Cron scheduler and maintenance | [Background jobs and cron](/admin/keep-running/jobs-cron/), [Events and delivery guarantees](/admin/under-the-hood/events-and-delivery/) |
 | AUT-06 | In-app notifications | [Notifications and mentions](/build/model/automation/notifications/), [Notifications](/use/notifications/) |
-| AUT-07 | Outbound email | [Email delivery](/admin/configure/email/) |
-| AUT-08 | Lua scripting engine | [Event and schedule hooks](/build/model/automation/event-hooks/), [Lua API](/reference/lua-api/) |
-| AUT-09 | Aggregate child-change events | — |
-| AUT-10 | Cron task listing CLI | — |
+| AUT-07 | Outbound email | [Email](/admin/configure/email/) |
+| AUT-08 | Lua scripting engine | [React to events and schedules](/build/model/automation/event-hooks/), [Lua API](/reference/lua-api/) |
+| AUT-09 | Aggregate child-change events | [React to events and schedules](/build/model/automation/event-hooks/) |
+| AUT-10 | Cron task listing CLI | [Background jobs and cron](/admin/keep-running/jobs-cron/) |
 
 ## DOC — document data plane
 
 | ID | Feature | Pages |
 | --- | --- | --- |
 | DOC-01 | Document CRUD | [Use the REST API](/build/apps/data/rest-api/), [Documents, doctypes and projections](/build/deeper/documents-and-projections/), [Documents: records with a memory](/discover/how-it-works/documents/) |
-| DOC-02 | List and filter grammar | [Use the REST API](/build/apps/data/rest-api/), [Filter operators](/reference/filter-operators/), [Lists, filters and saved views](/use/finding/lists-and-views/) |
+| DOC-02 | List and filter grammar | [Use the REST API](/build/apps/data/rest-api/), [Filter operators](/reference/filter-operators/) |
 | DOC-03 | Aggregates | [Use the REST API](/build/apps/data/rest-api/) |
 | DOC-04 | ETag caching | [Use the REST API](/build/apps/data/rest-api/) |
-| DOC-05 | Links and backrefs | [References, links and backlinks](/build/model/relations/references-links/) |
+| DOC-05 | Links and backrefs | [Link documents together](/build/model/relations/references-links/) |
 | DOC-06 | Cross-doctype search | [Search from an app](/build/apps/data/search/), [Search and the command palette](/use/finding/search/) |
-| DOC-07 | Atomic parent and children create | [Parent/child composition](/build/model/relations/parent-child/) |
-| DOC-08 | Document copy | [The mutation log](/admin/under-the-hood/change-log/) |
+| DOC-07 | Atomic parent and children create | [Parent and child documents](/build/model/relations/parent-child/) |
+| DOC-08 | Document copy | [The change log, in detail](/admin/under-the-hood/change-log/) |
 | DOC-09 | Write-only and secret fields | [Secret and write-only fields](/build/model/data/secret-fields/), [Security and governance](/discover/security/) |
-| DOC-10 | Reference validation | [References, links and backlinks](/build/model/relations/references-links/) |
+| DOC-10 | Reference validation | [Link documents together](/build/model/relations/references-links/) |
 | DOC-11 | Document import and export | [Bulk import and export](/build/apps/data/bulk-import-export/), [Import and export data](/use/documents/import-export/) |
 | DOC-12 | Realtime updates | [Live updates](/build/apps/data/realtime/) |
-| DOC-13 | Field defaults and normalization | [Field types (guide)](/build/model/data/field-types/), [Field types](/reference/field-types/), [Viewing and editing a document](/use/documents/view-and-edit/) |
-| DOC-14 | Child-list list grammar | — |
-| DOC-15 | App tokens on WebSocket | — |
+| DOC-13 | Field defaults and normalization | [Choose field types](/build/model/data/field-types/), [Field types](/reference/field-types/), [Open and edit a document](/use/documents/view-and-edit/) |
+| DOC-14 | Child-list list grammar | [Use the REST API](/build/apps/data/rest-api/) |
+| DOC-15 | App tokens on WebSocket | [Live updates](/build/apps/data/realtime/) |
 
 ## DOM — domains, doctypes, schema authoring
 
 | ID | Feature | Pages |
 | --- | --- | --- |
-| DOM-01 | Domains | [How domains stay isolated](/build/deeper/domain-isolation/), [Build your first domain](/build/first-hour/first-domain/), [Drafts, editors and publishing](/build/model/in-app/drafts-and-publishing/), [Domains: where your data lives](/discover/how-it-works/domains/) |
-| DOM-02 | Draft and publish lifecycle | [Build your first domain](/build/first-hour/first-domain/), [From dev to production](/build/model/dev-to-production/), [Drafts, editors and publishing](/build/model/in-app/drafts-and-publishing/), [How drafts work](/build/model/in-app/how-drafts-work/), [Choose how you build](/build/model/), [Domains: where your data lives](/discover/how-it-works/domains/) |
-| DOM-03 | Doctypes | [Documents, doctypes and projections](/build/deeper/documents-and-projections/), [Build your first domain](/build/first-hour/first-domain/), [Designing doctypes](/build/model/data/design-doctypes/), [Doctype definition schema](/reference/doctype-schema/) |
-| DOM-04 | Field type system | [Build your first domain](/build/first-hour/first-domain/), [Field types (guide)](/build/model/data/field-types/), [Field types](/reference/field-types/) |
-| DOM-05 | Composition (parent and children) | [Parent/child composition](/build/model/relations/parent-child/) |
-| DOM-06 | Sidecars | [Sidecars (comments, attachments)](/build/model/relations/comments-attachments/), [Documents: records with a memory](/discover/how-it-works/documents/), [Comments and attachments](/use/documents/comments-attachments/) |
-| DOM-07 | Named actions | [Named actions](/build/model/behaviour/named-actions/) |
-| DOM-08 | Lifecycle scripts | [Lifecycle scripts and guards](/build/model/behaviour/scripts-and-guards/), [Lua API](/reference/lua-api/) |
+| DOM-01 | Domains | [How domains stay isolated](/build/deeper/domain-isolation/), [Model your first domain](/build/first-hour/first-domain/), [Drafts, editors and publishing](/build/model/in-app/drafts-and-publishing/), [Domains: where your data lives](/discover/how-it-works/domains/) |
+| DOM-02 | Draft and publish lifecycle | [Model your first domain](/build/first-hour/first-domain/), [From dev to production](/build/model/dev-to-production/), [Drafts, editors and publishing](/build/model/in-app/drafts-and-publishing/), [How drafts work](/build/model/in-app/how-drafts-work/), [Choose how you build](/build/model/), [Domains: where your data lives](/discover/how-it-works/domains/) |
+| DOM-03 | Doctypes | [Documents, doctypes and projections](/build/deeper/documents-and-projections/), [Model your first domain](/build/first-hour/first-domain/), [Design a doctype](/build/model/data/design-doctypes/), [Doctype definition schema](/reference/doctype-schema/) |
+| DOM-04 | Field type system | [Model your first domain](/build/first-hour/first-domain/), [Choose field types](/build/model/data/field-types/), [Field types](/reference/field-types/) |
+| DOM-05 | Composition (parent and children) | [Parent and child documents](/build/model/relations/parent-child/) |
+| DOM-06 | Sidecars | [Add comments and attachments](/build/model/relations/comments-attachments/), [Documents: records with a memory](/discover/how-it-works/documents/), [Comments and attachments](/use/documents/comments-attachments/) |
+| DOM-07 | Named actions | [Add actions to a doctype](/build/model/behaviour/named-actions/) |
+| DOM-08 | Lifecycle scripts | [Scripts and guards](/build/model/behaviour/scripts-and-guards/), [Lua API](/reference/lua-api/) |
 | DOM-09 | Computed fields | [Computed fields](/build/model/data/computed-fields/) |
-| DOM-10 | Sequential identifiers | [Identifiers and unique constraints](/build/model/data/identifiers-uniqueness/) |
-| DOM-11 | Unique constraints | [Identifiers and unique constraints](/build/model/data/identifiers-uniqueness/) |
-| DOM-12 | Named scopes | [Show each role only its rows](/admin/people/row-scopes/), [Named scopes](/build/model/access/named-scopes/) |
+| DOM-10 | Sequential identifiers | [Reference numbers and uniqueness](/build/model/data/identifiers-uniqueness/) |
+| DOM-11 | Unique constraints | [Reference numbers and uniqueness](/build/model/data/identifiers-uniqueness/) |
+| DOM-12 | Named scopes | [Show each role only its rows](/admin/people/row-scopes/), [Write row rules for roles](/build/model/access/named-scopes/) |
 | DOM-13 | Domain editors | [Drafts, editors and publishing](/build/model/in-app/drafts-and-publishing/) |
 | DOM-14 | Domain grants | [Cross-domain replication](/build/deeper/cross-domain-replication/), [How domains stay isolated](/build/deeper/domain-isolation/), [Share data across domains](/build/model/relations/across-domains/), [Domains: where your data lives](/discover/how-it-works/domains/) |
 | DOM-15 | Portable domain bundles | [The same domain in files](/build/first-hour/first-domain-in-files/), [Move domains with bundles](/build/model/bundles/), [From dev to production](/build/model/dev-to-production/), [The domain file layout](/build/model/in-files/domain-files/) |
-| DOM-16 | Definition diagnostics | [Build your first domain](/build/first-hour/first-domain/), [Check before you publish](/build/model/in-app/check-before-publish/), [How drafts work](/build/model/in-app/how-drafts-work/) |
+| DOM-16 | Definition diagnostics | [Model your first domain](/build/first-hour/first-domain/), [Check before you publish](/build/model/in-app/check-before-publish/), [How drafts work](/build/model/in-app/how-drafts-work/) |
 | DOM-17 | Lazy document migration | [Schema evolution and lazy migration](/build/deeper/schema-evolution/), [Change a live domain safely](/build/model/change-a-live-domain/) |
 | DOM-18 | Re-projection CLI | [Change a live domain safely](/build/model/change-a-live-domain/), [facet CLI](/reference/cli-facet/) |
 | DOM-19 | Dev domain watcher | [The same domain in files](/build/first-hour/first-domain-in-files/), [From dev to production](/build/model/dev-to-production/), [Check before you publish](/build/model/in-app/check-before-publish/), [The domain file layout](/build/model/in-files/domain-files/), [The domain watcher](/build/model/in-files/domain-watcher/), [Build domains with a coding agent](/build/model/in-files/with-a-coding-agent/), [Choose how you build](/build/model/) |
-| DOM-20 | Domain schematic | [The schematic view](/build/model/views/schematic/) |
-| DOM-21 | CollectionView | [Build your first domain](/build/first-hour/first-domain/), [Collection views](/build/model/views/lists-boards-calendars/), [Lists, filters and saved views](/use/finding/lists-and-views/) |
-| DOM-22 | DocumentView templates | [View templates](/build/model/views/document-pages/), [DVT template schema](/reference/dvt-schema/), [Jinja2 template context](/reference/jinja2-context/) |
-| DOM-23 | Jinja2 templating for derived columns | [Documents, doctypes and projections](/build/deeper/documents-and-projections/), [Display names and search text (Jinja2)](/build/model/views/names-and-search/), [Jinja2 template context](/reference/jinja2-context/) |
-| DOM-24 | Core seeding | [Bootstrap and CLI tasks](/admin/install/bootstrap/), [Set up a dev environment](/build/dev-environment/), [Run Facet](/build/first-hour/run-facet/) |
+| DOM-20 | Domain schematic | [See your domain as a diagram](/build/model/views/schematic/) |
+| DOM-21 | CollectionView | [Model your first domain](/build/first-hour/first-domain/), [Lists, boards and calendars](/build/model/views/lists-boards-calendars/), [Lists, boards and calendars](/use/finding/lists-and-views/) |
+| DOM-22 | DocumentView templates | [Design document pages](/build/model/views/document-pages/), [DVT template schema](/reference/dvt-schema/), [Jinja2 template context](/reference/jinja2-context/) |
+| DOM-23 | Jinja2 templating for derived columns | [Documents, doctypes and projections](/build/deeper/documents-and-projections/), [Display names and search text](/build/model/views/names-and-search/), [Jinja2 template context](/reference/jinja2-context/) |
+| DOM-24 | Core seeding | [First start and bootstrap](/admin/install/bootstrap/), [Set up a dev environment](/build/dev-environment/), [Run Facet](/build/first-hour/run-facet/) |
 | DOM-25 | Cross-domain field replication | [Cross-domain replication](/build/deeper/cross-domain-replication/), [Share data across domains](/build/model/relations/across-domains/) |
-| DOM-26 | Doctype maintenance console | — |
-| DOM-27 | Eager document migration | — |
-| DOM-28 | Migration retry CLI | — |
-| DOM-29 | Collection view starter screen | — |
-| DOM-30 | Collection view pinning | — |
-| DOM-31 | Draft from live domain | — |
-| DOM-32 | Kanban lane control | — |
+| DOM-26 | Doctype maintenance console | [Schema evolution and lazy migration](/build/deeper/schema-evolution/) |
+| DOM-27 | Eager document migration | [Schema evolution and lazy migration](/build/deeper/schema-evolution/) |
+| DOM-28 | Migration retry CLI | [Schema evolution and lazy migration](/build/deeper/schema-evolution/) |
+| DOM-29 | Collection view starter screen | [Lists, boards and calendars](/build/model/views/lists-boards-calendars/) |
+| DOM-30 | Collection view pinning | [Lists, boards and calendars](/use/finding/lists-and-views/) |
+| DOM-31 | Draft from live domain | [Drafts, editors and publishing](/build/model/in-app/drafts-and-publishing/) |
+| DOM-32 | Kanban lane control | [Lists, boards and calendars](/build/model/views/lists-boards-calendars/) |
 
 ## FE — workspace SPA surfaces
 
 | ID | Feature | Pages |
 | --- | --- | --- |
-| FE-01 | Auth screens | [Run Facet](/build/first-hour/run-facet/), [Sign in, MFA, reset your password](/use/first-day/sign-in/) |
-| FE-02 | Dashboard | [The dashboard](/use/first-day/dashboard/) |
-| FE-03 | List surfaces | [Build your first domain](/build/first-hour/first-domain/), [Lists, filters and saved views](/use/finding/lists-and-views/) |
-| FE-04 | Document show page | [View templates](/build/model/views/document-pages/), [Comments and attachments](/use/documents/comments-attachments/), [Viewing and editing a document](/use/documents/view-and-edit/) |
-| FE-05 | Document form | [Viewing and editing a document](/use/documents/view-and-edit/) |
-| FE-06 | History and rollback | [History and undo (rollback)](/use/documents/history-undo/) |
-| FE-07 | Command palette | [Search and the command palette](/use/finding/search/) |
-| FE-08 | Keyboard shortcuts | [Keyboard shortcuts](/use/finding/keyboard-shortcuts/) |
+| FE-01 | Auth screens | [Run Facet](/build/first-hour/run-facet/), [Sign in and secure your account](/use/first-day/sign-in/) |
+| FE-02 | Dashboard | [The dashboard](/use/first-day/dashboard/), [A tour of the workspace](/use/first-day/) |
+| FE-03 | List surfaces | [Model your first domain](/build/first-hour/first-domain/), [Lists, boards and calendars](/use/finding/lists-and-views/) |
+| FE-04 | Document show page | [Design document pages](/build/model/views/document-pages/), [Comments and attachments](/use/documents/comments-attachments/), [Open and edit a document](/use/documents/view-and-edit/) |
+| FE-05 | Document form | [Open and edit a document](/use/documents/view-and-edit/) |
+| FE-06 | History and rollback | [History and undo](/use/documents/history-undo/) |
+| FE-07 | Command palette | [Search and the command palette](/use/finding/search/), [A tour of the workspace](/use/first-day/) |
+| FE-08 | Keyboard shortcuts | [Keyboard shortcuts](/use/finding/keyboard-shortcuts/), [Lists, boards and calendars](/use/finding/lists-and-views/) |
 | FE-09 | Notifications UI | [Notifications](/use/notifications/) |
-| FE-10 | Builder | [Build your first domain](/build/first-hour/first-domain/), [Drafts, editors and publishing](/build/model/in-app/drafts-and-publishing/) |
+| FE-10 | Builder | [Model your first domain](/build/first-hour/first-domain/), [Drafts, editors and publishing](/build/model/in-app/drafts-and-publishing/) |
 | FE-11 | Configure access | [Manage accounts](/admin/people/accounts/), [Give your team access](/build/first-hour/team-access/) |
 | FE-12 | Configure apps | [Control what apps can reach](/admin/apps-access/app-grants/), [Register an app](/build/apps/connect/register/) |
 | FE-13 | Configure domains | [Drafts, editors and publishing](/build/model/in-app/drafts-and-publishing/) |
 | FE-14 | Configure platform | [System settings](/admin/configure/system-settings/), [Single sign-on (OIDC)](/admin/people/sso/) |
-| FE-15 | Configure currencies | [Currencies and money](/admin/configure/currencies/) |
-| FE-16 | Configure audit | [Auditing activity](/admin/history/audit/) |
-| FE-17 | Settings | [Your settings, sessions and API keys](/use/account/) |
+| FE-15 | Configure currencies | [Currencies](/admin/configure/currencies/) |
+| FE-16 | Configure audit | [See who did what](/admin/history/audit/) |
+| FE-17 | Settings | [Your settings and API keys](/use/account/) |
 | FE-18 | Import and export UI | [Import and export data](/use/documents/import-export/) |
-| FE-19 | Welcome tour | [Run Facet](/build/first-hour/run-facet/) |
-| FE-20 | Internationalization | [Localization](/admin/configure/languages/) |
+| FE-19 | Welcome tour | [Run Facet](/build/first-hour/run-facet/), [A tour of the workspace](/use/first-day/) |
+| FE-20 | Internationalization | [Languages](/admin/configure/languages/) |
 | FE-21 | OAuth consent page | [Sign users in](/build/apps/connect/user-login/) |
-| FE-22 | Assistant chat UI | [Using the assistant](/use/assistant/) |
+| FE-22 | Assistant chat UI | [Ask the assistant](/use/assistant/) |
 | FE-23 | Grid view (dormant) | Excluded from user docs |
-| FE-24 | Peek drawer | — |
-| FE-25 | Trash mode and restore | — |
+| FE-24 | Peek drawer | [Open and edit a document](/use/documents/view-and-edit/) |
+| FE-25 | Trash mode and restore | [Lists, boards and calendars](/use/finding/lists-and-views/) |
 
 ## IAM — identity and authentication
 
 | ID | Feature | Pages |
 | --- | --- | --- |
-| IAM-01 | Password login and sessions | [Sessions and lockouts](/admin/people/sessions-lockouts/), [Security and governance](/discover/security/), [Sign in, MFA, reset your password](/use/first-day/sign-in/) |
+| IAM-01 | Password login and sessions | [Sessions and lockouts](/admin/people/sessions-lockouts/), [Security and governance](/discover/security/), [Sign in and secure your account](/use/first-day/sign-in/) |
 | IAM-02 | Refresh rotation and reuse detection | [Sessions and lockouts](/admin/people/sessions-lockouts/), [Security and governance](/discover/security/) |
-| IAM-03 | MFA with TOTP and backup codes | [Require MFA](/admin/people/mfa/), [Security and governance](/discover/security/), [Sign in, MFA, reset your password](/use/first-day/sign-in/) |
-| IAM-04 | Forced password change | [Security and governance](/discover/security/), [Sign in, MFA, reset your password](/use/first-day/sign-in/) |
-| IAM-05 | Self-service password reset | [Security and governance](/discover/security/), [Sign in, MFA, reset your password](/use/first-day/sign-in/) |
+| IAM-03 | MFA with TOTP and backup codes | [Require MFA](/admin/people/mfa/), [Security and governance](/discover/security/), [Sign in and secure your account](/use/first-day/sign-in/) |
+| IAM-04 | Forced password change | [Security and governance](/discover/security/), [Sign in and secure your account](/use/first-day/sign-in/) |
+| IAM-05 | Self-service password reset | [Security and governance](/discover/security/), [Sign in and secure your account](/use/first-day/sign-in/) |
 | IAM-06 | Invites and temporary passwords | [Manage accounts](/admin/people/accounts/), [People and access](/admin/people/), [Give your team access](/build/first-hour/team-access/), [Security and governance](/discover/security/) |
 | IAM-07 | Account lifecycle | [Manage accounts](/admin/people/accounts/), [Security and governance](/discover/security/) |
 | IAM-08 | Inbound OIDC SSO | [Single sign-on (OIDC)](/admin/people/sso/), [Security and governance](/discover/security/) |
-| IAM-09 | Static API keys | [API keys](/admin/apps-access/api-keys/), [Security and governance](/discover/security/), [Your settings, sessions and API keys](/use/account/) |
-| IAM-10 | Login throttle and lockout | [Sessions and lockouts](/admin/people/sessions-lockouts/), [Security and governance](/discover/security/), [Sign in, MFA, reset your password](/use/first-day/sign-in/) |
-| IAM-11 | Session management | [Sessions and lockouts](/admin/people/sessions-lockouts/), [Security and governance](/discover/security/), [Your settings, sessions and API keys](/use/account/) |
-| IAM-12 | Bootstrap CLI | [Bootstrap and CLI tasks](/admin/install/bootstrap/), [Deploy to production](/admin/install/production/), [Set up a dev environment](/build/dev-environment/), [Run Facet](/build/first-hour/run-facet/), [Security and governance](/discover/security/), [facet CLI](/reference/cli-facet/) |
-| IAM-13 | Login event log | [Auditing activity](/admin/history/audit/), [Security and governance](/discover/security/) |
-| IAM-14 | Caller identity endpoint | [Auth contexts](/admin/under-the-hood/one-role-at-a-time/), [Show only what the user can do](/build/apps/connect/permission-manifest/), [Security and governance](/discover/security/) |
+| IAM-09 | Static API keys | [API keys](/admin/apps-access/api-keys/), [Security and governance](/discover/security/), [Your settings and API keys](/use/account/) |
+| IAM-10 | Login throttle and lockout | [Sessions and lockouts](/admin/people/sessions-lockouts/), [Security and governance](/discover/security/), [Sign in and secure your account](/use/first-day/sign-in/) |
+| IAM-11 | Session management | [Sessions and lockouts](/admin/people/sessions-lockouts/), [Security and governance](/discover/security/), [Your settings and API keys](/use/account/) |
+| IAM-12 | Bootstrap CLI | [First start and bootstrap](/admin/install/bootstrap/), [Go to production](/admin/install/production/), [Set up a dev environment](/build/dev-environment/), [Run Facet](/build/first-hour/run-facet/), [Security and governance](/discover/security/), [facet CLI](/reference/cli-facet/) |
+| IAM-13 | Login event log | [See who did what](/admin/history/audit/), [Security and governance](/discover/security/) |
+| IAM-14 | Caller identity endpoint | [Why you act as one role at a time](/admin/under-the-hood/one-role-at-a-time/), [Show only what the user can do](/build/apps/connect/permission-manifest/), [Security and governance](/discover/security/) |
 | IAM-15 | Service accounts | [Security and governance](/discover/security/) |
 
 ## PLT — platform, operations, observability
@@ -186,36 +186,36 @@ A writer or reviewer traces a feature to its pages — or finds the pages a chan
 | --- | --- | --- |
 | PLT-01 | YAML config | [Configuration files](/admin/configure/configuration-files/), [Set up a dev environment](/build/dev-environment/), [Run Facet](/build/first-hour/run-facet/), [Config file keys](/reference/config-keys/) |
 | PLT-02 | System settings | [System settings](/admin/configure/system-settings/), [Require MFA](/admin/people/mfa/), [System settings keys](/reference/system-settings-keys/) |
-| PLT-03 | Secret store | [Secret and write-only fields](/build/model/data/secret-fields/) |
-| PLT-04 | Artifact store | [File storage: filesystem or S3](/admin/configure/file-storage/), [Upload and serve files](/build/apps/data/files/), [Files and artifacts in fields](/build/model/data/files/) |
-| PLT-05 | Managed indexes | [Managed indexes](/admin/keep-running/indexes/) |
-| PLT-06 | Health probes | [Health checks, metrics, tracing, logs](/admin/keep-running/monitoring/), [Health and metrics names](/reference/health-metrics-names/) |
-| PLT-07 | Metrics | [Health checks, metrics, tracing, logs](/admin/keep-running/monitoring/), [Health and metrics names](/reference/health-metrics-names/) |
-| PLT-08 | OpenTelemetry tracing | [Health checks, metrics, tracing, logs](/admin/keep-running/monitoring/) |
-| PLT-09 | Structured logging | [Health checks, metrics, tracing, logs](/admin/keep-running/monitoring/) |
-| PLT-10 | Database topology | [System requirements and topology](/admin/install/requirements/) |
-| PLT-11 | Migrations | [Deploy to production](/admin/install/production/), [Database migrations](/admin/keep-running/migrations/), [Upgrades and graceful shutdown](/admin/keep-running/upgrades/), [facet CLI](/reference/cli-facet/) |
-| PLT-12 | OpenAPI specification | [REST API](/reference/rest-api/) |
+| PLT-03 | Secret store | [Back up and restore](/admin/keep-running/backup-restore/), [Secret and write-only fields](/build/model/data/secret-fields/) |
+| PLT-04 | Artifact store | [File storage](/admin/configure/file-storage/), [Back up and restore](/admin/keep-running/backup-restore/), [Upload and serve files](/build/apps/data/files/), [Files in fields](/build/model/data/files/) |
+| PLT-05 | Managed indexes | [Indexes](/admin/keep-running/indexes/) |
+| PLT-06 | Health probes | [Health, metrics and logs](/admin/keep-running/monitoring/), [Health and metrics names](/reference/health-metrics-names/) |
+| PLT-07 | Metrics | [Health, metrics and logs](/admin/keep-running/monitoring/), [Health and metrics names](/reference/health-metrics-names/) |
+| PLT-08 | OpenTelemetry tracing | [Health, metrics and logs](/admin/keep-running/monitoring/) |
+| PLT-09 | Structured logging | [Health, metrics and logs](/admin/keep-running/monitoring/) |
+| PLT-10 | Database topology | [Configuration files](/admin/configure/configuration-files/), [System requirements](/admin/install/requirements/) |
+| PLT-11 | Migrations | [Go to production](/admin/install/production/), [Database migrations](/admin/keep-running/migrations/), [Upgrade Facet](/admin/keep-running/upgrades/), [facet CLI](/reference/cli-facet/) |
+| PLT-12 | OpenAPI specification | [Use the REST API](/build/apps/data/rest-api/), [REST API](/reference/rest-api/) |
 | PLT-13 | HTTP admission gates | [Use the REST API](/build/apps/data/rest-api/), [Error responses](/reference/error-responses/) |
-| PLT-14 | Currency registry and money math | [Currencies and money](/admin/configure/currencies/) |
-| PLT-15 | Graceful shutdown | [Upgrades and graceful shutdown](/admin/keep-running/upgrades/) |
-| PLT-16 | Container images | [Deploying with containers](/admin/install/containers/), [Deploy to production](/admin/install/production/), [System requirements and topology](/admin/install/requirements/), [Set up a dev environment](/build/dev-environment/), [Run Facet](/build/first-hour/run-facet/) |
-| PLT-17 | Account settings store | [Account settings keys](/reference/account-settings-keys/), [Your settings, sessions and API keys](/use/account/) |
+| PLT-14 | Currency registry and money math | [Currencies](/admin/configure/currencies/) |
+| PLT-15 | Graceful shutdown | [Upgrade Facet](/admin/keep-running/upgrades/) |
+| PLT-16 | Container images | [Run with containers](/admin/install/containers/), [Go to production](/admin/install/production/), [System requirements](/admin/install/requirements/), [Set up a dev environment](/build/dev-environment/), [Run Facet](/build/first-hour/run-facet/) |
+| PLT-17 | Account settings store | [Account settings keys](/reference/account-settings-keys/), [Your settings and API keys](/use/account/) |
 
 ## RBC — authorization and governance
 
 | ID | Feature | Pages |
 | --- | --- | --- |
-| RBC-01 | Roles | [People and access](/admin/people/), [Roles and permissions](/admin/people/roles-and-permissions/), [Roles, levels and the authority guard](/admin/people/who-can-change-roles/), [Give your team access](/build/first-hour/team-access/), [Roles: who sees and does what](/discover/how-it-works/roles/), [Security and governance](/discover/security/), [Permission line syntax](/reference/permission-syntax/) |
+| RBC-01 | Roles | [People and access](/admin/people/), [Roles and permissions](/admin/people/roles-and-permissions/), [Who can change roles](/admin/people/who-can-change-roles/), [Give your team access](/build/first-hour/team-access/), [Roles: who sees and does what](/discover/how-it-works/roles/), [Security and governance](/discover/security/), [Permission line syntax](/reference/permission-syntax/) |
 | RBC-02 | Role assignment and election | [Assign roles](/admin/people/assign-roles/), [Give your team access](/build/first-hour/team-access/), [Roles: who sees and does what](/discover/how-it-works/roles/), [Security and governance](/discover/security/) |
-| RBC-03 | Read enforcement | [Authorization enforcement](/admin/under-the-hood/how-access-is-enforced/), [Security and governance](/discover/security/), [Permission line syntax](/reference/permission-syntax/) |
+| RBC-03 | Read enforcement | [How access is enforced](/admin/under-the-hood/how-access-is-enforced/), [Security and governance](/discover/security/), [Permission line syntax](/reference/permission-syntax/) |
 | RBC-04 | Field visibility tags | [Hide a field from some roles](/admin/people/hidden-fields/), [Give your team access](/build/first-hour/team-access/), [Roles: who sees and does what](/discover/how-it-works/roles/), [Security and governance](/discover/security/) |
 | RBC-05 | Row scopes | [Show each role only its rows](/admin/people/row-scopes/), [Give your team access](/build/first-hour/team-access/), [Roles: who sees and does what](/discover/how-it-works/roles/), [Security and governance](/discover/security/) |
-| RBC-06 | Write enforcement | [Authorization enforcement](/admin/under-the-hood/how-access-is-enforced/), [Security and governance](/discover/security/), [Permission line syntax](/reference/permission-syntax/) |
-| RBC-07 | Role authority guard | [Roles and permissions](/admin/people/roles-and-permissions/), [Roles, levels and the authority guard](/admin/people/who-can-change-roles/), [Security and governance](/discover/security/) |
+| RBC-06 | Write enforcement | [How access is enforced](/admin/under-the-hood/how-access-is-enforced/), [Security and governance](/discover/security/), [Permission line syntax](/reference/permission-syntax/) |
+| RBC-07 | Role authority guard | [Roles and permissions](/admin/people/roles-and-permissions/), [Who can change roles](/admin/people/who-can-change-roles/), [Security and governance](/discover/security/) |
 | RBC-08 | App grants | [Control what apps can reach](/admin/apps-access/app-grants/), [Apps: grants ∩ roles](/build/apps/connect/what-an-app-can-do/), [How apps work on Facet](/build/apps/how-apps-work/), [Apps: built fast, replaced freely](/discover/how-it-works/apps/), [Security and governance](/discover/security/) |
-| RBC-09 | Metadata gate | [Authorization enforcement](/admin/under-the-hood/how-access-is-enforced/), [Security and governance](/discover/security/) |
-| RBC-10 | Auth contexts | [Auth contexts](/admin/under-the-hood/one-role-at-a-time/), [Security and governance](/discover/security/) |
+| RBC-09 | Metadata gate | [How access is enforced](/admin/under-the-hood/how-access-is-enforced/), [Security and governance](/discover/security/) |
+| RBC-10 | Auth contexts | [AI and permissions, in detail](/admin/under-the-hood/ai-and-permissions/), [Why you act as one role at a time](/admin/under-the-hood/one-role-at-a-time/), [Security and governance](/discover/security/) |
 | RBC-11 | Permission manifest | [Show only what the user can do](/build/apps/connect/permission-manifest/), [Security and governance](/discover/security/) |
 | RBC-12 | Role connectivity channels | [Security and governance](/discover/security/) |
 

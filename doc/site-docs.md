@@ -144,7 +144,7 @@ Rule R2 scopes coverage to task pages: only a `how-to`, `tutorial` or `explanati
 - **Missing `type`** — every page except the landing page must carry a `type`.
 - **Long titles** — `title` over 40 characters.
 
-The build runs the check in warn mode: it reports and always exits 0. `node scripts/check-coverage.mjs --strict` exits non-zero while any inventory ID is uncovered or any unknown ID is on a page. The warn-to-strict flip is tracked in the plan README status table while the documentation-v2 plan runs.
+The build runs the check in strict mode: the `prebuild` script carries `--strict`, so a build fails while any inventory ID is uncovered or any unknown ID is on a page (flipped on at the close of the documentation-v2 review, WP 21 part 3 — see `doc/plans/documentation/documentation-v2/ledgers/review/gates.md`). Run `node scripts/check-coverage.mjs` without the flag for the report-only view.
 
 The same script prints the staleness report: a page is stale when its `verified_at` commit is more than 90 days old (`STALE_DAYS` in the script). The age resolves through git; pages without a marker, and markers git cannot resolve, are listed too. Staleness counts days, not releases (decision D11): release tags do not exist yet. Switch to a release-based measure when tags exist.
 

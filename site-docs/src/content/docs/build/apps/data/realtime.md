@@ -3,7 +3,7 @@ title: Live updates
 description: Subscribe to document and collection changes over one WebSocket at /Ws.
 type: how-to
 audience: [developer]
-features: [DOC-12]
+features: [DOC-12, DOC-15]
 verified_at: eee55a2
 sidebar:
   order: 3

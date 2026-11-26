@@ -66,7 +66,9 @@ PY
 
 # ── login as the dev admin ───────────────────────────────────────────────
 step "admin login"
-ADMIN_RES="$(api POST /Api/iam/login '{"email":"admin@example.tld","password":"admin"}')"
+# The dev admin's password honours the 8-character minimum every password
+# change enforces, so the loader logs in with `adminadmin`, not `admin`.
+ADMIN_RES="$(api POST /Api/iam/login '{"email":"admin@example.tld","password":"adminadmin"}')"
 [ "$(json_field "$ADMIN_RES" "d.get('account',{}).get('id','')")" ] || die "admin login failed: $ADMIN_RES"
 ok "session open"
 

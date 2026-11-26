@@ -6,7 +6,7 @@ audience: [author, developer]
 features: [DOM-02, DOM-19]
 sidebar:
   order: 0
-verified_at: eee55a2
+verified_at: c34885a
 ---
 
 Facet gives you two ways to build a domain. Both produce the same thing: a
@@ -37,6 +37,12 @@ copy whose name starts with `_` — change the definitions there, run
 **Check**, and **Publish** in one step when it is ready. Publish copies the
 structure only, so the test documents you made while experimenting never
 reach production data.
+
+One gate sits before the draft: Facet forks a live domain only for an
+account the domain lists as an editor, and a fresh domain lists nobody —
+not even the administrator. Add yourself on the domain's **Editors** tab
+(**Configure → Domains**) before you use **Edit existing**; the details
+are in [Drafts, editors and publishing](/build/model/in-app/drafts-and-publishing/).
 
 - [How drafts work](/build/model/in-app/how-drafts-work/) — the lifecycle, and what publish checks.
 - [Drafts, editors and publishing](/build/model/in-app/drafts-and-publishing/) — open a draft, add co-editors, publish.

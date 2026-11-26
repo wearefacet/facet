@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "prebuild": "node scripts/check-coverage.mjs",
+    "prebuild": "node scripts/check-coverage.mjs --strict",
     "diagrams": "node scripts/build-diagrams.mjs",
     "predev": "node scripts/build-diagrams.mjs",
     "dev": "astro dev",

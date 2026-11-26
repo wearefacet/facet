@@ -3,7 +3,7 @@ type: how-to
 title: The dashboard
 description: Open the dashboard, read its cards, and reach your records in a few clicks.
 audience: [user]
-features: [FE-02]
+features: [FE-02, APP-12]
 sidebar:
   order: 3
 prev: /use/first-day/sign-in/

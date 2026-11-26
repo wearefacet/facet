@@ -7,9 +7,19 @@
 // (run from doc/plans/documentation/documentation-v2/ledgers/scripts/)
 
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
-import { join, relative, sep } from 'node:path';
+import { dirname, join, relative, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = process.env.FACET_ROOT ?? '../../../../..';
+// Repo root: six levels up from this directory
+// (doc/plans/documentation/documentation-v2/ledgers/scripts), anchored to
+// the script so the invocation works from any working directory. Set
+// FACET_ROOT to override.
+const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
+// Six levels up: ledgers/scripts → ledgers → documentation-v2 →
+// documentation → plans → doc → the repository root.
+const REPO_FROM_SCRIPT = ['..', '..', '..', '..', '..', '..'];
+const ROOT =
+  process.env.FACET_ROOT ?? join(SCRIPT_DIR, ...REPO_FROM_SCRIPT);
 
 function walk(dir, ext, base = dir, out = []) {
   if (!existsSync(dir)) return out;
