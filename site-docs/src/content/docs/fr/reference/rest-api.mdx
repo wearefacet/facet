@@ -1,10 +1,11 @@
 ---
+type: reference
 title: API REST
 description: La référence de l’API REST, produite à partir de la spécification OpenAPI.
 audience: [developer, operator]
 features: [PLT-12]
 sidebar:
-  order: 1
+  order: 3
 verified_at: 008dd880
 ---
 
@@ -16,7 +17,7 @@ documents, d’audit et d’IAM. Le site embarque une copie de
 `doc/api/openapi.json`, servie à l’adresse `/api/openapi.json`.
 `make gen-docs-rest-api` actualise cette copie.
 
-Les guides pratiques sous `/apps/` présentent les mêmes routes avec des
+Les guides pratiques sous `/build/apps/` présentent les mêmes routes avec des
 exemples concrets.
 
 :::note
@@ -36,7 +37,7 @@ dessert ces groupes de routes :
 Tous les autres groupes de routes — webhooks, fichiers, secrets, recherche,
 WebSocket et authentification — sont documentés dans les pages rédigées à
 
-la main sous `/apps/`.
+la main sous `/build/apps/`.
 :::
 
 <script id="api-reference" data-url="/api/openapi.json" is:inline></script>
@@ -44,5 +45,5 @@ la main sous `/apps/`.
 
 ## Voir aussi
 
-- [Utiliser l’API REST](/fr/apps/rest-api/)
-- [Le SDK TypeScript (`@facetapp/sdk`)](/fr/apps/typescript-sdk/)
+- [Utiliser l’API REST](/fr/build/apps/data/rest-api/)
+- [Le SDK TypeScript (`@facetapp/sdk`)](/fr/build/apps/data/sdk/)

@@ -30,5 +30,5 @@ Deux clés portent un palier serveur avant leur défaut de registre. Un compte s
 
 ## Voir aussi
 
-- [/fr/workspace/settings-sessions-api-keys/](/fr/workspace/settings-sessions-api-keys/)
-- [/fr/operate/system-settings/](/fr/operate/system-settings/)
+- [/fr/use/account/](/fr/use/account/)
+- [/fr/admin/configure/system-settings/](/fr/admin/configure/system-settings/)

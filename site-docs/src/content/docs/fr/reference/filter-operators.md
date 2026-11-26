@@ -139,6 +139,6 @@ Seule la clé nue est valide ; une forme suffixée (par exemple `search__match`
 
 ## Voir aussi
 
-- [Périmètres nommés](/fr/build/named-scopes/)
-- [Listes, filtres et vues enregistrées (tableau, kanban, calendrier)](/fr/workspace/lists-filters-views/)
-- [Utiliser l'API REST](/fr/apps/rest-api/)
+- [Périmètres nommés](/fr/build/model/access/named-scopes/)
+- [Listes, filtres et vues enregistrées (tableau, kanban, calendrier)](/fr/use/finding/lists-and-views/)
+- [Utiliser l'API REST](/fr/build/apps/data/rest-api/)

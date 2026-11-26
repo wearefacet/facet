@@ -1,10 +1,11 @@
 ---
+type: reference
 title: Jinja2 template context
 description: Variables and filters available inside Jinja2 templates.
 audience: [author, developer]
 features: [DOM-22, DOM-23]
 sidebar:
-  order: 6
+  order: 13
 verified_at: 008dd880
 ---
 
@@ -192,6 +193,6 @@ stored label; the two templates above do not use it.
 
 ## Related
 
-- [Display names and search text (Jinja2)](/build/display-names-search-text/) — write the two doctype templates.
-- [View templates](/build/view-templates/) — the structured view templates, a separate format.
-- [Computed fields](/build/computed-fields/) — Lua functions, not templates.
+- [Display names and search text (Jinja2)](/build/model/views/names-and-search/) — write the two doctype templates.
+- [View templates](/build/model/views/document-pages/) — the structured view templates, a separate format.
+- [Computed fields](/build/model/data/computed-fields/) — Lua functions, not templates.

@@ -1163,4 +1163,4 @@ Each specialized input node accepts one set of field types. A binding outside th
 
 ## Related
 
-- [View templates](/build/view-templates/) — how to author the tree this schema describes.
+- [View templates](/build/model/views/document-pages/) — how to author the tree this schema describes.

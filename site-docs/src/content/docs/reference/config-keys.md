@@ -169,4 +169,4 @@ Some values can come from the environment instead of the file:
 
 ## Related
 
-- [/operate/configuration-files/](/operate/configuration-files/)
+- [/admin/configure/configuration-files/](/admin/configure/configuration-files/)

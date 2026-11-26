@@ -1,10 +1,11 @@
 ---
+type: reference
 title: Permission line syntax
 description: The grammar of permission lines with examples and their effects.
 audience: [admin, developer]
 features: [RBC-01, RBC-03, RBC-06]
 sidebar:
-  order: 5
+  order: 15
 verified_at: 008dd880
 ---
 
@@ -77,7 +78,7 @@ carry; a role write with a string scope fails with `must be an array`.
 Each alias must be declared in the `scopes:` block of the leaf doctype.
 The validator rejects an unknown alias at authoring time; enforcement
 expands it against the live definition at request time. A role never
-writes its own query predicate. See [Row scopes](/govern/row-scopes/)
+writes its own query predicate. See [Row scopes](/admin/people/row-scopes/)
 for the declaration grammar.
 
 ## The `except` field
@@ -165,10 +166,10 @@ Field visibility is not part of a permission line. The role carries one
 when all of its tags sit in the role's tags. The default role tags are
 `["default"]`; the wildcard tag `["*"]` sees every field. A write into
 an invisible field answers `403`. See
-[Field visibility with tags](/govern/field-visibility-tags/).
+[Field visibility with tags](/admin/people/hidden-fields/).
 
 ## Related
 
-- [Roles and permission lines](/govern/roles-permission-lines/) — edit role documents.
-- [Row scopes](/govern/row-scopes/) — declare and reference the scopes.
-- [Field visibility with tags](/govern/field-visibility-tags/) — the per-field mask.
+- [Roles and permission lines](/admin/people/roles-and-permissions/) — edit role documents.
+- [Row scopes](/admin/people/row-scopes/) — declare and reference the scopes.
+- [Field visibility with tags](/admin/people/hidden-fields/) — the per-field mask.

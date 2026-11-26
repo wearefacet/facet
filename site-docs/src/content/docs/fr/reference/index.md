@@ -1,4 +1,5 @@
 ---
+type: overview
 title: Référence
 description: "Les détails exacts : API, CLI, types de champs, opérateurs de filtre, modèles, schémas et clés."
 audience: [evaluator]

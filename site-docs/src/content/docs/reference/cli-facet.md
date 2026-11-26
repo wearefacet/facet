@@ -43,5 +43,5 @@ Every other command takes only its dash options, and the chain continues after t
 
 ## Related
 
-- [Bootstrap and CLI tasks](/operate/bootstrap-cli/)
-- [Quickstart with the dev CLI](/apps/quickstart-dev-cli/)
+- [Bootstrap and CLI tasks](/admin/install/bootstrap/)
+- [Quickstart with the dev CLI](/build/apps/quickstart/)

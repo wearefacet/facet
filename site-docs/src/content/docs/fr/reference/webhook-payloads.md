@@ -194,5 +194,5 @@ la forme compacte pour que vous puissiez l’exécuter tel quel.
 
 ## Voir aussi
 
-- [Webhooks sortants](/fr/build/webhooks/) — enregistrer et gérer les webhooks.
-- [Hooks d’événements](/fr/build/event-hooks/) — exécuter du Lua dans Facet au lieu d’appeler l’extérieur.
+- [Webhooks sortants](/fr/build/model/automation/webhooks/) — enregistrer et gérer les webhooks.
+- [Hooks d’événements](/fr/build/model/automation/event-hooks/) — exécuter du Lua dans Facet au lieu d’appeler l’extérieur.

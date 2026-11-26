@@ -69,7 +69,7 @@ la première version.
 
 ## Voir aussi
 
-- Déployez les images de release : [Exploitation](/fr/operate/)
+- Déployez les images de release : [Exploitation](/fr/admin/)
 - Le pipeline de construction et de publication des conteneurs (doc du
   dépôt) :
   [doc/ops/container-images.md](https://github.com/wearefacet/facet/blob/main/doc/ops/container-images.md)

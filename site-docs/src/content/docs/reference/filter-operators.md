@@ -141,6 +141,6 @@ Only the bare key is valid; a suffixed form (for example `search__match`) answer
 
 ## Related
 
-- [Named scopes](/build/named-scopes/)
-- [Lists, filters and saved views (table, kanban, calendar)](/workspace/lists-filters-views/)
-- [Use the REST API](/apps/rest-api/)
+- [Named scopes](/build/model/access/named-scopes/)
+- [Lists, filters and saved views (table, kanban, calendar)](/use/finding/lists-and-views/)
+- [Use the REST API](/build/apps/data/rest-api/)

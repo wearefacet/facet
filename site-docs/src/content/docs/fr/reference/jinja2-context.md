@@ -1,10 +1,11 @@
 ---
+type: reference
 title: Contexte des modèles Jinja2
 description: Variables et filtres disponibles dans les modèles Jinja2.
 audience: [author, developer]
 features: [DOM-22, DOM-23]
 sidebar:
-  order: 6
+  order: 13
 verified_at: 008dd880
 ---
 
@@ -194,6 +195,6 @@ personne référencée ; les deux modèles ci-dessus ne l’utilisent pas.
 
 ## Voir aussi
 
-- [Noms d’affichage et texte de recherche (Jinja2)](/fr/build/display-names-search-text/) — écrire les deux modèles du doctype.
-- [Modèles de vue](/fr/build/view-templates/) — les modèles de vue structurés, un format séparé.
-- [Champs calculés](/fr/build/computed-fields/) — des fonctions Lua, pas des modèles.
+- [Noms d’affichage et texte de recherche (Jinja2)](/fr/build/model/views/names-and-search/) — écrire les deux modèles du doctype.
+- [Modèles de vue](/fr/build/model/views/document-pages/) — les modèles de vue structurés, un format séparé.
+- [Champs calculés](/fr/build/model/data/computed-fields/) — des fonctions Lua, pas des modèles.

@@ -50,5 +50,5 @@ Un outil ne fait pas partie du registre : `read_skill`, le chargeur de compéte
 
 ## Voir aussi
 
-- [/fr/apps/agent-tools/](/fr/apps/agent-tools/)
-- [/fr/apps/mcp-agents/](/fr/apps/mcp-agents/)
+- [/fr/build/apps/agents/agent-tools/](/fr/build/apps/agents/agent-tools/)
+- [/fr/build/apps/agents/mcp/](/fr/build/apps/agents/mcp/)

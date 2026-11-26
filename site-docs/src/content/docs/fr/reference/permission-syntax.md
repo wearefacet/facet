@@ -1,10 +1,11 @@
 ---
+type: reference
 title: Syntaxe des lignes de permission
 description: La grammaire des lignes de permission, avec des exemples et leurs effets.
 audience: [admin, developer]
 features: [RBC-01, RBC-03, RBC-06]
 sidebar:
-  order: 5
+  order: 15
 verified_at: 008dd880
 ---
 
@@ -81,7 +82,7 @@ Chaque alias doit être déclaré dans le bloc `scopes:` du doctype feuille. Le
 validateur rejette un alias inconnu à l’écriture du rôle ; le contrôle le
 développe par rapport à la définition réelle au moment de la requête. Un rôle
 n’écrit jamais son propre prédicat de requête. Voir
-[Périmètres de lignes](/fr/govern/row-scopes/) pour la grammaire de
+[Périmètres de lignes](/fr/admin/people/row-scopes/) pour la grammaire de
 déclaration.
 
 ## Le champ `except`
@@ -171,10 +172,10 @@ porte un tableau `visible_tags` ; chaque champ porte `tags`. Un champ est
 visible quand toutes ses étiquettes figurent dans les étiquettes du rôle. Les
 étiquettes par défaut d’un rôle sont `["default"]` ; l’étiquette joker `["*"]`
 voit tous les champs. Une écriture dans un champ invisible répond `403`. Voir
-[Visibilité des champs par étiquettes](/fr/govern/field-visibility-tags/).
+[Visibilité des champs par étiquettes](/fr/admin/people/hidden-fields/).
 
 ## Voir aussi
 
-- [Rôles et lignes de permission](/fr/govern/roles-permission-lines/) — modifier les documents de rôle.
-- [Périmètres de lignes](/fr/govern/row-scopes/) — déclarer et référencer les périmètres.
-- [Visibilité des champs par étiquettes](/fr/govern/field-visibility-tags/) — le masque champ par champ.
+- [Rôles et lignes de permission](/fr/admin/people/roles-and-permissions/) — modifier les documents de rôle.
+- [Périmètres de lignes](/fr/admin/people/row-scopes/) — déclarer et référencer les périmètres.
+- [Visibilité des champs par étiquettes](/fr/admin/people/hidden-fields/) — le masque champ par champ.

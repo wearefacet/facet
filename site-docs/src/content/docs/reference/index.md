@@ -1,4 +1,5 @@
 ---
+type: overview
 title: Reference
 description: Exact details — API, CLI, field types, filter operators, templates, schemas, and keys.
 audience: [evaluator]

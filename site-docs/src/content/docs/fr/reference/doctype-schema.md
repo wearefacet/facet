@@ -577,6 +577,6 @@ Le schéma exprime les ensembles de clés, les clés obligatoires, les motifs et
 
 ## Voir aussi
 
-- [Concevoir des doctypes](/fr/build/designing-doctypes/) — comment modéliser un domaine avec ces clés.
-- [Faire évoluer un schéma](/fr/build/evolving-schema/) — versions de schéma et migrations.
-- [Composition parent et enfant](/fr/build/parent-child-composition/) — la paire children et member_of.
+- [Concevoir des doctypes](/fr/build/model/data/design-doctypes/) — comment modéliser un domaine avec ces clés.
+- [Faire évoluer un schéma](/fr/build/model/change-a-live-domain/) — versions de schéma et migrations.
+- [Composition parent et enfant](/fr/build/model/relations/parent-child/) — la paire children et member_of.

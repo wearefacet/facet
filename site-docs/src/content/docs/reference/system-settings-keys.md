@@ -66,4 +66,4 @@ supplies.
 
 ## Related
 
-- [/operate/system-settings/](/operate/system-settings/)
+- [/admin/configure/system-settings/](/admin/configure/system-settings/)

@@ -44,6 +44,6 @@ Un champ de doctype déclare l'un des types ci-dessous. Le générateur lit le r
 
 ## Voir aussi
 
-- [Types de champs (guide)](/fr/build/field-types/)
-- [Concevoir des doctypes](/fr/build/designing-doctypes/)
+- [Types de champs (guide)](/fr/build/model/data/field-types/)
+- [Concevoir des doctypes](/fr/build/model/data/design-doctypes/)
 - [Opérateurs de filtre](/fr/reference/filter-operators/)

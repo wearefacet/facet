@@ -1,10 +1,11 @@
 ---
+type: reference
 title: Releases
 description: How Facet versions and ships releases, and where to read the release notes.
 audience: [operator, developer]
 features: []
 sidebar:
-  order: 0
+  order: 20
 verified_at: 7a6cb462
 ---
 
@@ -67,7 +68,7 @@ first release.
 
 ## Related
 
-- Deploy the release images: [Operate](/operate/)
+- Deploy the release images: [Operate](/admin/)
 - The container build and publish pipeline (repo doc):
   [doc/ops/container-images.md](https://github.com/wearefacet/facet/blob/main/doc/ops/container-images.md)
 - The npm package release flow (repo doc):

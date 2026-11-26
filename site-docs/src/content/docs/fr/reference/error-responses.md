@@ -1,10 +1,11 @@
 ---
+type: reference
 title: Réponses d’erreur
 description: "Formes des réponses d’erreur : 422 de validation, échecs d’authentification et 404 sans divulgation."
 audience: [developer, operator]
 features: [PLT-13]
 sidebar:
-  order: 8
+  order: 18
 verified_at: f1409cdc
 ---
 

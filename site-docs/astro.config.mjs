@@ -121,7 +121,6 @@ export default defineConfig({
 				{ label: 'Build', items: [{ autogenerate: { directory: 'build' } }] },
 				{ label: 'Administer', items: [{ autogenerate: { directory: 'admin' } }] },
 				{ label: 'Reference', items: [{ autogenerate: { directory: 'reference' } }] },
-				{ label: 'Changelog', items: [{ autogenerate: { directory: 'changelog' } }] },
 			],
 		}),
 	],

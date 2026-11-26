@@ -1,10 +1,11 @@
 ---
+type: reference
 title: Error responses
 description: "Error response shapes: validation 422s, auth failures, and non-disclosing 404s."
 audience: [developer, operator]
 features: [PLT-13]
 sidebar:
-  order: 8
+  order: 18
 verified_at: f1409cdc
 ---
 
