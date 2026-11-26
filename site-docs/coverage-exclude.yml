@@ -1,6 +1,10 @@
 # Feature IDs exempt from the coverage check, each with a one-line reason.
 # An excluded ID does not fail the check when no page documents it.
 # Source: doc/plans/documentation/whole-doc.md §5 and decision D7.
+# Reviewed at WP 10 (commit 8fb69df, 2026-11-26).
 
 - id: DOC-08
-  reason: Internal copy primitive with no user-facing surface.
+  reason: Internal copy primitive with no user-facing surface (document copy is used by portable export, artifact owner flows and secret adoption only).
+
+- id: FE-23
+  reason: Grid view ships as a component and a view-editor step, but no app surface mounts it and the backend surface enum rejects it (see ledgers/discrepancies.md #14); not user-reachable, so no page may document it as usable.
