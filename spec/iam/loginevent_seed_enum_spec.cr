@@ -11,14 +11,16 @@ require "../../src/iam"
 # audit loss — the helper logs and drops). This spec pins every name the
 # auth/session code emits against the seed definition, so a new event name
 # without a seed update fails here instead of silently losing audit rows.
+#
+# The seed also carries names the code no longer emits (`refresh`,
+# `app_refresh`, `mcp_refresh` — successful refreshes stay out of the log;
+# the backend log carries the trace). The names stay for historical rows;
+# this list pins only the live writers.
 LIVE_EVENT_NAMES = %w[
   login
   logout
-  refresh
   refresh_reuse
   refresh_failed
-  app_refresh
-  mcp_refresh
   lockout
   password_reset_requested
   password_reset_used

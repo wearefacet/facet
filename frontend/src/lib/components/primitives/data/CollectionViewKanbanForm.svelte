@@ -11,6 +11,7 @@
 	import ReferencePicker from '$lib/components/primitives/forms/ReferencePicker.svelte';
 	import FilterBar from '$lib/components/primitives/navigation/FilterBar.svelte';
 	import Button from '$lib/components/primitives/actions/Button.svelte';
+	import Toggle from '$lib/components/primitives/forms/Toggle.svelte';
 	import {
 		controlKindFor,
 		filterableFields,
@@ -22,13 +23,20 @@
 	import { fallbackCurrencyOptions, loadCurrencyOptions } from '$lib/doctype/currencies.js';
 	import { fieldOptions, groupableFields, sortableFields } from '$lib/collectionView/config.js';
 	import type { KanbanLane } from '$lib/collectionView/types.js';
+	import {
+		applyLaneOverrides,
+		groupByLaneKeys,
+		laneKey,
+		lanesFromGroupBy
+	} from '$lib/kanban/lanes.js';
 
 	/**
 	 * Kanban-surface configuration form — board mode (values vs custom), the
-	 * group-by picker, the ordered custom-lane editor, the card sort picker,
-	 * and the embedded FilterBar. The kanban values live in the parent; each
-	 * bindable prop round-trips the writes so the parent keeps its
-	 * one-time-initialised draft state.
+	 * group-by picker, the values-mode lane list (per-lane visibility toggle
+	 * and reorder buttons), the ordered custom-lane editor, the card sort
+	 * picker, the drag-and-drop move toggle, and the embedded FilterBar. The
+	 * kanban values live in the parent; each bindable prop round-trips the
+	 * writes so the parent keeps its one-time-initialised draft state.
 	 *
 	 * A custom lane's filter is rebuilt from the field / operator / value
 	 * trio on every change and omitted while the trio is incomplete, so an
@@ -39,9 +47,16 @@
 		driver,
 		kanbanMode = $bindable('values'),
 		groupBy = $bindable(''),
+		/** Values mode: the authored lane order — the value keys, display order. */
+		laneOrder = $bindable<string[]>([]),
+		/** Values mode: the hidden lane keys (the values not shown). */
+		hiddenLanes = $bindable<string[]>([]),
+		/** Custom mode: ordered lane list. */
 		lanes = $bindable<KanbanLane[]>([]),
 		sortField = $bindable(''),
 		sortDesc = $bindable(true),
+		/** Drag & drop moves between lanes enabled. */
+		allowMove = $bindable(false),
 		filters = $bindable<Record<string, unknown>>({}),
 		groupByError = null,
 		lanesError = null,
@@ -56,12 +71,18 @@
 		kanbanMode?: 'values' | 'custom';
 		/** Values mode: the enum field key whose values become lanes. */
 		groupBy?: string;
+		/** Values mode: the authored lane order — the value keys, display order. */
+		laneOrder?: string[];
+		/** Values mode: the hidden lane keys (the values not shown). */
+		hiddenLanes?: string[];
 		/** Custom mode: ordered lane list. */
 		lanes?: KanbanLane[];
 		/** Card sort field; empty means the surface default. */
 		sortField?: string;
 		/** Card sort direction (descending when true — the `-` prefix). */
 		sortDesc?: boolean;
+		/** Drag & drop moves between lanes enabled. */
+		allowMove?: boolean;
 		/** Fields the FilterBar may filter on — stale keys drop against it. */
 		filterableFields: FieldDef[];
 		/** Active base filters, keyed by `field__op`. */
@@ -76,11 +97,62 @@
 		onGroupByBlur?: () => void;
 	} = $props();
 
-	// ── Option lists ─────────────────────────────────────────────────────
+	// ── Option lists ─────────────────────────────────────────────────
 	const groupableOptions = $derived(fieldOptions(groupableFields(doctype.fields)));
 	const laneFieldDefs = $derived(filterableFields(doctype.fields));
 	const laneFieldOptions = $derived(fieldOptions(laneFieldDefs));
 	const sortOptions = $derived(fieldOptions(sortableFields(doctype.fields)));
+
+	// ── Values-mode lane list ─────────────────────────────────────────
+	/** One row of the values-mode lane list — the derived lane plus the
+	 *  pieces the row's controls read and write. */
+	interface ValueLaneRow {
+		/** The lane key — the group-by value the lane matches. */
+		key: string;
+		/** The derived lane (label, colour, filter). */
+		lane: KanbanLane;
+		/** Whether the lane stays on the board. */
+		visible: boolean;
+	}
+
+	const groupByFieldDef = $derived(doctype.fields.find((f) => f.key === groupBy.trim()));
+	const derivedLanes = $derived(groupByFieldDef ? lanesFromGroupBy(groupByFieldDef) : []);
+	/** The full row list in authored order — hidden lanes stay listed (with
+	 *  the toggle off) so they can be re-enabled. */
+	const valueLanes = $derived.by<ValueLaneRow[]>(() => {
+		if (!groupByFieldDef) return [];
+		const ordered = applyLaneOverrides(derivedLanes, laneOrder, undefined);
+		return ordered.map((lane) => {
+			const key = laneKey(lane) ?? '';
+			return { key, lane, visible: !hiddenLanes.includes(key) };
+		});
+	});
+
+	/** Group-by change — the lane order and visibility belong to the previous
+	 *  field's values, so both reset to the new field's declaration order. */
+	function onGroupByChange(key: string): void {
+		groupBy = key;
+		const field = doctype.fields.find((f) => f.key === key.trim());
+		laneOrder = field ? groupByLaneKeys(field) : [];
+		hiddenLanes = [];
+	}
+
+	function toggleValueLane(key: string, visible: boolean): void {
+		hiddenLanes = visible
+			? hiddenLanes.filter((k) => k !== key)
+			: hiddenLanes.includes(key)
+				? hiddenLanes
+				: [...hiddenLanes, key];
+	}
+
+	function moveValueLane(key: string, dir: -1 | 1): void {
+		const keys = valueLanes.map((row) => row.key);
+		const index = keys.indexOf(key);
+		const target = index + dir;
+		if (index < 0 || target < 0 || target >= keys.length) return;
+		[keys[index], keys[target]] = [keys[target], keys[index]];
+		laneOrder = keys;
+	}
 
 	// ── Lane editor ──────────────────────────────────────────────────────
 	/** Per-lane editing shape, parsed from the lane filter for the controls. */
@@ -212,13 +284,58 @@
 			label={m.list_editor_group_by_label()}
 			placeholder={m.list_editor_group_by_placeholder()}
 			options={groupableOptions}
-			bind:value={groupBy}
+			value={groupBy}
 			searchable={false}
+			onValueChange={(key) => onGroupByChange(key)}
 			onblur={() => onGroupByBlur?.()}
 			error={groupByError ?? undefined}
 		/>
 		<span class="cve-field-helper">{m.list_editor_group_by_helper()}</span>
 	</div>
+	{#if valueLanes.length > 0}
+		<div class="cve-field">
+			<div class="cve-filters-head">
+				<span class="cve-field-label">{m.list_editor_lanes_label()}</span>
+				<span class="cve-field-helper">{m.list_editor_kanban_lanes_helper()}</span>
+			</div>
+			{#if lanesError}<span class="kb-lane-error" role="alert">{lanesError}</span>{/if}
+			{#each valueLanes as vl, i (vl.key)}
+				<div class="kb-vlane" class:kb-vlane-hidden={!vl.visible}>
+					<span
+						class="kb-vlane-dot"
+						style={`background: ${vl.lane.color ?? 'var(--text-3)'};`}
+						aria-hidden="true"
+					></span>
+					<span class="kb-vlane-label">{vl.lane.label}</span>
+					<div class="kb-lane-actions">
+						<button
+							type="button"
+							class="kb-lane-btn"
+							aria-label={m.list_editor_move_up_aria()}
+							disabled={i === 0}
+							onclick={() => moveValueLane(vl.key, -1)}
+						>
+							↑
+						</button>
+						<button
+							type="button"
+							class="kb-lane-btn"
+							aria-label={m.list_editor_move_down_aria()}
+							disabled={i === valueLanes.length - 1}
+							onclick={() => moveValueLane(vl.key, 1)}
+						>
+							↓
+						</button>
+						<Toggle
+							checked={vl.visible}
+							aria-label={m.list_editor_lane_visibility_aria({ lane: i + 1 })}
+							onchange={(checked) => toggleValueLane(vl.key, checked)}
+						/>
+					</div>
+				</div>
+			{/each}
+		</div>
+	{/if}
 {:else}
 	<div class="cve-field">
 		<div class="cve-filters-head">
@@ -424,6 +541,18 @@
 
 <div class="cve-field">
 	<div class="cve-filters-head">
+		<span class="cve-field-label">{m.list_editor_kanban_allow_move()}</span>
+		<span class="cve-field-helper">{m.list_editor_kanban_allow_move_helper()}</span>
+	</div>
+	<Toggle
+		checked={allowMove}
+		aria-label={m.list_editor_kanban_allow_move()}
+		onchange={(checked) => (allowMove = checked)}
+	/>
+</div>
+
+<div class="cve-field">
+	<div class="cve-filters-head">
 		<span class="cve-field-label">{m.list_editor_kanban_sort()}</span>
 		<span class="cve-field-helper">{m.list_editor_kanban_sort_helper()}</span>
 	</div>
@@ -546,6 +675,41 @@
 		border: 1px solid var(--border);
 		border-radius: var(--r);
 		background: var(--surface);
+	}
+
+	.kb-vlane {
+		display: flex;
+		align-items: center;
+		gap: 9px;
+		padding: 7px 2px;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.kb-vlane:last-child {
+		border-bottom: none;
+	}
+
+	.kb-vlane-hidden .kb-vlane-label,
+	.kb-vlane-hidden .kb-vlane-dot {
+		opacity: 0.45;
+	}
+
+	.kb-vlane-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 2px;
+		transform: rotate(45deg);
+		flex-shrink: 0;
+	}
+
+	.kb-vlane-label {
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-size: 13px;
+		color: var(--text);
 	}
 
 	.kb-lane-row {

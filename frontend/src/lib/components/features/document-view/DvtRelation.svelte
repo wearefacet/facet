@@ -37,6 +37,11 @@
 	import { createRelationDrafts } from '$lib/doctype/relationDrafts.svelte.js';
 	import { loadRelationTemplates } from '$lib/doctype/relationTemplates.js';
 
+	// Rows a relation section fetches when the template sets no `limit`.
+	// Matches the backend's `MAX_ITEMS` — the child list honors `items` now,
+	// so the default must render the whole owned set, not truncate it.
+	const DEFAULT_RELATION_LIMIT = 1000;
+
 	let {
 		template,
 		document,
@@ -70,7 +75,7 @@
 		onreferenceclick?: ReferenceClickHandler;
 	} = $props();
 
-	const limit = $derived(template.limit ?? 25);
+	const limit = $derived(template.limit ?? DEFAULT_RELATION_LIMIT);
 	// Editable relations always render as inline rows (capsule mode is
 	// read-only). Defaults to `'capsule'` for backward compatibility.
 	const viewMode = $derived(template.editable ? 'inline' : (template.view ?? 'capsule'));

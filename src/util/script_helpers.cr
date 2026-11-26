@@ -55,6 +55,29 @@ module Facet
         RedirectUri.valid_shape?(value)
       end
 
+      # ── App CORS origins ──────────────────────────────────────────────
+
+      # Shape rule for one entry of the `app.App` `allowed_origins` field: a
+      # bare origin — `scheme://host[:port]` — with no path, userinfo, query,
+      # fragment, or wildcard. The scheme follows the host: `https` on any
+      # host, `http` on a loopback host only (`localhost`, any `*.localhost`
+      # subdomain, `127.0.0.1`, `::1`) — the same rule as a redirect URI, since
+      # an `http` origin on a remote host would carry a `SameSite` cookie in
+      # plaintext. Enforced in the app.App create/update Lua hook through the
+      # `util.valid_origin` binding.
+      def self.valid_origin?(value : String) : Bool
+        parsed = RedirectUri.parse(value) || return false
+        return false unless parsed.path.empty?
+        return false if parsed.port == "*" || value.includes?('*')
+        return false if parsed.scheme == "http" && !RedirectUri.loopback_host?(parsed.host)
+        if port = parsed.port
+          return false unless port.matches?(/\A\d{1,5}\z/) && port.to_i <= 65535
+        end
+        true
+      rescue
+        false
+      end
+
       # ── OIDC provider fields ─────────────────────────────────────
 
       # Shape rule for the `iam.OIDCProvider` `issuer` field: an absolute

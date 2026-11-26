@@ -246,31 +246,11 @@ module Facet
 
           this_proj = Mutation::Client.fetch_projection(txn, "core", "DocType", doc_id)
 
-          # Seed the default `core.CollectionView` row for the new
-          # doctype (every doctype gets a listing surface). The row is
-          # a general (shared) view named "All Records" with a `table`
-          # surface and columns derived from the doctype's first eight
-          # scalar fields (see `CollectionView::Defaults`). The seed
-          # runs inside this transaction so the doctype and its default
-          # view commit atomically.
-          #
-          # `core.CollectionView`'s own doctype definition exists by the
-          # time a user authors a doctype — `Doctype::Seed` runs at boot
-          # before any user-driven `Doctype::Create.call`. The boot path
-          # itself seeds via `Seed.seed`'s dedicated two-pass flow
-          # (`Seed.seed_default_collection_views`), which tolerates the
-          # bootstrap ordering (core doctypes are created before their
-          # children).
-          # The seeded view joins the doctype's causal cluster: when the
-          # create carries a cause, the seed stamps the same kind/name
-          # with `cause_parent` = the doctype's mutation id. A `nil`
-          # cause (plain REST creates) keeps the seed causeless, exactly
-          # as before.
-          seed_default_collection_view(
-            txn, definition, doc_id, actioner_id,
-            Mutation::Provenance.from(auth_context),
-            cause.try(&.child_of(this_mut_id)),
-          )
+          # No default `core.CollectionView` row is created here. A new
+          # doctype starts with zero views; the listing renders a starter
+          # screen that offers to create one (table, kanban, calendar),
+          # and `Doctype::Check` reports an `:info` notice for the
+          # viewless state. Views are always user-authored.
 
           {this_mut_id, this_proj}
         end
@@ -294,61 +274,6 @@ module Facet
         # the next registry read rebuilds lazily from the DB.
 
         Result.new(projection: projection, mutation_id: mut_id)
-      end
-
-      # ── Private ──────────────────────────────────────────────────────────
-
-      # Seeds one general `core.CollectionView` row named "All Records"
-      # under the freshly-created doctype `doc_id`.
-      #
-      # Fires unconditionally for every `core.DocType` projection row —
-      # CollectionView's child slot is declared on `core.DocType`'s own
-      # definition, so every registered doctype (including `core.DocType`
-      # itself, `core.Domain`, `iam.Account`, etc.) is a listing surface
-      # and gets a pinnable default view. The doctype's *own* `children`
-      # declaration is irrelevant — CollectionView rows attach to the
-      # `core.DocType` definition row, not to the user's documents.
-      #
-      # The seed is system-initiated but provenance is stamped with
-      # `actioner_id` (the user who authored the doctype) so audit can
-      # trace the row to its trigger. RBAC is not consulted — the doctype
-      # author has create-permission on the doctype, not necessarily on
-      # an unsolicited child. This mirrors `Doctype::Seed`'s stance for
-      # boot-time DocumentView / CollectionView rows.
-      private def self.seed_default_collection_view(
-        txn : DB::Connection,
-        definition : DoctypeDefinition,
-        doc_id : String,
-        actioner_id : String,
-        provenance : Mutation::Provenance,
-        cause : Mutation::Cause? = nil,
-      ) : Nil
-        content = CollectionView::Defaults.build_content(definition)
-        meta = %({"parent_id": #{doc_id.to_json}})
-
-        # Stage the projection GUCs from the stored `core.CollectionView`
-        # definition — the doctype this row is written under — the same
-        # staging the boot-time seed's third pass and the portable-import
-        # view writers perform. `core.CollectionView` declares no search /
-        # display_name template, so the rendered columns are NULL either
-        # way; staging keeps every raw writer on the documented contract.
-        view_defn = DefinitionStore.fetch(txn, "core.CollectionView")
-        if view_defn
-          Document::ProjectionGucs.set_all(txn, view_defn, content)
-        else
-          Document::ProjectionGucs.clear_all(txn)
-        end
-
-        Mutation::Client.create(
-          txn,
-          "core",
-          "CollectionView",
-          content: content.to_json,
-          meta: meta,
-          actioner_id: actioner_id,
-          provenance: provenance,
-          cause: cause,
-        )
       end
     end
   end

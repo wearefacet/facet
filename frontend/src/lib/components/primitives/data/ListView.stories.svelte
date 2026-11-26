@@ -69,6 +69,7 @@
 
 	const dealDef = defFor('crm.Deal');
 	const companyDef = defFor('crm.Company');
+	const contactDef = defFor('crm.Contact');
 
 	/** Unrestricted creator/updater — the `+` and edit buttons are visible. */
 	const adminManifest = { '*.*': ['*'] };
@@ -268,7 +269,8 @@
 		const canvas = within(canvasElement);
 		await expect(canvas.queryByRole('tab')).toBeNull();
 		await expect(canvas.queryByRole('button', { name: 'Create a new view' })).toBeNull();
-		await expect(canvas.queryByRole('button', { name: 'Save default as new view' })).toBeNull();
+		// Tab-less mode always renders the table — never the zero-views starter.
+		await expect(canvas.queryByText('No views yet')).toBeNull();
 		await expect(canvas.getByRole('table')).toBeVisible();
 	}}
 >
@@ -473,15 +475,17 @@
 </Story>
 
 <Story
-	name="EmptyViews"
+	name="ZeroViewsStarter"
 	play={async ({ canvasElement }) => {
 		await sleep(400);
 		const canvas = within(canvasElement);
-		// No saved views → synthetic "Default" tab is shown (no DB row created).
-		await expect(canvas.getByRole('tab', { name: 'Default' })).toBeVisible();
-		await expect(canvas.getByRole('button', { name: 'Create a new view' })).toBeVisible();
-		// No real active view → the edit button is hidden.
-		await expect(canvas.queryByRole('button', { name: 'Edit current view' })).toBeNull();
+		// No saved views → the starter screen: no tab strip, no synthetic tab.
+		await expect(canvas.getByRole('heading', { name: 'No views yet' })).toBeVisible();
+		await expect(canvas.queryByRole('tab')).toBeNull();
+		// The three surface cards are the create affordance.
+		await expect(canvas.getByRole('button', { name: /Table/ })).toBeVisible();
+		await expect(canvas.getByRole('button', { name: /Kanban/ })).toBeVisible();
+		await expect(canvas.getByRole('button', { name: /Calendar/ })).toBeVisible();
 	}}
 >
 	{#snippet template()}
@@ -491,8 +495,50 @@
 			>
 				<ListView
 					{driver}
-					doctype={companyDef}
-					parentDocId="crm.Company"
+					doctype={contactDef}
+					parentDocId="crm.Contact"
+					pageSize={25}
+					viewerId="iam.Account.viewer"
+				/>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<Story
+	name="StarterCreateFlow"
+	play={async ({ canvasElement }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+		// The CollectionViewEditor dialog is Bits-portalled to document.body.
+		const body = within(document.body);
+		// Picking a card opens the editor with the surface preselected — the
+		// config step renders directly (the surface step is skipped).
+		await fireEvent.click(canvas.getByRole('button', { name: /Table/ }));
+		await sleep(40);
+		await expect(body.getByRole('heading', { name: 'New view' })).toBeVisible();
+		await expect(body.queryByRole('button', { name: 'Next' })).toBeNull();
+		await userEvent.type(body.getByRole('textbox', { name: /Name/ }), 'First view');
+		await sleep(10);
+		await fireEvent.click(body.getByRole('button', { name: 'Create view' }));
+		await sleep(60);
+
+		// The saved view becomes the first (and only) tab, focused.
+		await expect(canvas.getByRole('tab', { name: 'First view' })).toHaveAttribute(
+			'aria-selected',
+			'true'
+		);
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={adminManifest}>
+			<div
+				style="position: relative; width: 100%; height: 80vh; min-height: 500px; overflow: hidden; padding: 24px;"
+			>
+				<ListView
+					{driver}
+					doctype={contactDef}
+					parentDocId="crm.Contact"
 					pageSize={25}
 					viewerId="iam.Account.viewer"
 				/>

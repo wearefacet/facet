@@ -42,19 +42,26 @@ module Facet
         active_role = challenge[:active_role]
         cookie_requested = challenge[:cookie_requested]
 
+        # 2. Lockout gate. A lockout raised by an exhausted challenge blocks
+        # every live challenge the account still holds, so a stale parallel
+        # challenge cannot be answered after the lockout starts.
+        if LoginThrottle.locked_out?(account_id)
+          return Facet::ServiceError.new(429, "Too many attempts. Account locked.")
+        end
+
         if method == "backup_code"
           return verify_backup_code(db, r, challenge_key, account_id, active_role,
             cookie_requested, code)
         end
 
-        # 2. Fetch the account's MFA secret from the sealed `mfa` slot.
+        # 3. Fetch the account's MFA secret from the sealed `mfa` slot.
         doc_ref = "iam.Account.#{account_id}"
         mfa_secret = Secrets.reveal(db, doc_ref, "mfa")
         if mfa_secret.nil?
           return Facet::ServiceError.new(401, "MFA not configured. Please re-login.")
         end
 
-        # 3. Validate the TOTP code
+        # 4. Validate the TOTP code
         mfa_config = Config.mfa.totp
         step = TOTP.validate(mfa_secret, code, window: mfa_config.window)
 
@@ -62,7 +69,7 @@ module Facet
           return handle_invalid_code(r, challenge_key, db, account_id)
         end
 
-        # 4. Atomically advance last_totp_step in `auth_state` (replay
+        # 5. Atomically advance last_totp_step in `auth_state` (replay
         # protection). The conditional upsert serializes the advancement at
         # the DB level — 0 rows affected means a concurrent request already
         # consumed this step, so this is a replay.
@@ -71,8 +78,9 @@ module Facet
           return Facet::ServiceError.new(401, "Code already used. Please re-login.")
         end
 
-        # 5. Delete the challenge
-        r.del(challenge_key)
+        # 6. Delete the challenge and reset the creation counter
+        LoginThrottle.clear_active_challenge(account_id, challenge_key.lchop("challenge:"))
+        LoginThrottle.reset_challenge_issues(account_id)
 
         # 7. Emit tokens and write login event
         Helpers.write_login_event(db, account_id, "login", "MFA challenge passed, role: #{active_role}")
@@ -95,7 +103,8 @@ module Facet
         code : String,
       ) : TokensEmitted | Facet::ServiceError
         if BackupCodes.consume(db, account_id, code)
-          r.del(challenge_key)
+          LoginThrottle.clear_active_challenge(account_id, challenge_key.lchop("challenge:"))
+          LoginThrottle.reset_challenge_issues(account_id)
           Helpers.write_login_event(db, account_id, "login",
             "MFA challenge passed via backup code, role: #{active_role}")
           return emit_tokens(db, account_id, active_role, cookie_requested)
@@ -124,11 +133,16 @@ module Facet
       end
 
       # Handles an invalid TOTP code by decrementing attempts and possibly locking out.
+      #
+      # On exhaustion the challenge dies, the account locks out, and every
+      # other live challenge the account holds dies with it (the lockout gate
+      # in `call` refuses them, and the tracking key is cleared) — so the
+      # guess budget cannot be refilled by opening parallel challenges.
       private def self.handle_invalid_code(r, challenge_key : String, db : DB::Connection, account_id : String) : Facet::ServiceError
         remaining_val = r.hincrby(challenge_key, "attempts_remaining", -1)
         remaining = remaining_val.is_a?(Int64) ? remaining_val : 0
         if remaining <= 0
-          r.del(challenge_key)
+          LoginThrottle.clear_active_challenge(account_id, challenge_key.lchop("challenge:"))
           LoginThrottle.set_lockout(account_id)
           Helpers.write_login_event(db, account_id, "lockout", "MFA lockout: too many attempts")
           return Facet::ServiceError.new(429, "Too many attempts. Account locked.")

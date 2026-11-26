@@ -34,9 +34,10 @@ view**: a named tab you can reopen in one click, or share with your team.
 Open a domain, then select a doctype. The list opens on the first saved
 view. You can also open a view straight from the domain dashboard.
 
-Every doctype ships with a general table view named **All Records**. A list
-can carry more views. The tabs above the table show them, each with an icon
-for its layout: table, kanban, or calendar.
+A new doctype has no views yet: the page shows a starter screen with one
+card per layout. Pick a card to create the first view. After that, the tabs
+above the table show the views, each with an icon for its layout: table,
+kanban, or calendar.
 
 <!-- d2
 tab: "Select a tab" {class: external}

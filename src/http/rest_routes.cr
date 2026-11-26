@@ -173,55 +173,54 @@ module Facet
           return
         end
 
-        # `aggregate`, `field`, and `filters` mirror the top-level list
-        # route so a client can count, run a field aggregate (`sum` / `avg`
-        # / `min` / `max`), or filter the children of a parent without
-        # fetching them. Filters ride the same grammar and the same
-        # validation as the flat route — a malformed filter answers 422,
-        # never a silent unfiltered result (B-20/B-41). Unknown parameters
-        # answer 422 the same way (the B-169 remainder). Other known list
-        # params (page/items/sort/deleted) are not forwarded on child
-        # lists, and the fingerprint below carries only the forwarded
-        # values so an ignored parameter cannot break cache hits.
+        # The child list serves the full list grammar (page, items, sort,
+        # filters, select, aggregate, field, scope, deleted) — the same
+        # contract as the flat route, scoped to one parent. `aggregate`,
+        # `field`, and `filters` mirror the top-level list route so a client
+        # can count, run a field aggregate (`sum` / `avg` / `min` / `max`),
+        # or filter the children of a parent without fetching them. Filters
+        # ride the same grammar and the same validation as the flat route —
+        # a malformed filter answers 422, never a silent unfiltered result
+        # (B-20/B-41). Unknown parameters answer 422 the same way (the B-169
+        # remainder). `select` is validated against the child doctype's
+        # definition before the ETag short-circuit, so an unknown key
+        # answers the same 422 the flat route gives.
         child_req = HTTP::ListRequest.from_query(env.params.query, strict: true)
         if child_req.is_a?(Facet::ServiceError)
           Helpers.write_json_error(env, child_req.status, child_req.message)
           return
         end
-        agg_val = child_req.aggregate
-        field_val = child_req.field
+        return unless Document::Routes.validate_list_select(env, child_defn.as(Facet::Doctype::DoctypeDefinition), child_req.select)
 
         # ETag short-circuit — after the RBAC parent gate, before the items
         # query. The version is scoped to THIS parent's children
         # (`meta->>'parent_id'`), so two parents of the same doctype never
-        # share a validator. The caller-supplied parameters are `aggregate`
-        # and `field`; the fingerprint is built from a minimal
-        # `ListRequest` carrying just those values, so parameters the route
-        # ignores (e.g. a stray `?page=2`) cannot break cache hits, and two
+        # share a validator. The fingerprint carries the full request (the
+        # flat route's rule): page, items, and sort are always serialized,
+        # so two different pages or orders never share an ETag, and two
         # aggregates over different fields never alias.
         version = Database.with_db(:read_only) do |db|
           Facet::Document::List.child_collection_version(db, domain, doctype.as(String), parent_id)
         end
         version_tag = version.try(&.to_rfc3339(fraction_digits: 6)) || "empty"
-        child_list_req = HTTP::ListRequest.new(aggregate: agg_val, field: field_val, filters: child_req.filters)
-        collection_tag = "#{Helpers.role_fingerprint(auth_ctx)}:#{Helpers.list_request_fingerprint(child_list_req)}:#{version_tag}"
+        collection_tag = "#{Helpers.role_fingerprint(auth_ctx)}:#{Helpers.list_request_fingerprint(child_req)}:#{version_tag}"
         if Helpers.not_modified?(env, collection_tag)
           Helpers.write_not_modified(env, collection_tag)
           return
         end
 
         list_result = begin
-          Database.with_db(:read_only) { |db| Facet::Document::List.call(db, domain, doctype.as(String), page: 1, items_per_page: 1000, auth_context: auth_ctx, parent_id: parent_id, filters: child_req.filters, aggregate: agg_val, field: field_val, authorize_path: composition_path(domain, root_doctype, root_id, segments), authorize_root_id: root_id) }
+          Database.with_db(:read_only) { |db| Facet::Document::List.call(db, domain, doctype.as(String), filters: child_req.filters, sort: child_req.sort, page: child_req.page, items_per_page: child_req.items, auth_context: auth_ctx, parent_id: parent_id, aggregate: child_req.aggregate, field: child_req.field, include_deleted: child_req.include_deleted?, named_scope: child_req.scope, authorize_path: composition_path(domain, root_doctype, root_id, segments), authorize_root_id: root_id) }
         rescue ex : PQ::PQError
           # Same contract as the top-level list route: aggregate requests
           # run uncapped, so a statement_timeout cancellation maps to 503.
-          raise ex unless agg_val && Helpers.statement_timeout?(ex)
+          raise ex unless child_req.aggregate && Helpers.statement_timeout?(ex)
           Helpers.write_json_error(env, 503, "The request exceeded the server's statement timeout — narrow the filters and retry")
           return
         end
         case list_result
         in Facet::Document::List::Result
-          write_list_result(env, list_result, collection_tag)
+          write_list_result(env, list_result, collection_tag, select_fields: child_req.select)
         in Facet::Document::List::AggregateResult
           # Aggregate payload over the parent's children — same contract as
           # the top-level list route (`more` is always false; `count` is the
@@ -395,10 +394,10 @@ module Facet
       # through) — also when the host doctype itself is unknown, or the
       # segment miss is surfaced as an error by the resolver.
       private def self.resolve_sidecar_doctype(domain : String, root_doctype : String, segment : String) : {String?, String?}
-        qualified, err = Database.with_db { |db| Document::SidecarHandler.resolve_sidecar_ref(db, domain, root_doctype, segment) }
-        return {nil, nil} if err || qualified.nil?
+        sidecar_ref, err = Database.with_db { |db| Document::SidecarHandler.resolve_sidecar_ref(db, domain, root_doctype, segment) }
+        return {nil, nil} if err || sidecar_ref.nil?
 
-        Document::SidecarHandler.split_qualified(qualified)
+        Document::SidecarHandler.split_qualified(sidecar_ref.doctype)
       end
 
       # POST: single segment → action or child create; multi → nested child create.
@@ -666,16 +665,22 @@ module Facet
 
       # Writes the 200 list response tail shared by the child and sidecar
       # list renders: ETag header, capped count with the Result's `more`
-      # flag, and the projection list. These lists are unpaginated (page 1,
-      # 1000 items), so the count starts at offset 0.
+      # flag, and the projection list. `Result.total` is already the real
+      # count from the page offset (the service re-caps it), so every
+      # caller passes offset 0 — the flat route's rule. Child lists are
+      # fully paginated (the flat route's contract scoped to one parent);
+      # sidecar lists stay unpaginated (page 1, 1000 items), so their
+      # count starts at offset 0. `select_fields` narrows each row's
+      # content — child lists forward the request's `select`; sidecar
+      # lists pass nothing.
       # Returns the response body string (the body is already on the
       # response, same convention as `Helpers.write_json`).
-      private def self.write_list_result(env, result : Facet::Document::List::Result, etag : String) : String
+      private def self.write_list_result(env, result : Facet::Document::List::Result, etag : String, select_fields : Array(String)? = nil) : String
         env.response.status_code = 200
         env.response.content_type = "application/json"
         Helpers.set_etag_header(env, etag)
         count, _ = Helpers.capped_count(result.total, 0)
-        {data: Helpers.projection_list(result.items), meta: {count: count, more: result.more}}.to_json
+        {data: Helpers.projection_list(result.items, select_fields: select_fields), meta: {count: count, more: result.more}}.to_json
       end
 
       # ── Resolver helpers ────────────────────────────────────────────────

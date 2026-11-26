@@ -17,6 +17,7 @@ require "../../src/doctype/field_types/datetime_type"
 require "../../src/doctype/field_types/enum_type"
 require "../../src/doctype/doctype_definition"
 require "../../src/util/money"
+require "../../src/rbac"
 require "../../src/document/filter_compiler"
 
 # Direct spec for `Document::FilterCompiler` — the shared compile step for
@@ -61,6 +62,28 @@ end
 def compile_one(definition, filters, offset = 0)
   clauses, params = FC.compile(definition, filters, offset: offset)
   {clauses, params}
+end
+
+# A definition carrying one tagged `salary` field next to a default-tagged
+# `name` field — the field-visibility fixture for the S4 specs.
+def filter_doctype_with_hidden_salary : DoctypeDef
+  fields = {
+    "name"   => FieldDef.new(type: Facet::Doctype::StringType.new, filters: [Facet::Doctype::FilterCapability::Comparison]),
+    "salary" => FieldDef.new(type: Facet::Doctype::IntegerType.new, filters: [Facet::Doctype::FilterCapability::Comparison], tags: ["payroll"]),
+  } of String => FieldDef
+  DoctypeDef.new(doctype: "Payslip", domain: "core", fields: fields)
+end
+
+# A Real principal whose role holds the given visible tags and no
+# permission ceiling — the visibility gate under test is pure tag
+# arithmetic, so no read grant is needed.
+def field_tag_caller(visible : Array(String)) : Facet::RBAC::AuthContext
+  role = Facet::RBAC::ActiveRole.new(
+    role_id: "field_tag_role",
+    visible_tags: Set.new(visible),
+    permissions: [] of Facet::RBAC::Permission,
+  )
+  Facet::RBAC::AuthContext.authenticated("field_tag_account", role)
 end
 
 describe Facet::Document::FilterCompiler do
@@ -495,6 +518,39 @@ describe Facet::Document::FilterCompiler do
     expect_raises(Facet::Util::FilterClauses::FilterGrammarError, /filterable: active, age, created_at, delay, deleted_at, id, name, price, score, search, starts, status, tags, updated_at, window/) do
       compile_one(definition, {"ghost" => jv("x")})
     end
+  end
+
+  # ── Field visibility (S4) ──────────────────────────────────────────
+
+  it "answers 403 for a filter on a field the active role cannot see (S4)" do
+    tagged = filter_doctype_with_hidden_salary
+    ctx = field_tag_caller(["default"])
+
+    ex = expect_raises(Facet::Util::FilterClauses::FilterGrammarError, /field 'salary' is not visible to the active role/) do
+      FC.compile(tagged, {"salary__gt" => jv("10")}, auth_context: ctx)
+    end
+    # The refusal names the field and the visibility rule only — never the
+    # operator set or the type contract of the hidden field.
+    ex.reason.should eq("invisible_filter_field")
+    ex.filter_key.should eq("salary")
+  end
+
+  it "keeps a visible field filterable and a wildcard role sees every field (S4)" do
+    tagged = filter_doctype_with_hidden_salary
+
+    clauses, params = FC.compile(tagged, {"salary__gt" => jv("10")}, auth_context: field_tag_caller(["default", "payroll"]))
+    clauses.should eq(["jsonb_as_numeric(content->'salary') > $1::numeric"])
+    params.should eq(["10"])
+
+    wildcard = FC.compile(tagged, {"salary__gt" => jv("10")}, auth_context: field_tag_caller(["*"]))
+    wildcard[0].should eq(["jsonb_as_numeric(content->'salary') > $1::numeric"])
+  end
+
+  it "exempts an internal integrity filter from the visibility gate (S4)" do
+    tagged = filter_doctype_with_hidden_salary
+    clauses, _params = FC.compile(tagged, {"salary__eq" => jv("10")},
+      skip_capability_check: true, auth_context: field_tag_caller(["default"]), skip_visibility_check: true)
+    clauses.should eq(["jsonb_as_numeric(content->'salary') = $1::numeric"])
   end
 
   # ── Placeholder offset contract ────────────────────────────────────

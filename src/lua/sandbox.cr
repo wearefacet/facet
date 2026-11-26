@@ -55,6 +55,7 @@ module Facet
         engine.function("__util_valid_redirect_uri", ->(s : String) { ::Facet::Util::ScriptHelpers.valid_redirect_uri?(s) })
         engine.function("__util_valid_https_url", ->(s : String) { ::Facet::Util::ScriptHelpers.valid_https_url?(s) })
         engine.function("__util_valid_issuer_url", ->(s : String) { ::Facet::Util::ScriptHelpers.valid_issuer_url?(s) })
+        engine.function("__util_valid_origin", ->(s : String) { ::Facet::Util::ScriptHelpers.valid_origin?(s) })
         engine.function("__util_insecure_urls_allowed", -> { ::Facet::Config.instance.webhook.allow_insecure_urls })
         # B-76 host gate — the authoring-time half of the webhook target
         # rule. The binding judges only where the host points; the scheme
@@ -138,6 +139,7 @@ module Facet
             valid_redirect_uri = __util_valid_redirect_uri,
             valid_https_url = __util_valid_https_url,
             valid_issuer_url = __util_valid_issuer_url,
+            valid_origin = __util_valid_origin,
             insecure_urls_allowed = __util_insecure_urls_allowed,
             safe_webhook_url = __util_safe_webhook_url,
             webhook_event_names = __util_webhook_event_names,
@@ -208,6 +210,7 @@ module Facet
           "__util_ulid", "__util_sha256", "__util_clamp",
           "__util_facet_hosts", "__util_valid_hostname", "__util_valid_redirect_uri",
           "__util_valid_https_url", "__util_valid_issuer_url", "__util_insecure_urls_allowed", "__util_safe_webhook_url",
+          "__util_valid_origin",
           "__util_webhook_event_names",
           "__util_oidc_name_tombstoned", "__util_role_has_channel",
           "__date_diff", "__date_now", "__date_today", "__date_add",

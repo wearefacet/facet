@@ -55,6 +55,14 @@
 # (/healthcheck, /metrics) are never domain ids, so they answer 404 for
 # every method instead of reaching the SPA.
 https://{$FACET_HOSTNAME:facet.localhost}:{$HTTPS_PORT:3443} {
+	# Security headers, applied to every response of the main vhost. HSTS
+	# and nosniff are safe on JSON and HTML alike. The max-age is kept low
+	# (one hour) on purpose: the first public release is deployed, and a
+	# long max-age is hard to walk back — browsers remember it. Raise it
+	# once the HTTPS setup is proven; do not add `preload` until then.
+	header Strict-Transport-Security "max-age=3600"
+	header X-Content-Type-Options nosniff
+
 	# Backend namespaces, matched with path_regexp, not path. Caddy path
 	# matching is case-insensitive, and the lowercase twin of every
 	# namespace here is a legal domain id (`/api/Deal` is domain `api`'s
@@ -99,7 +107,15 @@ https://{$FACET_HOSTNAME:facet.localhost}:{$HTTPS_PORT:3443} {
 		reverse_proxy {$BACKEND_URL:http://backend:3000}
 	}
 
+	# The SvelteKit node server: SSR pages and static assets. This is the
+	# HTML surface, so the anti-framing and CSP headers live here, not on the
+	# JSON API namespaces above. `frame-ancestors 'self'` and the legacy
+	# X-Frame-Options stop another site from framing the workspace. The CSP
+	# bounds a future script-injection bug; `'unsafe-inline'` stays in
+	# `style-src` because the UI sets inline styles.
 	handle {
+		header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' wss:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+		header X-Frame-Options SAMEORIGIN
 		reverse_proxy {$FRONTEND_URL:http://frontend:3000}
 	}
 }
@@ -118,6 +134,13 @@ https://:{$HTTPS_PORT:3443} {
 		issuer acme
 		issuer internal
 	}
+	# HSTS and nosniff apply here too. A full CSP is deliberately absent:
+	# this block serves arbitrary hosted apps whose inline scripts and
+	# origins we cannot predict. X-Frame-Options is safe to add — a hosted
+	# app is meant to be reached directly, not framed by a third party.
+	header Strict-Transport-Security "max-age=3600"
+	header X-Content-Type-Options nosniff
+	header X-Frame-Options SAMEORIGIN
 	reverse_proxy {$BACKEND_URL:http://backend:3000}
 }
 

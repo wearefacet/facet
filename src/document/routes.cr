@@ -250,7 +250,9 @@ module Facet
       # (B-358). Returns false after writing the 422 — it names the first
       # unknown key and the accepted set, the same shape the filter
       # grammar's `unknown_filter_field` 422 uses on the same surface.
-      private def self.validate_list_select(
+      # Shared with the nested child list route, which validates `select`
+      # against the child doctype's definition.
+      def self.validate_list_select(
         env,
         defn : Facet::Doctype::DoctypeDefinition,
         sel : Array(String)?,

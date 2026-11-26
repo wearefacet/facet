@@ -28,6 +28,7 @@
 	import CollectionViewColumnsForm from './CollectionViewColumnsForm.svelte';
 	import CollectionViewCalendarForm from './CollectionViewCalendarForm.svelte';
 	import CollectionViewKanbanForm from './CollectionViewKanbanForm.svelte';
+	import CollectionViewGridForm from './CollectionViewGridForm.svelte';
 	import { DataSourceError } from '$lib/datasource/types.js';
 
 	/**
@@ -36,11 +37,15 @@
 	 * Two-step flow:
 	 *   1. Surface picker — choose the presentation layout (`table`,
 	 *      `calendar`, and `kanban` are enabled; `grid` is shown disabled as
-	 *      a forward signal).
+	 *      a forward signal — the grid step exists, the listing's mount is
+	 *      still landing).
 	 *   2. Surface config — for `table`: the view name, the general-vs-personal
 	 *      scope, and an ordered column set picked from the doctype's flat
 	 *      fields; for `kanban`: the board mode, group-by field or lane editor,
-	 *      card sort, and the base filter.
+	 *      card sort, and the base filter; for `grid` (reached with
+	 *      `initialSurface="grid"` or by editing a stored grid view): the
+	 *      grid step's frozen columns, new-row opt-in, column semantics,
+	 *      row sort, and base filter.
 	 *
 	 * Create vs. edit:
 	 * - Create (`view` absent): POSTs to the parent `core.DocType`'s
@@ -61,6 +66,8 @@
 		view = null,
 		/** Projection id of the existing view to edit (edit mode). Create mode omits it. */
 		viewId,
+		/** Surface preselected for create mode — skips the surface step. Omit for the full wizard. */
+		initialSurface,
 		viewerId,
 		onclose,
 		onsaved
@@ -73,6 +80,8 @@
 		view?: CollectionView | null;
 		/** Projection id of the existing view being edited. */
 		viewId?: string;
+		/** Surface preselected for create mode; skips the surface step. */
+		initialSurface?: CollectionSurface;
 		/** Account id of the current user — used to set `owner_id` for personal views. */
 		viewerId?: string;
 		onclose?: () => void;
@@ -84,7 +93,7 @@
 
 	type Step = 'surface' | 'config';
 	// svelte-ignore state_referenced_locally — initial value from the prop.
-	let step = $state<Step>(isEdit ? 'config' : 'surface');
+	let step = $state<Step>(isEdit || initialSurface ? 'config' : 'surface');
 
 	// ── Form state ──────────────────────────────────────────────────
 	// svelte-ignore state_referenced_locally — the editor is remounted fresh
@@ -93,7 +102,7 @@
 	// `surface` is immutable in edit mode for v1 (only `table` and `calendar`
 	// exist; the editor only constructs `table` views today).
 	// svelte-ignore state_referenced_locally — initial value from the prop.
-	let surface = $state<CollectionSurface>(view?.surface ?? 'table');
+	let surface = $state<CollectionSurface>(view?.surface ?? initialSurface ?? 'table');
 
 	/**
 	 * Effective scope of the view being authored:
@@ -176,7 +185,9 @@
 			? { ...view.config.calendar.filters }
 			: view?.config?.kanban?.filters
 				? { ...view.config.kanban.filters }
-				: {}
+				: view?.config?.grid?.filters
+					? { ...view.config.grid.filters }
+					: {}
 	);
 
 	/** Fields the FilterBar may filter on (filterable, non-system-hidden). */
@@ -184,17 +195,23 @@
 		doctype.fields.filter((f) => !f.read_only && !f.write_only && (f.operators?.length ?? 0) > 0)
 	);
 
-	// ── Kanban config state ──────────────────────────────────────────
+	// ── Kanban config state ──────────────────────────────────
 	// svelte-ignore state_referenced_locally — initial value from the prop.
 	let kanbanMode = $state<'values' | 'custom'>(view?.config?.kanban?.mode ?? 'values');
 	// svelte-ignore state_referenced_locally — initial value from the prop.
 	let groupBy = $state(view?.config?.kanban?.group_by ?? '');
+	// svelte-ignore state_referenced_locally — initial value from the prop.
+	let laneOrder = $state<string[]>(view?.config?.kanban?.lane_order ?? []);
+	// svelte-ignore state_referenced_locally — initial value from the prop.
+	let hiddenLanes = $state<string[]>(view?.config?.kanban?.hidden_lanes ?? []);
 	// svelte-ignore state_referenced_locally — initial value from the prop.
 	let lanes = $state<KanbanLane[]>(
 		view?.config?.kanban?.lanes
 			? view.config.kanban.lanes.map((lane) => ({ ...lane, filter: { ...lane.filter } }))
 			: []
 	);
+	// svelte-ignore state_referenced_locally — initial value from the prop.
+	let allowMove = $state(view?.config?.kanban?.allow_move === true);
 	// The card sort draft composes back to the one-entry `sort` array; the
 	// leading `-` maps to the descending direction.
 	// svelte-ignore state_referenced_locally — initial value from the prop.
@@ -204,6 +221,22 @@
 		(view?.config?.kanban?.sort?.[0] ?? '') === ''
 			? true
 			: (view?.config?.kanban?.sort?.[0] ?? '').startsWith('-')
+	);
+
+	// ── Grid config state ───────────────────────────────────────
+	// svelte-ignore state_referenced_locally — initial value from the prop.
+	let frozen = $state(view?.config?.grid?.frozen ?? 0);
+	// svelte-ignore state_referenced_locally — initial value from the prop.
+	let allowCreate = $state(view?.config?.grid?.allow_create === true);
+	// The grid row sort draft composes back to the one-entry `sort` array;
+	// the leading `-` maps to the descending direction (the kanban rule).
+	// svelte-ignore state_referenced_locally — initial value from the prop.
+	let gridSortField = $state((view?.config?.grid?.sort?.[0] ?? '').replace(/^-/, ''));
+	// svelte-ignore state_referenced_locally — initial value from the prop.
+	let gridSortDesc = $state(
+		(view?.config?.grid?.sort?.[0] ?? '') === ''
+			? true
+			: (view?.config?.grid?.sort?.[0] ?? '').startsWith('-')
 	);
 
 	// ── Validation ──────────────────────────────────────────────────
@@ -221,9 +254,16 @@
 		fields: doctype.fields,
 		kanbanMode,
 		groupBy,
+		laneOrder,
+		hiddenLanes,
 		lanes,
 		sortField,
 		sortDesc,
+		allowMove,
+		frozen,
+		allowCreate,
+		gridSortField,
+		gridSortDesc,
 		sortFields: sortableFields(doctype.fields)
 	});
 	const validation = $derived(validateDraft(draft));
@@ -234,14 +274,20 @@
 	// NewRoleDialog: the hint waits for the first blur; the Create button
 	// stays disabled regardless). The lane messages are the exception:
 	// they belong to the custom mode the user chose explicitly, so they
-	// show as soon as that mode is active.
+	// show as soon as that mode is active. The grid's column message is
+	// the other exception: the form owns the column mutations itself, so
+	// there is no touch hook — and the error can only exist after an
+	// action (a fresh view seeds four columns; a stored view passed the
+	// gate), so showing it immediately is safe.
 	let nameTouched = $state(false);
 	let columnsTouched = $state(false);
 	let discriminatorTouched = $state(false);
 	let endFieldTouched = $state(false);
 	let groupByTouched = $state(false);
 	const nameError = $derived(nameTouched ? validation.nameError : null);
-	const columnsError = $derived(columnsTouched ? validation.columnsError : null);
+	const columnsError = $derived(
+		surface === 'grid' || columnsTouched ? validation.columnsError : null
+	);
 	const discriminatorError = $derived(discriminatorTouched ? validation.discriminatorError : null);
 	const endFieldError = $derived(endFieldTouched ? validation.endFieldError : null);
 	const groupByError = $derived(groupByTouched ? validation.groupByError : null);
@@ -383,6 +429,18 @@
 								onlabel={patchLabel}
 								oneditable={patchEditable}
 							/>
+						{:else if surface === 'grid'}
+							<CollectionViewGridForm
+								{doctype}
+								{driver}
+								bind:columns
+								bind:frozen
+								bind:allowCreate
+								bind:sortField={gridSortField}
+								bind:sortDesc={gridSortDesc}
+								bind:filters
+								{columnsError}
+							/>
 						{:else if surface === 'calendar'}
 							<CollectionViewCalendarForm
 								{doctype}
@@ -404,9 +462,12 @@
 								{driver}
 								bind:kanbanMode
 								bind:groupBy
+								bind:laneOrder
+								bind:hiddenLanes
 								bind:lanes
 								bind:sortField
 								bind:sortDesc
+								bind:allowMove
 								bind:filters
 								{filterableFields}
 								{groupByError}

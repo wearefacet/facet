@@ -599,6 +599,88 @@ function countOnly<T = Record<string, unknown>>(items: DocRecord[]): ListRespons
 	return { data: [], meta: { count, more } };
 }
 
+/** Aggregates that operate on a declared field — mirrors the backend's
+ *  `List::Aggregate.FIELD_AGGREGATES` (`count` runs field-free). */
+const FIELD_AGGREGATES = new Set(['sum', 'avg', 'min', 'max']);
+
+/**
+ * Field-aggregate mode — mirrors the backend contract
+ * (`src/document/routes.cr` → `AggregateResult`): the body is
+ * `{ data: { value }, meta: { count, more: false } }`, where `value` is a
+ * JSON number for plain numerics, `null` for `avg`/`min`/`max` over an empty
+ * set, and a `{ ticker => amount }` bag of decimal strings for `money`
+ * fields (grouped per stored currency). The mock infers the kind from the
+ * stored values — numbers aggregate plainly, `{ value, currency }` objects
+ * aggregate as money — since it keeps no field-type registry.
+ *
+ * Returns `null` when the params are not a field-aggregate call, so the
+ * caller falls through to the normal pagination path.
+ */
+function fieldAggregate<T = Record<string, unknown>>(
+	items: DocRecord[],
+	params: ListParams
+): ListResponse<T> | null {
+	const aggregate = params.aggregate;
+	const field = params.field;
+	if (!aggregate || !FIELD_AGGREGATES.has(aggregate) || !field) return null;
+
+	const plain: number[] = [];
+	const money = new Map<string, number[]>();
+	for (const doc of items) {
+		const v = doc.content[field];
+		if (v == null) continue;
+		if (typeof v === 'number' && Number.isFinite(v)) {
+			plain.push(v);
+		} else if (typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v))) {
+			plain.push(Number(v));
+		} else if (typeof v === 'object' && 'value' in (v as Record<string, unknown>)) {
+			const amount = Number((v as Record<string, unknown>).value);
+			if (!Number.isFinite(amount)) continue;
+			const ticker = String((v as Record<string, unknown>).currency ?? 'USD');
+			const bucket = money.get(ticker) ?? [];
+			bucket.push(amount);
+			money.set(ticker, bucket);
+		}
+	}
+
+	const combine = (values: number[]): number | null => {
+		if (values.length === 0) return null;
+		switch (aggregate) {
+			case 'sum':
+				return values.reduce((a, b) => a + b, 0);
+			case 'avg':
+				return values.reduce((a, b) => a + b, 0) / values.length;
+			case 'min':
+				return Math.min(...values);
+			case 'max':
+				return Math.max(...values);
+			default:
+				return null;
+		}
+	};
+
+	// Money objects win when both shapes appear — one field cannot honestly
+	// hold both, and the bag keeps every currency's aggregate separate.
+	let value: unknown;
+	let count: number;
+	if (money.size > 0) {
+		const bag: Record<string, string> = {};
+		for (const [ticker, amounts] of money) {
+			const result = combine(amounts);
+			if (result != null) bag[ticker] = String(result);
+		}
+		value = bag;
+		count = [...money.values()].reduce((a, b) => a + b.length, 0);
+	} else {
+		value = combine(plain);
+		count = plain.length;
+	}
+	return {
+		data: { value },
+		meta: { count, more: false }
+	} as unknown as ListResponse<T>;
+}
+
 // ── Mock DocumentRef ────────────────────────────────────────────────────
 
 class MockDocumentRef<T = Record<string, unknown>> implements DocumentRef<T> {
@@ -713,6 +795,8 @@ class MockChildDataSource<T = Record<string, unknown>> implements DataSource<T> 
 		);
 		const filtered = applyFilters(all, params?.filters, searchTemplateFor(this.store));
 		const sorted = applySort(filtered, params?.sort);
+		const aggregated = fieldAggregate<T>(sorted, params ?? {});
+		if (aggregated) return Promise.resolve(aggregated);
 		if (params?.aggregate === 'count') return Promise.resolve(countOnly<T>(sorted));
 		return Promise.resolve(paginate<T>(sorted, params?.page, params?.items));
 	}
@@ -823,6 +907,8 @@ class MockSidecarDataSource<T = Record<string, unknown>> implements DataSource<T
 		});
 		const filtered = applyFilters(hostScoped, params?.filters, searchTemplateFor(store));
 		const sorted = applySort(filtered, params?.sort);
+		const aggregated = fieldAggregate<T>(sorted, params ?? {});
+		if (aggregated) return Promise.resolve(aggregated);
 		if (params?.aggregate === 'count') return Promise.resolve(countOnly<T>(sorted));
 		return Promise.resolve(paginate<T>(sorted, params?.page, params?.items));
 	}
@@ -980,6 +1066,8 @@ export class MockDataSource<T = Record<string, unknown>> implements DataSource<T
 		);
 		const filtered = applyFilters(scoped, params?.filters, searchTemplateFor(this));
 		const sorted = applySort(filtered, params?.sort);
+		const aggregated = fieldAggregate<T>(sorted, params ?? {});
+		if (aggregated) return Promise.resolve(aggregated);
 		if (params?.aggregate === 'count') return Promise.resolve(countOnly<T>(sorted));
 		return Promise.resolve(paginate<T>(sorted, params?.page, params?.items));
 	}

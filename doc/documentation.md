@@ -114,6 +114,16 @@ What changed: the reader's records open the page (rule 2); each layout carries i
 
 `cd site-docs && npm run build` is the gate. It compiles every page, builds the Pagefind index, and generates `llms.txt`, `llms-small.txt`, `llms-full.txt`.
 
+Capture the complete build output in a log file, then inspect the file:
+
+```sh
+cd site-docs && npm run build > ../tmp/site-build.log 2>&1
+echo "exit: $?"
+tail -50 ../tmp/site-build.log
+```
+
+Astro reports page errors at the end of the output. A truncated or filtered output hides them. Read the log with `tail`/`grep` as often as you need; do not re-run the build to see an error again. `tmp/` at the repo root is gitignored scratch space.
+
 After the build:
 
 - `npm run preview` and open the changed pages. Check: layout intact, sidebar entry present, internal links resolve (a dead internal link still builds — click it).

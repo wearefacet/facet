@@ -249,7 +249,7 @@ describe "POST /Api/core/Domain/:id/draft — source-membership gate (B-240)" do
 
       resp = call_api_as(draft_from_request("hr"), scoped_create_ctx("acc_outsider"))
       assert_http_status(resp, 403)
-      JSON.parse(resp.body)["error"].as_s.should eq("Forbidden")
+      JSON.parse(resp.body)["error"].as_s.should contain("must be an editor of domain 'hr'")
     end
   end
 
@@ -261,7 +261,7 @@ describe "POST /Api/core/Domain/:id/draft — source-membership gate (B-240)" do
       # must not let the caller fork a domain it does not edit (F04-01).
       resp = call_api_as(draft_from_request("hr"), all_create_ctx("acc_anyone"))
       assert_http_status(resp, 403)
-      JSON.parse(resp.body)["error"].as_s.should eq("Forbidden")
+      JSON.parse(resp.body)["error"].as_s.should contain("must be an editor of domain 'hr'")
     end
   end
 

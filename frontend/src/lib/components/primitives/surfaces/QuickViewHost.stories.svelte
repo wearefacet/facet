@@ -34,7 +34,12 @@
 	driver.registerDoctype('crm', 'CompanyMembership', {
 		domain: 'crm',
 		doctype: 'CompanyMembership',
-		fields: [{ key: 'name', type: 'string' }]
+		fields: {
+			name: { key: 'name', type: 'string' },
+			// Self-reference: the drawer's fallback body hydrates it into a
+			// clickable capsule that pushes a second nav entry.
+			manager: { key: 'manager', type: 'reference', doctype: 'crm.CompanyMembership' }
+		}
 	});
 
 	const seedDeleted = async () => {
@@ -103,6 +108,26 @@
 		};
 		window.addEventListener('storybook:goto', handler);
 		return { urls, done: () => window.removeEventListener('storybook:goto', handler) };
+	}
+
+	/**
+	 * Two live memberships linked by reference — `crm.CompanyMembership`
+	 * references itself (`manager`), so opening one in the drawer and following
+	 * the `manager` capsule pushes a second nav entry.
+	 */
+	let linkedIds: { first: string; second: string } | null = null;
+
+	async function ensureLinkedSeed(): Promise<{ first: string; second: string }> {
+		if (linkedIds === null) {
+			const ds = driver.domain('crm').doctype('CompanyMembership');
+			const second = await ds.create({ name: 'primary at Initech' });
+			const first = await ds.create({
+				name: 'secondary at Initech',
+				manager: `crm.CompanyMembership.${second.meta.id}`
+			});
+			linkedIds = { first: first.meta.id, second: second.meta.id };
+		}
+		return linkedIds;
 	}
 </script>
 
@@ -224,6 +249,97 @@
 									api.openReference({ domain: 'crm', doctype: 'CompanyMembership', id })}
 							>
 								Open live document
+							</button>
+						{/snippet}
+					</QuickViewHost>
+				</div>
+			{/await}
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<!--
+	Escape closes the peek drawer from anywhere on the page — including from
+	the row the table still highlights after opening it (the table's own
+	Escape would otherwise only clear that highlight).
+-->
+<Story
+	name="EscapeClosesDrawer"
+	play={async () => {
+		await ensureLiveSeed();
+		const canvas = within(document.body);
+		await userEvent.click(canvas.getByRole('button', { name: 'Open live document' }));
+		await waitFor(() =>
+			expect(canvas.getByRole('link', { name: m.doc_peek_open_aria() })).toBeVisible()
+		);
+		await userEvent.keyboard('{Escape}');
+		// The drawer slides out, then drops its content.
+		await waitFor(() =>
+			expect(canvas.queryByRole('link', { name: m.doc_peek_open_aria() })).toBeNull()
+		);
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={{ 'crm.CompanyMembership': ['update'] }}>
+			{#await ensureLiveSeed() then id}
+				<div style="min-height: 480px; padding: 16px;">
+					<QuickViewHost {driver} rootDef={STUB_ROOT_DEF} rootParentDocId="crm.Company">
+						{#snippet trigger(api)}
+							<button
+								type="button"
+								onclick={() =>
+									api.openReference({ domain: 'crm', doctype: 'CompanyMembership', id })}
+							>
+								Open live document
+							</button>
+						{/snippet}
+					</QuickViewHost>
+				</div>
+			{/await}
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<!--
+	Escape walks the nav stack back: after following a reference, the first
+	Escape returns to the previous document (header Back still shown), the
+	second closes the drawer.
+-->
+<Story
+	name="EscapePopsBackThenCloses"
+	play={async () => {
+		await ensureLinkedSeed();
+		const canvas = within(document.body);
+		// The identity title names the document the drawer displays.
+		const title = (name: string) => canvas.getByRole('heading', { name, level: 2 });
+		await userEvent.click(canvas.getByRole('button', { name: 'Open linked document' }));
+		await waitFor(() => expect(title('secondary at Initech')).toBeVisible());
+		// Follow the `manager` reference onto the second document.
+		const manager = await waitFor(() => canvas.getByRole('button', { name: /primary at Initech/ }));
+		await userEvent.click(manager);
+		await waitFor(() => expect(title('primary at Initech')).toBeVisible());
+		// First Escape: back to the first document, drawer still open.
+		await userEvent.keyboard('{Escape}');
+		await waitFor(() => expect(title('secondary at Initech')).toBeVisible());
+		// Second Escape: the stack holds one entry — the drawer closes.
+		await userEvent.keyboard('{Escape}');
+		await waitFor(() =>
+			expect(canvas.queryByRole('link', { name: m.doc_peek_open_aria() })).toBeNull()
+		);
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={{ 'crm.CompanyMembership': ['update'] }}>
+			{#await ensureLinkedSeed() then ids}
+				<div style="min-height: 480px; padding: 16px;">
+					<QuickViewHost {driver} rootDef={STUB_ROOT_DEF} rootParentDocId="crm.Company">
+						{#snippet trigger(api)}
+							<button
+								type="button"
+								onclick={() =>
+									api.openReference({ domain: 'crm', doctype: 'CompanyMembership', id: ids.first })}
+							>
+								Open linked document
 							</button>
 						{/snippet}
 					</QuickViewHost>

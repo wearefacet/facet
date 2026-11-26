@@ -1108,7 +1108,7 @@ module Facet::Assistant::DomainBuilder
         end
       end
 
-      it "create_doctype chains the seeded default view into the same cause" do
+      it "create_doctype creates no default collection view" do
         with_db do |db|
           owner_id = Facet::Util::ScriptHelpers.ulid
           context = make_domain_builder_context(db, owner_id)
@@ -1121,25 +1121,16 @@ module Facet::Assistant::DomainBuilder
           result["ok"].as_bool.should be_true
           doctype_id = result["data"]["doctype_id"].as_s
 
-          doctype_mut_id = db.query_one(
-            "SELECT id FROM mutations WHERE domain='core' AND doc_type='DocType' AND doc_id=$1",
+          # A new doctype starts with zero collection views — the frontend
+          # renders the starter screen and the check reports an `:info`
+          # notice. Views are created explicitly (create_collection_view).
+          count = db.query_one(
+            "SELECT count(*)::int FROM projections " \
+            "WHERE domain='core' AND doc_type='CollectionView' AND meta->>'parent_id'=$1",
             doctype_id,
-            as: String,
+            as: Int32,
           )
-
-          seed_actioner, seed_kind, seed_name, seed_parent = db.query_one(
-            "SELECT m.actioner_id, m.cause_kind, m.cause_name, m.cause_parent " \
-            "FROM mutations m JOIN projections p " \
-            "ON p.domain=m.domain AND p.doc_type=m.doc_type AND p.id=m.doc_id " \
-            "WHERE m.domain='core' AND m.doc_type='CollectionView' AND p.meta->>'parent_id'=$1 " \
-            "ORDER BY m.id DESC LIMIT 1",
-            doctype_id,
-            as: {String, String, String?, String?},
-          )
-          seed_actioner.should eq(owner_id)
-          seed_kind.should eq("assistant")
-          seed_name.should eq("domain-builder")
-          seed_parent.should eq(doctype_mut_id)
+          count.should eq(0)
         end
       end
 

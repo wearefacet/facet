@@ -582,6 +582,43 @@ module Facet::Lua
       engine.close
     end
 
+    # ── Sandboxing: string pattern match is deadline-checked and bounded ──
+
+    it "stops a pathological pattern match before it runs (S8)" do
+      # `'a*a*a*...*b'` has 20 quantifiers: over a 40-`a` prefix the C matcher
+      # backtracks over 2^20+ states inside a single C call, where no count
+      # hook fires and Crystal cannot interrupt it. The wrapper refuses a
+      # pattern above the quantifier cap before entering the C matcher, so the
+      # run aborts fast with a complexity error instead of holding the loop.
+      Engine.open do |engine|
+        expect_raises(Engine::Error, /too complex/) do
+          engine.run("return string.find(string.rep('a', 40) .. 'X', 'a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*b')")
+        end
+      end
+    end
+
+    it "refuses a subject larger than the pattern size limit (S8)" do
+      Engine.open do |engine|
+        ex = expect_raises(Engine::Error, /pattern subject exceeds/) do
+          engine.run("return string.match(string.rep('a', 70000), 'a+')")
+        end
+        ex.message.to_s.should contain("65536")
+      end
+    end
+
+    it "keeps normal string.find / match / gmatch / gsub behaviour" do
+      Engine.open do |engine|
+        engine.run("return string.find('hello world', 'world')").should eq 7
+        engine.run("return string.match('v1.2.3', 'v(%d+)')").should eq "1"
+        engine.run("return string.gsub('a-b-c', '-', '+')").should eq "a+b+c"
+        engine.run(<<-LUA).should eq "a,b,c"
+          local parts = {}
+          for w in string.gmatch('a,b,c', '[^,]+') do table.insert(parts, w) end
+          return table.concat(parts, ',')
+        LUA
+      end
+    end
+
     # ── Multiple returns ──────────────────────────────────────────
 
     it "returns the first value on multiple returns" do

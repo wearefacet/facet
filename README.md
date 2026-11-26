@@ -11,7 +11,7 @@
 [![E2E](https://github.com/wearefacet/facet/actions/workflows/e2e.yml/badge.svg)](https://github.com/wearefacet/facet/actions/workflows/e2e.yml)
 [![Docker images](https://github.com/wearefacet/facet/actions/workflows/docker.yml/badge.svg)](https://github.com/wearefacet/facet/actions/workflows/docker.yml)
 [![Release npm package](https://github.com/wearefacet/facet/actions/workflows/release-npm.yml/badge.svg)](https://github.com/wearefacet/facet/actions/workflows/release-npm.yml)
-[![version](https://img.shields.io/badge/version-0.2.1--beta-D9822B)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-0.2.2--beta-D9822B)](CHANGELOG.md)
 
 [Website](https://facetapp.tech) · [Documentation](https://docs.facetapp.tech)
 
@@ -63,7 +63,7 @@ Requirements: Docker with Compose. The stack runs PostgreSQL, Redis, the backend
    cp docker/.env.example docker/.env
    ```
 
-   Fill in the values — public hostname, SMTP relay, secrets. The file documents each key.
+   Fill in the values — public hostname, SMTP relay, secrets. The file documents each key. Set `JWT_SIGNING_KEY` too: it is the access-token signing key. Keep one stable value — without it, every restart signs out bearer-token API clients.
 
 2. Build and start the stack:
 
@@ -76,7 +76,7 @@ Requirements: Docker with Compose. The stack runs PostgreSQL, Redis, the backend
 3. Create the first administrator:
 
    ```sh
-   docker compose -f docker/compose.prod.yml exec backend facet seed:admin ops@your-company.tld
+   docker compose -f docker/compose.prod.yml exec backend ./facet seed:admin ops@your-company.tld
    ```
 
    The command prints a one-time password. It is shown once — record it in a password manager.

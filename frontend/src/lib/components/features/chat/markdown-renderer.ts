@@ -207,6 +207,48 @@ function escapeHtml(s: string): string {
 		.replace(/'/g, '&#39;');
 }
 
+// ── URL scheme allowlist ──────────────────────────────────────────────
+// Escaping entities does not stop a `javascript:` href or a remote image
+// that the browser fetches on its own (a prompt-injected document can
+// exfiltrate data through an image URL). Links and images therefore pass
+// a scheme check before an `href` / `src` is emitted.
+
+// Anchors: web links and mail. Relative and fragment URLs are kept as-is
+// (they resolve against the app origin). Everything else — `javascript:`,
+// `data:`, `vbscript:`, `file:`, unknown schemes — renders as text.
+const ALLOWED_LINK_SCHEMES = new Set(['http:', 'https:', 'mailto:']);
+
+// Images: only remote http(s) resources. `data:` images are rejected: a
+// data URL is a free channel to the page itself and gives nothing a
+// legitimate chat diagram needs.
+const ALLOWED_IMAGE_SCHEMES = new Set(['http:', 'https:']);
+
+/**
+ * Resolve a markdown URL to a parsed `URL` when it carries a scheme.
+ * Returns `null` for relative URLs and fragments (no scheme). The base
+ * origin is irrelevant: we only read `protocol`.
+ */
+function parseScheme(url: string): string | null {
+	const trimmed = url.trim();
+	if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('//')) return null;
+	try {
+		return new URL(trimmed).protocol.toLowerCase();
+	} catch {
+		// Relative path — no scheme to inspect.
+		return null;
+	}
+}
+
+function isAllowedLinkUrl(url: string): boolean {
+	const scheme = parseScheme(url);
+	return scheme === null || ALLOWED_LINK_SCHEMES.has(scheme);
+}
+
+function isAllowedImageUrl(url: string): boolean {
+	const scheme = parseScheme(url);
+	return scheme !== null && ALLOWED_IMAGE_SCHEMES.has(scheme);
+}
+
 function renderInline(tokens: Token[] | undefined): string {
 	if (!tokens) return '';
 	return tokens.map(renderToken).join('');
@@ -249,11 +291,17 @@ function renderToken(tok: Token): string {
 		case 'codespan':
 			return `<code>${escapeHtml(tok.text)}</code>`;
 		case 'link': {
+			// A disallowed scheme drops the anchor: render the link text as
+			// plain inline content so the reader still sees the words.
+			if (!isAllowedLinkUrl(tok.href)) return renderInline(tok.tokens);
 			const href = escapeHtml(tok.href);
 			const title = tok.title ? ` title="${escapeHtml(tok.title)}"` : '';
 			return `<a href="${href}"${title} rel="noopener noreferrer" target="_blank">${renderInline(tok.tokens)}</a>`;
 		}
 		case 'image': {
+			// A disallowed source emits no <img>: the browser must not fetch
+			// it. Keep the alt text so the content stays readable.
+			if (!isAllowedImageUrl(tok.href)) return escapeHtml(tok.text);
 			const src = escapeHtml(tok.href);
 			const alt = escapeHtml(tok.text);
 			const title = tok.title ? ` title="${escapeHtml(tok.title)}"` : '';

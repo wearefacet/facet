@@ -67,9 +67,11 @@ content:
         email.'
   doctype: LoginEvent
   description: Append-only audit log for authentication and authorization events.
-    Written for successful logins, logouts, token refreshes, and security-significant
-    events like lockouts and MFA changes. Phase 6 adds app attribution (`app`) and
-    app-session events (`consent_granted`, `layer1_denied`, `refresh_failed`).
+    Written for logins, logouts, and security-significant events like lockouts and
+    MFA changes. Successful token refreshes are not logged — they run on a clock
+    and would flood the log; the backend log carries the per-refresh trace. Phase 6
+    adds app attribution (`app`) and app-session events (`consent_granted`,
+    `layer1_denied`, `refresh_failed`).
   display_name: "{{ event }}"
   search: "{{ event }} {{ account_id }} {{ details }}"
   aggregate_root: true

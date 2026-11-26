@@ -138,7 +138,9 @@ async function createAccountWithRole(
 	const created = await postJson(
 		request,
 		'/Api/iam/Account',
-		{ email, display_name: displayName },
+		// The account doctype's human-label field is `name` (titled "Display
+		// Name" in the UI); the old `display_name` key no longer exists.
+		{ email, name: displayName },
 		`creating the ${email} account`
 	);
 	const id = String(created.meta.id);

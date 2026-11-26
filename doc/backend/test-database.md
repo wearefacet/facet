@@ -65,11 +65,12 @@ caller outside gets a short standalone one. On a database without a
 snapshot (e.g. a scratch database a spec repointed `DATABASE_URL` at) it
 falls back to the real seed.
 
-Restored rows are byte-identical to seeded rows except the default
-`core.CollectionView` projection ids — `Seed.seed` mints those fresh on
-every run. Specs address seeded views by `parent_id`, never by projection
-id, so the difference never matters. Fixture setup uses the restore; specs
-that test `Doctype::Seed` behaviour itself call the real seed.
+Restored rows are byte-identical to seeded rows. The seed creates no
+`core.CollectionView` rows — a doctype starts with zero views (views are
+user-authored), so the baseline carries no default views and specs create
+the views they need, addressing them by `parent_id`, never by projection
+id. Fixture setup uses the restore; specs that test `Doctype::Seed`
+behaviour itself call the real seed.
 
 ## Why not the dev instance
 

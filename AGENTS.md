@@ -2,7 +2,7 @@
 
 IMPORTANT NOTES
 
-- THE FIRST PUBLIC RELEASE SHIPPED (0.2.0-BETA, 2026-11-20), FOLLOWED BY 0.2.1 (2026-11-24). DEPLOYED INSTANCES EXIST NOW: RESPECT THE MIGRATION RULES (APPEND-ONLY) AND KEEP EXISTING DATA SAFE.
+- THE FIRST PUBLIC RELEASE SHIPPED (0.2.0-BETA, 2026-11-20), FOLLOWED BY 0.2.1 (2026-11-24) AND 0.2.2 (2026-11-26). DEPLOYED INSTANCES EXIST NOW: RESPECT THE MIGRATION RULES (APPEND-ONLY) AND KEEP EXISTING DATA SAFE.
 - If you catch some architectural concern, it is worth it to discuss it now before we ship!
 - Use ASD-STE100 Simplified Technical English for every documentation, comments and conversation with the user.
 - DO NOT GIT STASH AS MULTIPLE AGENTS CAN WORK AT THE SAME TIME AND IT CONFUSES EVERYBODY !
@@ -177,7 +177,16 @@ You can use the `./tmp` folder of the project to write crystal files and run the
 ### Use of terminal
 
 - When possible, use the embedded tools instead of terminal commands.
-- Use `tail -50` or `head -50` when running terminal commands that might overflow the context.
+- Use `tail -50` or `head -50` when running terminal commands that might overflow the context. Apply this to a **log file**, not to the live output of a long run (next rule).
+- **Long runs (test suites, builds) write their full output to a log file.** Do not pipe a long command into `tail`, `head`, or `grep`. The failure summary prints at the end of the output; the pipe deletes it. A narrow grep pattern misses the failure text. Each mistake costs one full re-run of a 5+ minute command. Redirect first, then inspect the file:
+
+  ```sh
+  pnpm test > tmp/vitest.log 2>&1; echo "exit: $?"
+  tail -50 tmp/vitest.log
+  grep -inE "fail|unhandled|error" tmp/vitest.log
+  ```
+
+  `make test`, `crystal spec`, and `npm run build` (site-docs) follow the same pattern. `tmp/` at the repo root is gitignored scratch space. Read the log again with new `tail`/`grep` commands as often as you need; never re-run a long command only to see its output again. Details: `doc/backend/workflow.md` → Testing, `doc/frontend/workflow.md` → Testing strategy.
 
 ### Config — golden rules
 

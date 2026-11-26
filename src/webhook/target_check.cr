@@ -36,13 +36,13 @@ module Facet
     # change past a literal comparison.
     #
     # Check order: shape → scheme → allowlist → deny-list → pass. The
-    # residual gap is one DNS TTL wide: check-time resolution and dial-time
-    # resolution are separate lookups. Closing it fully means pinning the
-    # dial to the checked address (a hand-built socket with SNI set — see
-    # `doc/plans/b76-webhook-ssrf-arbitration.md` §4.2). Crystal's
-    # `HTTP::Client` does not follow redirects, so a 30x answer never
-    # widens the target; if redirect following is ever enabled, every hop
-    # must re-run this gate.
+    # check-time and dial-time lookups are separate, so the transport pins
+    # the dial to the checked address (`checked_address` returns the address
+    # the gate accepted; `Webhook::Transport` dials that IP while keeping the
+    # original hostname for SNI and `Host`), which closes the DNS-rebinding
+    # window. Crystal's `HTTP::Client` does not follow redirects, so a 30x
+    # answer never widens the target; if redirect following is ever enabled,
+    # every hop must re-run this gate and re-pin.
     module TargetCheck
       # Shared rejection texts. The insecure-URL text is the one the
       # dispatcher and `/test` have answered since B-77; the authoring hook
@@ -72,6 +72,25 @@ module Facet
         host_rejection(host)
       rescue URI::Error
         INVALID_TARGET_MESSAGE
+      end
+
+      # Resolves and judges one host for the dial: returns the first address
+      # the gate accepts, so `Webhook::Transport` can pin the dial to the
+      # address it checked (S9 — closing the DNS-rebinding window between
+      # the check-time and dial-time lookups). Returns `nil` when the URL is
+      # not an absolute http(s) URL, the host does not resolve, or the host
+      # is refused (private, loopback, or reserved and not on the allowlist).
+      # The scheme rule stays with `check`; this method judges only where the
+      # host points, and the caller runs `check` for the message.
+      def self.checked_address(url : String) : Socket::IPAddress?
+        uri = URI.parse(url)
+        return nil unless uri.scheme.in?("http", "https")
+        host = uri.host
+        return nil if host.nil? || host.empty?
+        resolved = safe_resolved_addresses(host)
+        resolved.first?
+      rescue URI::Error
+        nil
       end
 
       # The host half of the webhook target rule: true when the URL's host
@@ -110,6 +129,27 @@ module Facet
         return PRIVATE_TARGET_MESSAGE if resolved.any? { |addr| denied_address?(addr) }
 
         nil
+      end
+
+      # The addresses a dial may pin to, or an empty array when the host is
+      # refused. Same judgement as `host_rejection`, but returns the
+      # accepted addresses instead of a message so the transport dials an
+      # address the gate saw. An allowlisted host returns every resolved
+      # address; a hostname-only allowlist entry (no DNS) has no address to
+      # pin to and returns an empty array — the transport then dials by name
+      # for that operator-approved case.
+      private def self.safe_resolved_addresses(host : String) : Array(Socket::IPAddress)
+        normalized = normalize_host(host)
+
+        return resolve(normalized) if host_allowlisted?(normalized, nil)
+
+        resolved = resolve(normalized)
+        return [] of Socket::IPAddress if resolved.empty?
+
+        return resolved if host_allowlisted?(normalized, resolved)
+        return [] of Socket::IPAddress if resolved.any? { |addr| denied_address?(addr) }
+
+        resolved
       end
 
       # One seam for tests: specs swap this to a canned mapping so the

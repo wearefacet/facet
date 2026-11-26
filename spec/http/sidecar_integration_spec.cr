@@ -758,6 +758,68 @@ describe "Sidecar nested routes" do
       assert_http_status(resp, 404)
     end
 
+    # ── Host binding (S5) ─────────────────────────────────────────────
+    #
+    # The nested per-document route must bind the sidecar row to the host
+    # record of the URL, the same way the collection path binds it with a
+    # `target__eq` filter. Without the binding a caller who can read one
+    # host record reaches any sidecar by id. A mismatch answers the same
+    # non-disclosing 404 as the host read gate.
+
+    it "returns 404 when reading a sidecar attached to another host record (S5)" do
+      create_host_doctype_with_comments_sidecar!("hr", "Employee")
+      host_a = create_host_document!("hr", "Employee", "Alice")
+      host_b = create_host_document!("hr", "Employee", "Bob")
+      comment_on_b = create_child_doc_id_http("hr", "Employee", host_b, "comments", %({"body": "on B"}))
+
+      resp = get_nested_doc_http("hr", "Employee", host_a, "comments", comment_on_b)
+      assert_http_status(resp, 404)
+      resp.body.should_not contain("on B")
+
+      # The same id through its own host still answers.
+      own = get_nested_doc_http("hr", "Employee", host_b, "comments", comment_on_b)
+      assert_http_status(own, 200)
+      JSON.parse(own.body)["data"]["body"].as_s.should eq("on B")
+    end
+
+    it "returns 404 when updating a sidecar attached to another host record (S5)" do
+      create_host_doctype_with_comments_sidecar!("hr", "Employee")
+      host_a = create_host_document!("hr", "Employee", "Alice")
+      host_b = create_host_document!("hr", "Employee", "Bob")
+      comment_on_b = create_child_doc_id_http("hr", "Employee", host_b, "comments", %({"body": "untouched"}))
+
+      resp = patch_nested_doc_http("hr", "Employee", host_a, "comments", comment_on_b, %({"body": "hijacked"}))
+      assert_http_status(resp, 404)
+
+      own = get_nested_doc_http("hr", "Employee", host_b, "comments", comment_on_b)
+      assert_http_status(own, 200)
+      JSON.parse(own.body)["data"]["body"].as_s.should eq("untouched")
+    end
+
+    it "returns 404 when deleting a sidecar attached to another host record (S5)" do
+      create_host_doctype_with_comments_sidecar!("hr", "Employee")
+      host_a = create_host_document!("hr", "Employee", "Alice")
+      host_b = create_host_document!("hr", "Employee", "Bob")
+      comment_on_b = create_child_doc_id_http("hr", "Employee", host_b, "comments", %({"body": "survives"}))
+
+      resp = delete_nested_doc_http("hr", "Employee", host_a, "comments", comment_on_b)
+      assert_http_status(resp, 404)
+
+      own = get_nested_doc_http("hr", "Employee", host_b, "comments", comment_on_b)
+      assert_http_status(own, 200)
+      JSON.parse(own.body)["data"]["body"].as_s.should eq("survives")
+    end
+
+    it "returns 404 for a cross-record id even when the host id does not exist (S5)" do
+      create_host_doctype_with_comments_sidecar!("hr", "Employee")
+      host_b = create_host_document!("hr", "Employee", "Bob")
+      comment_on_b = create_child_doc_id_http("hr", "Employee", host_b, "comments", %({"body": "private"}))
+
+      resp = get_nested_doc_http("hr", "Employee", "01MISSINGHOST", "comments", comment_on_b)
+      assert_http_status(resp, 404)
+      resp.body.should_not contain("private")
+    end
+
     it "denies the nested read with 403 when the caller holds no read grant on the host doctype" do
       # `comment_author` holds $mine-scoped grants on core.Comment only — no
       # read on the host doctype, so the host read gate is a class-level

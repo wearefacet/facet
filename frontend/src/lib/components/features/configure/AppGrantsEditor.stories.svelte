@@ -48,6 +48,27 @@
 		}
 	];
 
+	// A parent with one child that declares a named action — the
+	// ChildNamedActions story pins the child-row pills.
+	const childNamedCatalogue: DoctypeCatalogueEntry[] = [
+		{
+			target: 'crm.Company',
+			label: 'Company',
+			description: 'Companies',
+			domain: 'sales',
+			pluralLabel: 'companies'
+		},
+		{
+			target: 'crm.CompanyMembership',
+			label: 'CompanyMembership',
+			description: 'Links a Contact to a Company.',
+			domain: 'sales',
+			pluralLabel: 'company memberships',
+			parentTarget: 'crm.Company',
+			namedActions: [{ name: 'approve', label: 'Approve a membership' }]
+		}
+	];
+
 	const { Story } = defineMeta({
 		title: 'Components/Features/Configure/AppGrantsEditor',
 		component: AppGrantsEditor,
@@ -421,6 +442,57 @@
 				doctypeCatalogue={catalogue}
 				mode="edit"
 			/>
+		</div>
+	{/snippet}
+</Story>
+
+<Story
+	name="ChildNamedActions"
+	args={{
+		// A child doctype declaring a named action — the Task/submit shape: the
+		// custom action lives on the child, and the pills must render on the
+		// child row or the action stays ungrantable (runtime 403).
+		grants: [{ target: 'crm.Company', actions: levelToActions('write') }],
+		doctypeCatalogue: childNamedCatalogue,
+		mode: 'edit'
+	}}
+	play={async ({ canvasElement, args }) => {
+		const canvas = within(canvasElement);
+		// The child row renders the Extra abilities pills. The parent has no
+		// named actions, so the label appears exactly once.
+		await expect(canvas.getAllByText('Extra abilities')).toHaveLength(1);
+		// Activating the pill creates the child's explicit entry. The implicit
+		// base is the inherited level (write) with the inherited flags — not a
+		// bare read — so the displayed level survives the override.
+		await userEvent.click(canvas.getByRole('button', { name: 'Approve a membership' }));
+		const onchange = args.onchange as unknown as { mock: { calls: unknown[][] } };
+		const emitted: AppGrant[] = (onchange.mock.calls.at(-1)?.[0] as AppGrant[] | undefined) ?? [];
+		const membership = emitted.find((g) => g.target === 'crm.CompanyMembership');
+		await expect(membership?.actions).toEqual([
+			{ name: 'read', required: false },
+			{ name: 'create', required: false },
+			{ name: 'update', required: false },
+			{ name: 'approve', required: false }
+		]);
+		// The status tag flips from inherited to overridden — same level.
+		await expect(canvas.getByText('Write, overridden')).toBeVisible();
+		// The active pill carries its own required toggle; flipping it marks
+		// the named action required. The consent summary repeats the label, so
+		// locate the pill through its toggle button, not the text.
+		const pill = canvas
+			.getByRole('button', { name: 'Approve a membership' })
+			.closest('.grants-named-pill') as HTMLElement;
+		await userEvent.click(within(pill).getByRole('switch'));
+		const last = (onchange.mock.calls.at(-1)?.[0] as AppGrant[] | undefined) ?? [];
+		const approve = last
+			.find((g) => g.target === 'crm.CompanyMembership')
+			?.actions.find((a) => a.name === 'approve');
+		await expect(approve?.required).toBe(true);
+	}}
+>
+	{#snippet template(args)}
+		<div style="min-height: 600px; padding: 24px; background: var(--surface-2);">
+			<AppGrantsEditor {...args} />
 		</div>
 	{/snippet}
 </Story>

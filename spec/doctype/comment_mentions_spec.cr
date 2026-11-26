@@ -272,4 +272,85 @@ describe "core.Comment mention notifications" do
       mention_rows_for(mention_notification_rows(db), alice).size.should eq(2)
     end
   end
+
+  it "notifies a mention whose account id is the account's email" do
+    with_db do |db|
+      upsert_account_grant(db)
+      author = create_test_account(db, email: "author-#{unique_suffix}@example.com", display_name: "Ada Lovelace")
+      jean = create_test_account(
+        db, email: "jean-#{unique_suffix}@amplitude-solutions.com",
+        display_name: "Jean Emmanuel Wattier",
+        doc_id: "jean-#{unique_suffix}@amplitude-solutions.com",
+      )
+      host = create_test_account(db, email: "host-#{unique_suffix}@example.com", display_name: "Host Record")
+
+      # Link form (what the composer inserts) and bare form closed by a
+      # sentence period — the trailing dot is prose, not the id.
+      create_mention_comment(
+        db, mention_actor_ctx(db, author), "iam.Account.#{host}",
+        "Hey [@Jean](urn:facet:iam:Account:#{jean}) and again urn:facet:iam:Account:#{jean}.",
+      )
+
+      rows = mention_rows_for(mention_notification_rows(db), jean)
+      rows.size.should eq(1)
+      rows[0][1].should eq("comment_mention")
+      rows[0][3].should eq("Ada Lovelace mentioned you on Host Record")
+      rows[0][6].should eq(host)
+    end
+  end
+
+  it "routes a comment on an email-id account to that host" do
+    with_db do |db|
+      upsert_account_grant(db)
+      author = create_test_account(db, email: "author-#{unique_suffix}@example.com", display_name: "Ada Lovelace")
+      alice = create_test_account(db, email: "alice-#{unique_suffix}@example.com", display_name: "Alice Chen")
+      jean = create_test_account(
+        db, email: "jean-host-#{unique_suffix}@amplitude-solutions.com",
+        display_name: "Jean Emmanuel Wattier",
+        doc_id: "jean-host-#{unique_suffix}@amplitude-solutions.com",
+      )
+
+      # The comment's target (and so the notification's doc_ref) carries
+      # the email id — the dotted reference must survive the enqueue-time
+      # `DocURI` validation with the id whole.
+      create_mention_comment(
+        db, mention_actor_ctx(db, author), "iam.Account.#{jean}",
+        "Ping [Alice](urn:facet:iam:Account:#{alice}).",
+      )
+
+      rows = mention_rows_for(mention_notification_rows(db), alice)
+      rows.size.should eq(1)
+      rows[0][3].should eq("Ada Lovelace mentioned you on Jean Emmanuel Wattier")
+      rows[0][4].should eq("iam")
+      rows[0][5].should eq("Account")
+      rows[0][6].should eq(jean)
+    end
+  end
+
+  it "notifies net-new email-id mentions on update" do
+    with_db do |db|
+      upsert_account_grant(db)
+      author = create_test_account(db, email: "editor-#{unique_suffix}@example.com", display_name: "Ada Lovelace")
+      jean = create_test_account(
+        db, email: "jean-edit-#{unique_suffix}@amplitude-solutions.com",
+        display_name: "Jean Emmanuel Wattier",
+        doc_id: "jean-edit-#{unique_suffix}@amplitude-solutions.com",
+      )
+      host = create_test_account(db, email: "host-#{unique_suffix}@example.com", display_name: "Host Record")
+
+      comment = create_mention_comment(
+        db, mention_actor_ctx(db, author), "iam.Account.#{host}",
+        "No one yet.",
+      )
+
+      update_mention_comment(
+        db, mention_actor_ctx(db, author), comment.projection.id,
+        "Now: [@Jean](urn:facet:iam:Account:#{jean}).",
+      )
+
+      rows = mention_rows_for(mention_notification_rows(db), jean)
+      rows.size.should eq(1)
+      rows[0][3].should eq("Ada Lovelace mentioned you on Host Record")
+    end
+  end
 end

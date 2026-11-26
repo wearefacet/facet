@@ -18,6 +18,7 @@ src/document/
 ├── delete.cr                # Facet::Document::Delete — soft-delete documents
 ├── filter_compiler.cr       # Facet::Document::FilterCompiler — shared filter grammar compiler
 ├── list.cr                  # Facet::Document::List — paginated/filtered list
+├── sidecar_handler.cr       # Facet::Document::SidecarHandler — nested sidecar read/update/delete with host binding
 ├── list/
 │   └── aggregate.cr         # Facet::Document::List::Aggregate — field aggregates (sum, avg, …)
 ├── collection_version.cr    # Facet::Document::CollectionVersion — collection-version validators
@@ -555,6 +556,7 @@ The order fixes placeholder numbering. The clauses AND-compose, so the order doe
 
 ### Behaviour contracts
 
+- **Hidden fields are refused (S4)** — before any type validation, `validate_filters!` runs a visibility gate (`invisible_field_error`): a filter on a field the active role cannot see (`RBAC::ReadEnforcer.field_visible?` false) raises `FilterGrammarError` with reason `invisible_filter_field`. `Document::List` and `Document::Export` answer it with `403` (the same answer as the aggregate gate), never the `422` that names a type contract. System columns and `search` carry no tags and stay visible. An internal integrity filter (`skip_capability_check` / `skip_visibility_check`) stays exempt.
 - **Unknown fields raise** — `compile` first runs `validate_filters!`: a filter on a field not declared in the definition (and not a system column or `search`) raises `Util::FilterClauses::FilterGrammarError` (reason `unknown_filter_field`), which callers turn into a 422. An operator the field family does not serve raises the same error with reason `unsupported_filter_operator`.
 - **Malformed array values raise** — an array-valued operator (`__in`, `__between`, the range intervals, money `__between`, system `id__between` / timestamp `__between`) that receives a non-array value raises `FilterGrammarError` (reason `malformed_filter_value`) before any SQL runs (B-41). Shapes the up-front check does not cover — wrong array arity, an empty or over-100-entry `__in` array — still degrade to `FALSE` inside the clause builders, and direct `Util::FilterClauses` / `Util::FilterSet` callers (e.g. the RBAC scope SQL) keep the degrade-to-`FALSE` contract. Money stays the other exception (see above).
 - **Datetime normalization** — values on `datetime` fields and the `created_at` / `updated_at` / `deleted_at` system columns convert to UTC RFC-3339 through `Util::TimeHelper.to_utc_rfc3339` before binding (see AGENTS.md → Time / Timezone).
@@ -590,6 +592,8 @@ Facet::Document::List.call(
 
 Filters compile through `Document::FilterCompiler` (see above). Filter keys use double-underscore suffixes for operator:
 
+**Field visibility (S4).** A filter on a field the active role cannot see answers `403 "field '<name>' is not visible to the active role"` — the same answer as the aggregate gate — before any type validation. Internal integrity filters (`skip_authorization` / `skip_capability_check`) stay exempt.
+
 | Suffix | Operator | Example key |
 |---|---|---|
 | *(none)* | `=` | `name` |
@@ -606,9 +610,21 @@ The reserved key `parent_id__eq` scopes the listing to one parent's owned childr
 
 Sort fields prefixed with `-` use descending order. System sort columns are `id`, `created_at`, `updated_at`, and `deleted_at`; all others reference `content->>'field'` (or the typed cast helper — see `sort_expression_for`). An entry that is neither a system column nor a doctype field answers `422 unknown_sort_field`; a doctype field whose type cannot sort (period, dateperiod, object, array, dictionary, any, data) answers `422 unsortable_field` — a sort entry is never dropped silently (B-158).
 
+**Field visibility (S4).** A sort on a doctype field the active role cannot see answers `403 "field '<name>' is not visible to the active role"` (`build_order_clause`), before the type check. The check is skipped for `skip_authorization` (internal) callers.
+
 ### ⚠️ Database quirk
 
 `List.call` uses `rs = db.query(...); rs.each do` instead of `db.query(...) do |rs|` because `crystal-db` 0.14.0 does **not** auto-position the cursor when `db.query` yields a block. See `AGENTS.md#database-quirks`.
+
+---
+
+## Document::SidecarHandler (`src/document/sidecar_handler.cr`)
+
+Serves the nested sidecar routes (`/Api/:domain/:doctype/:id/:segment[/:sidecar_id]`). `read`, `update`, and `delete` run the host gates, then bind the sidecar row to the host before delegating to `Document::Read` / `Update` / `Delete` with `skip_authorization: true`. The create and list operations live in the same file; see [`sidecar.md`](sidecar.md) for the full authorization contract.
+
+### Target binding (S5)
+
+The per-document path must bind the sidecar to the host named in the URL, or a caller who can read one host record could reach any sidecar by id. Before delegating, `sidecar_targets_host?` reads the sidecar's reference column and compares it to the expected host token `{host_domain}.{host_doctype}.{host_id}` (`host_reference`). A mismatch, a missing row, or a tombstone (`deleted_at` set) answers the same non-disclosing `404 "Not found"` as the host gate. The lookup is a direct projection read — an internal integrity check on one known row, so it needs no filter grammar and no capability or visibility gate. It takes `FOR SHARE` when the session can write, so a concurrent re-point cannot commit between the check and the caller's write; a read-only session (the read path) cannot lock and needs none.
 
 ---
 

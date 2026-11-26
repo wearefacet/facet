@@ -178,7 +178,9 @@ async function createAccountWithRole(
 	const created = await postJson(
 		request,
 		'/Api/iam/Account',
-		{ email, display_name: displayName },
+		// The account doctype's human-label field is `name` (titled "Display
+		// Name" in the UI); the old `display_name` key no longer exists.
+		{ email, name: displayName },
 		`creating the ${email} account`
 	);
 	const id = String(created.meta.id);
@@ -340,6 +342,11 @@ test('rbac scoped grants: named scopes, context sets, sidecar nested grants', as
 			'/Api/iam/Roles',
 			{
 				name: SCOPED_READER,
+				// `level` is required (role authority): a caller may only author
+				// or assign roles at or below its elected role's level. The
+				// seeded admin holds level 100; a read-only helper role sits
+				// below the seeded viewer (20).
+				level: 10,
 				description:
 					'E2E: read crm.Company rows owned by the actioner, plus the DocType registry the UI routes fetch.',
 				permissions: [

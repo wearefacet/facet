@@ -150,19 +150,22 @@ module Facet::Domain
         ref_issues.first.field.should eq("customer")
 
         # `Order` carries one `:defaults` info notice (no display_name
-        # template — search is declared) plus the five missing standard view
-        # kinds — all `:info` notices, in `notices`, not `issues`.
-        order_res.notices.size.should eq(6)
+        # template — search is declared), the five missing standard view
+        # kinds, and the zero-collection-views notice — all `:info`, in
+        # `notices`, not `issues`.
+        order_res.notices.size.should eq(7)
         order_res.notices.all?(&.severity.==(:info)).should be_true
 
         line_item_res = by_id["#{draft}.LineItem"]
         # `LineItem` has no broken config — one issue: the B-296 template
         # gate on an aggregate root that declares neither template. It is an
-        # `:error`, and the display_name `:info` notice stays in `notices`.
+        # `:error`. Two `:info` notices stay in `notices`: the display_name
+        # notice and the zero-collection-views notice (its standard
+        # DocumentView kinds exist, but no collection view does).
         line_item_res.issues.size.should eq(1)
         line_item_res.issues.first.category.should eq(:defaults)
         line_item_res.issues.first.severity.should eq(:error)
-        line_item_res.notices.size.should eq(1)
+        line_item_res.notices.size.should eq(2)
       end
     end
 

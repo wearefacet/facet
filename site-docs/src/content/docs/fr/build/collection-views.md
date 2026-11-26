@@ -100,9 +100,13 @@ meta:
   parent_id: crm.Deal
 ```
 
-## Ce que vous obtenez d’office
+## L’état vide
 
-Chaque doctype est livré avec une vue tableau générale nommée **All Records**. Facet la crée avec le doctype et la remplit avec les huit premiers champs scalaires. Les colonnes booléennes sont créées éditables en ligne, sauf celles en `read_only` et `write_only`. Ce réglage de départ est un indice, pas une permission : le tableau n’affiche l’interrupteur que pour un lecteur qui détient `update` sur le doctype. Sans ce droit, la même cellule affiche simplement vrai ou faux. Vous pouvez modifier ou supprimer cette vue comme une autre ; Facet ne la reconstruit pas après un changement de la liste des champs. Une publication ne touche jamais les vues de collection, et une fusion de bundle met à jour les vues générales par nom, mais ne supprime jamais une vue qui n’existe que sur la cible.
+Un doctype est livré **sans** vue. Facet n’en crée jamais de son propre chef — ni à la création du doctype, ni au démarrage. La page de liste affiche un écran d’accueil : une carte par disposition (tableau, kanban, calendrier). Choisissez une carte, nommez la vue, sélectionnez ses colonnes, puis enregistrez. Une vue créée ainsi démarre en **personnelle** — vous seul la voyez tant que vous ne la passez en générale (si votre rôle le permet).
+
+Tant que la première vue n’existe pas, le rapport `/check` porte une note d’information qui en demande une. Ce n’est pas une erreur : rien n’est cassé, le doctype n’a simplement pas encore de surface de liste.
+
+Vous pouvez modifier ou supprimer une vue comme n’importe quel document. Supprimer la dernière vue ramène l’écran d’accueil, et Facet ne recrée pas la vue. Une publication ne touche jamais les vues de collection, et une fusion de bundle met à jour les vues générales par nom, mais ne supprime jamais une vue qui n’existe que sur la cible.
 
 ## Dépannage
 

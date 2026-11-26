@@ -5,7 +5,7 @@ audience: [admin]
 features: [AUD-02, AUD-08, IAM-13, FE-16]
 sidebar:
   order: 10
-verified_at: fd345fe3
+verified_at: a8e1b43
 ---
 
 Facet records every create, update, delete, and snapshot in one append-only
@@ -143,11 +143,13 @@ Values your role cannot see are removed from the log response, and the
 ### The login-event log
 
 `iam.LoginEvent` rows record every authentication event: login, logout,
-refresh, refresh reuse, lockout, MFA enrolment and changes, password reset,
-invites, consent grants, API-key and session revocations, OIDC sign-ins, and
-denials. One limit matters for reviewers: single failed password attempts are
-not logged, only the lockout is. The backend log carries every failed attempt
-with the account id and the client address.
+refresh reuse, lockout, MFA enrolment and changes, password reset, invites,
+consent grants, API-key and session revocations, OIDC sign-ins, and denials.
+Two limits matter for reviewers. Single failed password attempts are not
+logged — only the lockout is. Successful token refreshes are not logged
+either — they run on a clock and would flood the log. The backend log carries
+every failed attempt and every successful refresh, with the account id and
+the client address.
 
 ## Troubleshooting
 

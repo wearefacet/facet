@@ -284,6 +284,12 @@ module Facet
       # empty), then the Authorization header restricted to the named
       # schemes, matched case-insensitively. Returns nil when neither
       # source yields a token.
+      #
+      # Transport only. The value is NOT verified here, so a route must never
+      # trust a claim read from it. Read the identity from the verified auth
+      # context instead (`require_account` / `require_role`, or
+      # `IAM::Helpers.verified_jwt_claim` for a claim the context does not
+      # carry).
       def extract_access_token(env, schemes : Array(String) = ["Bearer", "DPoP"], cookie : Bool = true) : String?
         if cookie && (stored = env.request.cookies["auth_token"]?.try(&.value)) && !stored.empty?
           return stored
@@ -305,15 +311,71 @@ module Facet
           .try { |m| {m[2], m[1].downcase} }
       end
 
-      # Extracts the account id from the access token (`sub` claim — cookie
-      # or Authorization bearer), or writes the 401 JSON error and returns
-      # nil. Use with `|| next`. API-key callers carry no JWT — read the
-      # auth context (`Fiber.current.auth_context`) for those instead.
+      # Extracts the caller's account id from the verified auth context
+      # (`Fiber.current.auth_context`, set by `AuthHandler` after the JWT
+      # signature check), or writes the 401 JSON error and returns nil. Use
+      # with `|| next`.
+      #
+      # The identity never comes from an unverified token claim. A forged
+      # `auth_token` cookie must not name another account: `AuthHandler`
+      # verified the credential it accepted, and this gate reads that result.
+      # The system bypass, the preview capability, and the anonymous fallback
+      # all refuse.
       def require_account(env) : String?
-        account_id = IAM::Helpers.extract_account_id(env)
-        return account_id unless account_id.nil?
+        account_id = verified_account_id(env)
+        return account_id if account_id
         Responders.error_response(env, 401, "Authentication required")
         nil
+      end
+
+      # Extracts the caller's active role id (the role content name, e.g.
+      # `admin`) from the verified auth context, or writes the 401 JSON error
+      # and returns nil. Use with `|| next`. Mirrors `require_account`.
+      def require_role(env) : String?
+        context = Fiber.current.auth_context
+        if context
+          return principal_role(context) unless context.system? || context.preview?
+        else
+          # Test mode (no pinned context): verify the signature, then read
+          # the role claim. Production always has the context.
+          role = IAM::Helpers.extract_role(env) unless HTTP::AuthHandler.enabled?
+          return role if role
+        end
+        Responders.error_response(env, 401, "Authentication required")
+        nil
+      end
+
+      # The role content name of a real, non-anonymous principal, or nil.
+      private def principal_role(context : Facet::RBAC::AuthContext) : String?
+        principal = context.principal
+        return nil unless principal.is_a?(Facet::RBAC::Principal::Real)
+        return nil if principal.account_id == "anonymous"
+        principal.active_role.role_id
+      end
+
+      # The account id of a real, non-anonymous principal pinned on the
+      # fiber by `AuthHandler`, or nil for every other shape (system bypass,
+      # preview capability, anonymous fallback, missing context).
+      #
+      # With `AuthHandler` disabled (test mode) no context is pinned. The
+      # gate then verifies the presented token's signature itself
+      # (`IAM::Helpers.extract_account_id` — ES256, never a raw claim decode)
+      # so a route spec keeps a real identity. Production always has the
+      # context, so this fallback never runs there.
+      private def verified_account_id(env) : String?
+        context = Fiber.current.auth_context
+        return test_mode_account_id(env) unless context
+        return nil if context.system? || context.preview?
+        principal = context.principal
+        return nil unless principal.is_a?(Facet::RBAC::Principal::Real)
+        account_id = principal.account_id
+        account_id == "anonymous" ? nil : account_id
+      end
+
+      # The verified JWT `sub` for a test-mode request (no pinned context).
+      private def test_mode_account_id(env) : String?
+        return nil if HTTP::AuthHandler.enabled?
+        IAM::Helpers.extract_account_id(env)
       end
 
       # Extracts a required path parameter, or writes the 422 JSON error and

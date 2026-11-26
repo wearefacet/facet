@@ -160,7 +160,10 @@ module Facet
         #    bypass passes; a preview principal and a denied caller fail
         #    closed.
         unless Editors.authorize_draft_from?(db, source_id, auth_context)
-          return Facet::ServiceError.new(403, "Forbidden")
+          return Facet::ServiceError.new(
+            403,
+            "You must be an editor of domain '#{source_id}' to create a draft from it",
+          )
         end
 
         # 1. Load + validate the source domain projection.

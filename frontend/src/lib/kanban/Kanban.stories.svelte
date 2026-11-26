@@ -11,6 +11,7 @@
 	import type { ListParams } from '$lib/datasource/types.js';
 	import { parseDoctypeDef, type DoctypeDef } from '$lib/doctype/types.js';
 	import type { KanbanViewConfig } from '$lib/collectionView/types.js';
+	import { getPermissions, setPermissions } from '$lib/permissions.svelte';
 
 	const driver = createMockDriver();
 
@@ -28,6 +29,25 @@
 
 	// The `pipeline` fixture view config (values mode over the status enum).
 	const pipelineCfg: KanbanViewConfig = { mode: 'values', group_by: 'status', page_size: 25 };
+
+	// Values mode with a stored lane order and one hidden lane — the board
+	// renders the stored order and drops the hidden value's lane entirely.
+	const laneOverridesCfg: KanbanViewConfig = {
+		mode: 'values',
+		group_by: 'status',
+		page_size: 25,
+		lane_order: ['lost', 'open', 'won'],
+		hidden_lanes: ['abandoned']
+	};
+
+	// Values mode with moves enabled — cards drag between lanes and the drop
+	// PATCHes the target lane's value through a document update.
+	const moveCfg: KanbanViewConfig = {
+		mode: 'values',
+		group_by: 'status',
+		page_size: 25,
+		allow_move: true
+	};
 
 	// The `by_probability` fixture view config (custom lanes + base filter).
 	const byProbabilityCfg: KanbanViewConfig = {
@@ -177,10 +197,36 @@
 
 	/** Wait long enough for the per-lane fetches to settle in Storybook. */
 	const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+	/** A plain-object DataTransfer stub — the drag handlers only carry the
+	 *  card id through `text/plain`, so no browser DnD session is needed. */
+	function makeDataTransfer(): {
+		setData: (type: string, value: string) => void;
+		getData: (type: string) => string;
+		dropEffect: string;
+		effectAllowed: string;
+	} {
+		let payload = '';
+		return {
+			setData: (_type: string, value: string) => {
+				payload = value;
+			},
+			getData: () => payload,
+			dropEffect: 'none',
+			effectAllowed: 'all'
+		};
+	}
+
+	/** A bubbling DragEvent with the stubbed dataTransfer attached. */
+	function makeDragEvent(type: string, transfer: unknown): DragEvent {
+		const event = new DragEvent(type, { bubbles: true, cancelable: true });
+		Object.defineProperty(event, 'dataTransfer', { value: transfer });
+		return event;
+	}
 </script>
 
 <script lang="ts">
-	import { expect, within } from 'storybook/test';
+	import { expect, within, waitFor } from 'storybook/test';
 </script>
 
 <!--
@@ -387,6 +433,106 @@
 			style="padding: 24px; height: 720px; display: flex; flex-direction: column; background: var(--ground);"
 		>
 			<Kanban driver={args.driver} doctype={args.doctype} config={args.config} />
+		</div>
+	{/snippet}
+</Story>
+
+<Story
+	name="LaneOrderAndHiddenLanes"
+	args={{ config: laneOverridesCfg }}
+	play={async ({ canvasElement }) => {
+		await sleep(400);
+		// The stored order wins over the declaration order, and the hidden
+		// value's lane neither renders nor fetches (three badges, not four).
+		const laneLabels = [...canvasElement.querySelectorAll('.kb-col-label')].map((e) =>
+			e.textContent?.trim()
+		);
+		expect(laneLabels).toEqual(['Lost', 'Open', 'Won']);
+		const counts = [...canvasElement.querySelectorAll('.kb-col-count')].map((e) =>
+			e.textContent?.trim()
+		);
+		expect(counts).toEqual(['0', '2', '1']);
+		// Every lane query still carries its own equality filter — the lost
+		// lane's fetch sorts first.
+		const lostCall = listCalls().find(
+			(c) => (c.filters as Record<string, unknown>)['status__eq'] === 'lost'
+		);
+		expect(lostCall).toBeTruthy();
+	}}
+>
+	{#snippet template(args)}
+		<div
+			style="padding: 24px; height: 720px; display: flex; flex-direction: column; background: var(--ground);"
+		>
+			<Kanban {driver} doctype={dealDef} config={args.config} />
+		</div>
+	{/snippet}
+</Story>
+
+<Story
+	name="DragDropMovesCard"
+	args={{ config: moveCfg }}
+	play={async ({ canvasElement }) => {
+		// The storybook page shares module state across story files (the
+		// vitest project runs with `isolate: false`), so the permission store
+		// starts from whatever a previous file left — pin both states here and
+		// restore the previous manifest at the end.
+		const previous = getPermissions();
+		setPermissions({ 'core.CollectionView': ['read'] });
+		await sleep(400);
+		const openCard = () => canvasElement.querySelector('[data-doc-id="crm.Deal.1"]') as HTMLElement;
+		// allow_move alone is not enough — without `update` on the doctype the
+		// cards do not drag (the affordance gate fails closed).
+		expect(openCard()?.getAttribute('draggable')).toBe('false');
+
+		setPermissions({ '*.*': ['*'] });
+		try {
+			await sleep(50);
+			expect(openCard()?.getAttribute('draggable')).toBe('true');
+
+			// Drag the first open deal onto the Won lane. Synthetic DragEvents
+			// with a stubbed dataTransfer — the handlers only read and write the
+			// plain-text payload.
+			const callsBefore = listCalls().length;
+			const transfer = makeDataTransfer();
+			openCard()!.dispatchEvent(makeDragEvent('dragstart', transfer));
+			// Each dispatched event reads prop state the previous one wrote —
+			// let Svelte flush between them (dragstart sets `dragging`, which
+			// recomputes the lanes' `droppable` props; dragover sets the
+			// highlight class).
+			await sleep(20);
+			const wonLane = [...canvasElement.querySelectorAll('.kb-col')].find(
+				(el) => el.querySelector('.kb-col-label')?.textContent?.trim() === 'Won'
+			)!;
+			wonLane.dispatchEvent(makeDragEvent('dragover', transfer));
+			await sleep(20);
+			expect(wonLane.classList.contains('kb-drag-over')).toBe(true);
+			wonLane.dispatchEvent(makeDragEvent('drop', transfer));
+
+			// The PATCH landed on the mock store and the Won lane refetched —
+			// the card renders there and the document's status is now `won`.
+			await waitFor(() => {
+				expect(wonLane.textContent).toContain('Acme Corp — Platform License');
+			});
+			const moved = await driver.domain('crm').doctype('Deal').doc('crm.Deal.1').show();
+			expect((moved.data as Record<string, unknown>).status).toBe('won');
+			// Both lanes of the move refetched after the PATCH — a `won` query
+			// arrives after the drop (the shared driver's log grows per story,
+			// so slice from the drop point).
+			const refetch = listCalls()
+				.slice(callsBefore)
+				.find((c) => (c.filters as Record<string, unknown>)['status__eq'] === 'won');
+			expect(refetch).toBeTruthy();
+		} finally {
+			setPermissions(previous);
+		}
+	}}
+>
+	{#snippet template(args)}
+		<div
+			style="padding: 24px; height: 720px; display: flex; flex-direction: column; background: var(--ground);"
+		>
+			<Kanban {driver} doctype={dealDef} config={args.config} />
 		</div>
 	{/snippet}
 </Story>

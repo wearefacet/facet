@@ -15,10 +15,12 @@ module Facet
     # HTTP routes for the notification store.
     #
     # All routes are under `/Api/notifications`. They are self-service: the
-    # authenticated user touches their own rows only, keyed off the `sub`
-    # claim of the access token — the SQL `WHERE account_id = $1` is the
-    # isolation boundary (no RBAC enforcer on the read/mark-read routes,
-    # mirroring `src/settings/routes.cr`). The action route is the exception:
+    # authenticated user touches their own rows only, keyed off the verified
+    # auth context's account id (`HTTP::Helpers.require_account` reads it
+    # after `AuthHandler` checked the token signature — never an unverified
+    # cookie claim) — the SQL `WHERE account_id = $1` is the isolation
+    # boundary (no RBAC enforcer on the read/mark-read routes, mirroring
+    # `src/settings/routes.cr`). The action route is the exception:
     # `InvokeAction` enforces RBAC at execute time under the recipient's
     # `RBAC::AuthContext` (decision 10).
     #

@@ -58,6 +58,7 @@ def create_test_account(
   default_role = "iam.Roles.admin",
   status = "active",
   mfa_enabled = false,
+  doc_id : String? = nil,
 )
   # Ensure seed roles exist (truncation wipes them)
   seed_test_roles(db)
@@ -82,7 +83,10 @@ def create_test_account(
     "mfa_enabled"  => mfa_enabled,
   }.to_json
 
-  doc_id = Facet::Util::ScriptHelpers.ulid
+  # Production derives the id from the email (named-id create, lowercased
+  # and stripped — `Document::Create.resolve_doc_id`); `doc_id` lets a spec
+  # opt into that shape instead of the raw-write ULID default.
+  doc_id ||= Facet::Util::ScriptHelpers.ulid
   Facet::Mutation::Client.create(
     db,
     "iam",

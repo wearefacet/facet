@@ -55,9 +55,7 @@ export class MockTurnStore {
 		// Auto-title: the first turn of a title-less conversation names it
 		// after the user's message — mirrors the backend stream-route hook.
 		if (idx === 1 && !this.conversations.find(conversationId)?.context['title']) {
-			const firstUser = fields.request_messages.find(
-				(msg: AgentMessage) => msg.role === 'user'
-			);
+			const firstUser = fields.request_messages.find((msg: AgentMessage) => msg.role === 'user');
 			const title = titleFromContent(firstUser?.content ?? null);
 			if (title) {
 				const conv = this.conversations.find(conversationId);

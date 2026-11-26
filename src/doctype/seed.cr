@@ -188,13 +188,6 @@ module Facet
         # (`seed_dir_documents`) keeps this safe on a seeded database.
         seed_document_directories(db, dirs)
 
-        # Third pass: ensure every live doctype has its default general
-        # "All Records" `core.CollectionView` child. This runs *after* the
-        # first pass so `core.CollectionView`'s own doctype definition is
-        # registered before any view is created. Idempotent — skips
-        # doctypes that already have at least one live view child.
-        seed_default_collection_views(db)
-
         Report.new(created, updated)
       end
 
@@ -687,7 +680,7 @@ module Facet
       # supplies the bootstrap case: the write that creates the very
       # definition the templates come from (the `core.DocType` seed), where
       # the parsed content doubles as that definition. Shared by the
-      # definition seed pass and the third-pass CollectionView seed.
+      # definition seed pass and the document seed pass.
       private def self.stage_projection_gucs(
         txn : DB::Connection,
         qualified_doctype : String,
@@ -706,60 +699,6 @@ module Facet
       # not deleted. All definitions are stored as core.DocType documents.
       private def self.doctype_exists?(db : DB::Connection, doctype_id : String) : Bool
         Util::Projections.exists?(db, "core", "DocType", doctype_id)
-      end
-
-      # Third-pass seed: for every live `core.DocType` projection, ensure at
-      # least one non-deleted `core.CollectionView` child exists — every
-      # doctype gets a listing surface, container doctypes included
-      # (`CollectionView::Defaults` derives the columns). Doctypes that
-      # already have child views (manually created or seeded in a prior
-      # run) are skipped — the seed never clobbers a user's intent. Uses
-      # `system` provenance, matching the first-pass seed.
-      private def self.seed_default_collection_views(db : DB::Connection) : Nil
-        # Read every live doctype id + raw content. Children-less doctypes
-        # are filtered in Ruby (need `definition.children` access).
-        rows = db.query_all(
-          "SELECT id, content FROM projections " \
-          "WHERE domain = 'core' AND doc_type = 'DocType' AND deleted_at IS NULL " \
-          "ORDER BY id ASC",
-          as: {String, JSON::Any},
-        )
-
-        rows.each do |(doctype_id, content)|
-          next unless content.as_h?
-
-          definition = Doctype::DoctypeDefinition.from_json(content.to_json)
-
-          # Idempotent: skip if the doctype already has any live view.
-          existing = db.query_one?(
-            <<-SQL,
-              SELECT 1 FROM projections
-              WHERE domain = 'core' AND doc_type = 'CollectionView'
-                AND meta->>'parent_id' = $1
-                AND deleted_at IS NULL
-              LIMIT 1
-            SQL
-            doctype_id,
-            as: Int32,
-          )
-          next unless existing.nil?
-
-          view_content = Doctype::CollectionView::Defaults.build_content(definition)
-          meta = %({"parent_id": #{doctype_id.to_json}})
-          Database.with_transaction(db, ignore_if_set: true) do |txn|
-            # Stage the projection GUCs — the raw create below bypasses the
-            # pipeline, and an unstaged GUC stores a NULL corpus (B-78).
-            stage_projection_gucs(txn, "core.CollectionView", view_content)
-            Mutation::Client.create(
-              txn,
-              "core",
-              "CollectionView",
-              content: view_content.to_json,
-              meta: meta,
-              actioner_id: "system",
-            )
-          end
-        end
       end
     end
   end

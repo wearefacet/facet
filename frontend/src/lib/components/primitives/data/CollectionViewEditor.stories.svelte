@@ -248,6 +248,95 @@
 </Story>
 
 <Story
+	name="CreateKanbanValuesLaneControls"
+	play={async ({ canvasElement: _canvasElement }) => {
+		await sleep(50);
+		const canvas = within(document.body);
+		await fireEvent.click(canvas.getByRole('button', { name: /Kanban/ }));
+		await sleep(20);
+		await fireEvent.click(canvas.getByRole('button', { name: 'Next' }));
+		await sleep(20);
+		// Choose the group-by field; the Lanes list appears with one row per
+		// declared value, in declaration order.
+		await userEvent.click(canvas.getByRole('combobox', { name: 'Group by' }));
+		await sleep(20);
+		const body = within(document.body);
+		await userEvent.click(body.getAllByRole('option', { name: /Status/ })[0]);
+		await sleep(20);
+		const laneRows = () => [...document.body.querySelectorAll('.kb-vlane')];
+		expect(laneRows().map((r) => r.querySelector('.kb-vlane-label')?.textContent?.trim())).toEqual([
+			'Open',
+			'Won',
+			'Lost',
+			'Abandoned'
+		]);
+		// Hide the Lost lane through its visibility toggle (row 3).
+		const lostRow = laneRows().find((r) => r.textContent?.includes('Lost'))!;
+		await fireEvent.click(lostRow.querySelector('button[role="switch"]')!);
+		await sleep(20);
+		expect(lostRow.classList.contains('kb-vlane-hidden')).toBe(true);
+		// Move Won up one position.
+		const wonRow = laneRows().find((r) => r.textContent?.includes('Won'))!;
+		await fireEvent.click(wonRow.querySelector('button[aria-label="Move up"]')!);
+		await sleep(20);
+		expect(laneRows().map((r) => r.querySelector('.kb-vlane-label')?.textContent?.trim())).toEqual([
+			'Won',
+			'Open',
+			'Lost',
+			'Abandoned'
+		]);
+		// Hide-all is blocked: hiding every lane keeps the save button off.
+		for (const key of ['Open', 'Won', 'Abandoned']) {
+			const row = laneRows().find((r) => r.textContent?.includes(key))!;
+			await fireEvent.click(row.querySelector('button[role="switch"]')!);
+		}
+		await sleep(20);
+		await expect(canvas.getByText('At least one lane must stay visible')).toBeVisible();
+		// Re-show Lost — the error clears and the move toggle is next.
+		const lostRowAgain = laneRows().find((r) => r.textContent?.includes('Lost'))!;
+		await fireEvent.click(lostRowAgain.querySelector('button[role="switch"]')!);
+		await sleep(20);
+		await expect(canvas.queryByText('At least one lane must stay visible')).toBeNull();
+		await fireEvent.click(canvas.getByRole('switch', { name: 'Allow card moves' }));
+		await userEvent.type(canvas.getByRole('textbox', { name: /Name/ }), 'Pipeline v2');
+		await sleep(10);
+		await fireEvent.click(canvas.getByRole('button', { name: 'Create view' }));
+		await sleep(40);
+
+		// The stored config carries the authored order, the hidden key, and
+		// the move opt-in.
+		const after = await driver
+			.domain('core')
+			.doctype('DocType')
+			.doc('crm.Deal')
+			.children('collection_view')
+			.list({ items: 500 });
+		const created = after.data
+			.map((d) => d.data)
+			.find((v) => (v as { name?: string }).name === 'Pipeline v2') as
+			| { config?: { kanban?: Record<string, unknown> } }
+			| undefined;
+		expect(created).toBeTruthy();
+		expect(created?.config?.kanban?.lane_order).toEqual(['won', 'open', 'lost', 'abandoned']);
+		expect(created?.config?.kanban?.hidden_lanes).toEqual(['open', 'won', 'abandoned']);
+		expect(created?.config?.kanban?.allow_move).toBe(true);
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={adminManifest}>
+			<div style="position: relative; width: 100%; min-height: 700px;">
+				<CollectionViewEditor
+					{driver}
+					doctype={dealDef}
+					parentDocId="crm.Deal"
+					viewerId="iam.Account.viewer"
+				/>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<Story
 	name="CreateKanbanCustomValidated"
 	play={async ({ canvasElement: _canvasElement }) => {
 		await sleep(50);
@@ -811,6 +900,194 @@
 								color_by: 'status',
 								title_template: '{title}',
 								week_start: 'monday'
+							}
+						}
+					}}
+					viewerId="iam.Account.viewer"
+				/>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<Story
+	name="CreateGrid"
+	play={async ({ canvasElement: _canvasElement }) => {
+		await sleep(50);
+		const dlg = within(document.body);
+		// `initialSurface` skips the picker; the grid step renders directly.
+		await expect(dlg.getByText('Editable in grid')).toBeVisible();
+		await expect(dlg.getByText('Read-only')).toBeVisible();
+		// The settings strip renders; the required-name hint waits for the
+		// first blur while the Create button stays disabled regardless.
+		await expect(dlg.getByRole('combobox', { name: 'Frozen columns' })).toHaveValue('0');
+		await expect(dlg.queryByText('Name is required')).toBeNull();
+		const createBtn = dlg.getByRole('button', { name: 'Create view' });
+		await expect(createBtn).toBeDisabled();
+
+		// Configure the view: add the deal-value column, freeze the first
+		// column, sum the deal value, opt it out of editing, name the view,
+		// and save. (The seeded default columns follow the fixture's
+		// alphabetical field order — the play adds the column it asserts on.)
+		await fireEvent.click(dlg.getByRole('button', { name: 'Add column value' }));
+		await sleep(10);
+		await fireEvent.change(dlg.getByRole('combobox', { name: 'Frozen columns' }), {
+			target: { value: '1' }
+		});
+		await sleep(10);
+		const valueSelect = dlg.getByRole('combobox', {
+			name: 'Summary for column value'
+		}) as HTMLSelectElement;
+		await userEvent.selectOptions(valueSelect, 'sum');
+		await sleep(10);
+		await fireEvent.click(dlg.getByRole('checkbox', { name: 'Edit in grid for column value' }));
+		await sleep(10);
+		await userEvent.type(dlg.getByRole('textbox', { name: /Name/ }), 'Saisie');
+		await sleep(10);
+		await expect(createBtn).toBeEnabled();
+		await fireEvent.click(dlg.getByRole('button', { name: 'Create view' }));
+		await sleep(40);
+
+		// A grid CollectionView child was created with the normalized config:
+		// the Edit opt-out persists, the checked flag drops, the aggregate
+		// rides the column, and the frozen count lands under `grid`.
+		const after = await driver
+			.domain('core')
+			.doctype('DocType')
+			.doc('crm.Deal')
+			.children('collection_view')
+			.list({ items: 500 });
+		const created = after.data
+			.map((d) => d.data)
+			.find((v) => (v as { name?: string }).name === 'Saisie') as
+			| {
+					surface?: string;
+					config?: {
+						columns?: { key: string; editable?: boolean; summary?: string }[];
+						grid?: { frozen?: number };
+					};
+			  }
+			| undefined;
+		expect(created).toBeTruthy();
+		expect(created?.surface).toBe('grid');
+		const columnFor = (key: string) => (created?.config?.columns ?? []).find((c) => c.key === key);
+		expect(columnFor('value')).toEqual({
+			key: 'value',
+			label: 'Deal Value',
+			editable: false,
+			summary: 'sum'
+		});
+		expect(created?.config?.grid?.frozen).toBe(1);
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={adminManifest}>
+			<div style="position: relative; width: 100%; min-height: 900px;">
+				<CollectionViewEditor
+					{driver}
+					doctype={dealDef}
+					parentDocId="crm.Deal"
+					initialSurface="grid"
+					viewerId="iam.Account.viewer"
+				/>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<Story
+	name="EditGridSave"
+	play={async ({ canvasElement: _canvasElement }) => {
+		await sleep(50);
+		const dlg = within(document.body);
+		// Edit mode skips the picker and prefills the grid draft from the
+		// `view` prop: the frozen count, the Edit opt-out, the summaries, and
+		// the sort. The PATCH targets a seeded view id — the backend store
+		// has no grid view yet (the picker keeps the surface disabled, and
+		// the CollectionView seed's surface enum does not carry `grid`), so
+		// the story drives the write through an existing child.
+		await expect(dlg.getByRole('heading', { name: 'Edit view' })).toBeVisible();
+		await expect(dlg.getByRole('combobox', { name: 'Frozen columns' })).toHaveValue('1');
+		await expect(dlg.getByText('Frozen')).toBeVisible();
+		const titleBox = dlg.getByRole('checkbox', {
+			name: 'Edit in grid for column title'
+		}) as HTMLInputElement;
+		await expect(titleBox).not.toBeChecked();
+		const valueBox = dlg.getByRole('checkbox', {
+			name: 'Edit in grid for column value'
+		}) as HTMLInputElement;
+		await expect(valueBox).toBeChecked();
+		await expect(dlg.getByLabelText('Row sort')).toHaveValue('Deal Value');
+		const probSelect = dlg.getByRole('combobox', {
+			name: 'Summary for column probability'
+		}) as HTMLSelectElement;
+		await expect(probSelect).toHaveValue('avg');
+
+		// Turn editing back on for the title column and save — the PATCH
+		// body is a plain partial document whose columns carry the flag
+		// dropped (absent reads editable; the merge replaces the array).
+		await fireEvent.click(titleBox);
+		await sleep(10);
+		await fireEvent.click(dlg.getByRole('button', { name: 'Save changes' }));
+		await sleep(40);
+
+		const after = await driver
+			.domain('core')
+			.doctype('DocType')
+			.doc('crm.Deal')
+			.children('collection_view')
+			.list({ items: 500 });
+		const updated = after.data
+			.map((d) => d.data)
+			.find((v) => (v as { name?: string }).name === 'Saisie v2') as
+			| {
+					surface?: string;
+					config?: {
+						columns?: { key: string; editable?: boolean; summary?: string }[];
+						grid?: {
+							frozen?: number;
+							sort?: string[];
+							allow_create?: boolean;
+							filters?: Record<string, unknown>;
+						};
+					};
+			  }
+			| undefined;
+		expect(updated).toBeTruthy();
+		expect(updated?.surface).toBe('grid');
+		const columnFor = (key: string) => (updated?.config?.columns ?? []).find((c) => c.key === key);
+		expect(columnFor('title')).toEqual({ key: 'title', label: 'Intitulé' });
+		expect(columnFor('value')?.summary).toBe('sum');
+		expect(columnFor('probability')?.summary).toBe('avg');
+		// The untouched grid members round-trip through the editor.
+		expect(updated?.config?.grid?.frozen).toBe(1);
+		expect(updated?.config?.grid?.sort).toEqual(['-value']);
+		expect(updated?.config?.grid?.allow_create).toBe(true);
+		expect(updated?.config?.grid?.filters).toEqual({ status__ne: 'lost' });
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={adminManifest}>
+			<div style="position: relative; width: 100%; min-height: 900px;">
+				<CollectionViewEditor
+					{driver}
+					doctype={dealDef}
+					parentDocId="crm.Deal"
+					viewId="crm.Deal.collection_view.by_value"
+					view={{
+						name: 'Saisie v2',
+						surface: 'grid',
+						config: {
+							columns: [
+								{ key: 'title', label: 'Intitulé', editable: false },
+								{ key: 'value', label: 'Deal Value', summary: 'sum' },
+								{ key: 'probability', label: 'Prob.', summary: 'avg' }
+							],
+							grid: {
+								frozen: 1,
+								filters: { status__ne: 'lost' },
+								sort: ['-value'],
+								allow_create: true
 							}
 						}
 					}}

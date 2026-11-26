@@ -18,6 +18,7 @@
 	import IconButton from '$lib/components/primitives/actions/IconButton.svelte';
 	import Tabs from '$lib/components/primitives/navigation/Tabs.svelte';
 	import CollectionViewEditor from './CollectionViewEditor.svelte';
+	import CollectionViewStarter from './CollectionViewStarter.svelte';
 	import RestoreButton from './RestoreButton.svelte';
 	import Can from '$lib/components/primitives/surfaces/Can.svelte';
 	import QuickViewHost from '$lib/components/primitives/surfaces/QuickViewHost.svelte';
@@ -164,7 +165,7 @@
 	let resyncUrl = $state(false);
 
 	// Fetch saved views as children of the parent core.DocType projection.
-	// Errors are non-fatal: the listing falls back to a synthetic "Default" tab.
+	// Errors are non-fatal: the listing degrades to the zero-views starter.
 	//
 	// The collection_view list goes through the 60s TTL cache so multiple tabs /
 	// detail components listing the same doctype share one round-trip. After a
@@ -227,19 +228,16 @@
 		};
 	});
 
-	// Tab descriptors — one per view, or a synthetic "Default" when none exist.
-	// We never auto-create a DB row for the Default tab.
-	const tabs = $derived(
-		views.length > 0
-			? views.map((v) => ({ label: v.data.name }))
-			: [{ label: m.list_view_default() }]
-	);
+	// Tab descriptors — one per saved view. A doctype with zero views
+	// renders the starter screen instead of a strip; no synthetic tab and
+	// no DB row is ever created implicitly.
+	const tabs = $derived(views.map((v) => ({ label: v.data.name })));
 
-	// Clamp the active index when the view set changes (e.g. after a refetch).
-	// Gated on `!loading`: on first mount `views` is empty so `tabs` is just the
-	// synthetic Default tab (length 1) — without this guard the clamp would
-	// reset a legitimate parent-supplied `active` (e.g. active={1} for "Open")
-	// back to 0 before the saved views arrive.
+	// Clamp the active index when the view set changes (e.g. after a refetch
+	// or a delete). Gated on `!loading`: on first mount `views` is empty so
+	// `tabs` is empty — without this guard the clamp would reset a legitimate
+	// parent-supplied `active` (e.g. active={1} for "Open") back to 0 before
+	// the saved views arrive.
 	$effect(() => {
 		if (!loading && active > tabs.length - 1) active = 0;
 	});
@@ -256,29 +254,24 @@
 		if (loading) return;
 		const slug = page.url.searchParams.get('view');
 		if (slug === null) return;
+		// Zero views: no tab to select — the starter screen is the state. The
+		// stale slug stays in the URL until the user creates a view.
+		if (views.length === 0) return;
 
-		let idx: number;
-		if (views.length === 0) {
-			// Only the synthetic Default tab exists; `?view=default` or empty
-			// selects it, anything else falls back to it too (there is no other
-			// tab to pick).
-			idx = 0;
-		} else {
-			idx = views.findIndex((v) => viewSlugs(v).includes(slug));
-		}
+		const idx = views.findIndex((v) => viewSlugs(v).includes(slug));
 		if (idx >= 0 && idx !== active) active = idx;
 	});
 
-	/** The active view item, or null when on the synthetic Default tab. */
-	const activeItem = $derived(views.length > 0 ? (views[active] ?? null) : null);
+	/** The active view item, or null when no views exist (starter screen). */
+	const activeItem = $derived(views[active] ?? null);
 	/** Convenience: the active view data (or null). */
 	const activeView = $derived(activeItem?.data ?? null);
 
 	/**
 	 * localStorage key the `Table` persists its manual state (sort, filters,
 	 * rows-per-page) under — per parent doctype, active collection view
-	 * (`default` for the synthetic tab and tab-less listings), and trash
-	 * mode. `persistKey` overrides it; `null` disables persistence.
+	 * (`default` for the tab-less listings), and trash mode. `persistKey`
+	 * overrides it; `null` disables persistence.
 	 */
 	const tableViewStateKey = $derived.by(() => {
 		if (persistKey !== undefined) return persistKey;
@@ -289,15 +282,10 @@
 		);
 	});
 
-	// Field types excluded from the synthetic "Default" tab's fallback
-	// columns. Mirrors the backend seed rule in
-	// `src/doctype/collection_view_defaults.cr` (CollectionView::Defaults):
-	// the seeded "All Records" view keeps scalar primitive types plus
-	// `reference`, and excludes blob/non-scalar types. `longtext` is a
-	// primitive but its bulk makes it a poor default column. Both sides
-	// must agree — every newly-created doctype's seeded view comes from
-	// the backend rule; this frontend set is only hit when a doctype has
-	// zero views (legacy data, or all views deleted).
+	// Field types excluded from a saved view's implicit fallback columns
+	// (a view whose `config.columns` is absent or empty) and from the
+	// tab-less admin listings (`showTabs={false}`). Blob and non-scalar
+	// types make poor columns; `longtext` is a primitive but too bulky.
 	const skipTypes = new Set([
 		'object',
 		'array',
@@ -413,9 +401,9 @@
 	const rowKey = (item: Record<string, unknown>) => String(item.id ?? '');
 
 	function activeSlug(): string {
-		const item = views.length > 0 ? views[active] : null;
-		if (!item) return 'default';
-		return viewSlugs(item)[0] ?? 'default';
+		const item = views[active];
+		if (!item) return '';
+		return viewSlugs(item)[0] ?? '';
 	}
 
 	/**
@@ -434,7 +422,7 @@
 
 	/** Surface of a tab, for the lead icon. Defaults to `table`. */
 	function tabSurface(index: number): CollectionSurface {
-		const item = views.length > 0 ? views[index] : null;
+		const item = views[index];
 		if (item?.data.surface === 'calendar') return 'calendar';
 		if (item?.data.surface === 'kanban') return 'kanban';
 		return 'table';
@@ -444,29 +432,30 @@
 	let editorOpen = $state(false);
 	let editingView = $state<CollectionView | null>(null);
 	let editingViewId = $state<string | null>(null);
+	/** Surface preselected for a create opened from the starter. */
+	let editorSurface = $state<CollectionSurface | null>(null);
 
-	function openCreate() {
+	function openCreate(surface?: CollectionSurface) {
 		editingView = null;
 		editingViewId = null;
+		editorSurface = surface ?? null;
 		editorOpen = true;
 	}
 
 	function openEdit() {
-		// Only a real (saved) view can be edited — not the synthetic Default tab.
-		if (!activeItem) {
-			// On the Default tab: open the create form so the user can save
-			// the fallback configuration as a new saved view.
-			openCreate();
-			return;
-		}
+		// Only a real (saved) view can be edited.
+		if (!activeItem) return;
 		editingView = activeItem.data;
 		editingViewId = activeItem.id;
+		editorSurface = null;
 		editorOpen = true;
 	}
 
 	function handleSaved(view: CollectionView) {
 		editorOpen = false;
 		editingView = null;
+		editingViewId = null;
+		editorSurface = null;
 		// The cached children list is now stale — drop it so the refetch below
 		// actually hits the backend.
 		collectionViewsCache.invalidate(parentDocId);
@@ -478,9 +467,9 @@
 	// ── Header drag-reorder ───────────────────────────────────────────
 	// The table reports a header drop as an index move; this handler applies
 	// it to the active saved view's `config.columns` and PATCHes the view.
-	// Only a real (saved) view reorders — the synthetic Default tab has no
-	// config to persist — and only when the viewer holds `update` on
-	// `core.CollectionView` (a UI hint; the backend re-checks the write).
+	// Only a real (saved) view reorders, and only when the viewer holds
+	// `update` on `core.CollectionView` (a UI hint; the backend re-checks
+	// the write).
 
 	const columnsReorderable = $derived(
 		!includeDeleted && activeItem !== null && can('core.CollectionView', 'update')
@@ -528,10 +517,10 @@
 	 * it is a soft delete, so the audit log can restore the view. After it
 	 * lands, mirror `handleSaved`: drop the cached children list and bump
 	 * the refresh key, so the views effect refetches. With zero views left,
-	 * the synthetic "Default" tab takes over on its own.
+	 * the starter screen takes over on its own.
 	 */
 	async function handleDelete() {
-		// Only a real (saved) view can be deleted — not the Default tab.
+		// Only a real (saved) view can be deleted.
 		if (!activeItem || deleting) return;
 		const ok = await confirm({
 			title: m.list_view_delete_confirm_title({ name: activeItem.data.name }),
@@ -570,7 +559,7 @@
 			class="listview"
 			class:kanban-fill={activeView?.surface === 'kanban' && activeView.config?.kanban}
 		>
-			{#if showTabs}
+			{#if showTabs && views.length > 0}
 				<Tabs {tabs} bind:active onchange={selectView}>
 					{#snippet icon(i: number)}
 						<span class="surface-icon" aria-hidden="true">
@@ -654,12 +643,9 @@
 									/>
 								</svg>
 							</IconButton>
-							{#if activeView || (!loading && views.length === 0)}
-								<Can doctype="core.CollectionView" action={activeView ? 'update' : 'create'}>
-									<IconButton
-										label={activeView ? m.list_view_edit() : m.list_view_save_default()}
-										onclick={() => openEdit()}
-									>
+							{#if activeView}
+								<Can doctype="core.CollectionView" action="update">
+									<IconButton label={m.list_view_edit()} onclick={() => openEdit()}>
 										<svg
 											viewBox="0 0 24 24"
 											width="15"
@@ -702,6 +688,11 @@
 
 			{#if loading}
 				<div class="listview-loading">{m.list_views_loading()}</div>
+			{:else if showTabs && views.length === 0}
+				<!-- Zero saved views (live or trash mode): the starter screen.
+					 Trash mode with zero views also lands here — a listing
+					 needs a view first; create one to browse tombstones. -->
+				<CollectionViewStarter oncreate={(surface) => openCreate(surface)} />
 			{:else if activeView?.surface === 'calendar' && activeView.config?.calendar}
 				<Calendar
 					{driver}
@@ -729,7 +720,7 @@
 					{filters}
 					persistKey={tableViewStateKey}
 					{toolbarActions}
-					columnsReorderable={columnsReorderable}
+					{columnsReorderable}
 					onColumnMove={handleColumnMove}
 					onRowClick={includeDeleted
 						? undefined
@@ -766,11 +757,13 @@
 		{parentDocId}
 		view={editingView}
 		viewId={editingViewId ?? undefined}
+		initialSurface={editorSurface ?? undefined}
 		{viewerId}
 		onclose={() => {
 			editorOpen = false;
 			editingView = null;
 			editingViewId = null;
+			editorSurface = null;
 		}}
 		onsaved={handleSaved}
 	/>

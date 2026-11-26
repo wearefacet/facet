@@ -34,11 +34,10 @@
 	 */
 	function buildDriver(): MockDataDriver {
 		const driver = new MockDataDriver();
-		driver
-			.domain('iam')
-			.doctype('Account', [
-				{ id: 'iam.Account.owner-1', name: 'Kim Patel', email: 'kim@acme.com' }
-			]);
+		driver.domain('iam').doctype('Account', [
+			{ id: 'iam.Account.owner-1', name: 'Kim Patel', email: 'kim@acme.com' },
+			{ id: 'iam.Account.owner-2', name: 'Ana Reyes', email: 'ana@acme.com' }
+		]);
 		driver.registerDoctype('iam', 'Account', {
 			domain: 'iam',
 			doctype: 'Account',
@@ -60,6 +59,13 @@
 				type: 'reference',
 				doctype: 'iam.Account',
 				title: 'Owner'
+			},
+			{
+				key: 'team_ids',
+				type: 'reference',
+				doctype: 'iam.Account',
+				collection: true,
+				title: 'Team'
 			}
 		],
 		children: [],
@@ -171,6 +177,73 @@
 			doctype: 'iam.Account'
 		} satisfies InputReferenceNode,
 		document: doc({ owner_id: 'iam.Account.owner-1' }),
+		def: ownerDef,
+		driver
+	}}
+>
+	{#snippet template(args)}
+		<div class="dvt-story-frame">
+			<DvtInputReference
+				template={args.template}
+				document={args.document}
+				def={args.def}
+				driver={args.driver}
+			/>
+		</div>
+	{/snippet}
+</Story>
+
+<Story
+	name="CollectionEdit"
+	play={async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		// A `collection: true` reference edits as a chip list: one hydrated
+		// capsule per stored token, plus the add picker.
+		await expect(canvas.getByText('Kim Patel')).toBeVisible();
+		await expect(canvas.getByText('Ana Reyes')).toBeVisible();
+		await expect(canvas.getByPlaceholderText('Search and add…')).toBeVisible();
+	}}
+	args={{
+		template: {
+			type: 'input-reference',
+			field: 'team_ids',
+			label: 'Team'
+		} satisfies InputReferenceNode,
+		document: doc({ team_ids: ['iam.Account.owner-1', 'iam.Account.owner-2'] }),
+		values: { team_ids: ['iam.Account.owner-1', 'iam.Account.owner-2'] },
+		def: ownerDef,
+		driver
+	}}
+>
+	{#snippet template(args)}
+		<div class="dvt-story-frame">
+			<DvtInputReference
+				template={args.template}
+				document={args.document}
+				values={sessionBag(args.values)}
+				def={args.def}
+				driver={args.driver}
+			/>
+		</div>
+	{/snippet}
+</Story>
+
+<Story
+	name="CollectionReadOnly"
+	play={async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		// The read-only branch renders one capsule per stored token — never
+		// the comma-joined id string a bare String(array) would print.
+		await expect(canvas.getByText('Kim Patel')).toBeVisible();
+		await expect(canvas.getByText('Ana Reyes')).toBeVisible();
+	}}
+	args={{
+		template: {
+			type: 'input-reference',
+			field: 'team_ids',
+			label: 'Team'
+		} satisfies InputReferenceNode,
+		document: doc({ team_ids: ['iam.Account.owner-1', 'iam.Account.owner-2'] }),
 		def: ownerDef,
 		driver
 	}}

@@ -5,7 +5,7 @@ audience: [admin]
 features: [AUD-02, AUD-08, IAM-13, FE-16]
 sidebar:
   order: 10
-verified_at: fd345fe3
+verified_at: a8e1b43
 ---
 
 Facet enregistre chaque create, update, delete et instantané dans un journal
@@ -154,13 +154,15 @@ journal, et le bloc `redacted` nomme les chemins. Voir
 ### Le journal des connexions
 
 Les lignes `iam.LoginEvent` enregistrent chaque événement d’authentification :
-connexion, déconnexion, refresh, réutilisation de refresh, verrouillage,
-enrôlement et changements MFA, réinitialisation de mot de passe,
-invitations, consentements accordés, révocations de clés d’API et de
-sessions, connexions OIDC, et refus. Une limite importe aux relecteurs :
-les tentatives de mot de passe échouées isolées ne sont pas journalisées,
-seul le verrouillage l’est. Le journal du backend porte chaque tentative
-échouée avec l’id du compte et l’adresse du client.
+connexion, déconnexion, réutilisation de refresh, verrouillage, enrôlement
+et changements MFA, réinitialisation de mot de passe, invitations,
+consentements accordés, révocations de clés d’API et de sessions, connexions
+OIDC, et refus. Deux limites importent aux relecteurs. Les tentatives de mot
+de passe échouées isolées ne sont pas journalisées — seul le verrouillage
+l’est. Les refresh réussis ne sont pas journalisés non plus — ils tournent
+à l’horloge et noieraient le journal. Le journal du backend porte chaque
+tentative échouée et chaque refresh réussi, avec l’id du compte et l’adresse
+du client.
 
 ## Dépannage
 

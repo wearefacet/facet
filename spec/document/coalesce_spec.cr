@@ -134,6 +134,96 @@ describe Facet::Document::Coalesce do
       end
     end
 
+    it "keeps a fold that returns to the pre-window value as one net no-op row" do
+      with_coalesce_window(3) do
+        with_db do |db|
+          doctype = register_coalesce_doctype(db)
+          doc_id = coalesce_create_doc(db, doctype) # body "v0"
+
+          event_manager.clear!
+
+          # Write 1 is a no-op against the live content: no row, no event,
+          # and the response carries the create's state id.
+          res1 = coalesce_update(db, doctype, doc_id, %({"body": "v0"}))
+          res1.should be_a(Facet::Document::Update::Result)
+          mut1 = res1.as(Facet::Document::Update::Result).mutation_id
+
+          res2 = coalesce_update(db, doctype, doc_id, %({"body": "v1"}))
+          mut2 = res2.as(Facet::Document::Update::Result).mutation_id
+
+          res3 = coalesce_update(db, doctype, doc_id, %({"body": "v0"}))
+          result3 = res3.as(Facet::Document::Update::Result)
+          mut3 = result3.mutation_id
+
+          # One create + one merged update; the v1 row is gone (idx gap).
+          rows = coalesce_rows(db, doctype, doc_id)
+          rows.map(&.[1]).should eq([1, 3])
+          rows[0][0].should eq(mut1)
+          rows[1][0].should eq(mut3)
+          mut3.should_not eq(mut2)
+
+          # The composed diff keeps the second write's literal set: it names
+          # the pre-window value. Applying it to the pre-burst content is a
+          # net no-op — the fold never re-diffs against X.
+          x = JSON.parse(%({"title": "Original", "body": "v0"}))
+          composed = Facet::Mutation::JsonDiff::Result.from_json(stored_diff(db, doctype, doc_id, mut3))
+          composed.set.size.should eq(1)
+          composed.set[0].path.should eq(["body"])
+          composed.set[0].value.not_nil!.as_s.should eq("v0")
+          composed.set[0].patch.should be_nil
+          composed.unset.should be_empty
+          Facet::Mutation::JsonDiff.apply_diff(x, JSON.parse(composed.to_json)).should eq(x)
+
+          # The projection is back at the pre-burst content; state = merged id.
+          proj = result3.projection
+          proj.content["body"].as_s.should eq("v0")
+          proj.state.should eq(mut3)
+
+          # The burst still delivered two `updated` events (the folded id's
+          # event had already been enqueued); the no-op write stayed silent.
+          Facet::Event::Publisher.flush
+          events = event_manager.events_for("FACET:RESOURCE:#{COALESCE_DOMAIN}:#{doctype}")
+          updated = events.select { |m| m.headers["event"]?.try(&.as_s?) == "updated" }
+          updated.size.should eq(2)
+
+          # Rolling back to the merged row replays the no-op diff and stays
+          # at the same content.
+          rb = Facet::Audit::Rollback.call(db, mut3, Facet::RBAC::AuthContext.system)
+          rb.should be_a(Facet::Audit::Rollback::Result)
+          rolled = rb.as(Facet::Audit::Rollback::Result).projection
+          rolled.content["title"].as_s.should eq("Original")
+          rolled.content["body"].as_s.should eq("v0")
+        end
+      end
+    end
+
+    it "collapses a long-text round trip on the merged row to a literal set" do
+      with_coalesce_window(3) do
+        with_db do |db|
+          doctype = register_coalesce_doctype(db)
+          base = (1..60).map { |i| "line #{i}\n" }.join
+          v1 = base.gsub("line 30\n", "line thirty\n")
+
+          doc_id = coalesce_create_doc(db, doctype, %({"title": "Doc", "body": #{base.inspect}}))
+          coalesce_update(db, doctype, doc_id, %({"body": #{v1.inspect}})).should be_a(Facet::Document::Update::Result)
+          res = coalesce_update(db, doctype, doc_id, %({"body": #{base.inspect}}))
+          merged_mut = res.as(Facet::Document::Update::Result).mutation_id
+
+          # The patch∘patch composition re-diffs X→Z; two identical strings
+          # degrade to a literal set of the pre-window text.
+          x = JSON.parse(%({"title": "Doc", "body": #{base.inspect}}))
+          composed = Facet::Mutation::JsonDiff::Result.from_json(stored_diff(db, doctype, doc_id, merged_mut))
+          composed.set.size.should eq(1)
+          composed.set[0].value.not_nil!.as_s.should eq(base)
+          composed.set[0].patch.should be_nil
+          Facet::Mutation::JsonDiff.apply_diff(x, JSON.parse(composed.to_json)).should eq(x)
+
+          proj = Facet::Mutation::Client.fetch_projection(db, COALESCE_DOMAIN, doctype, doc_id)
+          proj.content["body"].as_s.should eq(base)
+        end
+      end
+    end
+
     it "emits exactly one event for the merged write" do
       with_coalesce_window(3) do
         with_db do |db|

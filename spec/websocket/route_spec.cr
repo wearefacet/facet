@@ -128,7 +128,7 @@ describe Facet::Websocket::Route do
 
     it "allows an origin registered on an active app" do
       with_db do |db|
-        create_test_app(db, "ws-origin-app", allowed_origins: ["https://hr.apps.example"])
+        create_test_app(db, "ws-origin-app", allowed_origins: ["https://hr.apps.example"], host: "hr.apps.example")
 
         regex = Facet::Websocket::Route.build_origin_regex("localhost:3000")
         Facet::Websocket::Route.origin_allowed?("https://hr.apps.example", regex).should be_true
@@ -137,7 +137,7 @@ describe Facet::Websocket::Route do
 
     it "rejects an origin not registered anywhere" do
       with_db do |db|
-        create_test_app(db, "ws-origin-app", allowed_origins: ["https://hr.apps.example"])
+        create_test_app(db, "ws-origin-app", allowed_origins: ["https://hr.apps.example"], host: "hr.apps.example")
 
         regex = Facet::Websocket::Route.build_origin_regex("localhost:3000")
         Facet::Websocket::Route.origin_allowed?("https://evil.example", regex).should be_false
@@ -147,7 +147,7 @@ describe Facet::Websocket::Route do
     it "rejects an origin of a disabled app (the cache only mirrors active apps)" do
       with_db do |db|
         app_id, _client = create_test_app(db, "ws-origin-app",
-          allowed_origins: ["https://hr.apps.example"])
+          allowed_origins: ["https://hr.apps.example"], host: "hr.apps.example")
 
         Facet::Websocket::Route.origin_allowed?("https://hr.apps.example",
           Facet::Websocket::Route.build_origin_regex("localhost:3000")).should be_true

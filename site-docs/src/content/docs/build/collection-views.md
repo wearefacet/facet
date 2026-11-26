@@ -101,9 +101,13 @@ meta:
   parent_id: crm.Deal
 ```
 
-## What you get without work
+## The empty state
 
-Every doctype ships one general table view named **All Records**. Facet creates it with the doctype and fills it with the first eight scalar fields. Boolean columns seed as inline-editable, except `read_only` and `write_only` ones. The seed is a flag, not a permission: the table draws the toggle only for a reader who holds `update` on the doctype. Without that right, the same cell shows the plain true/false mark. You can edit or delete that view like any other; Facet does not rebuild it after you change the field list. A publish never touches collection views, and a bundle merge updates general views by name but never deletes one that exists only on the target.
+A doctype ships with **no** views. Facet never creates one on its own — not at doctype creation, not at boot. The list page shows a starter screen: one card per layout (table, kanban, calendar). Pick a card, name the view, pick its columns, and save. A view you create this way starts as a **personal** view — only you see it until you switch it to general (if your role allows it).
+
+Until the first view exists, the `/check` report carries an info notice that asks for one. The notice is not an error: nothing is broken, the doctype simply has no listing surface yet.
+
+You can edit or delete a view like any other document. Deleting the last view brings the starter screen back, and Facet does not recreate the view. A publish never touches collection views, and a bundle merge updates general views by name but never deletes one that exists only on the target.
 
 ## Troubleshooting
 

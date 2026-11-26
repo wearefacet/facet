@@ -77,6 +77,7 @@ registry each time Bits UI mounts its content (per open).
 | `/` | Focus the list search input | Table (when the doctype has a `search` template) |
 | `E` | Edit the record | Show page (gated on `update`) |
 | `Mod+S`, `Mod+Enter` | Save the form | `DocumentForm` |
+| `Mod+Z`, `Mod+Shift+Z` / `Mod+Y` | Undo / redo the grid's last action — one unit per gesture (a cell commit, a flip, a pasted block) | `Grid` (component-owned keydown) |
 | `Escape` (focus inside) | Minimize the assistant window | `AssistantWindow` (local handler) |
 
 ## Testing

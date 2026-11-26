@@ -2,7 +2,6 @@
 # Copyright (c) 2026 Amplitude Solutions Ltd
 
 require "json"
-require "base64"
 require "../database"
 require "../http/helpers"
 require "../doctype/definition_store"
@@ -12,6 +11,8 @@ require "../util/script_helpers"
 require "../rbac/permission"
 require "../rbac/auth_context"
 require "./role_store"
+require "./jwt"
+require "./token_emitter"
 
 module Facet
   module IAM
@@ -488,47 +489,45 @@ module Facet
         !db.query_one?("SELECT 1 FROM secrets WHERE domain = 'iam' AND doc_type = 'Account' AND doc_id = $1 AND slot = 'password'", account_id, as: Int32).nil?
       end
 
-      # Decodes the JWT payload from the access token and returns the value of
-      # the given claim. The token is read from the `auth_token` cookie, or the
-      # `Authorization: Bearer …` header as a fallback. Returns `nil` if the
-      # token is missing, malformed, or the claim is absent.
+      # Reads a claim from the access token (the `auth_token` cookie, or the
+      # `Authorization: Bearer …` header as a fallback). The token signature
+      # is verified before any claim is trusted — a forged cookie yields nil.
+      # Returns `nil` when the token is missing, invalid, or the claim is
+      # absent.
       def self.decode_jwt_claim(env, claim : String) : String?
         token = access_token(env)
         return nil unless token
-        decode_jwt_claim(token, claim)
+        verified_jwt_claim(token, claim)
       end
 
-      # Decodes a claim from a raw JWT string. Returns `nil` on any error.
-      def self.decode_jwt_claim(token : String, claim : String) : String?
-        decoded_payload(token).try(&.[claim]?).try(&.as_s?)
+      # Reads a claim from a raw JWT string after verifying its signature.
+      # Returns `nil` on any error — a tampered or foreign-signed token
+      # never yields a claim.
+      def self.verified_jwt_claim(token : String, claim : String) : String?
+        decoded = IAM::JWT.decode(token, IAM::TokenEmitter.keys) rescue nil
+        return nil unless decoded
+        decoded.payload[claim]?.try(&.as_s?)
       end
 
-      # Decodes the JWT payload (no signature check) — the shared reader
-      # behind the claim accessors. Returns nil on any decode error or when
-      # the payload is not a JSON object.
-      private def self.decoded_payload(token : String) : Hash(String, JSON::Any)?
-        parts = token.split('.')
-        return nil if parts.size != 3
-        JSON.parse(Base64.decode_string(parts[1])).as_h?
-      rescue
-        nil
-      end
-
-      # Extracts the `sub` (account_id) claim from the access token.
+      # Extracts the `sub` (account_id) claim from the access token after
+      # verifying the signature.
       def self.extract_account_id(env) : String?
         decode_jwt_claim(env, "sub")
       end
 
-      # Extracts the `role` claim from the access token.
+      # Extracts the `role` claim from the access token after verifying the
+      # signature.
       def self.extract_role(env) : String?
         decode_jwt_claim(env, "role")
       end
 
-      # Extracts the `exp` claim from the access token as a Unix timestamp.
+      # Extracts the `exp` claim from the access token as a Unix timestamp
+      # after verifying the signature.
       def self.extract_expires_at(env) : Int64?
         token = access_token(env)
         return nil unless token
-        decoded_payload(token).try(&.["exp"]?).try(&.as_i64)
+        decoded = IAM::JWT.decode(token, IAM::TokenEmitter.keys) rescue nil
+        decoded.try(&.payload).try(&.["exp"]?).try(&.as_i64)
       end
 
       # Reads the raw access token from the cookie or Authorization header.

@@ -46,7 +46,11 @@ setup('authenticate as the seeded admin', async ({ page }) => {
 	const dontShow = page.getByRole('checkbox', { name: "Don't show again" });
 	await expect(dontShow).toBeVisible();
 	await dontShow.check();
-	await expect(dontShow).toBeHidden();
+	// The write lands, but the tour stays open for the session: the checkbox
+	// never closes the popup (the flag flip must not close the dialog
+	// mid-handler — the same contract the WelcomeTour stories pin). The
+	// persistence proof is the reload below.
+	await expect(dontShow).toBeChecked();
 	await page.reload();
 	await expect(page.getByRole('heading', { name: /Hello Administrator/ })).toBeVisible();
 	await expect(dontShow).toBeHidden();

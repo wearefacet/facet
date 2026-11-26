@@ -379,6 +379,7 @@ module Facet
         role : String?,
         redirect_origin : String,
       ) : MCPScreen
+        validate_mcp_redirect_uri(params.redirect_uri)
         account = IAM::Helpers.find_account_by_id(db, account_id)
         raise InvalidRequest.new("invalid_request", "Unknown account", 400) unless account
 
@@ -438,6 +439,13 @@ module Facet
         params : Params,
         elected_role : String,
       ) : IssuedCode
+        # Registration is stateless: the register-time shape check is the only
+        # gate on an MCP client's redirect URI, and it runs once at
+        # registration. Re-check the shape here so the consent and the code
+        # issuance both refuse an out-of-rule target (https on any host, http
+        # on loopback only). A violation is a request error, never a redirect
+        # (S7).
+        validate_mcp_redirect_uri(params.redirect_uri)
         raise InvalidRequest.new("invalid_request", "Missing 'resource'", 400) if params.resource.nil?
         resource = params.resource.as(String)
 
@@ -477,6 +485,29 @@ module Facet
           resource: resource,
           mcp_role: elected_role,
         ))
+      end
+
+      # Re-validates the MCP redirect URI against the register-time shape rule
+      # (`OAuth::RedirectUri.valid_shape?` — the same predicate
+      # `OAuth::Register` calls): `https` on any host, or `http` on a loopback
+      # host only, with no fragment, userinfo, or query. The MCP branch has no
+      # `app.App` registered list to match against, so the shape rule is the
+      # whole admission rule. Raises `InvalidRequest` (rendered as a JSON
+      # error, never a redirect) on a violation (S7).
+      #
+      # Residual risk: the rule does not bind the redirect URI to the client.
+      # The MCP branch keeps no client record (see `OAuth::Register`), so a
+      # client that registers one redirect URI can present another inside the
+      # rule. PKCE (S256) is the binding that stops code theft in that case;
+      # closing the gap fully needs a persisted registration, which the
+      # stateless-registration decision rejects.
+      private def self.validate_mcp_redirect_uri(redirect_uri : String) : Nil
+        return if RedirectUri.valid_shape?(redirect_uri)
+
+        raise InvalidRequest.new("invalid_request",
+          "redirect_uri is not a usable redirect URI: https is allowed on any " \
+          "host, http only on a loopback host (localhost, *.localhost, " \
+          "127.0.0.1, ::1)", 400)
       end
 
       # The MCP consent screen payload. `roles` lists every role the account

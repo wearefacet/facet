@@ -133,8 +133,16 @@
 		class="send"
 		class:stop={busy && !canSend}
 		type="button"
-		title={busy ? (canSend ? m.assistant_send_title() : m.assistant_stop_title()) : m.assistant_send_title()}
-		aria-label={busy ? (canSend ? m.assistant_send_aria() : m.assistant_stop_aria()) : m.assistant_send_aria()}
+		title={busy
+			? canSend
+				? m.assistant_send_title()
+				: m.assistant_stop_title()
+			: m.assistant_send_title()}
+		aria-label={busy
+			? canSend
+				? m.assistant_send_aria()
+				: m.assistant_stop_aria()
+			: m.assistant_send_aria()}
 		disabled={!locked && !canSend && !busy}
 		onclick={onButtonClick}
 	>

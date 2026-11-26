@@ -21,11 +21,16 @@ a separate component — see [`filter-bar.md`](filter-bar.md).
 
 `ListView` reads the `core.CollectionView` children of the parent
 `core.DocType` through the 60-second TTL cache. Each child is one tab. With
-no children, the strip shows one synthetic `Default` tab; the columns then
-come from the doctype fallback rule (flat scalar fields, cap 8). The active
-tab rides the `?view=` URL param, so a view is deep-linkable. Admin surfaces
-pass `showTabs={false}` — no tabs, no saved-view affordances, always the
-fallback columns.
+no children, the strip is not rendered at all — the listing shows the
+**starter screen** (`CollectionViewStarter.svelte`): one card per surface
+(table, kanban, calendar), each opening the view editor with that surface
+preselected. A view created from the starter defaults to **personal**
+(`owner_id` = the viewer). Without the `create` permission the starter
+shows an explanatory note instead of the cards. Trash mode with zero views
+also lands on the starter — create a view first, then browse tombstones
+through it. The active tab rides the `?view=` URL param, so a view is
+deep-linkable. Admin surfaces pass `showTabs={false}` — no tabs, no
+saved-view affordances, always the fallback columns (never the starter).
 
 The tab strip carries the saved-view affordances: pin (the
 `pinnedCollectionViews` account setting), edit or save-as, delete, and
@@ -39,8 +44,8 @@ Two doors set the column order of a saved view:
   arrow buttons (see `CollectionViewColumnsForm`).
 - **Table header.** On a saved view, a header drags onto another header and
   the drop applies the move. The affordance is pointer-only (HTML5 drag);
-  the arrow buttons stay the keyboard path. The synthetic `Default` tab and
-  trash mode never reorder — there is no saved config to persist.
+  the arrow buttons stay the keyboard path. Trash mode never reorders —
+  tombstones cannot be updated.
 
 The header drag is a `Table` capability (`columnsReorderable` +
 `onColumnMove`); `ListView` owns the write: it applies the index move to the
@@ -77,10 +82,10 @@ comes back.
   wrong-shaped blob reads as absent. Writes are no-ops on the server and when
   storage is unavailable.
 - **Key.** `viewStateStorageKey(parentDocId, viewId, mode)` builds
-  `facet.viewState.<doctype>.<viewId>.<live|deleted>`. Each saved view, the
-  synthetic Default tab, and each trash mode carry their own record. A
-  deleted view leaves a stale record behind; the record is tiny and never
-  read again.
+  `facet.viewState.<doctype>.<viewId>.<live|deleted>`. Each saved view and
+  each trash mode carry their own record; tab-less listings (no saved
+  views) use the literal `default` as the view segment. A deleted view
+  leaves a stale record behind; the record is tiny and never read again.
 - **Restore.** The `Table` seeds its state at mount and re-seeds when the key
   changes (a tab switch or a trash-mode toggle), and resets the page to 1.
 - **Precedence.** A non-empty `filters` prop wins over the stored map — a

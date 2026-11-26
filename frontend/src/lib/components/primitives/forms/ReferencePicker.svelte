@@ -2,6 +2,7 @@
 <!-- Copyright (c) 2026 Amplitude Solutions Ltd -->
 
 <script lang="ts">
+	import { tick } from 'svelte';
 	import * as m from '$lib/paraglide/messages';
 	import DoctypeIcon from '../data/DoctypeIcon.svelte';
 	import Field from './Field.svelte';
@@ -32,6 +33,8 @@
 		helper,
 		filter,
 		recordMeta,
+		onpick,
+		hideType = false,
 		...rest
 	}: {
 		label?: string;
@@ -66,6 +69,22 @@
 		 * Unkeyed ids fall back to the driver label and the declared tint.
 		 */
 		recordMeta?: Record<string, { label?: string; icon?: string | null; color?: string | null }>;
+		/**
+		 * Multi-select hook (`ReferenceListEditor`). When set, a record pick
+		 * calls this instead of adopting the record: `selectedRec` stays null,
+		 * the `value` binding is never written, and the dropdown stays open so
+		 * the parent can append target after target. The pick carries the bare
+		 * record id, the display label, and the qualified doctype the record
+		 * was picked under (`selectedType` — the authoritative target for the
+		 * parent's token qualification).
+		 */
+		onpick?: (pick: { id: string; label: string; doctype: string | null }) => void;
+		/**
+		 * Hide the locked doctype prefix in forced mode — for embedding surfaces
+		 * that already name the doctype (the grid cell editor's column header),
+		 * where the prefix would eat the width the search input needs.
+		 */
+		hideType?: boolean;
 	} = $props();
 
 	const mode = $derived(doctype ? 'forced' : doctypes?.length ? 'constrained' : 'open');
@@ -341,8 +360,21 @@
 	function selectRecord(i: number): void {
 		const rec = results[i];
 		if (!rec) return;
+		if (onpick) {
+			// Add-mode: the parent owns the outcome. Keep the dropdown open and
+			// the query intact so several targets can be added in a row.
+			onpick({ id: rec.id, label: displayLabel(rec), doctype: selectedType });
+			active = 0;
+			return;
+		}
 		selectedRec = rec;
 		recOpen = false;
+		// The chip replaces the input — carry the focus with it so the
+		// keyboard flow survives the pick (Enter re-opens, Tab moves on)
+		// instead of dropping to `body`.
+		void tick().then(() => {
+			(rootEl?.querySelector('.ref-rec') as HTMLElement | null)?.focus();
+		});
 	}
 
 	function startEdit(): void {
@@ -448,6 +480,8 @@
 		labelId={labelId ?? undefined}
 	>
 		{#snippet children(meta)}
+			<!-- No Field label (embedded hosts pass none) — the aria-label
+				fallback keeps the combobox named for assistive tech. -->
 			<div
 				class="ref"
 				class:ref-has-sel={!!selectedRec}
@@ -455,29 +489,37 @@
 				class:ref-disabled={disabled}
 				role="combobox"
 				aria-labelledby={labelId}
+				aria-label={labelId ? undefined : placeholder}
 				aria-expanded={recOpen || typeOpen}
 				aria-haspopup="listbox"
 				aria-controls={typeOpen ? listboxTypeId : recOpen ? listboxRecId : undefined}
 			>
-				<!-- ── Type selector (left part) ─────────────────────────────────────── -->
+				<!-- ── Type selector (left part) ─────────────────────────────────── -->
 				{#if mode === 'forced'}
-					<div class="ref-type ref-type-locked" aria-label={typeLabel}>
-						<DoctypeIcon icon={iconOf(doctype ?? null)} color={tint(doctype ?? '')} shadow active />
-						<span class="ref-tlabel">{typeLabel}</span>
-						<svg
-							class="ref-lock"
-							width="12"
-							height="12"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							aria-hidden="true"
-							><rect x="5" y="11" width="14" height="9" rx="2" /><path
-								d="M8 11V8a4 4 0 0 1 8 0v3"
-							/></svg
-						>
-					</div>
+					{#if !hideType}
+						<div class="ref-type ref-type-locked" aria-label={typeLabel}>
+							<DoctypeIcon
+								icon={iconOf(doctype ?? null)}
+								color={tint(doctype ?? '')}
+								shadow
+								active
+							/>
+							<span class="ref-tlabel">{typeLabel}</span>
+							<svg
+								class="ref-lock"
+								width="12"
+								height="12"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								aria-hidden="true"
+								><rect x="5" y="11" width="14" height="9" rx="2" /><path
+									d="M8 11V8a4 4 0 0 1 8 0v3"
+								/></svg
+							>
+						</div>
+					{/if}
 				{:else}
 					<button
 						class="ref-type"
@@ -525,6 +567,11 @@
 						if (selectedRec && !disabled) startEdit();
 					}}
 					onkeydown={(e) => {
+						// Own-keyboard only. Keydowns from the search input bubble
+						// through here; the Enter that picks a record has already set
+						// `selectedRec` (state writes land before the batched DOM
+						// update), so an ungated startEdit() would undo the pick.
+						if (e.target !== e.currentTarget) return;
 						if (e.key === 'Enter' && selectedRec && !disabled) startEdit();
 					}}
 					aria-label={selectedRec ? m.doc_ref_edit_aria() : undefined}

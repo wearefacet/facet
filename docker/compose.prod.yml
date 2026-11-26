@@ -62,6 +62,11 @@ services:
       FACET_SMTP_USERNAME: ${FACET_SMTP_USERNAME:?FACET_SMTP_USERNAME is required - see docker/.env.example}
       FACET_SMTP_PASSWORD: ${FACET_SMTP_PASSWORD:?FACET_SMTP_PASSWORD is required - see docker/.env.example}
       FACET_SECRETS_MASTER_KEY: ${FACET_SECRETS_MASTER_KEY:?FACET_SECRETS_MASTER_KEY is required - see docker/.env.example}
+      # Not a config key: the backend reads JWT_SIGNING_KEY straight from the
+      # environment (src/iam/token_emitter.cr). Without it, each boot mints a
+      # temporary ES256 key and every restart invalidates outstanding access
+      # tokens. It holds a P-256 private key in PEM form.
+      JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?JWT_SIGNING_KEY is required - see docker/.env.example}
     volumes:
       - artifact-store:/data/store
     depends_on:

@@ -37,8 +37,8 @@ export type ViewStateMode = 'live' | 'deleted';
 
 /**
  * The localStorage key of one listing view: the parent doctype projection id
- * (e.g. `crm.Deal`), the collection view id (or `default` for the synthetic
- * Default tab and tab-less listings), and the trash mode.
+ * (e.g. `crm.Deal`), the collection view id (or `default` for the tab-less
+ * listings), and the trash mode.
  */
 export function viewStateStorageKey(
 	parentDocId: string,

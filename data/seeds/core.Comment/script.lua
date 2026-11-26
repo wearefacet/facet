@@ -20,14 +20,16 @@
 --     it directly.
 --
 -- Mentions notify. An account URN in the body (`urn:facet:iam:Account:`
--- plus a 26-char id, in link or bare form) sends the named account one
--- `comment_mention` notification routed to the host document. Create
--- notifies every mention; update notifies net-new ids only, on a real body
--- change — a mention kept through an edit stays silent, a removed and
--- re-added one notifies again. The author never notifies themself. System
--- contexts never notify. Every fetch and every send is pcall-guarded: a
--- failed label lookup degrades the title, a failed send drops one mention,
--- and neither can fail the comment.
+-- plus the id segment, in link or bare form) sends the named account one
+-- `comment_mention` notification routed to the host document. Account ids
+-- are the account's email, lowercased (named-id create), so the id segment
+-- carries `@` and the email punctuation, not just a ULID's alphanumerics.
+-- Create notifies every mention; update notifies net-new ids only, on a
+-- real body change — a mention kept through an edit stays silent, a removed
+-- and re-added one notifies again. The author never notifies themself.
+-- System contexts never notify. Every fetch and every send is pcall-guarded:
+-- a failed label lookup degrades the title, a failed send drops one
+-- mention, and neither can fail the comment.
 
 local export = {}
 
@@ -88,13 +90,21 @@ local function document_label(qualified_doctype, id)
     return nil
 end
 
--- Distinct account ids mentioned in a body: the URN prefix followed by a
--- 26-char id, in markdown link or bare form. Returns a set.
+-- Distinct account ids mentioned in a body: the URN prefix followed by an
+-- id segment, in markdown link or bare form. Returns a set.
+--
+-- Account ids are the account's email, lowercased (named-id create), so
+-- the scan accepts the practical email charset (`@ . _ - +` beside the
+-- alphanumerics) and trims a trailing `.` or `-` — bare-form sentence
+-- punctuation, and no real id ends with either. The scan stays a
+-- heuristic: the enqueue-time account existence check is the validator,
+-- and a scan overrun fails there, contained.
 local function mentioned_accounts(text)
     local found = {}
     if type(text) ~= "string" then return found end
-    for id in text:gmatch("urn:facet:iam:Account:(%w+)") do
-        if #id == 26 then found[id] = true end
+    for raw in text:gmatch("urn:facet:iam:Account:([%w@%.%+%-_]+)") do
+        local id = raw:gsub("[%.%-]+$", "")
+        if #id > 0 then found[id] = true end
     end
     return found
 end

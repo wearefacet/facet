@@ -28,6 +28,12 @@ A `core.CollectionView` is a saved **listing surface** (tab) for a doctype's doc
 
 ## Creating views
 
+A new doctype ships with **no views** — the check reports an `:info` notice
+(`No CollectionView defined for …`) until you create at least one, and the
+workspace listing shows a starter screen instead of tabs. Create one table
+view per doctype so it lists its records; add kanban/calendar views when
+the doctype's fields serve them.
+
 Use the `create_collection_view` tool: pass `doctype` (the qualified doctype id), `name`, `surface`, and optional `config` / `owner_id`. The tool enforces that the doctype is in the draft domain and sets `meta.parent_id` for you.
 
 `update_collection_view` takes a `doc_id` plus optional `name`/`surface`/`config` — pass only the fields you want to change. `owner_id` cannot be changed.

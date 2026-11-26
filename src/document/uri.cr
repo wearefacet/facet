@@ -23,7 +23,8 @@
 # `domain` and `Doctype` follow the same naming rules enforced at doctype
 # registration (see `Doctype::DoctypeDefinition`). The `opaque` segment is the
 # document's locally-unique id — typically a ULID for user documents, the
-# qualified `{domain}.{Doctype}` for `core.DocType` registrations, or the
+# account's email for `iam.Account` (named-id create), the qualified
+# `{domain}.{Doctype}` for `core.DocType` registrations, or the
 # bare domain name for `core.Domain` registrations.
 #
 # The URN form is *derivable* from the stored `projections.id`, which is
@@ -46,10 +47,12 @@ module Facet::Document
     # CamelCase alphanumeric, cannot start with a digit.
     DOCTYPE_RE = /^[A-Z][a-zA-Z0-9]*$/
 
-    # Matches the opaque id portion. Allows any printable ASCII except
-    # `:` and `?` (both reserved by the URI grammar). Allows `.` for the
-    # `core.DocType`/`core.Domain` qualified-id special case.
-    OPAQUE_RE = /^[A-Za-z0-9._-]+$/
+    # Matches the opaque id portion. Named-id documents store a derived
+    # natural key — `iam.Account` stores the account's email, stripped and
+    # downcased (`Document::Create.resolve_doc_id`) — so the set carries the
+    # email punctuation (`@ . _ - +`), not just ULID alphanumerics. `:` and
+    # `?` stay reserved by the URI grammar.
+    OPAQUE_RE = /^[A-Za-z0-9._%@+-]+$/
 
     getter domain : String
     getter doctype : String
@@ -157,12 +160,15 @@ module Facet::Document
 
     # Parses the legacy dotted storage form.
     #
-    # - `domain.Doctype.opaque` → three chunks
+    # - `domain.Doctype.opaque` — the id is the tail after the first two
+    #   dots, whole: named ids may themselves contain dots (an `iam.Account`
+    #   id is the account's email). The same split the document pipeline's
+    #   qualified-reference check applies.
     # - `domain.Doctype` (special: doctype id, domain id)
     #   — disambiguated by requiring the doctype name to be CamelCase
     #     and the domain name to be lower_case.
     private def self.parse_dotted(str : String) : self?
-      parts = str.split('.')
+      parts = str.split('.', limit: 3)
       case parts.size
       when 3
         domain, doctype, opaque = parts
