@@ -54,16 +54,16 @@ Work packages (one agent each; some split into batches):
 | 10 | [`10-wp-inventory-audit.md`](10-wp-inventory-audit.md) | `inventory.yml`, audit ledgers | — | done (2026-11-26, `8fb69df`; 138 → 158 IDs; see `ledgers/`) |
 | 11 | [`11-wp-scaffold.md`](11-wp-scaffold.md) | config, moves, redirects, schema, components | 10; decisions D1, D2, D4, D8 | done (2026-11-26, `c9ee65b`; ~144 pages + fr twins moved per tab, 23 stubs, 246 redirects, gate 288/288 old URLs answer; see report in `ledgers/wp11-report.md`) |
 | 12 | [`12-wp-running-example.md`](12-wp-running-example.md) | `site-docs/examples/brightwater/` | 11, D3, running instance | done (2026-11-26; 3 domain bundles + load.sh + seed.py + export.sh + README; fresh-import path verified green; discrepancies #17, #18; see `ledgers/12.md` and `ledgers/wp12-report.md`) |
-| 13 | [`13-wp-discover.md`](13-wp-discover.md) | `discover/` | 11; D6, D10, D12 | open |
-| 14 | [`14-wp-first-hour.md`](14-wp-first-hour.md) | `build/first-hour/`, `build/dev-environment.md`, screenshots | 11, 12 | open |
-| 15 | [`15-wp-use.md`](15-wp-use.md) | `use/` | 11, 12 | open |
-| 16 | [`16-wp-build-model.md`](16-wp-build-model.md) | `build/model/`, `build/deeper/` (batches A–C) | 11, 12 | open |
-| 17 | [`17-wp-build-apps.md`](17-wp-build-apps.md) | `build/apps/` (batches A–B) | 11, 12 | open |
-| 18 | [`18-wp-administer.md`](18-wp-administer.md) | `admin/` (batches A–B) | 11, 12; D7, D11 for two pages | open |
-| 19 | [`19-wp-reference.md`](19-wp-reference.md) | `reference/` (hand-written pages only) | 11 | open |
-| 20 | [`20-wp-navigation.md`](20-wp-navigation.md) | landing page, tab index pages, cross-links | 13–19 | open |
-| 21 | [`21-wp-review.md`](21-wp-review.md) | review reports, fixes list, strict coverage flip | 20 | open |
-| 22 | [`22-wp-french.md`](22-wp-french.md) | `fr/` | 21 | open |
+| 13 | [`13-wp-discover.md`](13-wp-discover.md) | `discover/` | 11; D6, D10, D12 | done (2026-11-26, `9ab44a5`; batches A+B, 18 pages; discrepancies #22, #23, #35; ledgers `13a.md`, `13b.md`) |
+| 14 | [`14-wp-first-hour.md`](14-wp-first-hour.md) | `build/first-hour/`, `build/dev-environment.md`, screenshots | 11, 12 | done (2026-11-26/27, `c34885a`; pipeline + tutorials 1/2b/4 by 14a, 2 by 14b, 3+5 by 14c, ledger-finish + shot round in wave 3; discrepancies #38, #39, #36, #37, #46; ledgers `14a.md`–`14c.md`) |
+| 15 | [`15-wp-use.md`](15-wp-use.md) | `use/` | 11, 12 | done (2026-11-26, `c34885a`; 14 pages + 22 shots; discrepancy #45; ledgers `15a.md`, `15b.md`) |
+| 16 | [`16-wp-build-model.md`](16-wp-build-model.md) | `build/model/`, `build/deeper/` (batches A–C) | 11, 12 | done (2026-11-26/27, `c34885a`; batch A at `9ab44a5`; B as synced-tab .mdx + MDX install; discrepancies #36, #37, #43, #44; ledgers `16a.md`–`16c.md`) |
+| 17 | [`17-wp-build-apps.md`](17-wp-build-apps.md) | `build/apps/` (batches A–B) | 11, 12 | done (2026-11-26, `9ab44a5`; discrepancies #25–#28, #32–#34; ledgers `17a.md`, `17b.md`) |
+| 18 | [`18-wp-administer.md`](18-wp-administer.md) | `admin/` (batches A–B) | 11, 12; D7, D11 for two pages | done (2026-11-26/27, `c34885a`; people/apps-access at `9ab44a5`, history + who-can-change-roles re-written after a lost first pass, install/configure/assistant/keep-running/under-the-hood; discrepancies #29, #41, #42; ledgers `18a-people.md`, `18a-history.md`, `18b1.md`, `18b2.md`) |
+| 19 | [`19-wp-reference.md`](19-wp-reference.md) | `reference/` (hand-written pages only) | 11 | done (2026-11-27, `c34885a`; byte-stability proven, Crinja page verified; discrepancy #28; ledger `19.md`) |
+| 20 | [`20-wp-navigation.md`](20-wp-navigation.md) | landing page, tab index pages, cross-links | 13–19 | done (2026-11-27, `c34885a`; landing + 4 tab indexes + 3 check scripts; ledger `20.md`) |
+| 21 | [`21-wp-review.md`](21-wp-review.md) | review reports, fixes list, strict coverage flip | 20 | done (2026-11-27, `cfd7161`; newcomer test, 162-claim accuracy audit, fix round, gates; strict coverage ON; reports `ledgers/review/`; discrepancy #46 closed, #47 open) |
+| 22 | [`22-wp-french.md`](22-wp-french.md) | `fr/` | 21 | open — held for the maintainer's review of the English site |
 | 99 | [`99-decisions.md`](99-decisions.md) | — | — | open decisions for the maintainer |
 
 ## How to dispatch
