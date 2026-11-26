@@ -117,12 +117,11 @@ export default defineConfig({
 				// documentation-v2 moves (WP 11); the tab sidebars replace this in
 				// the scaffold commit.
 				{ label: 'Discover', items: [{ autogenerate: { directory: 'discover' } }] },
-				{ label: 'Tutorials', items: [{ autogenerate: { directory: 'tutorials' } }] },
+				{ label: 'Build', items: [{ autogenerate: { directory: 'build' } }] },
 				{ label: 'Concepts', items: [{ autogenerate: { directory: 'concepts' } }] },
 				{ label: 'Use', items: [{ autogenerate: { directory: 'use' } }] },
 				{ label: 'Build domains', items: [{ autogenerate: { directory: 'build' } }] },
 				{ label: 'Govern access', items: [{ autogenerate: { directory: 'govern' } }] },
-				{ label: 'Build apps', items: [{ autogenerate: { directory: 'apps' } }] },
 				{ label: 'Operate', items: [{ autogenerate: { directory: 'operate' } }] },
 				{ label: 'Reference', items: [{ autogenerate: { directory: 'reference' } }] },
 				{ label: 'Changelog', items: [{ autogenerate: { directory: 'changelog' } }] },
