@@ -137,7 +137,7 @@ pourquoi un agent ne peut ni contourner les droits ni perdre sa piste d’audit.
 
 ## Voir aussi
 
-- [Sécurité et gouvernance](/fr/start/security-governance/) — les règles de contrôle en détail.
-- [Qu’est-ce que Facet](/fr/start/what-is-facet/) — l’histoire du produit derrière ce schéma.
-- [Glossaire](/fr/start/glossary/) — les termes employés ci-dessus.
+- [Sécurité et gouvernance](/fr/discover/security/) — les règles de contrôle en détail.
+- [Qu’est-ce que Facet](/fr/discover/why-facet/) — l’histoire du produit derrière ce schéma.
+- [Glossaire](/fr/reference/glossary/) — les termes employés ci-dessus.
 - Internes sur GitHub : [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md), [mutation.md](https://github.com/wearefacet/facet/blob/main/doc/backend/mutation.md), [event.md](https://github.com/wearefacet/facet/blob/main/doc/backend/event.md).

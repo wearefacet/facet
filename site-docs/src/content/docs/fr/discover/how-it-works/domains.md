@@ -111,13 +111,13 @@ dupliquez le champ et gardez les domaines totalement indépendants.
 
 ## Voir aussi
 
-- [Architecture en un coup d’œil](/fr/start/architecture/) — où les
+- [Architecture en un coup d’œil](/fr/discover/how-it-works/) — où les
   domaines se situent dans le chemin d’une requête.
-- [Domaines, brouillons et éditeurs de domaines](/fr/build/domains-drafts-editors/) —
+- [Domaines, brouillons et éditeurs de domaines](/fr/build/model/in-app/drafts-and-publishing/) —
   créer un domaine et y enregistrer des doctypes.
-- [Réplication inter-domaines](/fr/concepts/cross-domain-replication/) — le
+- [Réplication inter-domaines](/fr/build/deeper/cross-domain-replication/) — le
   mécanisme de copie qu’une attribution contrôle.
-- [Application des autorisations](/fr/concepts/authorization-enforcement/) —
+- [Application des autorisations](/fr/admin/under-the-hood/how-access-is-enforced/) —
   les vérifications de rôle derrière l’API de documents.
 - Internes sur GitHub : [doctype-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/doctype-system.md),
   [domain-grants.md](https://github.com/wearefacet/facet/blob/main/doc/backend/domain-grants.md),

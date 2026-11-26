@@ -111,11 +111,11 @@ Oui, par l’export ou l’API externe d’Odoo. L’import se mappe sur votre m
 
 ## Voir aussi
 
-- [Comparer](/fr/compare/) : toutes les pages de comparaison.
-- [Facet vs « laisser l’IA tout coder »](/fr/compare/vs-ai-built-apps/)
-- [Facet vs les bases Airtable et Notion](/fr/compare/vs-airtable-notion/) : le bout le plus léger de la même question.
-- [Domaines, brouillons et éditeurs de domaines](/fr/build/domains-drafts-editors/) : la façon dont Facet modélise vos processus.
-- [Partager entre domaines](/fr/build/sharing-across-domains/) : la réplication contrôlée de champs entre domaines.
+- [Comparer](/fr/discover/compare/) : toutes les pages de comparaison.
+- [Facet vs « laisser l’IA tout coder »](/fr/discover/compare/vs-ai-built-apps/)
+- [Facet vs les bases Airtable et Notion](/fr/discover/compare/vs-airtable-notion/) : le bout le plus léger de la même question.
+- [Domaines, brouillons et éditeurs de domaines](/fr/build/model/in-app/drafts-and-publishing/) : la façon dont Facet modélise vos processus.
+- [Partager entre domaines](/fr/build/model/relations/across-domains/) : la réplication contrôlée de champs entre domaines.
 
 ## Sources
 
@@ -123,4 +123,4 @@ Oui, par l’export ou l’API externe d’Odoo. L’import se mappe sur votre m
 - Odoo, page tarifaire : offres One App Free, Standard et Custom ; prix US ($24.90 la première année, puis $31.10 par utilisateur et par mois sur Standard, facturation annuelle) ; l’offre Custom porte Studio, l’API externe, les modules personnalisés, le multi-sociétés, Odoo.sh et l’hébergement sur site ; conditions de la remise de première année ; les déploiements des grandes entreprises passent par les partenaires ; les prix varient selon le pays depuis lequel on visite le site, pas selon l’adresse de facturation — https://www.odoo.com/pricing — vérifié le 2026-11-20
 - Les chiffres de coût de mise à niveau d’Odoo sont des estimations de partenaires, pas des chiffres de l’éditeur : Ventor, sur un coût de mise à niveau poussé par les personnalisations — https://ventor.tech/services/odoo-upgrade/ — et Ecosire, sur les fourchettes de coût de migration de version — https://ecosire.com/blog/odoo-migration-v17-to-v18-guide — vérifié le 2026-11-13
 - Activepieces, sur Studio et l’API externe qui exigent l’offre Custom ; la comparaison des offres elle-même se trouve sur https://www.odoo.com/pricing — https://www.activepieces.com/blog/odoo-pricing-2026-plans-hosting-and-implementation — vérifié le 2026-11-13
-- Les affirmations sur Facet lui-même viennent de ce site : [Domaines, brouillons et éditeurs de domaines](/fr/build/domains-drafts-editors/).
+- Les affirmations sur Facet lui-même viennent de ce site : [Domaines, brouillons et éditeurs de domaines](/fr/build/model/in-app/drafts-and-publishing/).

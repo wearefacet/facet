@@ -1,4 +1,5 @@
 ---
+type: explanation
 title: Facet vs Airtable and Notion databases
 description: Airtable and Notion make it easy to start a database. Facet makes it safe to depend on one. Compare them before your business records outgrow the workspace.
 audience: [evaluator]
@@ -98,15 +99,15 @@ You lose free-form cells; you keep the views. Facet's portal gives list, calenda
 There is no per-seat licence. The software is free to use and self-host, for any number of users. You pay for your servers, the AI usage on your own key, and, if you want them, our managed hosting or design services.
 
 **We already pay for Notion. Why add Facet?**
-Because they do different jobs. Notion holds what your team writes; Facet holds what your business must account for. See [Facet vs "just let the AI build it"](/compare/vs-ai-built-apps/) for what happens when tools multiply.
+Because they do different jobs. Notion holds what your team writes; Facet holds what your business must account for. See [Facet vs "just let the AI build it"](/discover/compare/vs-ai-built-apps/) for what happens when tools multiply.
 
 ## Related
 
-- [Compare](/compare/): all comparison pages.
-- [Facet vs "just let the AI build it"](/compare/vs-ai-built-apps/)
-- [Security & governance overview](/start/security-governance/)
-- [Row scopes](/govern/row-scopes/): how per-record permissions work in Facet.
-- [Auditing activity](/govern/auditing-activity/): the change history in practice.
+- [Compare](/discover/compare/): all comparison pages.
+- [Facet vs "just let the AI build it"](/discover/compare/vs-ai-built-apps/)
+- [Security & governance overview](/discover/security/)
+- [Row scopes](/admin/people/row-scopes/): how per-record permissions work in Facet.
+- [Auditing activity](/admin/history/audit/): the change history in practice.
 
 ## Sources
 
@@ -119,4 +120,4 @@ Because they do different jobs. Notion holds what your team writes; Facet holds 
 - Notion data residency: Enterprise only; US default; EU, Tokyo and Seoul regions — https://www.notion.com/help/data-residency — checked 2026-11-13
 - Simone Smerilli, on how Notion's database access rules key on a Person or Created-by property — https://simonesmerilli.com/writing/notion-database-access-rules — checked 2026-11-13
 - Reworked, "Bending Spoons Acquires Airtable" (August 4, 2026; deal pending close when checked) — https://www.reworked.co/digital-workplace/bending-spoons-acquires-airtable-for-1285b/ — checked 2026-11-13
-- Facet's own claims come from this site: the [Security & governance overview](/start/security-governance/).
+- Facet's own claims come from this site: the [Security & governance overview](/discover/security/).

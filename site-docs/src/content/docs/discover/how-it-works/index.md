@@ -1,10 +1,11 @@
 ---
+type: explanation
 title: Architecture at a glance
 description: Follow a request through Facet, from the caller to the event bus, in one diagram.
 audience: [evaluator, developer, operator]
 features: [RBC-10, AUD-01, AUT-01]
 sidebar:
-  order: 3
+  order: 0
 verified_at: 7a6cb462
 ---
 
@@ -127,7 +128,7 @@ rights or lose its audit trail.
 
 ## Related
 
-- [Security & governance overview](/start/security-governance/) — the enforcement rules in detail.
-- [What is Facet](/start/what-is-facet/) — the product story behind this diagram.
-- [Glossary](/start/glossary/) — the terms used above.
+- [Security & governance overview](/discover/security/) — the enforcement rules in detail.
+- [What is Facet](/discover/why-facet/) — the product story behind this diagram.
+- [Glossary](/reference/glossary/) — the terms used above.
 - Internals on GitHub: [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md), [mutation.md](https://github.com/wearefacet/facet/blob/main/doc/backend/mutation.md), [event.md](https://github.com/wearefacet/facet/blob/main/doc/backend/event.md).

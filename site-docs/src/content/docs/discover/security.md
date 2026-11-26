@@ -1,10 +1,11 @@
 ---
+type: explanation
 title: Security & governance overview
 description: See how Facet protects identity, access, audit, secrets, and where your data lives.
 audience: [evaluator]
 features: [IAM-*, RBC-*, AUD-*, DOC-09]
 sidebar:
-  order: 4
+  order: 5
 verified_at: f1409cdc
 ---
 
@@ -124,6 +125,6 @@ contract, not a summary.
 
 ## Related
 
-- [Architecture at a glance](/start/architecture/) — where enforcement sits in the request path.
-- [Govern access](/govern/) — admin how-tos for accounts, roles, and SSO.
+- [Architecture at a glance](/discover/how-it-works/) — where enforcement sits in the request path.
+- [Govern access](/admin/) — admin how-tos for accounts, roles, and SSO.
 - Internals on GitHub: [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md), [iam.md](https://github.com/wearefacet/facet/blob/main/doc/backend/iam.md), [audit.md](https://github.com/wearefacet/facet/blob/main/doc/backend/audit.md), [secrets.md](https://github.com/wearefacet/facet/blob/main/doc/backend/secrets.md).

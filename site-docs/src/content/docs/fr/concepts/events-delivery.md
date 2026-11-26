@@ -99,12 +99,12 @@ recalculent à partir de l’état durable, et un rejeu converge.
 
 ## Voir aussi
 
-- [Architecture en un coup d’œil](/fr/start/architecture/) — la place du bus
+- [Architecture en un coup d’œil](/fr/discover/how-it-works/) — la place du bus
   d’événements dans le chemin d’une requête.
-- [Le journal des mutations](/fr/concepts/mutation-log/) — l’enregistrement
+- [Le journal des mutations](/fr/admin/under-the-hood/change-log/) — l’enregistrement
   durable que lit le réconciliateur.
-- [Exploitation](/fr/operate/) — healthcheck, Redis et jobs au quotidien.
-- [Déployer en production](/fr/operate/production/) — les sondes et le
+- [Exploitation](/fr/admin/) — healthcheck, Redis et jobs au quotidien.
+- [Déployer en production](/fr/admin/install/production/) — les sondes et le
   dimensionnement de Redis pour un déploiement réel.
 - Internes sur GitHub : [event.md](https://github.com/wearefacet/facet/blob/main/doc/backend/event.md),
   [cron.md](https://github.com/wearefacet/facet/blob/main/doc/backend/cron.md).

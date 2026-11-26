@@ -1,10 +1,11 @@
 ---
+type: explanation
 title: "AI under the caller's rights"
 description: The assistant and external agents act with the caller's own rights and leave the same audit rows.
 audience: [admin, developer]
 features: [AI-01, AI-04]
 sidebar:
-  order: 12
+  order: 5
 verified_at: 7a6cb462
 ---
 
@@ -90,8 +91,8 @@ account with broader rights, and it cannot raise its own access.
 
 ## Related
 
-- [Auth contexts](/concepts/auth-contexts/) — the identity and role model behind every channel.
-- [Authorization enforcement](/concepts/authorization-enforcement/) — the enforcers each tool call passes.
-- [Apps](/apps/) — apps embed the assistant under their own grant.
-- [Security & governance overview](/start/security-governance/) — roles, grants and audit in one picture.
+- [Auth contexts](/admin/under-the-hood/one-role-at-a-time/) — the identity and role model behind every channel.
+- [Authorization enforcement](/admin/under-the-hood/how-access-is-enforced/) — the enforcers each tool call passes.
+- [Apps](/build/apps/) — apps embed the assistant under their own grant.
+- [Security & governance overview](/discover/security/) — roles, grants and audit in one picture.
 - Internals on GitHub: [agent-tools.md](https://github.com/wearefacet/facet/blob/main/doc/backend/agent-tools.md), [workspace-assistant.md](https://github.com/wearefacet/facet/blob/main/doc/backend/workspace-assistant.md).

@@ -97,13 +97,13 @@ accès.
 
 ## Voir aussi
 
-- [Contextes d’authentification](/fr/concepts/auth-contexts/) — le modèle
+- [Contextes d’authentification](/fr/admin/under-the-hood/one-role-at-a-time/) — le modèle
   d’identité et de rôles derrière chaque canal.
-- [Contrôle des autorisations](/fr/concepts/authorization-enforcement/) — les
+- [Contrôle des autorisations](/fr/admin/under-the-hood/how-access-is-enforced/) — les
   contrôleurs que chaque appel d’outil traverse.
-- [Apps](/fr/apps/) — les apps embarquent l’assistant sous leur propre
+- [Apps](/fr/build/apps/) — les apps embarquent l’assistant sous leur propre
   attribution.
-- [Sécurité et gouvernance](/fr/start/security-governance/) — rôles,
+- [Sécurité et gouvernance](/fr/discover/security/) — rôles,
   attributions et audit en une seule image.
 - Internes sur GitHub : [agent-tools.md](https://github.com/wearefacet/facet/blob/main/doc/backend/agent-tools.md),
   [workspace-assistant.md](https://github.com/wearefacet/facet/blob/main/doc/backend/workspace-assistant.md).

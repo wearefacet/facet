@@ -1,4 +1,5 @@
 ---
+type: explanation
 title: 'Facet vs "just let the AI build it"'
 description: AI can build your team's next tool in an afternoon. Keep doing that. Here is what that tool should stand on before real data and real colleagues depend on it.
 audience: [evaluator, developer]
@@ -116,7 +117,7 @@ Keep prototyping with your AI tool. When a prototype earns real data, point it a
 3. Your AI tool builds the screens against the Facet SDK (software development kit). Facet hosts the finished files: no separate hosting, no deployment pipeline. Whoever built the app can publish it, and restore an earlier version if a new one breaks. <!-- TODO(link): custom-apps and SDK pages when the apps section ships -->
 4. One call adds the embeddable assistant to the app. It inherits the signed-in user's role and acts only within it.
 
-Coding agents can also connect to Facet through MCP (Model Context Protocol, a standard way for AI tools to call a product's functions) and work under one role you pin. Facet checks every call, whatever wrote the code. See [What is Facet](/start/what-is-facet/).
+Coding agents can also connect to Facet through MCP (Model Context Protocol, a standard way for AI tools to call a product's functions) and work under one role you pin. Facet checks every call, whatever wrote the code. See [What is Facet](/discover/why-facet/).
 
 Keep throwaway prototypes out of the governed store. Facet's job starts when the data becomes worth governing.
 
@@ -163,15 +164,15 @@ No. Start with one domain: the records that hurt most in spreadsheets. It sets u
 
 ## Related
 
-- [Compare](/compare/): all comparison pages.
-- [Facet vs Supabase and Firebase](/compare/vs-supabase-firebase/): the developer-backend version of this question.
-- [Facet vs Airtable and Notion databases](/compare/vs-airtable-notion/): the spreadsheet-stage version.
-- [What is Facet](/start/what-is-facet/)
-- [Security & governance overview](/start/security-governance/)
+- [Compare](/discover/compare/): all comparison pages.
+- [Facet vs Supabase and Firebase](/discover/compare/vs-supabase-firebase/): the developer-backend version of this question.
+- [Facet vs Airtable and Notion databases](/discover/compare/vs-airtable-notion/): the spreadsheet-stage version.
+- [What is Facet](/discover/why-facet/)
+- [Security & governance overview](/discover/security/)
 
 ## Sources
 
 - Veracode, 2025 GenAI Code Security Report: models chose the insecure implementation in 45% of 80 task types across more than 100 models; larger and newer models did no better — https://www.veracode.com/press-release/ai-generated-code-poses-major-security-risks-in-nearly-half-of-all-development-tasks-veracode-research-reveals/ — checked 2026-11-13
 - UpGuard, "Everything Everywhere: Systemic Data Exposure in Supabase Apps" (October 2026): 16,326 databases with readable tables across about 300,000 domains; more than half with personal-data indicators; the Moltbook leak of February 2026; the immigration-coaching example — https://www.upguard.com/blog/everything-everywhere-systemic-data-exposure-in-supabase-apps — checked 2026-11-13
 - SC World, on Backslash research: explicit security instructions in prompts improve model output — https://www.scworld.com/news/llms-make-insecure-coding-choices-for-45-of-tasks-study-finds — checked 2026-11-13
-- Facet's own claims come from this site: [What is Facet](/start/what-is-facet/) and the [Security & governance overview](/start/security-governance/).
+- Facet's own claims come from this site: [What is Facet](/discover/why-facet/) and the [Security & governance overview](/discover/security/).

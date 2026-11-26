@@ -113,12 +113,12 @@ de rétention configurée ; seul le libellé survit.
 
 ## Voir aussi
 
-- [Concevoir des doctypes](/fr/build/designing-doctypes/) — comment
+- [Concevoir des doctypes](/fr/build/model/data/design-doctypes/) — comment
   déclarer champs, actions et modèles.
 - [Construire](/fr/build/) — les pages pratiques pour écrire des domaines.
-- [Évolution du schéma](/fr/concepts/schema-evolution/) — ce que deviennent
+- [Évolution du schéma](/fr/build/deeper/schema-evolution/) — ce que deviennent
   les documents stockés quand une définition change.
-- [Le journal des mutations](/fr/concepts/mutation-log/) — l’historique en
+- [Le journal des mutations](/fr/admin/under-the-hood/change-log/) — l’historique en
   ajout seul derrière chaque projection.
 - Internes sur GitHub : [document.md](https://github.com/wearefacet/facet/blob/main/doc/backend/document.md),
   [doctype-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/doctype-system.md),

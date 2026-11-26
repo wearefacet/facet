@@ -95,9 +95,9 @@ les doctypes cachés.
 
 ## Voir aussi
 
-- [Sécurité et gouvernance](/fr/start/security-governance/) — le modèle d’accès en résumé.
-- [Gouverner l’accès](/fr/govern/) — créez les rôles et les lignes de permission que lisent les contrôleurs.
-- [Contextes d’authentification](/fr/concepts/auth-contexts/) — comment l’identité et le rôle arrivent aux contrôleurs.
-- [Rôles, niveaux et garde-fou](/fr/concepts/roles-levels-authority/) — qui peut écrire les rôles et les comptes.
-- [Domaines et isolement](/fr/concepts/domains-and-isolation/) — la frontière que les permissions nomment.
+- [Sécurité et gouvernance](/fr/discover/security/) — le modèle d’accès en résumé.
+- [Gouverner l’accès](/fr/admin/) — créez les rôles et les lignes de permission que lisent les contrôleurs.
+- [Contextes d’authentification](/fr/admin/under-the-hood/one-role-at-a-time/) — comment l’identité et le rôle arrivent aux contrôleurs.
+- [Rôles, niveaux et garde-fou](/fr/admin/people/who-can-change-roles/) — qui peut écrire les rôles et les comptes.
+- [Domaines et isolement](/fr/discover/how-it-works/domains/) — la frontière que les permissions nomment.
 - Internes sur GitHub : [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md), [http-layer.md](https://github.com/wearefacet/facet/blob/main/doc/backend/http-layer.md).

@@ -1,10 +1,11 @@
 ---
+type: explanation
 title: Facet vs Odoo and ERP suites
 description: Odoo ships finished business processes that you adapt to. Facet starts from your own processes, with governance built in. Many companies are best served by both.
 audience: [evaluator]
 features: []
 sidebar:
-  order: 4
+  order: 3
 verified_at: bd4be053
 ---
 
@@ -111,11 +112,11 @@ Yes, through Odoo's export or external API. The import maps onto your Facet doma
 
 ## Related
 
-- [Compare](/compare/): all comparison pages.
-- [Facet vs "just let the AI build it"](/compare/vs-ai-built-apps/)
-- [Facet vs Airtable and Notion databases](/compare/vs-airtable-notion/): the lighter end of the same question.
-- [Domains, drafts and domain editors](/build/domains-drafts-editors/): how Facet models your processes.
-- [Sharing across domains](/build/sharing-across-domains/): controlled field replication between domains.
+- [Compare](/discover/compare/): all comparison pages.
+- [Facet vs "just let the AI build it"](/discover/compare/vs-ai-built-apps/)
+- [Facet vs Airtable and Notion databases](/discover/compare/vs-airtable-notion/): the lighter end of the same question.
+- [Domains, drafts and domain editors](/build/model/in-app/drafts-and-publishing/): how Facet models your processes.
+- [Sharing across domains](/build/model/relations/across-domains/): controlled field replication between domains.
 
 ## Sources
 
@@ -123,4 +124,4 @@ Yes, through Odoo's export or external API. The import maps onto your Facet doma
 - Odoo pricing: One App Free, Standard and Custom plans; US prices ($24.90 first year, then $31.10 per user per month on Standard, yearly billing); the Custom plan carries Studio, the external API, custom modules, multi-company, Odoo.sh and on-premise hosting; first-year discount terms; implementations for larger companies routed through partners; prices vary by the visitor's location, not the billing country — https://www.odoo.com/pricing — checked 2026-11-20
 - Odoo upgrade-cost figures are partner estimates, not vendor figures: Ventor, on upgrade cost being driven by customizations — https://ventor.tech/services/odoo-upgrade/ — and Ecosire, on version-migration cost ranges — https://ecosire.com/blog/odoo-migration-v17-to-v18-guide — checked 2026-11-13
 - Activepieces, on Studio and the external API requiring the Custom plan; the plan comparison itself is on https://www.odoo.com/pricing — https://www.activepieces.com/blog/odoo-pricing-2026-plans-hosting-and-implementation — checked 2026-11-13
-- Facet's own claims come from this site: [Domains, drafts and domain editors](/build/domains-drafts-editors/).
+- Facet's own claims come from this site: [Domains, drafts and domain editors](/build/model/in-app/drafts-and-publishing/).

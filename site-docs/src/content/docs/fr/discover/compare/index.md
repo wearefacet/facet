@@ -19,7 +19,7 @@ heures. Ce qui reste difficile, c’est tout ce qui entoure l’outil : qui
 voit quoi, qui a changé quoi, les sauvegardes, les fichiers, l’hébergement, le
 déploiement. C’est cette part que Facet prend en charge, une fois, pour chaque
 app que vous construisez. Commencez par
-[Facet vs « laisser l’IA tout construire »](/fr/compare/vs-ai-built-apps/) ;
+[Facet vs « laisser l’IA tout construire »](/fr/discover/compare/vs-ai-built-apps/) ;
 les autres pages déclinent la même question.
 
 L’adoption suit la même forme. Vous commencez par un domaine (une tranche du
@@ -33,18 +33,18 @@ votre métier, et Facet les tient ensemble.
 
 ## Les pages
 
-- [Facet vs « laisser l’IA tout construire »](/fr/compare/vs-ai-built-apps/) :
+- [Facet vs « laisser l’IA tout construire »](/fr/discover/compare/vs-ai-built-apps/) :
   gardez le vibe coding. Le vrai choix, c’est ce qui porte l’application.
-- [Facet vs les bases Airtable et Notion](/fr/compare/vs-airtable-notion/) :
+- [Facet vs les bases Airtable et Notion](/fr/discover/compare/vs-airtable-notion/) :
   la facilité de départ contre la sûreté d’une dépendance, sans fonction de
   gouvernance réservée à l’offre supérieure.
-- [Facet vs Retool et les outils low-code](/fr/compare/vs-retool-lowcode/) :
+- [Facet vs Retool et les outils low-code](/fr/discover/compare/vs-retool-lowcode/) :
   des écrans posés sur une base que vous gérez déjàà, contre la couche de
   données gouvernée elle-même.
-- [Facet vs Odoo et les suites ERP](/fr/compare/vs-odoo-erp/) : les
+- [Facet vs Odoo et les suites ERP](/fr/discover/compare/vs-odoo-erp/) : les
   processus que toutes les entreprises partagent, contre ceux qui font votre
   différence. Souvent, les deux.
-- [Facet vs Supabase et Firebase](/fr/compare/vs-supabase-firebase/) :
+- [Facet vs Supabase et Firebase](/fr/discover/compare/vs-supabase-firebase/) :
   des briques pour développeurs qui ont le temps de tout construire, contre
   des valeurs par défaut gouvernées dès le premier jour.
 

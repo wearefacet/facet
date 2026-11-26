@@ -98,15 +98,15 @@ Vous perdez les cellules libres ; vous gardez les vues. Le portail de Facet don
 Il n’y a pas de licence par siège. Le logiciel est gratuit à l’usage et à l’auto-hébergement, pour un nombre d’utilisateurs quelconque. Vous payez vos serveurs, l’usage IA sur votre propre clé, et, si vous le voulez, notre hébergement géré ou nos services de conception.
 
 **Nous payons déjà Notion. Pourquoi ajouter Facet ?**
-Parce qu’ils font des travaux différents. Notion garde ce que votre équipe écrit ; Facet garde ce que votre entreprise doit justifier. Voir [Facet vs « laisser l’IA tout coder »](/fr/compare/vs-ai-built-apps/) pour ce qui arrive quand les outils se multiplient.
+Parce qu’ils font des travaux différents. Notion garde ce que votre équipe écrit ; Facet garde ce que votre entreprise doit justifier. Voir [Facet vs « laisser l’IA tout coder »](/fr/discover/compare/vs-ai-built-apps/) pour ce qui arrive quand les outils se multiplient.
 
 ## Voir aussi
 
-- [Comparer](/fr/compare/) : toutes les pages de comparaison.
-- [Facet vs « laisser l’IA tout coder »](/fr/compare/vs-ai-built-apps/)
-- [Sécurité et gouvernance](/fr/start/security-governance/)
-- [Périmètres de lignes](/fr/govern/row-scopes/) : le fonctionnement des permissions par enregistrement dans Facet.
-- [Auditer l’activité](/fr/govern/auditing-activity/) : l’historique des changements en pratique.
+- [Comparer](/fr/discover/compare/) : toutes les pages de comparaison.
+- [Facet vs « laisser l’IA tout coder »](/fr/discover/compare/vs-ai-built-apps/)
+- [Sécurité et gouvernance](/fr/discover/security/)
+- [Périmètres de lignes](/fr/admin/people/row-scopes/) : le fonctionnement des permissions par enregistrement dans Facet.
+- [Auditer l’activité](/fr/admin/history/audit/) : l’historique des changements en pratique.
 
 ## Sources
 
@@ -119,4 +119,4 @@ Parce qu’ils font des travaux différents. Notion garde ce que votre équipe �
 - Notion, résidence des données : Enterprise seulement ; US par défaut ; régions UE, Tokyo et Séoul — https://www.notion.com/help/data-residency — vérifié le 2026-11-13
 - Simone Smerilli, sur la façon dont les règles d’accès aux bases Notion reposent sur une propriété Person ou Created-by — https://simonesmerilli.com/writing/notion-database-access-rules — vérifié le 2026-11-13
 - Reworked, « Bending Spoons Acquires Airtable » (4 août 2026 ; opération en attente de clôture à la vérification) — https://www.reworked.co/digital-workplace/bending-spoons-acquires-airtable-for-1285b/ — vérifié le 2026-11-13
-- Les affirmations sur Facet lui-même viennent de ce site : la [vue d’ensemble Sécurité et gouvernance](/fr/start/security-governance/).
+- Les affirmations sur Facet lui-même viennent de ce site : la [vue d’ensemble Sécurité et gouvernance](/fr/discover/security/).

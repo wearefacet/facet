@@ -96,7 +96,7 @@ droits. Chaque rôle liste la totalité de ses propres permissions.
 
 ## Voir aussi
 
-- [Gouverner l’accès](/fr/govern/) — modifiez les rôles et les comptes au quotidien.
-- [Application des autorisations](/fr/concepts/authorization-enforcement/) — comment les lignes de permission deviennent des vérifications en lecture et en écriture.
-- [Contextes d’authentification](/fr/concepts/auth-contexts/) — comment le rôle élu voyage avec chaque requête.
+- [Gouverner l’accès](/fr/admin/) — modifiez les rôles et les comptes au quotidien.
+- [Application des autorisations](/fr/admin/under-the-hood/how-access-is-enforced/) — comment les lignes de permission deviennent des vérifications en lecture et en écriture.
+- [Contextes d’authentification](/fr/admin/under-the-hood/one-role-at-a-time/) — comment le rôle élu voyage avec chaque requête.
 - Internes sur GitHub : [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md).

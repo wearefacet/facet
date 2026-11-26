@@ -108,11 +108,11 @@ C’est la mauvaise question : les trois vous donnent les outils. La vraie ques
 
 ## Voir aussi
 
-- [Comparer](/fr/compare/) : toutes les pages de comparaison.
-- [Facet vs « laisser l’IA tout coder »](/fr/compare/vs-ai-built-apps/) : là où l’histoire des Supabase mal configurés rencontre les applications construites par l’IA.
-- [Sécurité et gouvernance](/fr/start/security-governance/)
-- [Rôles et lignes de permission](/fr/govern/roles-permission-lines/)
-- [Facet est-il fait pour vous ?](/fr/start/is-facet-right-for-you/) : y compris les charges de travail qui demandent un contrôle de plus bas niveau.
+- [Comparer](/fr/discover/compare/) : toutes les pages de comparaison.
+- [Facet vs « laisser l’IA tout coder »](/fr/discover/compare/vs-ai-built-apps/) : là où l’histoire des Supabase mal configurés rencontre les applications construites par l’IA.
+- [Sécurité et gouvernance](/fr/discover/security/)
+- [Rôles et lignes de permission](/fr/admin/people/roles-and-permissions/)
+- [Facet est-il fait pour vous ?](/fr/discover/is-it-right-for-you/) : y compris les charges de travail qui demandent un contrôle de plus bas niveau.
 
 ## Sources
 
@@ -125,4 +125,4 @@ C’est la mauvaise question : les trois vous donnent les outils. La vraie ques
 - Appwrite (un concurrent de Firebase, à prendre comme contexte), sur l’absence d’auto-hébergement de Firebase et le coût du départ — https://appwrite.io/blog/post/firebase-vs-open-source-tradeoffs — vérifié le 2026-11-13
 - Verdent, sur les alertes de budget de Firebase qui n’arrêtent pas l’usage — https://www.verdent.ai/guides/devtools/firebase-pricing — vérifié le 2026-11-13
 - Malwarebytes, sur le scan de 2024 : 916 sites Firebase mal configurés et 19,9 millions de mots de passe en clair — https://www.malwarebytes.com/pt/blog/personal/2024/03/19-million-plaintext-passwords-exposed-by-incorrectly-configured-firebase-instances — vérifié le 2026-11-13
-- Les affirmations sur Facet lui-même viennent de ce site : [Facet est-il fait pour vous ?](/fr/start/is-facet-right-for-you/) et la [vue d’ensemble Sécurité et gouvernance](/fr/start/security-governance/).
+- Les affirmations sur Facet lui-même viennent de ce site : [Facet est-il fait pour vous ?](/fr/discover/is-it-right-for-you/) et la [vue d’ensemble Sécurité et gouvernance](/fr/discover/security/).

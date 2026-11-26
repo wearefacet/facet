@@ -127,10 +127,10 @@ confirmation de publication affiche la même liste.
 - [Construction](/fr/build/) — le chemin de création, d’un brouillon vide à
 
   un domaine réel.
-- [Concevoir des doctypes](/fr/build/designing-doctypes/) — comment déclarer
+- [Concevoir des doctypes](/fr/build/model/data/design-doctypes/) — comment déclarer
   champs et modèles.
-- [Domaines et isolation](/fr/concepts/domains-and-isolation/) — ce qu’un
+- [Domaines et isolation](/fr/discover/how-it-works/domains/) — ce qu’un
   domaine borne.
-- [Évolution du schéma](/fr/concepts/schema-evolution/) — la barrière de
+- [Évolution du schéma](/fr/build/deeper/schema-evolution/) — la barrière de
   version et la migration à la demande en détail.
 - Internes sur GitHub : [draft-domains.md](https://github.com/wearefacet/facet/blob/main/doc/backend/draft-domains.md).

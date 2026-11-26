@@ -74,9 +74,9 @@ In exchange, the log stays bounded, and storage stays predictable.
 
 ## Related
 
-- [Architecture at a glance](/start/architecture/) — the log's place in the write path.
-- [Documents, doctypes and projections](/concepts/documents-doctypes-projections/) — the current state the log feeds.
-- [Events and delivery](/concepts/events-delivery/) — the reaction bus, separate from this log.
-- [Glossary](/start/glossary/) — the mutation term, defined in one line.
-- [Govern access](/govern/) — the retention rules for the history the log keeps.
+- [Architecture at a glance](/discover/how-it-works/) — the log's place in the write path.
+- [Documents, doctypes and projections](/build/deeper/documents-and-projections/) — the current state the log feeds.
+- [Events and delivery](/admin/under-the-hood/events-and-delivery/) — the reaction bus, separate from this log.
+- [Glossary](/reference/glossary/) — the mutation term, defined in one line.
+- [Govern access](/admin/) — the retention rules for the history the log keeps.
 - Internals on GitHub: [mutation.md](https://github.com/wearefacet/facet/blob/main/doc/backend/mutation.md), [audit.md](https://github.com/wearefacet/facet/blob/main/doc/backend/audit.md).

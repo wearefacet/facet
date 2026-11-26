@@ -88,9 +88,9 @@ role without grants sees no schema for the hidden doctypes.
 
 ## Related
 
-- [Security & governance overview](/start/security-governance/) — the access model in summary.
-- [Govern access](/govern/) — create the roles and permission lines the enforcers read.
-- [Auth contexts](/concepts/auth-contexts/) — how identity and role reach the enforcers.
-- [Roles, levels and authority](/concepts/roles-levels-authority/) — who may write roles and accounts.
-- [Domains and isolation](/concepts/domains-and-isolation/) — the boundary that permissions name.
+- [Security & governance overview](/discover/security/) — the access model in summary.
+- [Govern access](/admin/) — create the roles and permission lines the enforcers read.
+- [Auth contexts](/admin/under-the-hood/one-role-at-a-time/) — how identity and role reach the enforcers.
+- [Roles, levels and authority](/admin/people/who-can-change-roles/) — who may write roles and accounts.
+- [Domains and isolation](/discover/how-it-works/domains/) — the boundary that permissions name.
 - Internals on GitHub: [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md), [http-layer.md](https://github.com/wearefacet/facet/blob/main/doc/backend/http-layer.md).

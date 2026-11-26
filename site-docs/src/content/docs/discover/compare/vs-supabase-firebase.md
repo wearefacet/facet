@@ -1,4 +1,5 @@
 ---
+type: explanation
 title: Facet vs Supabase and Firebase
 description: Supabase and Firebase give developers building blocks. Facet ships the governed result (permissions, audit, a portal and app hosting) so your team builds the business, not the plumbing.
 audience: [evaluator, developer]
@@ -108,11 +109,11 @@ That is the wrong question: all three give you the tools. The real question is w
 
 ## Related
 
-- [Compare](/compare/): all comparison pages.
-- [Facet vs "just let the AI build it"](/compare/vs-ai-built-apps/): where the Supabase misconfiguration story meets AI-built apps.
-- [Security & governance overview](/start/security-governance/)
-- [Roles and permission lines](/govern/roles-permission-lines/)
-- [Is Facet right for you?](/start/is-facet-right-for-you/): including the workloads that need a lower level of control.
+- [Compare](/discover/compare/): all comparison pages.
+- [Facet vs "just let the AI build it"](/discover/compare/vs-ai-built-apps/): where the Supabase misconfiguration story meets AI-built apps.
+- [Security & governance overview](/discover/security/)
+- [Roles and permission lines](/admin/people/roles-and-permissions/)
+- [Is Facet right for you?](/discover/is-it-right-for-you/): including the workloads that need a lower level of control.
 
 ## Sources
 
@@ -125,4 +126,4 @@ That is the wrong question: all three give you the tools. The real question is w
 - Appwrite (a Firebase competitor, so treat as context), on Firebase's lack of self-hosting and the cost of migrating away — https://appwrite.io/blog/post/firebase-vs-open-source-tradeoffs — checked 2026-11-13
 - Verdent, on Firebase budget alerts not stopping usage — https://www.verdent.ai/guides/devtools/firebase-pricing — checked 2026-11-13
 - Malwarebytes, on the 2024 scan: 916 misconfigured Firebase sites and 19.9 million plaintext passwords — https://www.malwarebytes.com/pt/blog/personal/2024/03/19-million-plaintext-passwords-exposed-by-incorrectly-configured-firebase-instances — checked 2026-11-13
-- Facet's own claims come from this site: [Is Facet right for you?](/start/is-facet-right-for-you/) and the [Security & governance overview](/start/security-governance/).
+- Facet's own claims come from this site: [Is Facet right for you?](/discover/is-it-right-for-you/) and the [Security & governance overview](/discover/security/).

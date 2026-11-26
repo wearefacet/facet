@@ -1,4 +1,5 @@
 ---
+type: overview
 title: Start here
 description: Understand what Facet is, decide if it fits, and get a first instance running.
 audience: [evaluator]
@@ -12,9 +13,9 @@ You want to know if Facet fits your organization, and how it works before you co
 
 ## In this section
 
-- [What is Facet](/start/what-is-facet/)
-- [Is Facet right for you?](/start/is-facet-right-for-you/)
-- [Architecture at a glance](/start/architecture/)
-- [Security & governance overview](/start/security-governance/)
-- [Glossary](/start/glossary/)
-- [Install for development](/start/install/)
+- [What is Facet](/discover/why-facet/)
+- [Is Facet right for you?](/discover/is-it-right-for-you/)
+- [Architecture at a glance](/discover/how-it-works/)
+- [Security & governance overview](/discover/security/)
+- [Glossary](/reference/glossary/)
+- [Install for development](/build/dev-environment/)

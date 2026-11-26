@@ -110,10 +110,10 @@ schéma se déploie sans backfill de toute la table.
 
 ## Voir aussi
 
-- [Faire évoluer un schéma](/fr/build/evolving-schema/) — déclarer les
+- [Faire évoluer un schéma](/fr/build/model/change-a-live-domain/) — déclarer les
   champs et la map `migrations` sur un doctype.
-- [Brouillon → publication](/fr/concepts/draft-publish/) — répéter d’abord
+- [Brouillon → publication](/fr/build/model/in-app/how-drafts-work/) — répéter d’abord
   un changement de schéma dans un domaine de brouillon.
-- [Documents, doctypes et projections](/fr/concepts/documents-doctypes-projections/) —
+- [Documents, doctypes et projections](/fr/build/deeper/documents-and-projections/) —
   où se trouvent le contenu et le meta d’un document.
 - Internes sur GitHub : [schema-migration.md](https://github.com/wearefacet/facet/blob/main/doc/backend/schema-migration.md).

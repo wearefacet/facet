@@ -88,8 +88,8 @@ re-derive from durable state and a replay converges.
 
 ## Related
 
-- [Architecture at a glance](/start/architecture/) — where the event bus sits in the request path.
-- [The mutation log](/concepts/mutation-log/) — the durable record the reconciler reads.
-- [Operate](/operate/) — healthcheck, Redis, and jobs in day-to-day running.
-- [Production](/operate/production/) — probes and Redis sizing for a live deployment.
+- [Architecture at a glance](/discover/how-it-works/) — where the event bus sits in the request path.
+- [The mutation log](/admin/under-the-hood/change-log/) — the durable record the reconciler reads.
+- [Operate](/admin/) — healthcheck, Redis, and jobs in day-to-day running.
+- [Production](/admin/install/production/) — probes and Redis sizing for a live deployment.
 - Internals on GitHub: [event.md](https://github.com/wearefacet/facet/blob/main/doc/backend/event.md), [cron.md](https://github.com/wearefacet/facet/blob/main/doc/backend/cron.md).

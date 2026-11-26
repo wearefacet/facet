@@ -115,7 +115,7 @@ missing views — and the publish confirmation shows the same list.
 ## Related
 
 - [Build](/build/) — the authoring trail from an empty draft to a live domain.
-- [Designing doctypes](/build/designing-doctypes/) — how to declare fields and templates.
-- [Domains and isolation](/concepts/domains-and-isolation/) — what a domain bounds.
-- [Schema evolution](/concepts/schema-evolution/) — the version gate and lazy migration in depth.
+- [Designing doctypes](/build/model/data/design-doctypes/) — how to declare fields and templates.
+- [Domains and isolation](/discover/how-it-works/domains/) — what a domain bounds.
+- [Schema evolution](/build/deeper/schema-evolution/) — the version gate and lazy migration in depth.
 - Internals on GitHub: [draft-domains.md](https://github.com/wearefacet/facet/blob/main/doc/backend/draft-domains.md).

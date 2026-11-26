@@ -63,9 +63,9 @@ and an MCP URL pins its role for the whole session.
 
 ## Related
 
-- [Security & governance overview](/start/security-governance/) — the permission model summarized for auditors.
-- [Build apps](/apps/) — register an app and send its users through role election.
-- [Authorization enforcement](/concepts/authorization-enforcement/) — how the enforcers turn permissions into SQL.
-- [Apps: grants ∩ roles](/concepts/apps-grants-roles/) — the grant ceiling in detail.
+- [Security & governance overview](/discover/security/) — the permission model summarized for auditors.
+- [Build apps](/build/apps/) — register an app and send its users through role election.
+- [Authorization enforcement](/admin/under-the-hood/how-access-is-enforced/) — how the enforcers turn permissions into SQL.
+- [Apps: grants ∩ roles](/build/apps/connect/what-an-app-can-do/) — the grant ceiling in detail.
 - [Reference](/reference/) — endpoint shapes, the identity endpoint included.
 - Internals on GitHub: [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md), [oauth.md](https://github.com/wearefacet/facet/blob/main/doc/backend/oauth.md), [iam.md](https://github.com/wearefacet/facet/blob/main/doc/backend/iam.md).

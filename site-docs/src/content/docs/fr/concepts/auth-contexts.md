@@ -70,9 +70,9 @@ pour toute la session.
 
 ## Voir aussi
 
-- [Sécurité et gouvernance](/fr/start/security-governance/) — le modèle de permissions résumé pour les auditeurs.
-- [Construire des applications](/fr/apps/) — enregistrez une application et faites élire un rôle à ses utilisateurs.
-- [Application des autorisations](/fr/concepts/authorization-enforcement/) — comment les contrôleurs traduisent les permissions en SQL.
-- [Applications : attributions ∩ rôles](/fr/concepts/apps-grants-roles/) — le plafond de l’attribution en détail.
+- [Sécurité et gouvernance](/fr/discover/security/) — le modèle de permissions résumé pour les auditeurs.
+- [Construire des applications](/fr/build/apps/) — enregistrez une application et faites élire un rôle à ses utilisateurs.
+- [Application des autorisations](/fr/admin/under-the-hood/how-access-is-enforced/) — comment les contrôleurs traduisent les permissions en SQL.
+- [Applications : attributions ∩ rôles](/fr/build/apps/connect/what-an-app-can-do/) — le plafond de l’attribution en détail.
 - [Référence](/fr/reference/) — la forme des endpoints, y compris l’endpoint d’identité.
 - Internes sur GitHub : [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md), [oauth.md](https://github.com/wearefacet/facet/blob/main/doc/backend/oauth.md), [iam.md](https://github.com/wearefacet/facet/blob/main/doc/backend/iam.md).

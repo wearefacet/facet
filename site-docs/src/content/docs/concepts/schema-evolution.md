@@ -104,7 +104,7 @@ exchange, a schema change ships without a backfill over the whole table.
 
 ## Related
 
-- [Evolving a schema](/build/evolving-schema/) — declare fields and the migrations map on a doctype.
-- [Draft → publish](/concepts/draft-publish/) — rehearse a schema change in a draft domain first.
-- [Documents, doctypes and projections](/concepts/documents-doctypes-projections/) — where document content and meta live.
+- [Evolving a schema](/build/model/change-a-live-domain/) — declare fields and the migrations map on a doctype.
+- [Draft → publish](/build/model/in-app/how-drafts-work/) — rehearse a schema change in a draft domain first.
+- [Documents, doctypes and projections](/build/deeper/documents-and-projections/) — where document content and meta live.
 - Internals on GitHub: [schema-migration.md](https://github.com/wearefacet/facet/blob/main/doc/backend/schema-migration.md).

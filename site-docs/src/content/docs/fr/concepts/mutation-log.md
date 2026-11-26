@@ -81,14 +81,14 @@ stockage reste prévisible.
 
 ## Voir aussi
 
-- [Architecture en un coup d’œil](/fr/start/architecture/) — la place du
+- [Architecture en un coup d’œil](/fr/discover/how-it-works/) — la place du
   journal dans le chemin d’écriture.
-- [Documents, doctypes et projections](/fr/concepts/documents-doctypes-projections/) —
+- [Documents, doctypes et projections](/fr/build/deeper/documents-and-projections/) —
   l’état courant que le journal alimente.
-- [Événements et livraison](/fr/concepts/events-delivery/) — le bus de
+- [Événements et livraison](/fr/admin/under-the-hood/events-and-delivery/) — le bus de
   réaction, séparé de ce journal.
-- [Glossaire](/fr/start/glossary/) — le terme mutation, défini en une ligne.
-- [Gouverner l’accès](/fr/govern/) — les règles de rétention de l’historique
+- [Glossaire](/fr/reference/glossary/) — le terme mutation, défini en une ligne.
+- [Gouverner l’accès](/fr/admin/) — les règles de rétention de l’historique
   que le journal garde.
 - Internes sur GitHub : [mutation.md](https://github.com/wearefacet/facet/blob/main/doc/backend/mutation.md),
   [audit.md](https://github.com/wearefacet/facet/blob/main/doc/backend/audit.md).

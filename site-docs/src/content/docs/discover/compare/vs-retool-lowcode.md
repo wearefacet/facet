@@ -1,10 +1,11 @@
 ---
+type: explanation
 title: Facet vs Retool and low-code builders
 description: Retool builds screens on top of databases you already run. Facet is the governed data layer itself, with a portal, app hosting and per-record rules built in, and no per-user licence.
 audience: [evaluator]
 features: []
 sidebar:
-  order: 3
+  order: 4
 verified_at: bd4be053
 ---
 
@@ -100,18 +101,18 @@ With Retool, you host (or rent) the database, and Retool Cloud or your self-host
 It depends on how many people use the tools. Retool charges per builder plus a rate per internal user. Audit logs need the Business plan, listed at $50 per builder and $15 per internal user per month, billed annually. Three builders and 60 colleagues using the apps come to about $1,050 a month, before external users. For a five-developer team it is modest; for a company where most staff open an internal tool every week, count the user line before you commit. Facet's licence costs nothing at any headcount; you pay for servers, your own AI usage and, if you want them, our services.
 
 **Where does the AI fit?**
-Both products moved here. Retool's builder generates a starting app in its own format. With Facet, the assistant designs the domain, any AI tool builds the app on the SDK, and Facet hosts it. See [Facet vs "just let the AI build it"](/compare/vs-ai-built-apps/).
+Both products moved here. Retool's builder generates a starting app in its own format. With Facet, the assistant designs the domain, any AI tool builds the app on the SDK, and Facet hosts it. See [Facet vs "just let the AI build it"](/discover/compare/vs-ai-built-apps/).
 
 ## Related
 
-- [Compare](/compare/): all comparison pages.
-- [Facet vs "just let the AI build it"](/compare/vs-ai-built-apps/)
-- [Facet vs Supabase and Firebase](/compare/vs-supabase-firebase/): when the alternative is a backend instead of a builder.
-- [Domains, drafts and domain editors](/build/domains-drafts-editors/): how Facet organizes data.
-- [Webhooks](/build/webhooks/): Facet's outbound event delivery.
+- [Compare](/discover/compare/): all comparison pages.
+- [Facet vs "just let the AI build it"](/discover/compare/vs-ai-built-apps/)
+- [Facet vs Supabase and Firebase](/discover/compare/vs-supabase-firebase/): when the alternative is a backend instead of a builder.
+- [Domains, drafts and domain editors](/build/model/in-app/drafts-and-publishing/): how Facet organizes data.
+- [Webhooks](/build/model/automation/webhooks/): Facet's outbound event delivery.
 
 ## Sources
 
 - Retool pricing: per-builder and per-internal-user pricing (Team $10/$5, Business $50/$15 annually; Free up to 5 users); audit logs and rich permissions from Business; granular roles, SSO, SCIM, self-hosted and air-gapped deployments on Enterprise; the AI builder and pooled AI credits on all plans; workflows with run quotas; "Your queries run against your own data sources. Retool doesn't store your data." — https://retool.com/pricing — checked 2026-11-13
 - Retool docs: the Retool-managed self-hosted deployment is Enterprise only — https://docs.retool.com/self-hosted/retool-managed/concepts — checked 2026-11-13
-- Facet's own claims come from this site: [What is Facet](/start/what-is-facet/).
+- Facet's own claims come from this site: [What is Facet](/discover/why-facet/).

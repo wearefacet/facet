@@ -74,13 +74,13 @@ Lancez la pile, cliquez partout, et construisez un petit domaine à vous :
 2. Connectez-vous avec le mot de passe à usage unique affiché.
 3. Parcourez l’espace de travail : listes, filtres, historique des documents.
 4. Construisez un petit domaine à vous —
-   [Domaines, brouillons et éditeurs de domaines](/fr/build/domains-drafts-editors/).
+   [Domaines, brouillons et éditeurs de domaines](/fr/build/model/in-app/drafts-and-publishing/).
 
 Si l’étape 4 a pris une heure et que la plupart des bons cas vous
 correspondent, Facet est fait pour vous.
 
 ## Voir aussi
 
-- [Qu’est-ce que Facet](/fr/start/what-is-facet/) — le produit en une page.
-- [Sécurité et gouvernance](/fr/start/security-governance/) — les détails du contrôle derrière ces promesses.
-- [Déployer en production](/fr/operate/production/) — le guide d’installation complet.
+- [Qu’est-ce que Facet](/fr/discover/why-facet/) — le produit en une page.
+- [Sécurité et gouvernance](/fr/discover/security/) — les détails du contrôle derrière ces promesses.
+- [Déployer en production](/fr/admin/install/production/) — le guide d’installation complet.

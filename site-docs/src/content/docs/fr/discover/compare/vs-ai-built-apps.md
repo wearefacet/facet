@@ -116,7 +116,7 @@ Continuez à prototyper avec votre outil IA. Quand un prototype gagne le droit �
 3. Votre outil IA construit les écrans sur le SDK Facet (kit de développement logiciel). Facet héberge les fichiers finis : pas d’hébergement séparé, pas de pipeline de déploiement. Celui qui a construit l’application peut la publier, et restaurer une version antérieure si une nouvelle casse. <!-- TODO(link): custom-apps and SDK pages when the apps section ships -->
 4. Un appel ajoute l’assistant embarquable à l’application. Il hérite du rôle de l’utilisateur connecté et n’agit qu’à l’intérieur de ce rôle.
 
-Des agents de code peuvent aussi se connecter à Facet par MCP (Model Context Protocol, un standard qui permet aux outils IA d’appeler les fonctions d’un produit) et travailler sous un rôle unique que vous épinglez. Facet vérifie chaque appel, quel que soit l’auteur du code. Voir [Qu’est-ce que Facet](/fr/start/what-is-facet/).
+Des agents de code peuvent aussi se connecter à Facet par MCP (Model Context Protocol, un standard qui permet aux outils IA d’appeler les fonctions d’un produit) et travailler sous un rôle unique que vous épinglez. Facet vérifie chaque appel, quel que soit l’auteur du code. Voir [Qu’est-ce que Facet](/fr/discover/why-facet/).
 
 Gardez les prototypes jetables à l’écart de l’espace gouverné. Facet entre en jeu quand les données méritent d’être gouvernées.
 
@@ -163,15 +163,15 @@ Non. Commencez par un domaine : les enregistrements qui font le plus mal dans l
 
 ## Voir aussi
 
-- [Comparer](/fr/compare/) : toutes les pages de comparaison.
-- [Facet vs Supabase et Firebase](/fr/compare/vs-supabase-firebase/) : la version backend développeur de cette question.
-- [Facet vs les bases Airtable et Notion](/fr/compare/vs-airtable-notion/) : la version tableur.
-- [Qu’est-ce que Facet](/fr/start/what-is-facet/)
-- [Sécurité et gouvernance](/fr/start/security-governance/)
+- [Comparer](/fr/discover/compare/) : toutes les pages de comparaison.
+- [Facet vs Supabase et Firebase](/fr/discover/compare/vs-supabase-firebase/) : la version backend développeur de cette question.
+- [Facet vs les bases Airtable et Notion](/fr/discover/compare/vs-airtable-notion/) : la version tableur.
+- [Qu’est-ce que Facet](/fr/discover/why-facet/)
+- [Sécurité et gouvernance](/fr/discover/security/)
 
 ## Sources
 
 - Veracode, rapport « GenAI Code Security Report » 2025 : les modèles ont choisi l’implémentation non sécurisée dans 45 % des 80 types de tâches, sur plus de 100 modèles ; les modèles plus grands et plus récents n’ont pas fait mieux — https://www.veracode.com/press-release/ai-generated-code-poses-major-security-risks-in-nearly-half-of-all-development-tasks-veracode-research-reveals/ — vérifié le 2026-11-13
 - UpGuard, « Everything Everywhere: Systemic Data Exposure in Supabase Apps » (octobre 2026) : 16 à 326 bases avec tables lisibles sur environ 300 à 000 domaines ; plus de la moitié avec des indicateurs de données personnelles ; la fuite Moltbook de février 2026 ; l’exemple du coaching à l’immigration — https://www.upguard.com/blog/everything-everywhere-systemic-data-exposure-in-supabase-apps — vérifié le 2026-11-13
 - SC World, au sujet des travaux de Backslash : des instructions de sécurité explicites dans les prompts améliorent la sortie des modèles — https://www.scworld.com/news/llms-make-insecure-coding-choices-for-45-of-tasks-study-finds — vérifié le 2026-11-13
-- Les affirmations sur Facet lui-même viennent de ce site : [Qu’est-ce que Facet](/fr/start/what-is-facet/) et la [vue d’ensemble Sécurité et gouvernance](/fr/start/security-governance/).
+- Les affirmations sur Facet lui-même viennent de ce site : [Qu’est-ce que Facet](/fr/discover/why-facet/) et la [vue d’ensemble Sécurité et gouvernance](/fr/discover/security/).

@@ -88,7 +88,7 @@ full.
 
 ## Related
 
-- [Govern](/govern/) — edit roles and accounts day to day.
-- [Authorization enforcement](/concepts/authorization-enforcement/) — how permission lines turn into checks on reads and writes.
-- [Auth contexts](/concepts/auth-contexts/) — how the elected role travels with every request.
+- [Govern](/admin/) — edit roles and accounts day to day.
+- [Authorization enforcement](/admin/under-the-hood/how-access-is-enforced/) — how permission lines turn into checks on reads and writes.
+- [Auth contexts](/admin/under-the-hood/one-role-at-a-time/) — how the elected role travels with every request.
 - Internals on GitHub: [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md).

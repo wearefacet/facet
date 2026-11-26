@@ -87,11 +87,11 @@ rôle élu.
 
 ## Voir aussi
 
-- [Apps](/fr/apps/) — enregistrer une app, modifier son attribution, émettre
+- [Apps](/fr/build/apps/) — enregistrer une app, modifier son attribution, émettre
   et faire tourner les clés.
-- [Contextes d’authentification](/fr/concepts/auth-contexts/) — comment le
+- [Contextes d’authentification](/fr/admin/under-the-hood/one-role-at-a-time/) — comment le
   rôle élu et l’attribution accompagnent chaque requête.
-- [Rôles, niveaux et garde-fou d’autorité](/fr/concepts/roles-levels-authority/) —
+- [Rôles, niveaux et garde-fou d’autorité](/fr/admin/people/who-can-change-roles/) —
   le modèle de rôles d’où vient le rôle élu.
-- [Gouverner l’accès](/fr/govern/) — modifier les rôles qu’une app peut élire.
+- [Gouverner l’accès](/fr/admin/) — modifier les rôles qu’une app peut élire.
 - Internes sur GitHub : [app-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/app-system.md).

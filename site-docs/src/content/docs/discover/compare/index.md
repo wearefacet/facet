@@ -1,4 +1,5 @@
 ---
+type: overview
 title: Compare
 description: Facet next to the tools you are shortlisting, with each alternative's strengths and each trade-off in the open, and what 50 users actually cost.
 audience: [evaluator]
@@ -6,21 +7,22 @@ features: []
 verified_at: bd4be053
 sidebar:
   order: 0
+
 ---
 
 This section compares Facet with the tools small and mid-sized organizations actually shortlist. Each page says where the alternative wins and where Facet wins, so you can decide with both sides in view.
 
-The idea behind every page: **apps are disposable now; your data is not.** AI can build a business tool in hours. What stays hard is everything around the tool: who can see what, who changed what, backups, files, hosting, deployment. That is the part Facet takes on, once, for every app you build. Start with [Facet vs "just let the AI build it"](/compare/vs-ai-built-apps/); the other pages are versions of the same question.
+The idea behind every page: **apps are disposable now; your data is not.** AI can build a business tool in hours. What stays hard is everything around the tool: who can see what, who changed what, backups, files, hosting, deployment. That is the part Facet takes on, once, for every app you build. Start with [Facet vs "just let the AI build it"](/discover/compare/vs-ai-built-apps/); the other pages are versions of the same question.
 
 Adoption follows the same shape. You start with one domain (one slice of the business, such as clients, equipment or hiring) and get value from that first piece alone. The next domain costs less than the first: the accounts, roles, audit log, files and hosting are already in place, and every app and access path shares them. Domain by domain, one governed home replaces a spread of tools and spreadsheets. The name is the model: each domain is one facet of your business, and Facet holds them together.
 
 ## The pages
 
-- [Facet vs "just let the AI build it"](/compare/vs-ai-built-apps/): keep the vibe coding. The real choice is what the app stands on.
-- [Facet vs Airtable and Notion databases](/compare/vs-airtable-notion/): easy to start, against safe to depend on, with no governance features held back for the top plan.
-- [Facet vs Retool and low-code builders](/compare/vs-retool-lowcode/): screens on top of a database you already run, against the governed data layer itself.
-- [Facet vs Odoo and ERP suites](/compare/vs-odoo-erp/): the processes every company shares, against the ones that make yours different. Often, both.
-- [Facet vs Supabase and Firebase](/compare/vs-supabase-firebase/): building blocks for developers with time to build everything, against governed defaults on day one.
+- [Facet vs "just let the AI build it"](/discover/compare/vs-ai-built-apps/): keep the vibe coding. The real choice is what the app stands on.
+- [Facet vs Airtable and Notion databases](/discover/compare/vs-airtable-notion/): easy to start, against safe to depend on, with no governance features held back for the top plan.
+- [Facet vs Retool and low-code builders](/discover/compare/vs-retool-lowcode/): screens on top of a database you already run, against the governed data layer itself.
+- [Facet vs Odoo and ERP suites](/discover/compare/vs-odoo-erp/): the processes every company shares, against the ones that make yours different. Often, both.
+- [Facet vs Supabase and Firebase](/discover/compare/vs-supabase-firebase/): building blocks for developers with time to build everything, against governed defaults on day one.
 
 ## What 50 users cost, at list prices
 

@@ -102,8 +102,8 @@ retention window; only the label survives.
 
 ## Related
 
-- [Designing doctypes](/build/designing-doctypes/) — how to declare fields, actions and templates.
+- [Designing doctypes](/build/model/data/design-doctypes/) — how to declare fields, actions and templates.
 - [Build](/build/) — the how-to pages for authoring domains.
-- [Schema evolution](/concepts/schema-evolution/) — what happens to stored documents when a definition changes.
-- [The mutation log](/concepts/mutation-log/) — the append-only history behind every projection.
+- [Schema evolution](/build/deeper/schema-evolution/) — what happens to stored documents when a definition changes.
+- [The mutation log](/admin/under-the-hood/change-log/) — the append-only history behind every projection.
 - Internals on GitHub: [document.md](https://github.com/wearefacet/facet/blob/main/doc/backend/document.md), [doctype-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/doctype-system.md), [templating.md](https://github.com/wearefacet/facet/blob/main/doc/backend/templating.md).

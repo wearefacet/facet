@@ -139,6 +139,6 @@ d’implémentation, pas un résumé.
 
 ## Voir aussi
 
-- [Architecture en un coup d’œil](/fr/start/architecture/) — où le contrôle se situe dans le chemin d’une requête.
-- [Gouverner l’accès](/fr/govern/) — les guides admin pour les comptes, les rôles et le SSO.
+- [Architecture en un coup d’œil](/fr/discover/how-it-works/) — où le contrôle se situe dans le chemin d’une requête.
+- [Gouverner l’accès](/fr/admin/) — les guides admin pour les comptes, les rôles et le SSO.
 - Internes sur GitHub : [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md), [iam.md](https://github.com/wearefacet/facet/blob/main/doc/backend/iam.md), [audit.md](https://github.com/wearefacet/facet/blob/main/doc/backend/audit.md), [secrets.md](https://github.com/wearefacet/facet/blob/main/doc/backend/secrets.md).

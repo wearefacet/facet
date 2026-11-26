@@ -79,8 +79,8 @@ and the permission lines of the elected role.
 
 ## Related
 
-- [Apps](/apps/) — register an app, edit its grant, issue and rotate keys.
-- [Auth contexts](/concepts/auth-contexts/) — how the elected role and the grant travel with each request.
-- [Roles, levels and the authority guard](/concepts/roles-levels-authority/) — the role model the elected role comes from.
-- [Govern](/govern/) — edit the roles an app can elect.
+- [Apps](/build/apps/) — register an app, edit its grant, issue and rotate keys.
+- [Auth contexts](/admin/under-the-hood/one-role-at-a-time/) — how the elected role and the grant travel with each request.
+- [Roles, levels and the authority guard](/admin/people/who-can-change-roles/) — the role model the elected role comes from.
+- [Govern](/admin/) — edit the roles an app can elect.
 - Internals on GitHub: [app-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/app-system.md).

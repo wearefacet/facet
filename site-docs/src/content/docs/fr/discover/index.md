@@ -17,9 +17,9 @@ les autres pages.
 
 ## Dans cette section
 
-- [Qu’est-ce que Facet](/fr/start/what-is-facet/)
-- [Facet est-il fait pour vous ?](/fr/start/is-facet-right-for-you/)
-- [Architecture en un coup d’œil](/fr/start/architecture/)
-- [Sécurité et gouvernance](/fr/start/security-governance/)
-- [Glossaire](/fr/start/glossary/)
-- [Installer pour le développement](/fr/start/install/)
+- [Qu’est-ce que Facet](/fr/discover/why-facet/)
+- [Facet est-il fait pour vous ?](/fr/discover/is-it-right-for-you/)
+- [Architecture en un coup d’œil](/fr/discover/how-it-works/)
+- [Sécurité et gouvernance](/fr/discover/security/)
+- [Glossaire](/fr/reference/glossary/)
+- [Installer pour le développement](/fr/build/dev-environment/)

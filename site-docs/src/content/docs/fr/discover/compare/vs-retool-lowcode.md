@@ -100,18 +100,18 @@ Avec Retool, vous hébergez (ou louez) la base, et Retool Cloud ou votre Retool 
 Cela dépend du nombre de personnes qui utilisent les outils. Retool facture par builder plus un tarif par utilisateur interne. Les journaux d’audit exigent l’offre Business, affichée à $50 par builder et $15 par utilisateur interne et par mois, facturés annuellement. Trois builders et 60 collègues qui utilisent les applications font environ $1 à 050 par mois, avant les utilisateurs externes. Pour une équipe de cinq développeurs, c’est modeste ; pour une entreprise où la plupart du personnel ouvre un outil interne chaque semaine, comptez la ligne utilisateurs avant de vous engager. La licence de Facet ne coûte rien à tout effectif ; vous payez les serveurs, votre propre usage IA et, si vous le voulez, nos services.
 
 **Où l’IA se place-t-elle ?**
-Les deux produits ont avancé ici. L’éditeur de Retool génère une application de départ dans son propre format. Avec Facet, l’assistant conçoit le domaine, n’importe quel outil IA construit l’application sur le SDK, et Facet l’héberge. Voir [Facet vs « laisser l’IA tout coder »](/fr/compare/vs-ai-built-apps/).
+Les deux produits ont avancé ici. L’éditeur de Retool génère une application de départ dans son propre format. Avec Facet, l’assistant conçoit le domaine, n’importe quel outil IA construit l’application sur le SDK, et Facet l’héberge. Voir [Facet vs « laisser l’IA tout coder »](/fr/discover/compare/vs-ai-built-apps/).
 
 ## Voir aussi
 
-- [Comparer](/fr/compare/) : toutes les pages de comparaison.
-- [Facet vs « laisser l’IA tout coder »](/fr/compare/vs-ai-built-apps/)
-- [Facet vs Supabase et Firebase](/fr/compare/vs-supabase-firebase/) : quand l’alternative est un backend plutôt qu’un éditeur.
-- [Domaines, brouillons et éditeurs de domaines](/fr/build/domains-drafts-editors/) : la façon dont Facet organise les données.
-- [Webhooks](/fr/build/webhooks/) : la livraison d’événements sortants de Facet.
+- [Comparer](/fr/discover/compare/) : toutes les pages de comparaison.
+- [Facet vs « laisser l’IA tout coder »](/fr/discover/compare/vs-ai-built-apps/)
+- [Facet vs Supabase et Firebase](/fr/discover/compare/vs-supabase-firebase/) : quand l’alternative est un backend plutôt qu’un éditeur.
+- [Domaines, brouillons et éditeurs de domaines](/fr/build/model/in-app/drafts-and-publishing/) : la façon dont Facet organise les données.
+- [Webhooks](/fr/build/model/automation/webhooks/) : la livraison d’événements sortants de Facet.
 
 ## Sources
 
 - Retool, page tarifaire : tarification par builder et par utilisateur interne (Team $10/$5, Business $50/$15 en annuel ; Free jusqu’à 5 utilisateurs) ; journaux d’audit et permissions riches à partir de Business ; rôles fins, SSO, SCIM, déploiements auto-hébergés et air-gapped sur Enterprise ; l’éditeur IA et les crédits IA mutualisés sur toutes les offres ; workflows avec quotas d’exécution ; « Your queries run against your own data sources. Retool doesn't store your data. » — https://retool.com/pricing — vérifié le 2026-11-13
 - Retool, documentation : le déploiement auto-hébergé géré par Retool est réservé à Enterprise — https://docs.retool.com/self-hosted/retool-managed/concepts — vérifié le 2026-11-13
-- Les affirmations sur Facet lui-même viennent de ce site : [Qu’est-ce que Facet](/fr/start/what-is-facet/).
+- Les affirmations sur Facet lui-même viennent de ce site : [Qu’est-ce que Facet](/fr/discover/why-facet/).

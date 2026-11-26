@@ -1,10 +1,11 @@
 ---
+type: explanation
 title: Is Facet right for you?
 description: Check where Facet helps, where it does not, and whether it matches your business.
 audience: [evaluator]
 features: [PLT-12]
 sidebar:
-  order: 2
+  order: 4
 verified_at: 7a6cb462
 ---
 
@@ -72,12 +73,12 @@ Run the stack, click through it, and build one small domain of your own:
 
 2. Sign in with the printed one-time password.
 3. Click through the workspace: lists, filters, document history.
-4. Build one small domain of your own — [Domains, drafts and domain editors](/build/domains-drafts-editors/).
+4. Build one small domain of your own — [Domains, drafts and domain editors](/build/model/in-app/drafts-and-publishing/).
 
 If step 4 took an hour and most of the good fits hold for you, Facet fits.
 
 ## Related
 
-- [What is Facet](/start/what-is-facet/) — the product in one page.
-- [Security & governance overview](/start/security-governance/) — the enforcement details behind the promises.
-- [Deploy to production](/operate/production/) — the full install runbook.
+- [What is Facet](/discover/why-facet/) — the product in one page.
+- [Security & governance overview](/discover/security/) — the enforcement details behind the promises.
+- [Deploy to production](/admin/install/production/) — the full install runbook.

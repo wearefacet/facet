@@ -1,4 +1,5 @@
 ---
+type: explanation
 title: What is Facet
 description: Learn what Facet is — the governed home for your business data and the apps you build on it.
 audience: [evaluator]
@@ -94,7 +95,7 @@ docker compose -f docker/compose.prod.yml exec backend facet seed:admin ops@your
 
 The command prints a one-time password. Sign in at `https://<your-hostname>`
 and set a real password when prompted. The full steps are in
-[Deploy to production](/operate/production/).
+[Deploy to production](/admin/install/production/).
 
 :::tip
 Load the sample domains with `scripts/import-fixtures` in a source checkout.
@@ -104,6 +105,6 @@ own.
 
 ## Related
 
-- [Is Facet right for you?](/start/is-facet-right-for-you/) — the good fits, the poor fits, and the business cases it answers.
-- [Architecture at a glance](/start/architecture/) — how a request moves through the system.
-- [Domains, drafts and domain editors](/build/domains-drafts-editors/) — how Facet organizes data.
+- [Is Facet right for you?](/discover/is-it-right-for-you/) — the good fits, the poor fits, and the business cases it answers.
+- [Architecture at a glance](/discover/how-it-works/) — how a request moves through the system.
+- [Domains, drafts and domain editors](/build/model/in-app/drafts-and-publishing/) — how Facet organizes data.

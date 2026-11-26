@@ -103,7 +103,7 @@ copied value in place, so the consumer serves frozen data.
 
 ## Related
 
-- [Domains and isolation](/concepts/domains-and-isolation/) — why domains stay separate, and what crosses.
-- [Events and delivery guarantees](/concepts/events-delivery/) — the bus that carries replication updates.
-- [Sharing data across domains](/build/sharing-across-domains/) — declare the `replicate` config on a field and grant cross-domain access.
+- [Domains and isolation](/discover/how-it-works/domains/) — why domains stay separate, and what crosses.
+- [Events and delivery guarantees](/admin/under-the-hood/events-and-delivery/) — the bus that carries replication updates.
+- [Sharing data across domains](/build/model/relations/across-domains/) — declare the `replicate` config on a field and grant cross-domain access.
 - Internals on GitHub: [replication.md](https://github.com/wearefacet/facet/blob/main/doc/backend/replication.md), [domain-grants.md](https://github.com/wearefacet/facet/blob/main/doc/backend/domain-grants.md).

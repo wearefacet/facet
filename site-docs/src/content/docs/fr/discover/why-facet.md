@@ -103,7 +103,7 @@ docker compose -f docker/compose.prod.yml exec backend facet seed:admin ops@your
 La commande affiche un mot de passe à usage unique. Connectez-vous sur
 `https://<your-hostname>` et définissez un vrai mot de passe quand c’est
 demandé. Les étapes complètes sont dans
-[Déployer en production](/fr/operate/production/).
+[Déployer en production](/fr/admin/install/production/).
 
 :::tip
 Chargez les domaines d’exemple avec `scripts/import-fixtures` depuis une copie
@@ -113,6 +113,6 @@ données, avant de construire le vôtre.
 
 ## Voir aussi
 
-- [Facet est-il fait pour vous ?](/fr/start/is-facet-right-for-you/) — les bons cas, les mauvais, et les enjeux métier auxquels Facet répond.
-- [Architecture en un coup d’œil](/fr/start/architecture/) — comment une requête traverse le système.
-- [Domaines, brouillons et éditeurs de domaines](/fr/build/domains-drafts-editors/) — comment Facet organise les données.
+- [Facet est-il fait pour vous ?](/fr/discover/is-it-right-for-you/) — les bons cas, les mauvais, et les enjeux métier auxquels Facet répond.
+- [Architecture en un coup d’œil](/fr/discover/how-it-works/) — comment une requête traverse le système.
+- [Domaines, brouillons et éditeurs de domaines](/fr/build/model/in-app/drafts-and-publishing/) — comment Facet organise les données.

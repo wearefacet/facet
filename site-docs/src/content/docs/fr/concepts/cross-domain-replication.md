@@ -111,11 +111,11 @@ place, si bien que le consommateur sert des données figées.
 
 ## Voir aussi
 
-- [Domaines et isolement](/fr/concepts/domains-and-isolation/) — pourquoi les
+- [Domaines et isolement](/fr/discover/how-it-works/domains/) — pourquoi les
   domaines restent séparés, et ce qui passe.
-- [Événements et garanties de livraison](/fr/concepts/events-delivery/) — le
+- [Événements et garanties de livraison](/fr/admin/under-the-hood/events-and-delivery/) — le
   bus qui transporte les mises à jour de réplication.
-- [Partager des données entre domaines](/fr/build/sharing-across-domains/) —
+- [Partager des données entre domaines](/fr/build/model/relations/across-domains/) —
   déclarer la configuration `replicate` sur un champ et accorder l’accès entre
   domaines.
 - Internes sur GitHub : [replication.md](https://github.com/wearefacet/facet/blob/main/doc/backend/replication.md),

@@ -1,4 +1,5 @@
 ---
+type: explanation
 title: Domains and isolation
 description: A domain groups doctypes and bounds their data; no data crosses a domain boundary without explicit consent.
 audience: [evaluator, author]
@@ -97,8 +98,8 @@ fully independent.
 
 ## Related
 
-- [Architecture at a glance](/start/architecture/) — where domains sit in the request path.
-- [Domains, drafts and domain editors](/build/domains-drafts-editors/) — create a domain and register doctypes in it.
-- [Cross-domain replication](/concepts/cross-domain-replication/) — the copy mechanism a grant gates.
-- [Authorization enforcement](/concepts/authorization-enforcement/) — the role checks behind the document API.
+- [Architecture at a glance](/discover/how-it-works/) — where domains sit in the request path.
+- [Domains, drafts and domain editors](/build/model/in-app/drafts-and-publishing/) — create a domain and register doctypes in it.
+- [Cross-domain replication](/build/deeper/cross-domain-replication/) — the copy mechanism a grant gates.
+- [Authorization enforcement](/admin/under-the-hood/how-access-is-enforced/) — the role checks behind the document API.
 - Internals on GitHub: [doctype-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/doctype-system.md), [domain-grants.md](https://github.com/wearefacet/facet/blob/main/doc/backend/domain-grants.md), [replication.md](https://github.com/wearefacet/facet/blob/main/doc/backend/replication.md).
