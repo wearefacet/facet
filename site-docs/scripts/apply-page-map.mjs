@@ -196,7 +196,12 @@ for (const [stubPath, title, type, stubTab, order] of stubs.filter(([, , , t]) =
 		`type: ${type}`,
 		'audience: []',
 		'features: []',
-		'draft: true',
+		// The tab sidebars reference every page by slug, and Starlight errors on
+		// slugs without a route — draft pages have none. Stubs therefore publish
+		// as one honest line, out of search (pagefind) and pager chrome, until
+		// their owner WP writes them.
+		'pagefind: false',
+		'pager: false',
 		`sidebar:\n  order: ${order}`,
 		'---',
 		'',

@@ -3,6 +3,7 @@ title: Types de champs
 description: Chaque type de champ, avec sa validation, sa normalisation et ses opérateurs de filtre.
 audience: [author, developer]
 features: [DOM-04, DOC-13]
+type: reference
 sidebar:
   order: 3
 verified_at: 008dd880
@@ -44,6 +45,6 @@ Un champ de doctype déclare l'un des types ci-dessous. Le générateur lit le r
 
 ## Voir aussi
 
-- [Types de champs (guide)](/fr/build/model/data/field-types/)
-- [Concevoir des doctypes](/fr/build/model/data/design-doctypes/)
+- [Types de champs (guide)](/fr/build/field-types/)
+- [Concevoir des doctypes](/fr/build/designing-doctypes/)
 - [Opérateurs de filtre](/fr/reference/filter-operators/)

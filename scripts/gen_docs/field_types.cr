@@ -186,6 +186,7 @@ en_page = <<-MARKDOWN
   description: Every field type with validation, normalization, and filter operators.
   audience: [author, developer]
   features: [DOM-04, DOC-13]
+  type: reference
   sidebar:
     order: 3
   verified_at: #{VERIFIED_AT}
@@ -221,6 +222,7 @@ fr_page = <<-MARKDOWN
   description: #{GenDocs::FrOverlay.fetch(ov, "description", "")}
   audience: [author, developer]
   features: [DOM-04, DOC-13]
+  type: reference
   sidebar:
     order: 3
   verified_at: #{VERIFIED_AT}

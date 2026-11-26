@@ -3,6 +3,7 @@ title: Config file keys
 description: Every config file key with its section, type, and default.
 audience: [operator]
 features: [PLT-01]
+type: reference
 sidebar:
   order: 15
 verified_at: 7af699f3
@@ -169,4 +170,4 @@ Some values can come from the environment instead of the file:
 
 ## Related
 
-- [/admin/configure/configuration-files/](/admin/configure/configuration-files/)
+- [/operate/configuration-files/](/operate/configuration-files/)

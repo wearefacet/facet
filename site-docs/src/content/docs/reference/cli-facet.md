@@ -3,6 +3,7 @@ title: facet CLI
 description: Every facet CLI command with its purpose and option handling.
 audience: [developer, operator]
 features: [PLT-11, IAM-12, DOM-18]
+type: reference
 sidebar:
   order: 2
 verified_at: 008dd880
@@ -26,6 +27,7 @@ Every other command takes only its dash options, and the chain continues after t
 | `artifacts:reconcile` | Delete orphaned objects from the artifact store (run standalone to pass options) | consumes its own options |
 | `artifacts:revoke` | Revoke every signed URL for an artifact (run standalone to pass the artifact id) | consumes its own options |
 | `auth:mode` | Pin the authentication mode on the SystemSettings document (run standalone: facet auth:mode {hybrid\|oidc_only}) | consumes its own options |
+| `cron:list` | List the boot cron tasks (id, config key, schedule, next run) | — |
 | `db_reset` | Drop, recreate and migrate the database (asks to confirm; --yes skips) | — |
 | `doctype:migrate-retry` | Re-run lazy migration for documents blocked by a meta.migration_error marker | consumes its own options |
 | `doctype:reproject` | Re-project a doctype's search/links/display_name columns for every live document | consumes its own options |
@@ -43,5 +45,5 @@ Every other command takes only its dash options, and the chain continues after t
 
 ## Related
 
-- [Bootstrap and CLI tasks](/admin/install/bootstrap/)
-- [Quickstart with the dev CLI](/build/apps/quickstart/)
+- [Bootstrap and CLI tasks](/operate/bootstrap-cli/)
+- [Quickstart with the dev CLI](/apps/quickstart-dev-cli/)

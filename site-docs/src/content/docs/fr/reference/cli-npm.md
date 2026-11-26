@@ -2,6 +2,7 @@
 title: CLI des apps Facet
 description: Commandes et options de l'outil développeur @facetapp/cli.
 audience: [developer]
+type: reference
 features: [APP-09]
 verified_at: f1409cdc
 ---
@@ -136,5 +137,5 @@ Options:
 
 ## Voir aussi
 
-- [Premiers pas avec le CLI dev](/fr/build/apps/quickstart/) — premier déploiement sans installation.
-- [Héberger et déployer des apps](/fr/build/apps/host/deploy/) — ce qu'est un déploiement et comment fonctionne l'activation.
+- [Premiers pas avec le CLI dev](/fr/apps/quickstart-dev-cli/) — premier déploiement sans installation.
+- [Héberger et déployer des apps](/fr/apps/hosting-deploy/) — ce qu'est un déploiement et comment fonctionne l'activation.

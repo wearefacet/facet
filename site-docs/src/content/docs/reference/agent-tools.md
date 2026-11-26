@@ -3,6 +3,7 @@ title: Agent tools
 description: Every agent tool with its description and parameters.
 audience: [developer, operator]
 features: [AI-04]
+type: reference
 sidebar:
   order: 13
 verified_at: 008dd880
@@ -60,5 +61,5 @@ front-matter of each skill file.
 
 ## Related
 
-- [/build/apps/agents/agent-tools/](/build/apps/agents/agent-tools/)
-- [/build/apps/agents/mcp/](/build/apps/agents/mcp/)
+- [/apps/agent-tools/](/apps/agent-tools/)
+- [/apps/mcp-agents/](/apps/mcp-agents/)

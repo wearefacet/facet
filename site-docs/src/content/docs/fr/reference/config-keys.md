@@ -3,6 +3,7 @@ title: Clés du fichier de configuration
 description: Chaque clé de configuration, avec sa section, son type et sa valeur par défaut.
 audience: [operator]
 features: [PLT-01]
+type: reference
 sidebar:
   order: 15
 verified_at: 7af699f3
@@ -162,4 +163,4 @@ Plusieurs clés se valident au chargement et font échouer le démarrage en cas 
 
 ## Voir aussi
 
-- [/fr/admin/configure/configuration-files/](/fr/admin/configure/configuration-files/)
+- [/fr/operate/configuration-files/](/fr/operate/configuration-files/)

@@ -143,6 +143,7 @@ private def generate : Nil
   description: Every system settings key with its type and default.
   audience: [operator, admin]
   features: [PLT-02]
+  type: reference
   sidebar:
     order: 14
   verified_at: 008dd880
@@ -186,6 +187,7 @@ private def generate : Nil
   description: #{GenDocs::FrOverlay.fetch(ov, "description", "")}
   audience: [operator, admin]
   features: [PLT-02]
+  type: reference
   sidebar:
     order: 14
   verified_at: 008dd880

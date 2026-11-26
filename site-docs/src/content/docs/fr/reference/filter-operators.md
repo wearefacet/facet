@@ -3,6 +3,7 @@ title: Opérateurs de filtre
 description: Chaque opérateur de filtre, avec les types de champs qui le servent et la forme de valeur attendue.
 audience: [author, developer]
 features: [DOC-02]
+type: reference
 sidebar:
   order: 4
 verified_at: 008dd880
@@ -139,6 +140,6 @@ Seule la clé nue est valide ; une forme suffixée (par exemple `search__match`
 
 ## Voir aussi
 
-- [Périmètres nommés](/fr/build/model/access/named-scopes/)
-- [Listes, filtres et vues enregistrées (tableau, kanban, calendrier)](/fr/use/finding/lists-and-views/)
-- [Utiliser l'API REST](/fr/build/apps/data/rest-api/)
+- [Périmètres nommés](/fr/build/named-scopes/)
+- [Listes, filtres et vues enregistrées (tableau, kanban, calendrier)](/fr/workspace/lists-filters-views/)
+- [Utiliser l'API REST](/fr/apps/rest-api/)

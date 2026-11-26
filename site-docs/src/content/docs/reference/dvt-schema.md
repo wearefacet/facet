@@ -3,6 +3,7 @@ title: DVT template schema
 description: The JSON schema of a DocumentView template (DVT).
 audience: [author, developer]
 features: [DOM-22]
+type: reference
 sidebar:
   order: 11
 verified_at: 008dd880
@@ -1163,4 +1164,4 @@ Each specialized input node accepts one set of field types. A binding outside th
 
 ## Related
 
-- [View templates](/build/model/views/document-pages/) — how to author the tree this schema describes.
+- [View templates](/build/view-templates/) — how to author the tree this schema describes.

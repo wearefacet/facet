@@ -3,6 +3,7 @@ title: Schéma du modèle DVT
 description: "Le schéma JSON d’un modèle DocumentView : types de nœuds, clés du modèle et règles de validation."
 audience: [author, developer]
 features: [DOM-22]
+type: reference
 sidebar:
   order: 11
 verified_at: 008dd880
@@ -1163,4 +1164,4 @@ Chaque nœud d’entrée spécialisé accepte un ensemble de types de champs. Un
 
 ## Voir aussi
 
-- [Modèles de vue](/fr/build/model/views/document-pages/) — comment écrire l’arbre que ce schéma décrit.
+- [Modèles de vue](/fr/build/view-templates/) — comment écrire l’arbre que ce schéma décrit.

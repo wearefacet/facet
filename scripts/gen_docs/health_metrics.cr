@@ -274,6 +274,7 @@ private def generate : Nil
   description: Every health probe field and metric name the server exposes.
   audience: [operator]
   features: [PLT-06, PLT-07]
+  type: reference
   sidebar:
     order: 17
   verified_at: 008dd880
@@ -324,6 +325,7 @@ private def generate : Nil
   description: #{GenDocs::FrOverlay.fetch(ov, "description", "")}
   audience: [operator]
   features: [PLT-06, PLT-07]
+  type: reference
   sidebar:
     order: 17
   verified_at: 008dd880

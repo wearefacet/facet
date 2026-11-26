@@ -2,6 +2,7 @@
 title: API Lua
 description: "La surface Lua d’un script : globales, namespaces et signatures."
 audience: [developer]
+type: reference
 features: [AUT-08, DOM-08]
 verified_at: f1409cdc
 ---
@@ -51,6 +52,7 @@ Chaque fonction `document.*` lève une erreur Lua rattrapable en cas d’échec.
 | `util.valid_hostname` | `s` | True for a bare lowercase hostname — no scheme, port, path, or wildcard — at most 253 characters; the `app.App` `host` shape rule. |
 | `util.valid_https_url` | `s` | Shape rule for the `iam.OIDCProvider` `issuer` field: an absolute https URL with a host. |
 | `util.valid_issuer_url` | `s` | Shape rule for the `iam.OIDCProvider` `issuer` field (B-329): an absolute https URL, or plain `http` on a loopback host — the same scheme-follows-host carve-out as the redirect-URI rule (B-154). |
+| `util.valid_origin` | `s` | Shape rule for one entry of the `app.App` `allowed_origins` field: a bare origin — `scheme://host[:port]` — with no path, userinfo, query, fragment, or wildcard. |
 | `util.valid_redirect_uri` | `s` | Shape rule for one entry of the `app.App` `redirect_uris` field — the shared `Util::RedirectUri` rule (the single source of truth; `OAuth::RedirectUri` and the register endpoint use it too): absolute `https` on any host, or absolute `http` on a loopback host (`localhost`, any `*.localhost` subdomain, `127.0.0.1`, `::1`); no fragment, no userinfo, no query, host required. |
 | `util.webhook_event_names` | `()` | The closed event-name vocabulary for the `core.Webhook` `events` field. |
 
@@ -58,8 +60,17 @@ Chaque fonction `document.*` lève une erreur Lua rattrapable en cas d’échec.
 
 | Fonction | Signature | Rôle |
 | --- | --- | --- |
-| `date.diff` | `a, b, unit` | Returns the difference between two ISO 8601 dates in the given unit. |
+| `date.add` | `iso, n, unit` | Adds `n` units; negative `n` subtracts. |
+| `date.dateperiod_contains` | `p, x` | True when `x` falls inside a calendar-date range, inclusive on both ends. |
+| `date.dateperiod_overlaps` | `a, b` | True when two calendar-date ranges — the `dateperiod` field shape, inclusive on both ends — share a day. |
+| `date.diff` | `a, b, unit` | Signed distance from `a` to `b`. |
+| `date.end_of` | `iso, unit` | Last day of the unit (dates) or last whole second (datetimes). |
 | `date.now` | `()` | Returns the current UTC time as ISO 8601. |
+| `date.parts` | `iso` | `{year, month, day, hour, minute, second, weekday}` in UTC; `weekday` is ISO-8601 (Monday = 1 … Sunday = 7); the time fields are zero for a calendar date. |
+| `date.period_contains` | `p, x` | True when `x` falls inside a `[)` datetime range: start included, end excluded. |
+| `date.period_overlaps` | `a, b` | True when two `[)` datetime ranges — the `period` field shape — share an instant. |
+| `date.start_of` | `iso, unit` | First day or instant of the `unit` containing the value: `day`, `week` (Monday, ISO-8601), `month`, `quarter`, `year`. |
+| `date.today` | `()` | Returns the current UTC calendar date, `YYYY-MM-DD`. |
 
 ## math
 
@@ -69,6 +80,6 @@ Chaque fonction `document.*` lève une erreur Lua rattrapable en cas d’échec.
 
 ## Voir aussi
 
-- [Scripts de cycle de vie et garde-fous](/fr/build/model/behaviour/scripts-and-guards/) — où s’exécutent create, update, delete et les actions.
-- [Hooks d’événements](/fr/build/model/automation/event-hooks/) — les hooks de domaine qui partagent cette surface.
-- [Sidecars](/fr/build/model/relations/comments-attachments/) — doctypes de pièces jointes gérés par le système, avec leurs propres hooks.
+- [Scripts de cycle de vie et garde-fous](/fr/build/lifecycle-scripts-guards/) — où s’exécutent create, update, delete et les actions.
+- [Hooks d’événements](/fr/build/event-hooks/) — les hooks de domaine qui partagent cette surface.
+- [Sidecars](/fr/build/sidecars/) — doctypes de pièces jointes gérés par le système, avec leurs propres hooks.

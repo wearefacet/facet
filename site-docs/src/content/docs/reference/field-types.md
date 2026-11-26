@@ -3,6 +3,7 @@ title: Field types
 description: Every field type with validation, normalization, and filter operators.
 audience: [author, developer]
 features: [DOM-04, DOC-13]
+type: reference
 sidebar:
   order: 3
 verified_at: 008dd880
@@ -48,6 +49,6 @@ the validation and normalization wording is maintained in the generator.
 
 ## Related
 
-- [Field types (guide)](/build/model/data/field-types/)
-- [Designing doctypes](/build/model/data/design-doctypes/)
+- [Field types (guide)](/build/field-types/)
+- [Designing doctypes](/build/designing-doctypes/)
 - [Filter operators](/reference/filter-operators/)

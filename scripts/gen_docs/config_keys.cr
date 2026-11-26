@@ -255,6 +255,7 @@ private def generate : Nil
   description: Every config file key with its section, type, and default.
   audience: [operator]
   features: [PLT-01]
+  type: reference
   sidebar:
     order: 15
   verified_at: 7af699f3
@@ -306,6 +307,7 @@ private def generate : Nil
   description: #{GenDocs::FrOverlay.fetch(ov, "description", "")}
   audience: [operator]
   features: [PLT-01]
+  type: reference
   sidebar:
     order: 15
   verified_at: 7af699f3

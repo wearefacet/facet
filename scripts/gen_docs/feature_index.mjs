@@ -192,13 +192,14 @@ for (const page of pages) {
 
 // The Pages cell for one cited page: link text from the page title, href from
 // the page URL. The French variant retargets the href to /fr/ and takes the
-// link text from the French twin's title when that twin exists.
+// link text from the French twin's title when that twin exists. A page with
+// no French twin keeps its English href — Starlight serves the English page
+// to French readers until WP 22 translates it (decision D8).
 function linkCell(page, url, title, locale) {
   if (locale === 'en') return `[${escapeCell(title)}](${url})`;
   const frPath = join(DOCS_DIR, 'fr', page);
-  const frTitle = existsSync(frPath)
-    ? parseTitle(parseFrontMatter(readFileSync(frPath, 'utf8'))) ?? title
-    : title;
+  if (!existsSync(frPath)) return `[${escapeCell(title)}](${url})`;
+  const frTitle = parseTitle(parseFrontMatter(readFileSync(frPath, 'utf8'))) ?? title;
   return `[${escapeCell(frTitle)}](/fr${url})`;
 }
 
@@ -222,6 +223,7 @@ function emit(locale) {
   out.push(isFr ? 'title: Index des fonctionnalités' : 'title: Feature index');
   out.push(`description: ${isFr ? ov.description : 'Every feature ID mapped to the pages that document it.'}`);
   out.push('audience: [developer, operator]');
+  out.push('type: reference');
   out.push('features: []');
   out.push(`verified_at: ${VERIFIED_AT}`);
   out.push('---');

@@ -514,6 +514,7 @@ parts << <<-FRONTMATTER
   description: "The JSON schema of a doctype definition: fields, actions, scopes, and composition."
   audience: [author, developer]
   features: [DOM-03]
+  type: reference
   sidebar:
     order: 10
   verified_at: 008dd880
@@ -546,6 +547,7 @@ fr_parts << <<-FRONTMATTER
   description: "#{GenDocs::FrOverlay.fetch(ov, "description", "")}"
   audience: [author, developer]
   features: [DOM-03]
+  type: reference
   sidebar:
     order: 10
   verified_at: 008dd880

@@ -4,7 +4,8 @@ description: TODO
 type: how-to
 audience: []
 features: []
-draft: true
+pagefind: false
+pager: false
 sidebar:
   order: 3
 ---

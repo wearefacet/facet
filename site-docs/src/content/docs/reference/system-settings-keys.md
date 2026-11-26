@@ -3,6 +3,7 @@ title: System settings keys
 description: Every system settings key with its type and default.
 audience: [operator, admin]
 features: [PLT-02]
+type: reference
 sidebar:
   order: 14
 verified_at: 008dd880
@@ -66,4 +67,4 @@ supplies.
 
 ## Related
 
-- [/admin/configure/system-settings/](/admin/configure/system-settings/)
+- [/operate/system-settings/](/operate/system-settings/)

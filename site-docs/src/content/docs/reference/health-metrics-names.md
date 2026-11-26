@@ -3,6 +3,7 @@ title: Health and metrics names
 description: Every health probe field and metric name the server exposes.
 audience: [operator]
 features: [PLT-06, PLT-07]
+type: reference
 sidebar:
   order: 17
 verified_at: 008dd880
@@ -66,6 +67,7 @@ help line; the catalog below is the complete documented set.
 | `facet_cron_task_failures_total` | counter | Cron task firings that raised, per task id. |
 | `facet_cron_task_lease_skips_total` | counter | Cron task dispatches skipped because another instance holds the tick lease, per task id. |
 | `facet_db_checkout_total` | counter | Pooled connection checkouts, by database entry and pool role (rw/ro). |
+| `facet_db_poisoned_discards_total` | counter | Pooled connections discarded at release because a response was still queued on their socket (abandoned result set). |
 | `facet_event_lag_max` | gauge | Maximum consumer-group lag observed by the last Cron::EventLagCheck pass. |
 | `facet_event_loss_messages_dropped_total` | counter | Dispatched messages swallowed by handler errors since process start. |
 | `facet_event_loss_publish_events_dropped_total` | counter | Events dropped by failed publish flushes since process start. |
@@ -83,4 +85,4 @@ help line; the catalog below is the complete documented set.
 
 ## Related
 
-- [/admin/keep-running/monitoring/](/admin/keep-running/monitoring/)
+- [/operate/health-metrics-logs/](/operate/health-metrics-logs/)

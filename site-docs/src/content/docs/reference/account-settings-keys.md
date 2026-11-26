@@ -3,6 +3,7 @@ title: Account settings keys
 description: Every account settings key with its type and default.
 audience: [operator, admin]
 features: [PLT-17]
+type: reference
 sidebar:
   order: 16
 verified_at: 008dd880
@@ -22,7 +23,7 @@ The table lists every registered key, its type, and its default.
 | `core.pinned_collection_views` | array | [] | Collection views the account pins in doctype listings. |
 | `core.pinned_doctypes` | array | [] | Qualified doctype names the account pins to the top of the sidebar. |
 | `core.show_welcome` | bool | true | Replays the first-run welcome tour when true; the tour writes false when dismissed. |
-| `core.timezone` | string | "UTC" | IANA timezone the account's dates and times render in. |
+| `core.timezone` | string | "auto" | IANA timezone the account's dates and times render in. |
 | `notifications.in_app` | bool | true | Gates the client-side notification delivery: bell, badge, and live subscription. |
 
 Two keys carry a server tier before their registry default. An account with no
@@ -33,5 +34,5 @@ value of its own follows the instance's system settings:
 
 ## Related
 
-- [/use/account/](/use/account/)
-- [/admin/configure/system-settings/](/admin/configure/system-settings/)
+- [/workspace/settings-sessions-api-keys/](/workspace/settings-sessions-api-keys/)
+- [/operate/system-settings/](/operate/system-settings/)

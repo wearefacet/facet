@@ -273,6 +273,7 @@ parts << <<-FRONTMATTER
   description: The JSON schema of a DocumentView template (DVT).
   audience: [author, developer]
   features: [DOM-22]
+  type: reference
   sidebar:
     order: 11
   verified_at: 008dd880
@@ -365,6 +366,7 @@ fr_parts << <<-FRONTMATTER
   description: "#{GenDocs::FrOverlay.fetch(ov, "description", "")}"
   audience: [author, developer]
   features: [DOM-22]
+  type: reference
   sidebar:
     order: 11
   verified_at: 008dd880

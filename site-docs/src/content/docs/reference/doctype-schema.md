@@ -3,6 +3,7 @@ title: Doctype definition schema
 description: "The JSON schema of a doctype definition: fields, actions, scopes, and composition."
 audience: [author, developer]
 features: [DOM-03]
+type: reference
 sidebar:
   order: 10
 verified_at: 008dd880
@@ -577,6 +578,6 @@ The schema expresses the key sets, the required keys, the patterns, and the enum
 
 ## Related
 
-- [Designing doctypes](/build/model/data/design-doctypes/) — how to model a domain with these keys.
-- [Evolving a schema](/build/model/change-a-live-domain/) — schema versions and migrations.
-- [Parent and child composition](/build/model/relations/parent-child/) — the children and member_of pair.
+- [Designing doctypes](/build/designing-doctypes/) — how to model a domain with these keys.
+- [Evolving a schema](/build/evolving-schema/) — schema versions and migrations.
+- [Parent and child composition](/build/parent-child-composition/) — the children and member_of pair.

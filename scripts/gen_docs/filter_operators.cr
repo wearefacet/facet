@@ -52,6 +52,11 @@ require "../../src/doctype/field_types/reference_type"
 require "../../src/doctype/field_types/secret_type"
 require "../../src/doctype/field_types/string_type"
 require "../../src/doctype/field_types/url_type"
+
+# The security-review change of 170ab75 gave FilterCompiler an auth_context
+# parameter (RBAC::AuthContext). The full app build gets the constant from
+# require order; a generator's require closure must name it explicitly.
+require "../../src/rbac/auth_context"
 require "../../src/document/filter_compiler"
 
 REPO_ROOT  = File.expand_path("../..", __DIR__)
@@ -317,6 +322,7 @@ en_page = String.build do |io|
   io << "description: The filter operators each field type accepts on list routes.\n"
   io << "audience: [author, developer]\n"
   io << "features: [DOC-02]\n"
+  io << "type: reference\n"
   io << "sidebar:\n"
   io << "  order: 4\n"
   io << "verified_at: #{VERIFIED_AT}\n"
@@ -391,6 +397,7 @@ fr_page = String.build do |io|
   io << "description: #{GenDocs::FrOverlay.fetch(ov, "description", "")}\n"
   io << "audience: [author, developer]\n"
   io << "features: [DOC-02]\n"
+  io << "type: reference\n"
   io << "sidebar:\n"
   io << "  order: 4\n"
   io << "verified_at: #{VERIFIED_AT}\n"

@@ -129,6 +129,7 @@ en_page = <<-MARKDOWN
   description: Every facet CLI command with its purpose and option handling.
   audience: [developer, operator]
   features: [PLT-11, IAM-12, DOM-18]
+  type: reference
   sidebar:
     order: 2
   verified_at: #{VERIFIED_AT}
@@ -160,6 +161,7 @@ fr_page = <<-MARKDOWN
   description: #{GenDocs::FrOverlay.fetch(ov, "description", "")}
   audience: [developer, operator]
   features: [PLT-11, IAM-12, DOM-18]
+  type: reference
   sidebar:
     order: 2
   verified_at: #{VERIFIED_AT}

@@ -3,6 +3,7 @@ title: Clés de réglage système
 description: Chaque clé de réglage système, avec son type et sa valeur par défaut.
 audience: [operator, admin]
 features: [PLT-02]
+type: reference
 sidebar:
   order: 14
 verified_at: 008dd880
@@ -59,4 +60,4 @@ Les clés secrètes n’apparaissent jamais dans une réponse d’API de lecture
 
 ## Voir aussi
 
-- [/fr/admin/configure/system-settings/](/fr/admin/configure/system-settings/)
+- [/fr/operate/system-settings/](/fr/operate/system-settings/)

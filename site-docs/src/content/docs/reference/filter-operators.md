@@ -3,6 +3,7 @@ title: Filter operators
 description: The filter operators each field type accepts on list routes.
 audience: [author, developer]
 features: [DOC-02]
+type: reference
 sidebar:
   order: 4
 verified_at: 008dd880
@@ -141,6 +142,6 @@ Only the bare key is valid; a suffixed form (for example `search__match`) answer
 
 ## Related
 
-- [Named scopes](/build/model/access/named-scopes/)
-- [Lists, filters and saved views (table, kanban, calendar)](/use/finding/lists-and-views/)
-- [Use the REST API](/build/apps/data/rest-api/)
+- [Named scopes](/build/named-scopes/)
+- [Lists, filters and saved views (table, kanban, calendar)](/workspace/lists-filters-views/)
+- [Use the REST API](/apps/rest-api/)

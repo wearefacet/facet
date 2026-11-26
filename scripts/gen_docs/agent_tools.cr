@@ -124,6 +124,7 @@ private def generate : Nil
   description: Every agent tool with its description and parameters.
   audience: [developer, operator]
   features: [AI-04]
+  type: reference
   sidebar:
     order: 13
   verified_at: 008dd880
@@ -177,6 +178,7 @@ private def generate : Nil
   description: #{GenDocs::FrOverlay.fetch(ov, "description", "")}
   audience: [developer, operator]
   features: [AI-04]
+  type: reference
   sidebar:
     order: 13
   verified_at: 008dd880
