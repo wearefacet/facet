@@ -33,4 +33,4 @@ works](/discover/how-it-works/) — same facts, no engine words.
 ## Related
 
 - [Build domains](/build/) — the how-to half of this tab.
-- [Choose how you build](/build/model/index/) — the two build modes these pages sit under.
+- [Choose how you build](/build/model/) — the two build modes these pages sit under.

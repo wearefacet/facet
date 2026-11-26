@@ -1,0 +1,96 @@
+:root {
+	font-family: system-ui, sans-serif;
+	color: #1f2937;
+	background: #f6f7f9;
+	line-height: 1.5;
+}
+
+body {
+	margin: 0 auto;
+	max-width: 46rem;
+	padding: 1.5rem 1rem;
+}
+
+header {
+	padding: 0 0.25rem;
+}
+
+h1 {
+	font-size: 1.25rem;
+	margin: 0.5rem 0;
+}
+
+h2 {
+	font-size: 1rem;
+	margin: 0 0 0.25rem;
+}
+
+.card {
+	background: #ffffff;
+	border: 1px solid #e5e7eb;
+	border-radius: 0.5rem;
+	padding: 1rem 1.25rem;
+	margin: 0.75rem 0;
+}
+
+.hint {
+	color: #6b7280;
+	font-size: 0.85rem;
+	margin: 0.25rem 0;
+}
+
+.error {
+	color: #b91c1c;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.9rem;
+}
+
+th,
+td {
+	text-align: left;
+	padding: 0.35rem 0.5rem;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+th {
+	color: #6b7280;
+	font-weight: 500;
+}
+
+button {
+	border: 1px solid #d4d4d8;
+	border-radius: 0.375rem;
+	background: #ffffff;
+	padding: 0.3rem 0.7rem;
+	font-size: 0.85rem;
+	cursor: pointer;
+}
+
+button:hover {
+	background: #f4f4f5;
+}
+
+.badge {
+	border-radius: 999px;
+	padding: 0.1rem 0.55rem;
+	font-size: 0.75rem;
+}
+
+.badge-out {
+	background: #fef3c7;
+	color: #92400e;
+}
+
+.badge-available {
+	background: #d1fae5;
+	color: #065f46;
+}
+
+.badge-in_repair {
+	background: #fee2e2;
+	color: #991b1b;
+}

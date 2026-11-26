@@ -1,6 +1,6 @@
 ---
 title: Deploy your app on Facet
-description: Upload a static build with the CLI, list releases, roll back, and serve at a custom host.
+description: Deploy a static build on Facet hosting with the CLI, list releases, roll back, and serve at a custom host.
 type: how-to
 audience: [developer]
 features: [APP-06, APP-09]
@@ -35,7 +35,7 @@ Use this page when:
 - An app document with status `active`. A draft or disabled app refuses
   deploys.
 - The `deploy` action on `app.App`. The seeded `admin` role carries it; the
-  seeded `editor` role does not. Over the API, grant and role must both
+  seeded `editor` role does not. Over the API, [grant](/admin/apps-access/app-grants/) and role must both
   carry it.
 - For a custom host: control of the Domain Name System (DNS) records.
 
@@ -306,3 +306,5 @@ The key's own app is a draft or disabled. App-owned keys answer the uniform
 - [Apps, grants and roles](/build/apps/connect/what-an-app-can-do/) — the grant ∩ role model behind the deploy gate.
 - Internals on GitHub:
   [app-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/app-system.md).
+- [Apps: built fast, replaced freely](/discover/how-it-works/apps/)
+- [Facet app CLI](/reference/cli-npm/)

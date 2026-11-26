@@ -1,13 +1,18 @@
 ---
+title: Single sign-on (OIDC)
+description: "Single sign-on through OIDC: connect identity providers, control who gets an account automatically, and switch to provider-only sign-in."
 type: how-to
-title: Single sign-on with OIDC
-description: Connect identity providers, control JIT provisioning, and switch the instance to single sign-on only.
 audience: [admin, operator]
 features: [IAM-08, FE-14]
+verified_at: eee55a2
 sidebar:
   order: 8
-verified_at: fd345fe3
 ---
+
+Brightwater's people already have work accounts in the company identity
+provider. Ravi does not want a second password to leak or forget, so he
+connects the provider once. From then on, sign-in at Facet starts there — and
+when he is ready, the password form can go away entirely.
 
 Facet signs accounts in through external identity providers with OpenID
 Connect (OIDC). The server starts an authorization-code flow, verifies the
@@ -36,6 +41,8 @@ provider as a document, so every change is audited and reversible.
 ### 1. Create the provider document
 
 Open **Configure → Platform → OIDC** and select **New**. Fill the fields:
+
+<!-- screenshot: configure-oidc-new -->
 
 | Field | Holds | Rules |
 | --- | --- | --- |
@@ -80,6 +87,12 @@ public read:
 curl "https://facet.localhost:3443/Api/iam/oidc/providers"
 ```
 
+On the running instance, with no provider configured yet, the answer reads:
+
+```json
+{"auth_mode": "hybrid", "providers": []}
+```
+
 The answer carries the authentication mode and the display names only. The
 issuer, the client id, and the secret never leave the server.
 
@@ -97,11 +110,11 @@ Two paths bring an unknown person in:
   with the provider's `default_role` and signs the person in. The link is stored
   on the account's `federated_identities` array.
 
-  Service accounts never federate. A suspended or disabled account denies; the
-  reason stays in the audit log.
+Service accounts never federate. A suspended or disabled account denies; the
+reason stays in the audit log.
 
-  The local MFA check does not apply on this path. The provider is the factor of
-  record; see [Enforcing MFA](/admin/people/mfa/) for the password path.
+The local MFA check does not apply on this path. The provider is the factor of
+record; see [Require MFA](/admin/people/mfa/) for the password path.
 
 ### 4. Read the audit trail
 
@@ -113,7 +126,7 @@ Three events land in the login-event log:
 | `oidc_login` | An OIDC sign-in issued a session. |
 | `oidc_denied` | Any denial. The details carry the machine-readable reason. |
 
-See [Auditing activity](/admin/history/audit/) for how to read the log.
+See [See who did what](/admin/history/audit/) for how to read the log.
 The browser always sees one generic error; the reason never reaches it.
 
 ### 5. Require single sign-on
@@ -128,6 +141,17 @@ Open **Configure → Platform → Settings**, Security chapter, and set
 
 The write gate refuses a save that sets `oidc_only` while no enabled provider
 exists, so one save cannot lock every sign-in path out.
+
+The mode has a file fallback. From `config.dev.yml`:
+
+```yaml
+iam:
+  auth:
+    mode: hybrid
+```
+
+The same runtime-vs-file rule as MFA applies: a pinned runtime value wins, an
+unset one follows the file.
 
 :::caution
 Under `oidc_only`, a person whose identity is not linked and whose provider is
@@ -185,7 +209,8 @@ list. Check `GET /Api/iam/oidc/providers`.
 
 - [Sign in, MFA, reset your password](/use/first-day/sign-in/) — the sign-in steps from the account holder's side.
 - [Manage accounts](/admin/people/accounts/) — the `federated_identities` field on the account.
-- [Assigning roles and role election](/admin/people/assign-roles/) — the role a provisioned account gets.
-- [Enforcing MFA](/admin/people/mfa/) — why the MFA gate does not apply on this path.
-- [Auditing activity](/admin/history/audit/) — the login-event log.
+- [Assign roles](/admin/people/assign-roles/) — the role a provisioned account gets.
+- [Require MFA](/admin/people/mfa/) — why the MFA gate does not apply on this path.
+- [See who did what](/admin/history/audit/) — the login-event log.
 - Internals on GitHub: [oidc.md](https://github.com/wearefacet/facet/blob/main/doc/backend/oidc.md).
+- [Security and governance](/discover/security/)

@@ -1,18 +1,19 @@
 ---
-type: how-to
 title: Manage accounts
-description: Create accounts, send first credentials, control the status lifecycle, and delete or restore an account.
+description: Create an account, send the first password or invite link, control the status lifecycle, and delete or restore.
+type: how-to
 audience: [admin]
 features: [IAM-06, IAM-07, FE-11]
+verified_at: eee55a2
 sidebar:
   order: 1
-verified_at: f1409cdc
 ---
 
-Every person and machine identity in Facet is an account document of doctype
-`iam.Account`. You create accounts, send the first credential, and control the
-status of each one. Accounts follow the same event-sourced document rules as
-any other record, so every change is audited and reversible.
+A new salesperson starts on Monday. Before she can sign in, she needs an
+account, a first credential, and the right role. This page covers the account
+and the credential. The role is a job for two other pages:
+[Roles and permissions](/admin/people/roles-and-permissions/) defines one, and
+[Assign roles](/admin/people/assign-roles/) puts it on the account.
 
 ## When to use this
 
@@ -27,7 +28,7 @@ any other record, so every change is audited and reversible.
 - **The credential right.** To send credentials you also need the named action
   `provision_credentials` on `iam.Account`. The seeded `iam.Roles.admin` role
   holds it through its `*` on `*.*` line.
-- **The model.** Read [Roles and permission lines](/admin/people/roles-and-permissions/)
+- **The model.** Read [Roles and permissions](/admin/people/roles-and-permissions/)
   to learn how named actions work.
 
 ## The account document
@@ -43,11 +44,12 @@ any other record, so every change is audited and reversible.
 | `service_account` | `true` marks a machine identity that signs in with API keys, not with a password. |
 | `mfa_enabled` | `true` after the account finished MFA (multi-factor authentication) setup. |
 | `must_change_pw` | `true` forces a password change at the next sign-in. |
-| `federated_identities` | The single sign-on links, one per provider. See [Single sign-on with OIDC](/admin/people/sso/). |
+| `federated_identities` | The single sign-on links, one per provider. See [Single sign-on (OIDC)](/admin/people/sso/). |
 
 ## The status lifecycle
 
 <!-- d2
+direction: down
 create: "Create human account" {class: external}
 pending: pending
 active: active {class: ok}
@@ -63,8 +65,8 @@ suspended -> active: edit status
 disabled -> active: edit status
 -->
 <div class="d2-diagram">
-<img class="d2-diagram__img d2-diagram__light" src="/diagrams/435d4bd7-light.svg" alt="Create human account" loading="lazy" />
-<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/435d4bd7-dark.svg" alt="Create human account" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__light" src="/diagrams/c557983b-light.svg" alt="Create human account" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/c557983b-dark.svg" alt="Create human account" loading="lazy" />
 </div>
 
 A human account you create stores `pending`, even when you submit `active`.
@@ -87,6 +89,8 @@ suspended` (or `disabled`).
 
 Facet opens the standard document form route and stores the account.
 
+<!-- screenshot: configure-accounts-new -->
+
 ### 2. Send the first credential
 
 Open the account page and find the credential actions below the document
@@ -99,7 +103,8 @@ permission; the backend re-checks it on every call.
 - Select **Generate password**. Facet returns a 16-character password in four
   dashed groups, for example `K7M4-9XQ2-WBTD-H3PN`.
 - Facet shows the password exactly once. Copy it and hand it to the person
-  over a safe channel. Nothing stores or emails the plaintext.
+  over a channel you already trust, such as a phone call. Nothing stores or
+  emails the plaintext.
 - The route sets `must_change_pw`, so the first sign-in asks for a new
   password before any session starts.
 - The route refuses a service account and a `suspended` or `disabled` account
@@ -107,7 +112,7 @@ permission; the backend re-checks it on every call.
 - The route also clears any pending invite link. The password replaces the
   link, so the older email stops working at once.
 
-  **Option B — invite link** (`POST /Api/iam/accounts/:id/invite`):
+**Option B — invite link** (`POST /Api/iam/accounts/:id/invite`):
 
 - Select **Send invite**. Facet mints a single-use link and emails it to the
   account address.
@@ -152,16 +157,18 @@ Each entry states:
 The action labels follow this state: **Send invite** or **Resend
 invite**, **Generate password** or **Regenerate password**.
 
+<!-- screenshot: configure-accounts-credentials -->
+
 ### 4. Suspend or disable an account
 
 Edit the account document and set `status` to `suspended` or `disabled`. The
 next sign-in attempt answers `403`. Existing sessions keep working until their
 access token expires; see
-[Sessions, refresh tokens and lockouts](/admin/people/sessions-lockouts/).
+[Sessions and lockouts](/admin/people/sessions-lockouts/).
 
 A service account has no sign-in at all. It cannot log in with a password,
 and password-reset requests for it are silent no-ops. Its purpose is to hold
-API keys — see [Machine access: API keys](/admin/apps-access/api-keys/).
+API keys — see [API keys](/admin/apps-access/api-keys/).
 
 ### 5. Delete an account
 
@@ -170,7 +177,7 @@ confirm the delete. The row becomes a tombstone; the history stays.
 
 The role-authority guard adds one rule: you cannot delete an account whose
 highest role level is above your own level. The delete answers `403` in that
-case. See [Roles and permission lines](/admin/people/roles-and-permissions/) for
+case. See [Who can change roles](/admin/people/who-can-change-roles/) for
 the guard.
 
 ### 6. Restore a deleted account
@@ -196,7 +203,7 @@ body. The answers:
 | `422` | Degenerate history: a delete with no change before it. |
 
 A restore also brings back the child records the delete removed, when the
-delete cascaded. See [Rolling back changes](/admin/history/roll-back/) for the
+delete cascaded. See [Roll back a change](/admin/history/roll-back/) for the
 mechanism.
 
 ## The first administrator
@@ -236,10 +243,11 @@ The account is not deleted. A restore only works on a tombstone.
 
 ## Related
 
-- [Roles and permission lines](/admin/people/roles-and-permissions/) — the named actions this page uses.
-- [Assigning roles and role election](/admin/people/assign-roles/) — the `roles` array and `default_role`.
-- [Enforcing MFA](/admin/people/mfa/) — the `mfa_enabled` flag and the MFA reset action.
-- [Machine access: API keys](/admin/apps-access/api-keys/) — how service accounts authenticate.
-- [Single sign-on with OIDC](/admin/people/sso/) — the `federated_identities` field and JIT provisioning.
+- [Roles and permissions](/admin/people/roles-and-permissions/) — the named actions this page uses.
+- [Assign roles](/admin/people/assign-roles/) — the `roles` array and `default_role`.
+- [Require MFA](/admin/people/mfa/) — the `mfa_enabled` flag and the MFA reset action.
+- [API keys](/admin/apps-access/api-keys/) — how service accounts authenticate.
+- [Single sign-on (OIDC)](/admin/people/sso/) — the `federated_identities` field and JIT provisioning.
 - [Sign in, MFA, reset your password](/use/first-day/sign-in/) — the account holder's side of the flows.
 - Internals on GitHub: [iam.md](https://github.com/wearefacet/facet/blob/main/doc/backend/iam.md), [access-accounts.md](https://github.com/wearefacet/facet/blob/main/doc/frontend/access-accounts.md).
+- [People and access](/admin/people/)

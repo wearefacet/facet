@@ -1,0 +1,208 @@
+---
+type: how-to
+title: Design a doctype
+description: Declare a doctype with fields, label, identifier, children, actions, and the templates that name and find each document.
+audience: [author]
+features: [DOM-03]
+sidebar:
+  order: 0
+verified_at: eee55a2
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Brightwater Rentals tracks every piece of rental equipment as a record: name,
+category, status, purchase price. In Facet that record type is a **doctype**.
+You declare it once, and Facet checks every write against your declaration.
+The declaration holds the fields, the identifier, the owned children, the
+actions, and the templates that name and find each document.
+
+## When to use this
+
+You add a doctype to a draft, or you rework an existing one. Design the
+doctype until it holds, then publish. See
+[Choose how you build](/build/model/) for the two places you can edit.
+
+## Before you start
+
+- **Edit rights.** You need the right to edit doctypes in the target domain.
+  In the app, the editor role holds it for the domains you edit.
+- **A domain to live in.** The domain must exist before Facet accepts a
+  doctype in it.
+- **A free action name.** Eight names are reserved for the [lifecycle hooks](/build/model/behaviour/scripts-and-guards/)
+  Facet calls itself: `validate`, `create`, `update`, `delete`, `migrate`,
+  `snapshot`, `history`, `rollback`. Your own actions cannot use them.
+
+## Steps
+
+<Tabs syncKey="build-mode">
+<TabItem label="Builder">
+
+1. Open the draft of your domain in the **Builder** and go to the
+   **Doctypes** tab. Pick **New doctype**.
+2. Fill the identity block: **Name** (CamelCase, for example `Item`),
+   **Label** (what users see), **Icon**, and the **Display name** template
+   that names each document.
+3. Add one row per field: name, type, and the constraints the data needs.
+4. Mark the doctype as an **Aggregate root**, or attach it to a parent with
+   **Member of**.
+5. Save. Facet validates the schema and compiles the script; issues appear on
+   the **Check** tab.
+
+</TabItem>
+<TabItem label="Files">
+
+Create `doctypes/equipment.Item.yml` in the domain folder. This is the
+Brightwater item doctype; its script and actions live in their own files and
+get their own pages:
+
+```yaml
+content:
+  icon: package
+  color: "#0F766E"
+  domain: equipment
+  doctype: Item
+  aggregate_root: true
+  schema_version: 1
+  display_name: "{{ name }}"
+  search: "{{ name }} {{ serial_number }}"
+  identifier:
+    template: "EQ-{year}-####"
+  fields:
+    name:
+      type: string
+      title: Name
+      required: true
+      filters: [equality, text_search]
+    category:
+      type: reference
+      title: Category
+      doctype: equipment.Category
+      required: true
+      filters: [equality]
+    status:
+      type: enum
+      title: Status
+      default: available
+      filters: [equality]
+      values:
+        - key: available
+          label: Available
+          color: "#15803d"
+        - key: out
+          label: Out
+          color: "#b45309"
+        - key: in_repair
+          label: In repair
+          color: "#b91c1c"
+    purchase_price:
+      type: money
+      title: Purchase price
+      currency: EUR
+      precision: 2
+      tags: [finance]
+      filters: [comparison, currency]
+    serial_number:
+      type: string
+      title: Serial number
+      unique: true
+      filters: [equality]
+    notes:
+      type: longtext
+      title: Notes
+  sidecars:
+    comments:
+      doctype: core.Comment
+      column: target
+meta:
+  parent_id: equipment
+```
+
+The watcher applies the file on save. See
+[The domain file layout](/build/model/in-files/domain-files/) for where each
+file sits.
+
+</TabItem>
+</Tabs>
+
+### What each part does
+
+| Part | Purpose |
+| --- | --- |
+| `label` | The name the interface shows, for example `Item`. Falls back to the doctype name. |
+| `icon` | A Lucide icon name in kebab-case, for example `package`. An unknown name falls back to a plain mark. |
+| `display_name` | A Jinja2 template that names each document, for example `{{ name }}`. |
+| `search` | A Jinja2 template for the search text. A root doctype must declare `display_name` or `search`; `search` defaults to the display name, so the label alone is enough. |
+| `fields` | The data. See [Choose field types](/build/model/data/field-types/). |
+| `identifier` | Readable reference numbers. See [Reference numbers and uniqueness](/build/model/data/identifiers-uniqueness/). |
+| `children` | Owned parts. See [Parent and child documents](/build/model/relations/parent-child/). |
+| `sidecars` | Comments and attachments panels. See [Add comments and attachments](/build/model/relations/comments-attachments/). |
+| `actions` | Typed operations users run from the document page. See [Named actions](/build/model/behaviour/named-actions/). |
+| `scopes` | Saved row filters an administrator can hand to roles. See [Write row rules for roles](/build/model/access/named-scopes/). |
+| `schema_version` | The data-shape version. Raise it only when a change on a live domain needs one. |
+
+### Root or child
+
+A doctype is exactly one of two things:
+
+| Kind | Declaration | Meaning |
+| --- | --- | --- |
+| Aggregate root | `aggregate_root: true` | The record users create and delete. It is the unit of locking and of access control. |
+| Owned child | `aggregate_root: false` plus `member_of` | A part of a parent document. See [Parent and child documents](/build/model/relations/parent-child/). |
+
+Field names use `lower_snake_case` or `camelCase`. Facet rejects other
+spellings, and it rejects a field that is both `read_only` and `write_only`.
+
+## How a write flows
+
+Every write follows the same path: Facet validates the document, appends one
+row to the change log, updates the current version of the document, and
+publishes one event. Hooks, webhooks, and live updates react to that event.
+
+{/* d2
+*One write, four steps*
+direction: down
+writer: "App or user" {class: external}
+log: "Change log" {class: store}
+current: "Current version" {class: store}
+bus: "Event bus" {class: store}
+consumers: "Hooks, webhooks, live updates" {class: external}
+
+writer -> log: validated write
+log -> current
+log -> bus
+bus -> consumers
+*/}
+<div class="d2-diagram">
+<img class="d2-diagram__img d2-diagram__light" src="/diagrams/426a8c44-light.svg" alt="App or user" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/426a8c44-dark.svg" alt="App or user" loading="lazy" />
+</div>
+
+## Troubleshooting
+
+### The create answers `422 Domain 'crm' does not exist`
+
+Create the domain first. A doctype needs a live or draft domain to live in.
+
+### The create answers `422` with a key name
+
+A definition accepts only known keys, and every field entry checks its own
+keys. The message names the key and its location. Most often a constraint is
+misspelled, for example `reqired` instead of `required`.
+
+### The icon does not show
+
+The icon value must match a Lucide icon name in kebab-case. Facet falls back
+to a plain mark when the name is unknown.
+
+### Publish refuses the doctype with a label error
+
+An aggregate root must be able to produce a label. Declare a `display_name`
+template, or a `search` template. A child is reached through its parent, so
+it is exempt.
+
+## Related
+
+- [Doctype schema (reference)](/reference/doctype-schema/) — every definition key and its shape.
+- [Choose field types](/build/model/data/field-types/) — the type for each field.
+- [Documents, doctypes and projections](/build/deeper/documents-and-projections/) — how a definition shapes stored documents, one layer deeper.

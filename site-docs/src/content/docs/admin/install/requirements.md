@@ -1,28 +1,27 @@
 ---
+title: System requirements
+description: Check the system requirements before you run Facet — PostgreSQL, Redis, the config file, and the five-service topology.
 type: reference
-title: System requirements and topology
-description: Check what a host needs to run Facet and how the backend, frontend, PostgreSQL, and Redis connect.
 audience: [operator, evaluator]
 features: [PLT-10, PLT-16]
 sidebar:
   order: 0
-verified_at: f1409cdc
+verified_at: eee55a2
 ---
 
-Facet is one backend binary, one frontend server, and two state stores. The
-backend holds every durable fact in PostgreSQL. Redis is the reaction bus.
-This page lists what a host needs and how the pieces connect, so you can size
-a deployment before you run it.
+You are sizing a host for Facet before the first deploy. Facet runs as two
+application processes over two state stores. The backend holds every
+durable fact in PostgreSQL, and Redis carries the reactions between events
+and consumers. This page lists what a host needs and how the pieces
+connect.
 
-## When to use this
+## What to plan for
 
-Use this page when:
-
-- You plan a host or a container stack for Facet.
+- You provision the machine or the container host.
 - You decide between one database and a routed cluster.
 - You check a machine against the requirements.
 
-## Requirements
+## The requirements table
 
 | Component | Requirement | Notes |
 | --- | --- | --- |
@@ -30,7 +29,7 @@ Use this page when:
 | Redis | Required | The event bus, sessions, OAuth codes, and rate limits use it. The release stack runs the `redis:7` image. |
 | Config file | `config.{APP_ENV}.yml` | The boot fails without it. See [Configuration files](/admin/configure/configuration-files/). |
 | Backend binary | Release image, or `make build_release` | Migrations, Lua event scripts, and the seed corpus ride inside the binary. |
-| Docker with Compose | For the container path | The release stack is five services. See [Deploying with containers](/admin/install/containers/). |
+| Docker with Compose | For the container path | The release stack is five services. See [Run with containers](/admin/install/containers/). |
 
 :::note
 The release stack ships the `pgvector/pgvector:0.8.0-pg17` image. A stock
@@ -38,7 +37,13 @@ PostgreSQL image also works. Retrieval-augmented assistant features stay off
 until the `vector` extension exists on the server.
 :::
 
-## Topology
+The repo publishes no RAM or disk figure. Size the host from your own load:
+the state stores dominate, and the application processes are stateless.
+
+## The topology
+
+The release stack runs five services. Only the Caddy edge publishes host
+ports; internal traffic is plain HTTP inside the Compose network.
 
 <!-- d2
 direction: down
@@ -56,12 +61,12 @@ frontend -> backend
 backend -> postgres
 backend -> redis
 -->
-<div class="d2-diagram">
-<img class="d2-diagram__img d2-diagram__light" src="/diagrams/5a512ccc-light.svg" alt="Diagram" loading="lazy" />
-<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/5a512ccc-dark.svg" alt="Diagram" loading="lazy" />
-</div>
+*Two stateless app processes behind one edge; the state lives in PostgreSQL and Redis.*
 
-The container stack runs five services:
+<div class="d2-diagram">
+<img class="d2-diagram__img d2-diagram__light" src="/diagrams/5a512ccc-light.svg" alt="Request flow from the browser through the edge to the app processes and the state stores" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/5a512ccc-dark.svg" alt="Request flow from the browser through the edge to the app processes and the state stores" loading="lazy" />
+</div>
 
 | Service | Image | Faces the network? |
 | --- | --- | --- |
@@ -71,10 +76,11 @@ The container stack runs five services:
 | `frontend` | `ghcr.io/wearefacet/facet-frontend` | No — the edge routes to it |
 | `caddy` | `caddy:2` | Yes — it publishes the TLS port |
 
-The backend image runs as uid 10001. The frontend image runs as `node`.
-A source deployment replaces the two application images with
-`make build_release` and the SvelteKit dev or build server — see
-[Install for development](/build/dev-environment/).
+The backend image runs as uid 10001. The frontend image runs as `node`. A
+source deployment replaces the two application images with
+`make build_release` and the SvelteKit build server. Building from source
+needs Crystal 1.21, PostgreSQL 14+, Redis, Node.js 20+ with pnpm, Caddy,
+and Lua 5.4 or 5.5 headers.
 
 ## Database topology
 
@@ -94,23 +100,9 @@ table. Each entry names one physical database and the resources it serves:
 - Entries that share one URL keep separate pools. This gives pool isolation
   without a second database.
 
-  `database.statement_timeout_ms` applies to every pooled connection of the
-  server process. CLI entry points keep no timeout, so long DDL cannot be
-  cancelled.
-
-## Steps
-
-1. Provision the state stores. Install PostgreSQL 14 or newer and Redis.
-   Create one empty database for the first deploy.
-2. Put the config file in place. Set `event.url` to the Redis address and
-   `DATABASE_URL` in the environment. See
-   [Configuration files](/admin/configure/configuration-files/).
-3. Choose the database topology. Start with the single `DATABASE_URL` pool.
-   Add the route table when one pool no longer fits the load.
-4. Run the stack. Use the container path for production —
-   [Deploying with containers](/admin/install/containers/) — or build from
-   source. The copy-paste walkthrough is
-   [Deploy to production](/admin/install/production/).
+`database.statement_timeout_ms` applies to every pooled connection of the
+server process. CLI entry points keep no timeout, so long DDL cannot be
+cancelled.
 
 ## Example
 
@@ -160,8 +152,8 @@ connections for its duration.
 
 ## Related
 
-- [Deploying with containers](/admin/install/containers/) — the images and the TLS edge.
-- [Deploy to production](/admin/install/production/) — the copy-paste walkthrough.
+- [Run with containers](/admin/install/containers/) — the images and the TLS edge.
+- [Go to production](/admin/install/production/) — the copy-paste walkthrough.
 - [Configuration files](/admin/configure/configuration-files/) — every key the config file takes.
 - [Database migrations](/admin/keep-running/migrations/) — how the schema reaches the database.
 - [The big picture](/discover/how-it-works/) — the concepts behind the services.

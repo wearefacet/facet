@@ -1,267 +1,182 @@
 ---
 type: tutorial
 title: Give your team access
-description: Invite a colleague, create a scoped Sales role, and hide a sensitive field.
+description: Invite a colleague, hand the warehouse role to them, and see what the finance tag and a row scope hide.
 audience: [admin]
 features: [IAM-06, RBC-01, RBC-02, RBC-04, RBC-05, FE-11]
 sidebar:
   order: 5
-verified_at: e7c24a4
+prev: /build/first-hour/first-app/
+next: /build/first-hour/connect-an-agent/
+verified_at: eee55a2
 ---
 
-You hand a colleague access without handing them everything. Sam joins the
-sales team: they may read the items that are in stock, never see what those
-items cost, and touch nothing else. You set that up with an account, a
-role, a row scope, and a field tag.
+A new hire joins the Brightwater warehouse: Pat Mardell. He needs the
+equipment domain — items, categories, maintenance tickets — and he must
+never see what the equipment cost. Tom, the salesperson, already works in
+Facet: he sees only the clients he manages, never the others. This
+tutorial invites Pat, hands him the warehouse role, and finishes by
+looking at the data through the team's eyes.
 
-This tutorial continues from [Build your first domain](/build/first-hour/first-domain/).
-Sign in as the admin. The examples use the `inventory` domain from that
-tutorial.
+Two rules do the work, both set once and enforced everywhere — lists, the
+workspace, the API, the assistant:
 
-## What you need
+- A **role** collects permissions: which doctypes a person may read and
+  change. Pat gets the `warehouse` role.
+- A **field tag** marks a sensitive field. A role that does not hold the
+  tag cannot see the field. `purchase_price` carries the `finance` tag;
+  only `manager` holds it.
+- A **row scope** filters which rows a role reaches. Tom's `sales` role
+  reads companies only through the `my_clients` scope — the companies where
+  he is the account manager.
 
-- An admin session in the browser.
-- The `inventory` domain with the `Item` doctype, its `status` enum field,
-  and its `cost_price` field.
-- One command-line step uses `curl` — nothing else leaves the browser.
+**You will build:** one account with the `warehouse` role, verified against
+the field tag; Tom's scoped list, verified against the row scope.
+**Time:** about 15 minutes.
+**You need:** [tutorial 1](/build/first-hour/run-facet/) — a running
+instance with an admin account. The Brightwater example is loaded
+([tutorial 2](/build/first-hour/first-domain/) does this; the example's
+`load.sh` does it too). One step uses `curl` with the session cookie from
+your browser sign-in.
 
-## Step 1 — Create the account and hand over a password
+## 1. Create Pat's account
 
-Open **Configure → Access → Accounts**. Click **New account** and fill the
-form:
+Sign in as the admin and open **Configure → Access → Accounts**. Click
+**New account** and fill the form — **Email** and **Display Name** are
+the only required fields:
 
-- **Name**: `Sam Sales`
-- **Email**: `sam@example.tld`
+- **Email**: `pat@brightwater.example`
+- **Display Name**: `Pat Mardell`
 
-Save. The account starts with status `pending` — it holds no credential
-yet.
+![The New Account form with the email and display name filled in. Status starts at Active and the organizational unit at /.](/assets/screens/build/team-access-3.png)
 
-Open the new account. Below the document view sits the **Credentials**
-panel. Click **Generate password**. Facet shows the panel
-**Temporary password generated** with the password and a copy button:
+Click **Create**. The account page opens with the status *pending* — the
+account exists, but holds no credential yet.
 
-```text
-JYJA-TXKN-94GS-DVDJ
-```
+Find the **Credentials** panel and click **Generate password**. Facet
+shows the temporary password once:
+
+![The Temporary password generated dialog: a one-time password with a Copy button, and a note that it is shown only now.](/assets/screens/build/team-access-4.png)
 
 :::caution
-The password is shown only now. Pass it to Sam over a safe channel — a
-password manager, not email. If it is lost, click **Regenerate password**
-and hand over the new one.
+Pass the password to Pat over a safe channel — a password manager, not
+email. It is shown once. If it is lost, click **Regenerate password** and
+hand over the new one. If your instance has working SMTP, **Send
+invite** is the alternative: Pat gets a single-use link instead.
 :::
 
-:::tip
-**Send invite** is the alternative when your instance has working SMTP:
-Facet emails Sam a single-use link instead. This tutorial uses the
-generated password so it works on a machine without a mail relay.
-:::
+Pat changes the password at his first sign-in — the same **Set a new
+password** screen you saw in tutorial 1.
 
-### Checkpoint
+## 2. Assign the warehouse role
 
-The account row shows Sam with a credential in place, and you hold the
-temporary password.
+Open **Configure → Access → Assignments** and switch to **By account**.
+Pick Pat in **Pick an account…** — the *Roles assigned to account* panel
+starts empty. Open the **Add a role to this account…** picker, choose
+**Warehouse**, and click **Assign role**:
 
-## Step 2 — Declare the row scope on the doctype
+![The Assignments page in By account mode: the Warehouse role assigned to Pat Mardell, with the default badge.](/assets/screens/build/team-access-5.png)
 
-A row scope is a named filter that lives on the doctype definition. The
-Builder does not edit scopes yet, so this one step runs in the terminal:
-you fetch the current definition, add a `scopes` block, and write it back.
+The row carries a *default* badge — the first role on an account becomes
+its default role. Pat signs in as `warehouse` without picking anything.
 
-Sign in on the API with your admin account (the same password you use in
-the browser):
+The role already exists in the Brightwater example (tutorial 2 or
+`load.sh` created it). Its permissions:
 
-```sh
-curl -sk -c facet-cookies.txt -X POST https://facet.localhost:3443/Api/iam/login \
-  -H 'Content-Type: application/json' -H 'X-Requested-With: fetch' \
-  -d '{"email": "ops@your-company.tld", "password": "<your-admin-password>", "cookie": true}'
-```
+| On | Actions |
+|---|---|
+| `equipment` (all doctypes) | read, create, update, delete |
+| `rentals.Booking`, `rentals.BookingLine` | read |
+| `clients.Company`, `clients.Contact` | read |
+| `core.Comment`, `core.Attachment` | read, create, update, delete |
 
-Fetch the current Item definition to a file:
+And one absence that carries the tutorial: `visible_tags` lists `default`
+but not `finance`.
 
-```sh
-curl -sk -b facet-cookies.txt https://facet.localhost:3443/Api/core/DocType/inventory.Item \
-  | python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin)['data'], indent=2))" \
-  > item.json
-```
+## 3. See the field tag work
 
-Open `item.json` and add the `scopes` block at the top level (next to
-`fields`), then save:
+Pat opens an item — say **Main tent 10x15** — and the page shows Name,
+Status, Category, Serial number:
 
-```json
-"scopes": {
-  "sellable": {
-    "description": "Items that are in stock and ready to sell",
-    "where": { "status": "in_stock" }
-  }
-}
-```
+![An item page as the warehouse user: name, status, category and serial number, with no purchase price.](/assets/screens/build/team-access-2.png)
 
-Write the definition back:
+There is no purchase price on the page. The field does not exist for this
+role — not hidden with a blank, absent.
+
+The same request from the API shows the same filter. As Pat:
 
 ```sh
-curl -sk -b facet-cookies.txt -X PUT https://facet.localhost:3443/Api/core/DocType/inventory.Item \
-  -H 'Content-Type: application/json' -H 'X-Requested-With: XMLHttpRequest' \
-  --data @item.json
-```
-
-The response repeats the stored definition. Adding scopes changes no data
-shape, so no schema step is needed.
-
-:::note
-The `where` value `"in_stock"` is a plain equality on the status field.
-Scopes also understand `"$self"` (the acting account) and other tokens —
-see [Row scopes](/admin/people/row-scopes/).
-:::
-
-### Checkpoint
-
-Read the definition back and find the scope:
-
-```sh
-curl -sk -b facet-cookies.txt https://facet.localhost:3443/Api/core/DocType/inventory.Item \
-  | grep -o '"scopes":.*' | head -c 160
+curl -skg -b pat-cookies.txt -H "X-Requested-With: XMLHttpRequest" \
+  https://facet.localhost:3443/Api/equipment/Item/EQ-2026-0001
 ```
 
 ```json
-"scopes": {"sellable": {"where": {"status": "in_stock"}, "description": "Items that are in stock and ready to sell"}}
+{"data":{"name":"Main tent 10x15","status":"out","category":"equipment.Category.…","serial_number":"TN-10015-A"}}
 ```
 
-## Step 3 — Tag the cost field
+As Nadia (the `manager` role, which holds the `finance` tag):
 
-Cost data must not reach Sam. Sensitivity tags mark a field; a role that
-does not hold the tag cannot see the field.
+```sh
+curl -skg -b nadia-cookies.txt -H "X-Requested-With: XMLHttpRequest" \
+  https://facet.localhost:3443/Api/equipment/Item/EQ-2026-0001
+```
 
-Open **Builder → Edit existing** and pick **Inventory** — the Builder
-copies the live domain into a fresh draft. Open the Item doctype, select
-the `cost_price` field, and scroll to the **Access** section:
+```json
+{"data":{"name":"Main tent 10x15","status":"out","category":"equipment.Category.…","serial_number":"TN-10015-A","purchase_price":{"value":"4800.00","currency":"EUR"}}}
+```
 
-- **Sensitivity tags**: type `finance` and add it.
+One field, two answers. The check runs on every read path — list, single
+read, search, export — so a role that lacks the tag cannot reach the value
+anywhere.
 
-Save the doctype, then click **Publish**. The dialog shows the existing
-domain name `inventory` — confirm with **Publish over inventory**. Adding a
-tag changes no data shape, so the publish goes through without a schema
-version bump.
+## 4. See the row scope work
 
-### Checkpoint
+Tom signs in and opens **Clients → Company**. The list shows five rows:
 
-The draft is gone. On the live domain, `cost_price` carries the `finance`
-tag, and the `sellable` scope survived the copy — both ride along through
-draft and publish.
+![Tom's clients list shows exactly five companies, the ones he manages.](/assets/screens/build/team-access-1.png)
 
-## Step 4 — Create the Sales role
+Brightwater's ten companies are in the database; Tom reaches the five where
+he is the account manager. The rule lives on his `sales` role: the read
+permission on `clients.Company` carries the `my_clients` scope, which the
+example defines on the Company doctype as "the companies whose account
+manager is me" (`account_manager = $self`).
 
-Open **Configure → Access → Roles**. Click **New role** and fill the
-dialog:
+A direct open of another company's URL answers *not found* — Facet does
+not confirm that the row exists.
 
-- **Name**: `sales` (lowercase — role names allow letters, digits, and
-  underscores)
-- **Level**: `10`
-- **Description**: `Sees sellable stock, no cost data`
+## 5. Check the record
 
-Click **Create role**. The role starts with zero permissions — you grant
-them next.
+Open **Configure → Audit** and find the day's entries: Pat's account
+created, the Warehouse role assigned, his first sign-in and password
+change. Every
+access decision in this tutorial left a trace — that is the point of doing
+access work in Facet rather than in a spreadsheet of who-may-what.
 
-### Checkpoint
+## What you learned
 
-`sales` appears in the Role picker with **0 members**.
+- A role is a set of permissions; an account holds at least one, and the
+  first becomes the default.
+- A field tag hides a field from every role that does not hold the tag —
+  in the UI and in the API.
+- A row scope limits which rows a permission reaches; a direct open of a
+  row outside the scope answers not found.
+- The audit trail records the account and role changes you made.
 
-## Step 5 — Grant read, scoped to the sellable rows
+## Related
 
-With `sales` selected in the Role picker, find the **inventory** section
-and expand it. On the **Item** row, open the scope picker next to
-**Read**. The picker lists **None**, **All**, and **Custom scopes** — pick
-**sellable**. Leave every other action on **None**.
+- [Roles and permissions](/admin/people/roles-and-permissions/) —
+  the full permission model.
+- [Hide a field from some roles](/admin/people/hidden-fields/) — field
+  tags in depth, including the fail-closed rule.
+- [Show each role only its own rows](/admin/people/row-scopes/) — the
+  scope grammar: `$self`, context sets, operators.
+- [Assigning roles](/admin/people/assign-roles/) — multi-role accounts and
+  how the acting role is chosen.
+- [People and access](/admin/people/)
+- [Permission line syntax](/reference/permission-syntax/)
+## Next
 
-Click **Save**.
-
-### Checkpoint
-
-The Item row shows an active-permission badge, and the inventory section
-reads one doctype with permissions.
-
-## Step 6 — Assign the role
-
-Click **Manage members** in the role bar. On the Assignments page (the
-**By role** view), find **Add an account to this role…**, enter
-`sam@example.tld`, and click **Add to role**.
-
-The first role on an account becomes its default role — Sam signs in as
-`sales` without picking anything.
-
-### Checkpoint
-
-The role shows **1 member**.
-
-## Step 7 — See Facet through Sam's eyes
-
-Sign out (or open a private browser window) and sign in as
-`sam@example.tld` with the temporary password. Facet asks Sam to set a real
-password first — same flow as your own first login.
-
-What Sam sees:
-
-- The sidebar shows **Inventory → Item** and nothing else. The sales role
-  grants no other surface.
-- The Item list shows **one row**: Standing desk. The Office chair (Low)
-  and Whiteboard (Ordered) are outside the `sellable` scope — a filtered
-  list hides them, and a direct open answers not-found.
-- The table, the form, and the document view have **no Cost price
-  column**. The field does not exist for this role.
-
-Sign back in as the admin and open the same list: three rows, cost prices
-visible. That contrast is the whole access model working.
-
-### Checkpoint
-
-Sam's list differs from the admin's list exactly in the two dimensions you
-configured — rows and fields.
-
-## Result
-
-You set up governed access end to end:
-
-- an account handed over with a one-time password, changed at first login;
-- a `sellable` row scope on Item, referenced by the role;
-- a `finance` tag on `cost_price`, invisible to roles without it;
-- a `sales` role with one scoped read grant, assigned to Sam;
-- every step of the way recorded in the audit trail — Sam's login and
-  password change are on record under Configure → Audit.
-
-## Troubleshooting
-
-### The scope picker shows no sellable entry
-
-The scope name must exist on the doctype before the role can reference it.
-Repeat step 2 and check the response of the final PUT — the scopes block
-must come back in the stored definition.
-
-### The publish of the tagged field demands a schema version
-
-Something else changed in the draft. Publish accepts same-version
-overwrites only when the data shape is unchanged — tags and scopes are
-metadata and ride along freely, but a changed field type or a new required
-flag needs the version gate. Discard the draft and redo step 3 alone.
-
-### Sam sees an empty Item list
-
-The role holds the read grant, but no row matches the scope yet. As the
-admin, set an item's status to **In stock**, then have Sam reload.
-
-### Sam logs in to a "No role assigned" screen
-
-The role assignment did not land. Open Configure → Access → Accounts,
-open Sam, and check the assigned roles on the account.
-
-### A new field vanishes from Sam's view after tagging
-
-That is the tag at work. Every role that should see the field needs the
-tag in its **Visibility tags** (role → Details) — the check fails closed.
-
-## Next steps
-
-- [Row scopes](/admin/people/row-scopes/) — the full scope grammar: `$self`,
-  context sets, operator suffixes.
-- [Field visibility tags](/admin/people/hidden-fields/) — tag
-  mechanics and the fail-closed rule.
-- [Assigning roles and election](/admin/people/assign-roles/) —
-  multi-role accounts and level ceilings.
+Your team works in Facet and your data is governed. In
+[Connect an AI agent](/build/first-hour/connect-an-agent/) you attach an
+MCP client to the same roles, so an assistant answers questions under the
+same rules — and leaves the same audit trail.

@@ -1,6 +1,6 @@
 ---
 title: Security and governance
-description: How Facet protects identity, access, history, secrets, and where your data lives.
+description: How Facet's security and governance protect identity, access, history, secrets, and where your data lives.
 type: explanation
 audience: [evaluator, admin]
 features: [IAM-*, RBC-*, AUD-*, DOC-09]

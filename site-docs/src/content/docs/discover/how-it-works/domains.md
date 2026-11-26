@@ -1,6 +1,6 @@
 ---
 type: explanation
-title: Domains: where your data lives
+title: "Domains: where your data lives"
 description: See how Facet keeps each business area separate, and how data crosses between areas only by agreement.
 audience: [evaluator, author]
 features: [DOM-01, DOM-02, DOM-14]
@@ -13,14 +13,18 @@ Brightwater rents out tents, stages, and sound systems. The company tracks three
 
 *A domain keeps its records inside. Crossing to a neighbour is a door someone opens on purpose.*
 
-```d2
+<!-- d2
 direction: down
 clients: "clients — companies and contacts" {class: store}
 rentals: "rentals — bookings" {class: store}
 equipment: "equipment — items and repairs" {class: store}
 clients -> rentals: "a granted door: the client's name rides onto the booking"
 rentals -> equipment: "a granted door: bookings drive stock"
-```
+-->
+<div class="d2-diagram">
+<img class="d2-diagram__img d2-diagram__light" src="/diagrams/c40113be-light.svg" alt="clients — companies and contacts" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/c40113be-dark.svg" alt="clients — companies and contacts" loading="lazy" />
+</div>
 
 ## What a domain holds
 

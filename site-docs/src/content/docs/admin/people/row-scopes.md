@@ -1,17 +1,20 @@
 ---
+title: Show each role only its rows
+description: Attach a declared row scope to a permission line so a role reaches only the rows that match — on every surface.
 type: how-to
-title: Row scopes
-description: Narrow a permission line from whole doctypes to the rows a role may see or change.
 audience: [admin, author]
 features: [RBC-05, DOM-12]
+verified_at: eee55a2
 sidebar:
   order: 4
-verified_at: fd345fe3
 ---
 
-A permission line reaches a whole doctype, or only the rows that match a
-condition. A row scope names that condition. The doctype declares its scopes
-once; a role references them by alias and never writes its own predicates.
+Tom sells to five of Brightwater's ten clients. His colleague sells to the
+others. Both use the same *Sales* role, so the role cannot name companies —
+the rule must say "your own clients". A **row scope** does that: a saved
+filter, declared once on the doctype, that a role attaches to a permission
+line. Everywhere Tom's role reaches the Company doctype — lists, search, the
+API, apps — he sees his five companies and nobody else's.
 
 :::note[This page is one half of a pair]
 This page covers the **admin** side: attach an alias to a role and see how
@@ -31,37 +34,48 @@ halves together.
 ## Before you start
 
 - **The grammar.** You know the permission-line grammar — see
-  [Roles and permission lines](/admin/people/roles-and-permissions/).
+  [Roles and permissions](/admin/people/roles-and-permissions/).
 - **The declaration.** The scopes must exist on the doctype definition before
   a role can reference them. The authoring steps live in
   [Named scopes](/build/model/access/named-scopes/).
+
+## The Brightwater setup
+
+The `clients` domain declares one scope on its Company doctype:
+
+```yaml
+# clients.Company definition
+scopes:
+  my_clients:
+    description: "Companies where I am the account manager"
+    where:
+      account_manager: "$self"
+```
+
+The *Sales* role references it by alias:
+
+```json
+{"action": "read", "on": "clients.Company", "scope": ["$my_clients"]}
+```
+
+Tom signs in and lists companies:
+
+```json
+["Maison Lumière", "Festival des Collines", "Cabinet Moreau", "Château de Vireloup", "Mairie de Saint-Clair"]
+```
+
+Five companies — the five where Tom is the account manager. Nadia, whose
+*Manager* role has no scope on the line, lists the same doctype and sees all
+ten.
 
 ## Explanation
 
 ### Where scopes live
 
 The doctype definition carries the scopes under `scopes`. Each entry is a
-`where` filter over the doctype's own fields:
-
-```yaml
-# production.Project definition
-scopes:
-  mine:
-    description: "Projects owned by the actioner"
-    where:
-      owner_id: "$self"
-  global:
-    description: "Projects with no owner"
-    where:
-      owner_id: "$null"
-  active:
-    description: "Projects in the active status"
-    where:
-      status: "active"
-```
-
-Roles pick from this catalogue. They cannot add a predicate of their own on a
-permission line. The `where` grammar:
+`where` filter over the doctype's own fields. Roles pick from this catalogue.
+They cannot add a predicate of their own on a permission line. The `where`
+grammar:
 
 | Value | Matches |
 | --- | --- |
@@ -85,8 +99,8 @@ Read each line together with its effect:
 {"action": "read", "on": "production.Project", "scope": ["$mine", "$global"]}
 ```
 
-This line lets a member read the projects they own and the projects with
-no owner.
+This line lets a member read the projects they own and the projects
+with no owner.
 
 ```json
 {"action": "update", "on": "crm.Deal", "scope": ["$mine"]}
@@ -110,62 +124,26 @@ collapses the whole line to unrestricted.
 - **Single reads, updates, deletes, and actions.** The enforcer checks the row
   against the scope. A row that fails answers the same `404` as a missing
   document, so the answer never reveals that the document exists.
-- **Create.** No row exists yet, so the scope does not run at create. The scope
-  rides to the Lua create hook as an intent channel that can set field values,
-  for example the owner. The domain check reports one warning per scoped create
-  line on the `iam` domain.
-- **Redefinition.** Edit a scope on the doctype, and every role that references
-  the alias uses the new predicate from the next request. No role edit is
-  needed.
+- **Create.** No row exists yet, so the scope does not run at create. The
+  scope rides to the Lua create hook as an intent channel that can set field
+  values, for example the owner. The domain check reports one warning per
+  scoped create line on the `iam` domain.
+- **Redefinition.** Edit a scope on the doctype, and every role that
+  references the alias uses the new predicate from the next request. No role
+  edit is needed.
 - **Query-time narrowing.** List and aggregate routes and the agent tools
   accept `scope=<name>`. It only narrows what the caller can already see. An
   unknown name answers `422`.
 - **Credential-less requests.** They run under the `anonymous` role. `$self`
-  resolves to the literal value `anonymous`, which matches no account, so `$self`
-  scopes stay inert. `$organizational_unit` resolves to the root path `/`.
+  resolves to the literal value `anonymous`, which matches no account, so
+  `$self` scopes stay inert. `$organizational_unit` resolves to the root path
+  `/`.
 
 :::caution[An alias must exist on the target doctype]
 A scope alias resolves against the doctype that the line targets. A line that
 names an alias the doctype does not declare fails validation when you save the
 role.
 :::
-
-## Example
-
-An administrator scopes an editor role on `production.Project`:
-
-1. The author declares the `mine`, `global`, and `active` scopes above.
-2. The role carries the read line with `["$mine", "$global"]` and the update
-   line with `$mine`, both from above.
-3. A member with that role lists projects. Facet returns the projects the
-   member owns plus every project with no owner, and nothing else.
-4. The member opens a project they own and edits it. The edit saves.
-5. The member opens a project another account owns. The read answers `404`,
-   although the project exists.
-6. The member lists with `?scope=active` and gets only the active subset of
-   what they can already see.
-
-## Troubleshooting
-
-### A scoped list returns rows you did not expect
-
-Aliases in an array combine with OR. Check whether one line carries more
-aliases than you intended, or whether `$all` sits in the array.
-
-### A member gets `404` on a document that exists
-
-The row failed the scope check. This is the non-disclosing answer by design —
-see [How Facet checks permissions](/admin/under-the-hood/how-access-is-enforced/).
-
-### The API answers `Unknown scope`
-
-The scope name is not declared on the doctype in the line. Copy the name from
-the definition.
-
-### A scoped create line saves with a warning
-
-Create ignores scopes by design. Move the row rule into a create hook — see
-[Lifecycle scripts and guards](/build/model/behaviour/scripts-and-guards/).
 
 ## Worked example: own projects via teams
 
@@ -184,6 +162,7 @@ then a role line names the scope.
 - **Project → Team** is a reference: `Project.team` points at `projects.Team`.
 
 <!-- d2
+direction: down
 Account: iam.Account {class: external}
 Team: projects.Team {class: node}
 Member: projects.TeamMember {class: node}
@@ -201,8 +180,8 @@ Scope -> Project: where team
 Role -> Scope: references alias
 -->
 <div class="d2-diagram">
-<img class="d2-diagram__img d2-diagram__light" src="/diagrams/e3030573-light.svg" alt="Diagram" loading="lazy" />
-<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/e3030573-dark.svg" alt="Diagram" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__light" src="/diagrams/e527fc23-light.svg" alt="Diagram" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/e527fc23-dark.svg" alt="Diagram" loading="lazy" />
 </div>
 
 The diagram shows the two data relationships, the two declarations that read
@@ -238,11 +217,34 @@ request, to the ids of the teams the caller belongs to.
 3. The manager moves to a new team. The next request resolves the new
    `my_teams` set and returns the new team's projects. No role edit is needed.
 
+## Troubleshooting
+
+### A scoped list returns rows you did not expect
+
+Aliases in an array combine with OR. Check whether one line carries more
+aliases than you intended, or whether `$all` sits in the array.
+
+### A member gets `404` on a document that exists
+
+The row failed the scope check. This is the non-disclosing answer by design —
+see [How Facet checks permissions](/admin/under-the-hood/how-access-is-enforced/).
+
+### The API answers `Unknown scope`
+
+The scope name is not declared on the doctype in the line. Copy the name from
+the definition.
+
+### A scoped create line saves with a warning
+
+Create ignores scopes by design. Move the row rule into a create hook — see
+[Lifecycle scripts and guards](/build/model/behaviour/scripts-and-guards/).
+
 ## Related
 
 - [Named scopes](/build/model/access/named-scopes/) — declare scopes and their context
   sets on the doctype and domain.
-- [Roles and permission lines](/admin/people/roles-and-permissions/) — the line grammar around `scope`.
-- [Field visibility with tags](/admin/people/hidden-fields/) — narrow at the field level the same way.
+- [Roles and permissions](/admin/people/roles-and-permissions/) — the line grammar around `scope`.
+- [Hide a field from some roles](/admin/people/hidden-fields/) — narrow at the field level the same way.
 - [How Facet checks permissions](/admin/under-the-hood/how-access-is-enforced/) — where the enforcers sit.
 - Internals on GitHub: [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md).
+- [Roles: who sees and does what](/discover/how-it-works/roles/)

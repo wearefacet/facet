@@ -11,7 +11,7 @@ sidebar:
 
 *Apps come and go. The records, the rules, and the history stay.*
 
-```d2
+<!-- d2
 direction: down
 app: "The app of the month" {class: external}
 next: "The next app" {class: external}
@@ -24,7 +24,11 @@ next -> home: "replaces it"
 home -> records
 home -> rules
 home -> history
-```
+-->
+<div class="d2-diagram">
+<img class="d2-diagram__img d2-diagram__light" src="/diagrams/208a5c6a-light.svg" alt="The app of the month" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/208a5c6a-dark.svg" alt="The app of the month" loading="lazy" />
+</div>
 
 ## The everyday problem
 

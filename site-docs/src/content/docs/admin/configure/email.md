@@ -1,16 +1,17 @@
 ---
+title: Email
+description: Set up outbound email over SMTP, pass the production gate, and test delivery with the built-in probe.
 type: how-to
-title: Email delivery
-description: Set up outbound email over SMTP, pass the production gate, and change settings without a restart.
 audience: [operator]
 features: [AUT-07]
 sidebar:
   order: 3
-verified_at: 008dd880
+verified_at: eee55a2
 ---
 
-Facet sends email for the credential flows: password reset, invites, first
-credentials, and multi-factor setup links. Delivery goes through one mail
+A new hire did not receive the invite link, and the password reset also
+went nowhere. Facet sends email for the credential flows: invite links for
+first credentials, and password resets. Delivery goes through one mail
 adapter. The default adapter prints email to stdout. Production requires
 real delivery over SMTP. In-app notifications are a separate system that
 never uses email.
@@ -60,7 +61,7 @@ The keys and their defaults:
 | `mail.smtp.port` | `587` | The relay port. |
 | `mail.smtp.username` | none | The relay user, when the relay asks for one. |
 | `mail.smtp.password` | none | The relay password. Use `!env` to keep it out of the file. |
-| `mail.smtp.use_tls` | `true` | Use TLS towards the relay. |
+| `mail.smtp.use_tls` | `true` | Upgrade the connection with STARTTLS. |
 
 ### 2. Pass the production gate
 
@@ -100,9 +101,29 @@ non-null `mail.smtp.host`.
 
 ### 4. Test delivery
 
-Drive a password reset from the sign-in page. The reset link arrives by
-email only, so a delivered email proves the whole path: adapter, relay,
-sender address, and link TTL. The link TTL is
+The settings page has a probe for exactly this. Open
+**Configure → Platform → Settings**, find **Send a test email**, type the
+recipient, and select **Send test email**. One email travels through the
+saved connector — the same path password resets and invites take. Save any
+pending change first; the test uses the saved settings, not the form.
+
+The possible answers:
+
+| Answer | Meaning |
+| --- | --- |
+| `200 {adapter, from_address, to}` | Delivered. The response names the transport and the sender it used. |
+| `422` | Facet refused before the wire: the connector is still `dev`, or the address is malformed. |
+| `502` | The transport failed. The message carries the relay's own error — "connection refused" or a 535 authentication failure is the diagnostic you pressed the button for. |
+
+On an install that still runs the `dev` adapter, the probe refuses with:
+
+```json
+{"error": "The email connector is off: the 'dev' adapter prints to stdout and delivers nothing. Set mail.adapter to smtp and save before testing"}
+```
+
+As a second check, drive a password reset from the sign-in page. The reset
+link arrives by email only, so a delivered email proves the whole path:
+adapter, relay, sender address, and link TTL. The link TTL is
 `iam.change_password_expiration`, 24 hours by default.
 
 ## Example
@@ -117,9 +138,10 @@ mail:
   from_name: Facet
 ```
 
-Every email prints to stdout. Pair this with an operator flow that watches
-the backend logs, because password-reset and invite links never reach an
-inbox.
+Every email prints to stdout. The probe refuses to report success here — it
+would prove nothing, because no inbox received anything. Pair this posture
+with an operator flow that watches the backend logs, because
+password-reset and invite links never reach an inbox.
 
 ## Troubleshooting
 
@@ -128,11 +150,17 @@ inbox.
 Production refuses the `dev` adapter without the hatch. Follow the two
 paths in the error message, or see step 2.
 
+**The test email answers `502`.**
+
+Read the message: it is the relay's own error. Wrong port, `use_tls: false`
+against a TLS-only relay, and relay authentication failures are the common
+causes. Fix the value, save, and send the probe again.
+
 **Email does not arrive.**
 
-Check the backend logs for the send attempt. Then check the relay: wrong
-port, `use_tls: false` against a TLS-only relay, and relay authentication
-failures are the common causes. Drive a password reset to re-test.
+Check the backend logs for the send attempt, then run the probe — it turns
+the silent failure into a named error. Drive a password reset to re-test
+the link flow.
 
 **A runtime save of the adapter is refused.**
 
@@ -154,6 +182,6 @@ default. Request a fresh link.
 - [Configuration files](/admin/configure/configuration-files/) — where the `mail:` section lives.
 - [System settings](/admin/configure/system-settings/) — the runtime tier that overrides the file.
 - [In-app notifications](/use/notifications/) — the separate notification system.
-- [Sessions, tokens and lockouts](/admin/people/sessions-lockouts/) — the link TTLs and the lockout rules.
-- [Bootstrap and CLI tasks](/admin/install/bootstrap/) — `seed:admin`, which prints its password instead of emailing it.
+- [Sessions and lockouts](/admin/people/sessions-lockouts/) — the link TTLs and the lockout rules.
+- [First start and bootstrap](/admin/install/bootstrap/) — `seed:admin`, which prints its password instead of emailing it.
 - Internals on GitHub: [config.md](https://github.com/wearefacet/facet/blob/main/doc/backend/config.md), [system-settings.md](https://github.com/wearefacet/facet/blob/main/doc/backend/system-settings.md).

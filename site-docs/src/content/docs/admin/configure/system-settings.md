@@ -1,18 +1,19 @@
 ---
-type: how-to
 title: System settings
-description: Change platform settings at runtime from the Configure area, with the config file as fallback.
+description: Change the system settings at runtime from the Configure area, with the config file as fallback.
+type: how-to
 audience: [operator, admin]
 features: [PLT-02, FE-14]
 sidebar:
   order: 2
-verified_at: 008dd880
+verified_at: eee55a2
 ---
 
-Some platform knobs can change without a restart. They live on one system
-document, `core.SystemSettings`. An administrator edits it in the
-**Configure → Platform → Settings** page, the change reaches every running
-process, and the config file stays as the fallback.
+You need to change the mail relay or the retention window, and the server
+cannot restart right now. Some platform knobs can change without a restart.
+They live on one system document, `core.SystemSettings`. An administrator
+edits it in the **Configure → Platform → Settings** page, and the change
+reaches every running process. The config file stays as the fallback.
 
 ## When to use this
 
@@ -25,10 +26,13 @@ Edit system settings when:
 ## Before you start
 
 - You hold a role that can update `core.SystemSettings`. The default is
-  admin-only.
+  admin-only: the editor and viewer roles carve the doctype out of their
+  wildcard read grants.
 - The effective value of a knob resolves in this order: the settings
   document, then `config.{env}.yml`, then the built-in default. A cleared
   field follows the file.
+- The generated [System settings keys](/reference/system-settings-keys/)
+  page lists every registered path with its kind and default.
 
 ## Steps
 
@@ -43,7 +47,9 @@ curl -s -H "Authorization: Bearer $FACET_API_KEY" \
 
 The response carries two lists:
 
-- `values` — the effective, non-secret values, keyed by dotted path.
+- `values` — the effective, non-secret values, keyed by dotted path. The
+  two secret paths (`assistant.api_key`, `mail.smtp.password`) never ride
+  the response.
 - `pinned` — the paths the document currently pins.
 
 The page shows an override badge on every pinned field, with a
@@ -78,31 +84,54 @@ secret slot returns the value to the file.
 | --- | --- |
 | Assistant | `assistant.name`, `assistant.api_endpoint`, `assistant.api_key` (secret), `assistant.model`, `assistant.system_prompt`, `assistant.max_tokens`, `assistant.temperature`, `assistant.max_history`, `assistant.auto_execute_tools` |
 | Mail | `mail.adapter`, `mail.from_address`, `mail.from_name`, `mail.smtp.host`, `mail.smtp.port`, `mail.smtp.username`, `mail.smtp.password` (secret), `mail.smtp.use_tls` |
-| Artifacts | `artifact.grant_ttl_seconds`, `artifact.grant_ttl_media_seconds`, `artifact.prune_after_days`, `artifact.storage.type` (read-only) |
+| Artifacts | `artifact.grant_ttl_seconds`, `artifact.grant_ttl_media_seconds`, `artifact.grant_prune_days`, `artifact.prune_after_days`, `artifact.storage.type` (read-only) |
 | Retention | `mutations.retention_days`, `tombstone.content_retention_days` |
 | Localization | `localization.default_timezone`, `localization.default_language` |
-| IAM policy | `iam.mfa.type`, `iam.mfa.enforcement`, `iam.auth.mode`, `iam.change_password_expiration` |
+| IAM policy | `iam.mfa.type`, `iam.mfa.enforcement`, `iam.auth.mode`, `iam.change_password_expiration`, `iam.oidc.provision_roles` |
+
+Two paths deserve a note:
+
+- `iam.change_password_expiration` is the lifetime of every credential
+  link: password resets, invite links, and the first-credential change
+  token. One key, three links.
+- `iam.oidc.provision_roles` is the instance-wide baseline for accounts
+  that single sign-on provisions. A provider document with its own
+  `default_role` overrides the whole baseline for that provider.
 
 ### 4. Know the write rules
 
-A save passes three gates. Shape comes from the doctype definition,
-singleton guards protect the one document, and a semantic write gate checks
-each value:
+A save passes three gates. Shape comes from the doctype definition.
+Singleton guards protect the one document. And a semantic write gate
+checks each value:
 
 - `temperature` between 0.0 and 2.0, `max_tokens` above 0, `max_history` 0
   or more, `port` between 1 and 65535.
+- `assistant.name` must not be blank and has a length cap — it renders in
+  tight chrome on every assistant surface.
 - The grant TTLs and `iam.change_password_expiration` are 1 second or more.
 - The retention windows are 0 or more. A window of `0` means keep forever.
 - `mail.adapter: smtp` requires a non-null `mail.smtp.host`.
 - `mail.adapter: dev` is refused under `APP_ENV=production`, unless the file
   sets `mail.allow_dev_adapter_in_production: true`.
-- `localization.default_timezone` must be `auto` or a loadable IANA name.
+- `localization.default_timezone` must be `auto` or a loadable IANA name;
+  `localization.default_language` must be `en` or `fr`.
 - `iam.mfa.type` is `none` or `totp`; `iam.mfa.enforcement` is `preferred`
   or `always`; `iam.auth.mode` is `hybrid` or `oidc_only`. `oidc_only` is
-  refused while no enabled OIDC provider document exists.
-- Any value on `artifact.storage.type` is refused. The storage adapter wires
-  once per process from the file. A runtime switch would strand the existing
-  bytes in the old backend.
+  refused while no enabled OIDC provider document exists — it would lock
+  every login path out at once.
+- Every `iam.oidc.provision_roles` entry must name a live role document,
+  and the list must not repeat a role.
+- Any value on `artifact.storage.type` is refused. The storage adapter
+  wires once per process from the file. A runtime switch would strand the
+  existing bytes in the old backend.
+
+Two test actions sit next to the groups they test. Both need the same
+update right a save needs:
+
+- **Send test email** delivers one probe through the saved connector — see
+  [Email](/admin/configure/email/).
+- **Send test request** runs one blocking, non-streaming completion through
+  the saved assistant settings.
 
 :::caution
 Not every knob is hot. Cron schedules, `jobs.*`, and `hooks.*` bind at boot
@@ -150,7 +179,7 @@ The body used a flat dotted key. Nest one object level per path segment.
 **A save answers `422` on `iam.auth.mode`.**
 
 `oidc_only` needs one enabled OIDC provider document. Register and enable a
-provider first — see [Single sign-on with OIDC](/admin/people/sso/).
+provider first — see [Single sign-on (OIDC)](/admin/people/sso/).
 
 **A save of `mail.adapter: dev` is refused in production.**
 
@@ -166,8 +195,9 @@ the window stay untouched.
 ## Related
 
 - [Configuration files](/admin/configure/configuration-files/) — the file tier under the pins.
-- [Retention: what is kept and for how long](/admin/history/retention/) — the windows the retention pins set.
-- [Governing the assistant](/admin/assistant/govern/) — the role budgets the assistant settings feed.
-- [Enforcing MFA](/admin/people/mfa/) — what `iam.mfa.*` drives.
-- [Single sign-on with OIDC](/admin/people/sso/) — what `iam.auth.mode` drives.
+- [System settings keys](/reference/system-settings-keys/) — every path, kind, and default, generated from the registry.
+- [Retention](/admin/history/retention/) — the windows the retention pins set.
+- [Govern the assistant](/admin/assistant/govern/) — the role budgets the assistant settings feed.
+- [Require MFA](/admin/people/mfa/) — what `iam.mfa.*` drives.
+- [Single sign-on (OIDC)](/admin/people/sso/) — what `iam.auth.mode` drives.
 - Internals on GitHub: [system-settings.md](https://github.com/wearefacet/facet/blob/main/doc/backend/system-settings.md), [config.md](https://github.com/wearefacet/facet/blob/main/doc/backend/config.md).

@@ -25,9 +25,9 @@ control of the publish.
 
 - **Create rights.** You hold the rights to create domains and doctypes. The
   conversation checks both before it opens.
-- **A configured assistant.** An administrator connects a language model in
-  the system settings, or through the server's environment. Without one, the
-  chat tells you.
+- **A configured assistant.** An administrator [connects a language
+  model](/admin/assistant/connect-a-model/) in the system settings, or
+  through the server's environment. Without one, the chat tells you.
 - **A draft domain.** Work happens in a draft. Nothing reaches live data
   until you publish.
 

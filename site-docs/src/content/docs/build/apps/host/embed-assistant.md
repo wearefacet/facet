@@ -1,6 +1,6 @@
 ---
 title: Embed the assistant in your app
-description: Mount the Facet assistant chat in your app with the @facetapp/chat package.
+description: Embed the Facet assistant chat in your app with the @facetapp/chat package.
 type: how-to
 audience: [developer]
 features: [APP-11, AI-03]
@@ -266,3 +266,4 @@ window_start, window_days}` — a `budget` of `null` means unlimited.
 - [Governing the assistant](/admin/assistant/govern/) — budgets, names, and instructions in the main app.
 - Internals on GitHub:
   [packages/chat/README.md](https://github.com/wearefacet/facet/blob/main/packages/chat/README.md).
+- [The assistant: AI with your rights](/discover/how-it-works/assistant/)

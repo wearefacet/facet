@@ -1,6 +1,6 @@
 ---
 type: explanation
-title: Documents: records with a memory
+title: "Documents: records with a memory"
 description: See what a record is in Facet, how every change is remembered, and how you undo a mistake.
 audience: [evaluator, author]
 features: [DOC-01, AUD-01, AUD-04, DOM-06]
@@ -13,7 +13,7 @@ One client, one tent, one booking — in Facet, each is a **document**: one reco
 
 *Every change lands on the record's timeline, with a name and a time. Undo included.*
 
-```d2
+<!-- d2
 direction: down
 doc: "A booking" {class: store}
 c1: "9:14 · Nadia created it" {class: node}
@@ -22,7 +22,11 @@ c3: "11:05 · Tom rolled it back" {class: ok}
 doc -> c1
 c1 -> c2
 c2 -> c3
-```
+-->
+<div class="d2-diagram">
+<img class="d2-diagram__img d2-diagram__light" src="/diagrams/6890eba9-light.svg" alt="A booking" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/6890eba9-dark.svg" alt="A booking" loading="lazy" />
+</div>
 
 ## A record you can shape
 

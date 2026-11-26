@@ -233,3 +233,4 @@ flow it covers.
 - [Drafts, editors and publishing](/build/model/in-app/drafts-and-publishing/) — what authors do with the domain after it lands.
 - [Change a live domain safely](/build/model/change-a-live-domain/) — what a schema change costs on live data.
 - Internals on GitHub: [portable-domains.md](https://github.com/wearefacet/facet/blob/main/doc/backend/portable-domains.md).
+- [Choose how you build](/build/model/)

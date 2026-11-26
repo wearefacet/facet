@@ -483,7 +483,7 @@ Found by WP 16 (batch A). Not fixed: batch A keeps the blocks byte-identical
 per the handoff. Suggested fix: re-render and rename the ids to the true
 hashes in one mechanical pass (diagram only, no prose change).
 
-## #24 — Voice-plan example overstates publish: "never the test documents"
+## #35 — Voice-plan example overstates publish: "never the test documents"
 
 Where: `doc/plans/documentation/documentation-v2/01-voice-and-vibe.md` §4.3
 (the after-example sentence meant as a model for L1/L2 copy). Also relevant
@@ -607,3 +607,378 @@ Found by WP 19 (limits page, reference batch). Docs impact: the limits page
 cites the enforced engine defaults, not the config keys, and carries an
 explicit note. Product fix (wiring the section into `Lua::Sandbox`) is the
 maintainer's call.
+
+---
+
+## #29 — MFA setup route demands a request body it does not use
+
+Where: `site-docs/src/content/docs/admin/people/mfa.md` (enrollment steps);
+any integrator scripting enrollment.
+
+Docs say (old page and new page): the account enrolls through
+`POST /Api/iam/mfa/totp/setup`, which returns `{secret, otpauth_uri}`; no
+request fields are documented.
+
+Code does: the route requires a JSON object body even though it carries no
+required field — the only optional key is `account`, which sets the label in
+the `otpauth://` URI. A bodiless POST (the natural REST call) answers an
+error instead of the setup payload.
+
+Evidence: live on `https://facet.localhost:3443`, 2026-11-26 —
+`POST /Api/iam/mfa/totp/setup` with no body → `{"error":"Request body is
+required"}`; with `-d '{}'` → `200 {"secret":"…","otpauth_uri":"otpauth://totp/Facet:…"}`.
+`src/iam/routes.cr:703-708` (`handle_mfa_setup` calls `parse_json_object`
+unconditionally; `account_name` falls back to the account id when `account`
+is absent).
+
+Found by WP 18 batch A (people pages). Docs impact: the new mfa page shows
+the working call (`-d '{}'`). Product fix (treat an absent body as `{}`, or
+document the required body) is the maintainer's call.
+
+## #32 — `allowed_origins` description claims origins must equal the app's own host
+
+Where: `data/seeds/app.App/definition.yml` (field description for
+`allowed_origins`); surfaced in the app registration wizard help.
+
+Docs say: each origin's scheme and host "must equal the app's own host" —
+implying one origin, tied to where the app is served.
+
+Code does: the create/update hook validates shape only — a bare origin
+(scheme, host, optional port), no wildcard, no path. Multiple entries are
+allowed and expected (production plus dev origins on one app); nothing ties
+an entry to the app's serving host. `doc/backend/oauth.md` and the CORS
+handler (`src/oauth/cors.cr`, `src/oauth/origin_cache.cr`) treat the list as
+a free allowlist of exact origins echoed back.
+
+Evidence: hook validation at `data/seeds/app.App/script.lua` (origins
+section — shape checks only, loop over any number of entries); the seeded
+`bfr-checkout` example carries `http://localhost:5173` while its build is
+served by the CLI deploy flow, and a second origin can be PATCHed freely.
+
+Found by WP 17 batch A (apps pages). Docs impact: the rewritten CORS and
+register pages document the shape-only rule. Product fix (reword the field
+description) is the maintainer's call.
+
+## #33 — `assistant_enabled` description claims a confidential app cannot enable it
+
+Where: `data/seeds/app.App/definition.yml` (field description for
+`assistant_enabled`).
+
+Docs say: a confidential app cannot enable the assistant — "the Lua hook
+refuses" it.
+
+Code does: no such refusal exists. The seeds hook validates nothing about
+`assistant_enabled` against `client_type`; `doc/backend/app-system.md` says
+both client types may enable the assistant; and the runtime gate
+(`src/assistant/app/gate.cr`) checks the flag and the caller's token, never
+the client type.
+
+Evidence: `grep -n assistant_enabled data/seeds/app.App/script.lua` finds no
+client-type branch; `src/assistant/app/gate.cr` has no `client_type` read;
+a confidential `bfr-stock-sync` create returned `"assistant_enabled": false`
+with no complaint, and flipping it is not guarded.
+
+Found by WP 17 batch A (apps pages). Docs impact: the rewritten pages stay
+silent on a restriction that does not exist. Product fix (reword the field
+description) is the maintainer's call.
+
+## #34 — Domain-wide role lines never cover concrete grant targets on app channels
+
+Where: app consent (`src/oauth/authorize.cr` `build_consent`), app API-key
+issuance (`src/app/api_keys.cr` `grant_intersection_gate`), and the
+app-channel request path — all via `RBAC::GrantResolver` / `Grant#covers?`
+(`src/rbac/grant.cr`).
+
+Docs say: the consent screen lists the roles the account holds, and an app
+acts with grant ∩ role (`doc/backend/oauth.md`, `doc/backend/app-system.md`).
+Neither page states that a role line on a bare domain (`{"on": "equipment",
+"action": "*"}`) fails to cover a concrete grant target (`equipment.Item`),
+while the same line fully covers the domain for a person calling without an
+app.
+
+Code does: `Grant#covers?` requires the permission path to be equal or
+deeper than the grant target path; a domain-wide line has an empty path and
+never matches (`src/rbac/grant.cr:159-192`). The consent screen silently
+drops such roles (an account can see `roles: []` with no reason), and key
+issuance refuses with `422` naming the remedy. Person channels are lenient
+(`Permission#matches_path?`, `src/rbac/permission.cr:126-140`), so the same
+role works fine outside apps. The three app-channel surfaces are internally
+consistent — the gap is versus person channels and versus the docs' silence.
+
+Evidence: live on the Brightwater example at `eee55a2` — the check-out app
+(grants: `rentals.Booking`, `rentals.BookingLine`, `equipment.Item`) lists
+only the admin role for Ravi; Lucía (warehouse, domain-wide equipment line)
+and Nadia (manager) get `roles: []` on the same consent payload; api-key
+issuance with `service_role_id: iam.Roles.warehouse` refuses with `The
+app's grants do not intersect the service role iam.Roles.warehouse's
+permissions — the key would be refused at every request. Repeat each grant
+target as a concrete role permission line (e.g. {"on": "equipment.Item",
+"action": "*"}) or widen the role.`; the same warehouse role reads and
+writes items fine over a plain session.
+
+Found by WP 17 batch A (apps pages). Docs impact: user-login carries a
+troubleshooting row for the empty consent list; backend-apps carries the
+exact issuance error. Intent is unknown — if domain-wide coverage is meant
+to work, this is a product bug; if the strict rule is meant, the consent
+screen should say why a role is absent. Maintainer triage.
+
+## #36 — Builder qualifies reference targets to the draft id, not the publish-target name
+
+Where: the doctype editor's reference target input
+(`frontend/src/lib/components/features/configure/DoctypeTypeEditor.svelte:36-48`),
+and the old tutorial `build/first-hour/first-domain.md` (verified_at
+e7c24a4) which taught the opposite.
+
+Docs said: "The editor qualifies the bare target to `inventory.Supplier`
+(the publish-target domain, not the draft id) — that qualified form is what
+the publish step needs."
+
+Code does: the editor qualifies a bare target to the **draft's own id** on
+commit (`qualifyReferenceTarget` prefixes the domain prop, which is the
+open draft, e.g. `_06h1gc0yjgkj.Gadget`). The rewrite to the published name
+happens at publish: `Domain::Copy` relinks same-domain reference targets
+through `PublishGate.domained_content` (`doc/backend/draft-domains.md` →
+§Reference-target relink).
+
+Evidence: live run WP 14 batch B (`ledgers/14b.md` §3 rows 15, 28) — the
+input showed `_06h1gc0yjgkj.Gadget` before publish; after publishing to
+`wp14b-demo`, `GET /Api/core/DocType/wp14b-demo.Ticket` returned
+`"doctype": "wp14b-demo.Gadget"`.
+
+Found by WP 14 batch B. Docs impact: the rewritten tutorial describes the
+draft-id qualification and the publish-time relink. No code change
+requested — the two-step behaviour is sound; only the old page was wrong.
+
+## #37 — View starter hint promises sharing; the view editor forbids it
+
+Where: the collection-view starter screen
+(`frontend/src/lib/components/primitives/data/CollectionViewStarter.svelte`,
+`list_view_starter_hint`) versus the view editor's scope helper
+(`list_editor_personal_edit_helper`).
+
+One label says: "A new view starts personal — only you see it until you
+share it." The other says: "Visible only to you. General↔personal cannot
+be changed after creation." (and the caution is repeated in the docs:
+`build/model/views/lists-boards-calendars.md` → §4).
+
+Code does: `general`/`owner_id` are fixed at creation; there is no share
+action for a personal view (`doc/backend/collection-view.md`; the editor
+radio group only renders at create time).
+
+Evidence: label strings side by side in `frontend/messages/en.json`
+(`list_view_starter_hint` vs `list_editor_personal_edit_helper`); no share
+control found in the list view UI (WP 14 batch B, grep + live run).
+
+Found by WP 14 batch B. Docs impact: the tutorial avoids the word
+"share"; a maintainer may want the starter hint reworded ("create it again
+as a general view").
+
+## #38 — Team-access tutorial's audit step names Lucía; the tutorial creates Pat
+
+Where: `site-docs/src/content/docs/build/first-hour/team-access.md`
+(WP 14 batch A rewrite), §5 "Check the record".
+
+Docs say: "Open **Configure → Audit** and find the day's entries:
+Lucía's account created, the role assigned, her first sign-in and
+password change."
+
+Code does (and the tutorial does): the same page's step 1 creates
+**Pat Mardell** (`pat@brightwater.example`) and assigns him the
+`warehouse` role; Lucía Ferrer is a pre-existing Brightwater persona
+created by the example's `load.sh` long before the tutorial runs
+(`site-docs/examples/brightwater/load.sh:196`), so her account creation
+is not among "the day's entries" a reader of this tutorial produced.
+The sentence reads as if the tutorial created Lucía.
+
+Evidence: `team-access.md` §1 (New Account form filled with
+`pat@brightwater.example` / "Pat Mardell", shots team-access-3/4/5 show
+Pat); capture log `tmp/wp14-t4-pat-final.log` (account created, role
+assigned, one-time password generated); live check 2026-11-26 —
+`pat@brightwater.example` absent (deleted after the shot run),
+`lucia@brightwater.example` present as a warehouse persona from the
+example load.
+
+Found by WP 14 (batch A, reconstructed ledger ledgers/14a.md). Fix
+status: docs fix owed — the sentence must name Pat (page edit outside
+the recovery scope; flagged to the orchestrator).
+
+## #39 — First-hour index says "Tutorial 3 needs Node.js 20+"; its route table numbers the app tutorial 4
+
+Where: `site-docs/src/content/docs/build/first-hour/index.md`
+(WP 14 batch A rewrite), "Before you start" paragraph.
+
+Docs say: "Tutorial 3 needs Node.js 20+; the rest need nothing beyond a
+browser."
+
+Code does (the page's own route table contradicts it): row 3 is
+"The same domain in files", which needs a full dev environment
+(Crystal, PostgreSQL, Redis, Caddy, Lua headers — see
+`build/dev-environment.md`), not Node.js and not "nothing beyond a
+browser"; the Node-dependent tutorial is row 4, "Ship your first app"
+(the `@facetapp/cli` scaffold needs Node 20+). A reader following the
+table prepares the wrong prerequisite for the wrong tutorial.
+
+Evidence: `index.md` §The route table (rows 3 and 4);
+`build/first-hour/first-domain-in-files.md` "You need" (dev
+environment); Node requirement surfaces in the app toolchain
+(`site-docs/package-lock.json` engines `>=20.9.0`).
+
+Found by WP 14 (batch A, reconstructed ledger ledgers/14a.md). Fix
+status: docs fix owed — either renumber the sentence to the app
+tutorial or reword the prerequisites per row (page edit outside the
+recovery scope; flagged to the orchestrator).
+
+## #40 — Secret-store docs name `SECRETS_MASTER_KEY`; the shipped stack requires `FACET_SECRETS_MASTER_KEY`
+
+Where: `scripts/gen_docs/config_keys.cr:154` → the generated
+`site-docs/src/content/docs/reference/config-keys.md` (secrets row), and
+`doc/backend/secrets.md:165`.
+
+Docs say: "production supplies it via !env SECRETS_MASTER_KEY".
+
+Code does: the shipped production config resolves the secret with the
+`FACET_`-prefixed variable, and the compose stack requires it by that
+name: `docker/config.production.example.yml:196`
+(`master_key: !env FACET_SECRETS_MASTER_KEY`), `docker/compose.prod.yml:64`
+(`FACET_SECRETS_MASTER_KEY: ${FACET_SECRETS_MASTER_KEY:?…required…}`),
+`docker/.env.example:54`. An operator who exports `SECRETS_MASTER_KEY`
+per the docs hits the fail-loud boot error
+`!env 'FACET_SECRETS_MASTER_KEY' is not set in the environment`
+(`src/util/yaml_tag.cr:186-189`). The dev config comment
+(`config.dev.yml:263`) also says `SECRETS_MASTER_KEY`, but dev carries a
+literal key so it never fires.
+
+Evidence: grep across `docker/` — no `SECRETS_MASTER_KEY` without the
+prefix exists in any shipped file; the generated reference page row
+matches the generator string verbatim.
+
+Found by WP 18 batch B2 (backup-restore page). Docs impact: the rewritten
+backup page documents the verified `FACET_SECRETS_MASTER_KEY` name and
+links this entry. Fix is in the generator and `doc/backend/secrets.md` —
+maintainer triage.
+
+## #41 — The site states the static default timezone is UTC; the code default is `auto`
+
+Where: `site-docs/src/content/docs/admin/configure/languages.md` (old
+`operate/localization.md`); any reader deciding whether a fresh install
+shows UTC.
+
+Docs say: "The section is optional. The defaults are `UTC` and `en`" and
+"The static default: `UTC` for the timezone, `en` for the language."
+
+Code does: the built-in `localization.default_timezone` is `auto` (follow
+each account's browser). `UTC` is only what the shipped config examples
+set explicitly. The static last tier of the resolution chain is `auto`,
+not `UTC`.
+
+Evidence: `src/config.cr:157-159` (`LocalizationConfig … default_timezone :
+String = "auto"`), `src/settings/keys.cr:29-34` (`AUTO_TIMEZONE = "auto"`;
+"the same value is the built-in default at every tier"), and the load
+fallback at `src/config.cr:535` (`|| Facet::Settings::Keys::AUTO_TIMEZONE`).
+`config.dev.yml:164-166` and `docker/config.production.example.yml:94-96`
+both set `default_timezone: UTC` explicitly — the examples pin UTC, the
+code does not. Live: `GET /Api/SystemSettings` on the instance returns
+`localization.default_timezone = UTC` because the dev file sets it.
+
+Found by WP 18 batch B (install/configure). Docs impact: the rewritten
+languages page states the `auto` default and credits the shipped examples
+for the UTC posture. The batch A `use/account`-adjacent pages that repeat
+the UTC-default claim (if any) need the same one-line fix.
+
+## #42 — The old email page claims Facet emails "multi-factor setup links"; no MFA email exists
+
+Where: old `operate/email.md` (now
+`site-docs/src/content/docs/admin/configure/email.md`, rewritten).
+
+Docs say: "Facet sends email for the credential flows: password reset,
+invites, first credentials, and multi-factor setup links."
+
+Code does: the email module holds exactly three classes — invite,
+password reset, and a test probe. MFA enrollment is TOTP-only: the setup
+route returns the secret and the `otpauth://` URI in the API response; no
+email leaves the server for MFA.
+
+Evidence: `src/emails/` contains `base_email.cr`, `email_adapter_registry.cr`,
+`invite_email.cr`, `password_reset_email.cr`, `test_email.cr`,
+`config.cr`, `templates/` — no MFA class. `src/iam/routes.cr` (mfa
+endpoints, also discrepancy #29) returns the secret in the response body.
+
+Found by WP 18 batch B (install/configure). Docs impact: the rewritten
+email page lists only invites and password resets, and cites the file
+listing.
+
+## #45 — Assistant availability comment says "any held role"; the code checks only the active role
+
+Where: `src/assistant/workspace/routes.cr:89` (comment on the create-route
+gate).
+
+Docs say (the code comment): "any authenticated caller whose held roles do
+not enable the assistant gets a 403" — availability aggregates over the
+roles the account holds.
+
+Code does: `Assistant::Access.allowed?`
+(`src/assistant/access.cr:60-68`) resolves exactly one role —
+`principal.active_role` — and checks its `connectivity` list for the
+`assistant` channel. The `/Api/iam/me` gate agrees
+(`src/iam/routes.cr:339-346`, same `Access.role_enabled?` on the active
+role), and the UI hides the button on that answer. So an account holding
+`sales` (assistant enabled) and `warehouse` (not) gets no assistant while
+acting as `warehouse`, whatever the comment promises. Only the token
+budget aggregates over held roles (`Access.effective_budget`, max over
+enabling roles) — the asymmetry is documented in `access.cr:19-23`
+itself.
+
+Evidence: `src/assistant/access.cr:60-68`, `src/assistant/access.cr:19-23`,
+`src/iam/routes.cr:339-346`, `src/assistant/workspace/routes.cr:86-95`;
+live check 2026-11-26 as Tom — `/Api/iam/me` answers
+`assistant.access: true` with the single `sales` role held.
+
+Found by WP 15 batch B. Docs impact: none — the use/assistant.md page
+documents the active-role rule. Fix status: code comment owed (route
+handler comment should read "whose active role does not enable the
+assistant"); maintainer triages.
+
+## #43 — Old view-templates page called a read-only input binding an error
+
+Where: `site-docs/src/content/docs/build/view-templates.md` (old page, at
+`fd345fe3`; rewritten this batch as
+`build/model/views/document-pages.md`).
+
+Docs said: "Facet validates it against the doctype: an input bound to an
+unknown field or a read-only field is an error."
+
+Code does: the validator splits severity by consequence. An input bound to
+an unknown field, a dotted path, or a container/computed field is an
+`:error` (the form could never save the value). An input bound to a
+`read_only` field is a `:warning` — the node renders but the value can
+never be saved.
+
+Evidence: `doc/backend/doctype-system.md` → Doctype::ViewTemplateValidator
+severity table (`:warning` row: "any `input` / `input-*` node bound to a
+**`read_only` field**"); `src/doctype/view_template_validator.cr`.
+
+Found by WP 16 batch C. Docs impact: fixed in the rewrite — the page now
+lists the error set and the warning set separately.
+
+## #44 — Old display-names page understated the "neither template" check severity
+
+Where: `site-docs/src/content/docs/build/display-names-search-text.md`
+(old page, at `fd345fe3`; rewritten this batch as
+`build/model/views/names-and-search.md`).
+
+Docs said: a doctype declaring neither `display_name` nor `search` makes
+"the check raise a warning" while a search term matches only the id.
+
+Code does: for an **aggregate root** the check raises a `:defaults`
+**`:error`** that counts toward `issue_count`, and the authoring gate
+refuses to create or publish such a doctype (B-296 — the reference picker
+would answer "no matches" while rows exist). An **owned child** is exempt
+and gets an `:info` notice instead.
+
+Evidence: `doc/backend/doctype-system.md` → Doctype::Check (`:defaults`
+row) and Doctype::Validation (label gate B-296);
+`src/doctype/validation.cr`.
+
+Found by WP 16 batch C. Docs impact: fixed in the rewrite — the page now
+splits the three cases (no `display_name`, no `search`, neither) with the
+root/child severity difference.

@@ -1,7 +1,7 @@
 ---
 type: how-to
 title: The domain watcher
-description: Edit domain definition files on disk and let the dev server apply every save.
+description: Edit domain definition files on disk and let the domain watcher apply every save.
 audience: [developer]
 features: [DOM-19]
 sidebar:
@@ -22,7 +22,7 @@ calls, no restarts.
 
 ## Before you start
 
-- **A dev server you own.** The watcher never runs in production; the boot
+- **A dev server you own.** Set one up with [the dev environment](/build/dev-environment/) how-to. The watcher never runs in production; the boot
   code refuses to start it there, even when the config section is present.
 - **A folder the server can read.** Add the `dev.domain_watch` section to
   your dev configuration:
@@ -191,3 +191,4 @@ net for pointing `path` at the wrong folder, not a fault.
 - [Check before you publish](/build/model/in-app/check-before-publish/) — the check report, in full.
 - [Move domains with bundles](/build/model/bundles/) — ship the finished folder to another instance.
 - Internals on GitHub: [dev-domain-watcher.md](https://github.com/wearefacet/facet/blob/main/doc/backend/dev-domain-watcher.md).
+- [Choose how you build](/build/model/)

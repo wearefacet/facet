@@ -31,15 +31,15 @@ A writer or reviewer traces a feature to its pages — or finds the pages a chan
 
 | ID | Feature | Pages |
 | --- | --- | --- |
-| APP-01 | App registry | [Register an app](/build/apps/connect/register/), [How apps work on Facet](/build/apps/how-apps-work/), [Apps: built fast, replaced freely](/discover/how-it-works/apps/) |
-| APP-02 | OAuth 2.1 authorization server | [User login: OAuth 2.1 + PKCE](/build/apps/connect/user-login/) |
-| APP-03 | DPoP proof binding | [DPoP token binding](/build/apps/connect/dpop/) |
+| APP-01 | App registry | [Register an app](/build/apps/connect/register/), [How apps work on Facet](/build/apps/how-apps-work/), [Quickstart](/build/apps/quickstart/), [Apps: built fast, replaced freely](/discover/how-it-works/apps/) |
+| APP-02 | OAuth 2.1 authorization server | [Sign users in](/build/apps/connect/user-login/), [Quickstart](/build/apps/quickstart/) |
+| APP-03 | DPoP proof binding | [Bind tokens to your app (DPoP)](/build/apps/connect/dpop/) |
 | APP-04 | Dynamic client registration | [Connect agents over MCP](/build/apps/agents/mcp/) |
-| APP-05 | Consent screen | [User login: OAuth 2.1 + PKCE](/build/apps/connect/user-login/) |
+| APP-05 | Consent screen | [Sign users in](/build/apps/connect/user-login/) |
 | APP-06 | App hosting | [Deploying with containers](/admin/install/containers/), [Deploy to production](/admin/install/production/), [Deploy your app on Facet](/build/apps/host/deploy/), [Apps: built fast, replaced freely](/discover/how-it-works/apps/) |
-| APP-07 | App API keys and service accounts | [Service accounts for backend apps](/build/apps/connect/backend-apps/) |
-| APP-08 | CORS for registered origins | [CORS and allowed origins](/build/apps/connect/cors/) |
-| APP-09 | Developer CLI | [Deploy your app on Facet](/build/apps/host/deploy/), [Quickstart with the dev CLI](/build/apps/quickstart/), [Facet app CLI](/reference/cli-npm/) |
+| APP-07 | App API keys and service accounts | [Backend apps and service accounts](/build/apps/connect/backend-apps/) |
+| APP-08 | CORS for registered origins | [Allowed origins and CORS](/build/apps/connect/cors/) |
+| APP-09 | Developer CLI | [Deploy your app on Facet](/build/apps/host/deploy/), [Quickstart](/build/apps/quickstart/), [Facet app CLI](/reference/cli-npm/) |
 | APP-10 | TypeScript SDK | [The TypeScript SDK](/build/apps/data/sdk/) |
 | APP-11 | Chat embed | [Embed the assistant in your app](/build/apps/host/embed-assistant/) |
 | APP-12 | Dashboard app launcher | — |
@@ -50,7 +50,7 @@ A writer or reviewer traces a feature to its pages — or finds the pages a chan
 | --- | --- | --- |
 | AUD-01 | Append-only mutation log | [The mutation log](/admin/under-the-hood/change-log/), [Documents: records with a memory](/discover/how-it-works/documents/), [Security and governance](/discover/security/) |
 | AUD-02 | Audit reading | [Auditing activity](/admin/history/audit/), [Security and governance](/discover/security/), [History and undo (rollback)](/use/documents/history-undo/) |
-| AUD-03 | Audit redaction | [Field visibility with tags](/admin/people/hidden-fields/), [Security and governance](/discover/security/) |
+| AUD-03 | Audit redaction | [Hide a field from some roles](/admin/people/hidden-fields/), [Security and governance](/discover/security/) |
 | AUD-04 | Rollback | [Rolling back changes](/admin/history/roll-back/), [Documents: records with a memory](/discover/how-it-works/documents/), [Security and governance](/discover/security/), [History and undo (rollback)](/use/documents/history-undo/) |
 | AUD-05 | Write-time coalescing | [Retention: what is kept and for how long](/admin/history/retention/), [The mutation log](/admin/under-the-hood/change-log/), [Security and governance](/discover/security/) |
 | AUD-06 | Retention compaction | [Retention: what is kept and for how long](/admin/history/retention/), [Security and governance](/discover/security/) |
@@ -108,19 +108,19 @@ A writer or reviewer traces a feature to its pages — or finds the pages a chan
 | DOM-09 | Computed fields | [Computed fields](/build/model/data/computed-fields/) |
 | DOM-10 | Sequential identifiers | [Identifiers and unique constraints](/build/model/data/identifiers-uniqueness/) |
 | DOM-11 | Unique constraints | [Identifiers and unique constraints](/build/model/data/identifiers-uniqueness/) |
-| DOM-12 | Named scopes | [Row scopes](/admin/people/row-scopes/), [Named scopes](/build/model/access/named-scopes/) |
+| DOM-12 | Named scopes | [Show each role only its rows](/admin/people/row-scopes/), [Named scopes](/build/model/access/named-scopes/) |
 | DOM-13 | Domain editors | [Drafts, editors and publishing](/build/model/in-app/drafts-and-publishing/) |
 | DOM-14 | Domain grants | [Cross-domain replication](/build/deeper/cross-domain-replication/), [How domains stay isolated](/build/deeper/domain-isolation/), [Share data across domains](/build/model/relations/across-domains/), [Domains: where your data lives](/discover/how-it-works/domains/) |
-| DOM-15 | Portable domain bundles | [Move domains with bundles](/build/model/bundles/), [From dev to production](/build/model/dev-to-production/), [The domain file layout](/build/model/in-files/domain-files/) |
+| DOM-15 | Portable domain bundles | [The same domain in files](/build/first-hour/first-domain-in-files/), [Move domains with bundles](/build/model/bundles/), [From dev to production](/build/model/dev-to-production/), [The domain file layout](/build/model/in-files/domain-files/) |
 | DOM-16 | Definition diagnostics | [Build your first domain](/build/first-hour/first-domain/), [Check before you publish](/build/model/in-app/check-before-publish/), [How drafts work](/build/model/in-app/how-drafts-work/) |
 | DOM-17 | Lazy document migration | [Schema evolution and lazy migration](/build/deeper/schema-evolution/), [Change a live domain safely](/build/model/change-a-live-domain/) |
 | DOM-18 | Re-projection CLI | [Change a live domain safely](/build/model/change-a-live-domain/), [facet CLI](/reference/cli-facet/) |
-| DOM-19 | Dev domain watcher | [From dev to production](/build/model/dev-to-production/), [Check before you publish](/build/model/in-app/check-before-publish/), [The domain file layout](/build/model/in-files/domain-files/), [The domain watcher](/build/model/in-files/domain-watcher/), [Build domains with a coding agent](/build/model/in-files/with-a-coding-agent/), [Choose how you build](/build/model/) |
+| DOM-19 | Dev domain watcher | [The same domain in files](/build/first-hour/first-domain-in-files/), [From dev to production](/build/model/dev-to-production/), [Check before you publish](/build/model/in-app/check-before-publish/), [The domain file layout](/build/model/in-files/domain-files/), [The domain watcher](/build/model/in-files/domain-watcher/), [Build domains with a coding agent](/build/model/in-files/with-a-coding-agent/), [Choose how you build](/build/model/) |
 | DOM-20 | Domain schematic | [The schematic view](/build/model/views/schematic/) |
 | DOM-21 | CollectionView | [Build your first domain](/build/first-hour/first-domain/), [Collection views](/build/model/views/lists-boards-calendars/), [Lists, filters and saved views](/use/finding/lists-and-views/) |
 | DOM-22 | DocumentView templates | [View templates](/build/model/views/document-pages/), [DVT template schema](/reference/dvt-schema/), [Jinja2 template context](/reference/jinja2-context/) |
 | DOM-23 | Jinja2 templating for derived columns | [Documents, doctypes and projections](/build/deeper/documents-and-projections/), [Display names and search text (Jinja2)](/build/model/views/names-and-search/), [Jinja2 template context](/reference/jinja2-context/) |
-| DOM-24 | Core seeding | [Bootstrap and CLI tasks](/admin/install/bootstrap/), [Install for development](/build/dev-environment/), [Run Facet in 15 minutes](/build/first-hour/run-facet/) |
+| DOM-24 | Core seeding | [Bootstrap and CLI tasks](/admin/install/bootstrap/), [Set up a dev environment](/build/dev-environment/), [Run Facet](/build/first-hour/run-facet/) |
 | DOM-25 | Cross-domain field replication | [Cross-domain replication](/build/deeper/cross-domain-replication/), [Share data across domains](/build/model/relations/across-domains/) |
 | DOM-26 | Doctype maintenance console | — |
 | DOM-27 | Eager document migration | — |
@@ -134,7 +134,7 @@ A writer or reviewer traces a feature to its pages — or finds the pages a chan
 
 | ID | Feature | Pages |
 | --- | --- | --- |
-| FE-01 | Auth screens | [Run Facet in 15 minutes](/build/first-hour/run-facet/), [Sign in, MFA, reset your password](/use/first-day/sign-in/) |
+| FE-01 | Auth screens | [Run Facet](/build/first-hour/run-facet/), [Sign in, MFA, reset your password](/use/first-day/sign-in/) |
 | FE-02 | Dashboard | [The dashboard](/use/first-day/dashboard/) |
 | FE-03 | List surfaces | [Build your first domain](/build/first-hour/first-domain/), [Lists, filters and saved views](/use/finding/lists-and-views/) |
 | FE-04 | Document show page | [View templates](/build/model/views/document-pages/), [Comments and attachments](/use/documents/comments-attachments/), [Viewing and editing a document](/use/documents/view-and-edit/) |
@@ -145,16 +145,16 @@ A writer or reviewer traces a feature to its pages — or finds the pages a chan
 | FE-09 | Notifications UI | [Notifications](/use/notifications/) |
 | FE-10 | Builder | [Build your first domain](/build/first-hour/first-domain/), [Drafts, editors and publishing](/build/model/in-app/drafts-and-publishing/) |
 | FE-11 | Configure access | [Manage accounts](/admin/people/accounts/), [Give your team access](/build/first-hour/team-access/) |
-| FE-12 | Configure apps | [Controlling app reach (grants)](/admin/apps-access/app-grants/), [Register an app](/build/apps/connect/register/) |
+| FE-12 | Configure apps | [Control what apps can reach](/admin/apps-access/app-grants/), [Register an app](/build/apps/connect/register/) |
 | FE-13 | Configure domains | [Drafts, editors and publishing](/build/model/in-app/drafts-and-publishing/) |
-| FE-14 | Configure platform | [System settings](/admin/configure/system-settings/), [Single sign-on with OIDC](/admin/people/sso/) |
+| FE-14 | Configure platform | [System settings](/admin/configure/system-settings/), [Single sign-on (OIDC)](/admin/people/sso/) |
 | FE-15 | Configure currencies | [Currencies and money](/admin/configure/currencies/) |
 | FE-16 | Configure audit | [Auditing activity](/admin/history/audit/) |
 | FE-17 | Settings | [Your settings, sessions and API keys](/use/account/) |
 | FE-18 | Import and export UI | [Import and export data](/use/documents/import-export/) |
-| FE-19 | Welcome tour | [Run Facet in 15 minutes](/build/first-hour/run-facet/) |
+| FE-19 | Welcome tour | [Run Facet](/build/first-hour/run-facet/) |
 | FE-20 | Internationalization | [Localization](/admin/configure/languages/) |
-| FE-21 | OAuth consent page | [User login: OAuth 2.1 + PKCE](/build/apps/connect/user-login/) |
+| FE-21 | OAuth consent page | [Sign users in](/build/apps/connect/user-login/) |
 | FE-22 | Assistant chat UI | [Using the assistant](/use/assistant/) |
 | FE-23 | Grid view (dormant) | Excluded from user docs |
 | FE-24 | Peek drawer | — |
@@ -164,28 +164,28 @@ A writer or reviewer traces a feature to its pages — or finds the pages a chan
 
 | ID | Feature | Pages |
 | --- | --- | --- |
-| IAM-01 | Password login and sessions | [Sessions, refresh tokens and lockouts](/admin/people/sessions-lockouts/), [Security and governance](/discover/security/), [Sign in, MFA, reset your password](/use/first-day/sign-in/) |
-| IAM-02 | Refresh rotation and reuse detection | [Sessions, refresh tokens and lockouts](/admin/people/sessions-lockouts/), [Security and governance](/discover/security/) |
-| IAM-03 | MFA with TOTP and backup codes | [Enforcing MFA](/admin/people/mfa/), [Security and governance](/discover/security/), [Sign in, MFA, reset your password](/use/first-day/sign-in/) |
+| IAM-01 | Password login and sessions | [Sessions and lockouts](/admin/people/sessions-lockouts/), [Security and governance](/discover/security/), [Sign in, MFA, reset your password](/use/first-day/sign-in/) |
+| IAM-02 | Refresh rotation and reuse detection | [Sessions and lockouts](/admin/people/sessions-lockouts/), [Security and governance](/discover/security/) |
+| IAM-03 | MFA with TOTP and backup codes | [Require MFA](/admin/people/mfa/), [Security and governance](/discover/security/), [Sign in, MFA, reset your password](/use/first-day/sign-in/) |
 | IAM-04 | Forced password change | [Security and governance](/discover/security/), [Sign in, MFA, reset your password](/use/first-day/sign-in/) |
 | IAM-05 | Self-service password reset | [Security and governance](/discover/security/), [Sign in, MFA, reset your password](/use/first-day/sign-in/) |
-| IAM-06 | Invites and temporary passwords | [Manage accounts](/admin/people/accounts/), [Give your team access](/build/first-hour/team-access/), [Security and governance](/discover/security/) |
+| IAM-06 | Invites and temporary passwords | [Manage accounts](/admin/people/accounts/), [People and access](/admin/people/), [Give your team access](/build/first-hour/team-access/), [Security and governance](/discover/security/) |
 | IAM-07 | Account lifecycle | [Manage accounts](/admin/people/accounts/), [Security and governance](/discover/security/) |
-| IAM-08 | Inbound OIDC SSO | [Single sign-on with OIDC](/admin/people/sso/), [Security and governance](/discover/security/) |
-| IAM-09 | Static API keys | [Machine access: API keys](/admin/apps-access/api-keys/), [Security and governance](/discover/security/), [Your settings, sessions and API keys](/use/account/) |
-| IAM-10 | Login throttle and lockout | [Sessions, refresh tokens and lockouts](/admin/people/sessions-lockouts/), [Security and governance](/discover/security/), [Sign in, MFA, reset your password](/use/first-day/sign-in/) |
-| IAM-11 | Session management | [Sessions, refresh tokens and lockouts](/admin/people/sessions-lockouts/), [Security and governance](/discover/security/), [Your settings, sessions and API keys](/use/account/) |
-| IAM-12 | Bootstrap CLI | [Bootstrap and CLI tasks](/admin/install/bootstrap/), [Deploy to production](/admin/install/production/), [Install for development](/build/dev-environment/), [Run Facet in 15 minutes](/build/first-hour/run-facet/), [Security and governance](/discover/security/), [facet CLI](/reference/cli-facet/) |
+| IAM-08 | Inbound OIDC SSO | [Single sign-on (OIDC)](/admin/people/sso/), [Security and governance](/discover/security/) |
+| IAM-09 | Static API keys | [API keys](/admin/apps-access/api-keys/), [Security and governance](/discover/security/), [Your settings, sessions and API keys](/use/account/) |
+| IAM-10 | Login throttle and lockout | [Sessions and lockouts](/admin/people/sessions-lockouts/), [Security and governance](/discover/security/), [Sign in, MFA, reset your password](/use/first-day/sign-in/) |
+| IAM-11 | Session management | [Sessions and lockouts](/admin/people/sessions-lockouts/), [Security and governance](/discover/security/), [Your settings, sessions and API keys](/use/account/) |
+| IAM-12 | Bootstrap CLI | [Bootstrap and CLI tasks](/admin/install/bootstrap/), [Deploy to production](/admin/install/production/), [Set up a dev environment](/build/dev-environment/), [Run Facet](/build/first-hour/run-facet/), [Security and governance](/discover/security/), [facet CLI](/reference/cli-facet/) |
 | IAM-13 | Login event log | [Auditing activity](/admin/history/audit/), [Security and governance](/discover/security/) |
-| IAM-14 | Caller identity endpoint | [Auth contexts](/admin/under-the-hood/one-role-at-a-time/), [Gate your UI with the manifest](/build/apps/connect/permission-manifest/), [Security and governance](/discover/security/) |
+| IAM-14 | Caller identity endpoint | [Auth contexts](/admin/under-the-hood/one-role-at-a-time/), [Show only what the user can do](/build/apps/connect/permission-manifest/), [Security and governance](/discover/security/) |
 | IAM-15 | Service accounts | [Security and governance](/discover/security/) |
 
 ## PLT — platform, operations, observability
 
 | ID | Feature | Pages |
 | --- | --- | --- |
-| PLT-01 | YAML config | [Configuration files](/admin/configure/configuration-files/), [Install for development](/build/dev-environment/), [Run Facet in 15 minutes](/build/first-hour/run-facet/), [Config file keys](/reference/config-keys/) |
-| PLT-02 | System settings | [System settings](/admin/configure/system-settings/), [Enforcing MFA](/admin/people/mfa/), [System settings keys](/reference/system-settings-keys/) |
+| PLT-01 | YAML config | [Configuration files](/admin/configure/configuration-files/), [Set up a dev environment](/build/dev-environment/), [Run Facet](/build/first-hour/run-facet/), [Config file keys](/reference/config-keys/) |
+| PLT-02 | System settings | [System settings](/admin/configure/system-settings/), [Require MFA](/admin/people/mfa/), [System settings keys](/reference/system-settings-keys/) |
 | PLT-03 | Secret store | [Secret and write-only fields](/build/model/data/secret-fields/) |
 | PLT-04 | Artifact store | [File storage: filesystem or S3](/admin/configure/file-storage/), [Upload and serve files](/build/apps/data/files/), [Files and artifacts in fields](/build/model/data/files/) |
 | PLT-05 | Managed indexes | [Managed indexes](/admin/keep-running/indexes/) |
@@ -199,24 +199,24 @@ A writer or reviewer traces a feature to its pages — or finds the pages a chan
 | PLT-13 | HTTP admission gates | [Use the REST API](/build/apps/data/rest-api/), [Error responses](/reference/error-responses/) |
 | PLT-14 | Currency registry and money math | [Currencies and money](/admin/configure/currencies/) |
 | PLT-15 | Graceful shutdown | [Upgrades and graceful shutdown](/admin/keep-running/upgrades/) |
-| PLT-16 | Container images | [Deploying with containers](/admin/install/containers/), [Deploy to production](/admin/install/production/), [System requirements and topology](/admin/install/requirements/), [Install for development](/build/dev-environment/), [Run Facet in 15 minutes](/build/first-hour/run-facet/) |
+| PLT-16 | Container images | [Deploying with containers](/admin/install/containers/), [Deploy to production](/admin/install/production/), [System requirements and topology](/admin/install/requirements/), [Set up a dev environment](/build/dev-environment/), [Run Facet](/build/first-hour/run-facet/) |
 | PLT-17 | Account settings store | [Account settings keys](/reference/account-settings-keys/), [Your settings, sessions and API keys](/use/account/) |
 
 ## RBC — authorization and governance
 
 | ID | Feature | Pages |
 | --- | --- | --- |
-| RBC-01 | Roles | [Roles and permission lines](/admin/people/roles-and-permissions/), [Roles, levels and the authority guard](/admin/people/who-can-change-roles/), [Give your team access](/build/first-hour/team-access/), [Roles: who sees and does what](/discover/how-it-works/roles/), [Security and governance](/discover/security/), [Permission line syntax](/reference/permission-syntax/) |
-| RBC-02 | Role assignment and election | [Assigning roles and role election](/admin/people/assign-roles/), [Give your team access](/build/first-hour/team-access/), [Roles: who sees and does what](/discover/how-it-works/roles/), [Security and governance](/discover/security/) |
+| RBC-01 | Roles | [People and access](/admin/people/), [Roles and permissions](/admin/people/roles-and-permissions/), [Roles, levels and the authority guard](/admin/people/who-can-change-roles/), [Give your team access](/build/first-hour/team-access/), [Roles: who sees and does what](/discover/how-it-works/roles/), [Security and governance](/discover/security/), [Permission line syntax](/reference/permission-syntax/) |
+| RBC-02 | Role assignment and election | [Assign roles](/admin/people/assign-roles/), [Give your team access](/build/first-hour/team-access/), [Roles: who sees and does what](/discover/how-it-works/roles/), [Security and governance](/discover/security/) |
 | RBC-03 | Read enforcement | [Authorization enforcement](/admin/under-the-hood/how-access-is-enforced/), [Security and governance](/discover/security/), [Permission line syntax](/reference/permission-syntax/) |
-| RBC-04 | Field visibility tags | [Field visibility with tags](/admin/people/hidden-fields/), [Give your team access](/build/first-hour/team-access/), [Roles: who sees and does what](/discover/how-it-works/roles/), [Security and governance](/discover/security/) |
-| RBC-05 | Row scopes | [Row scopes](/admin/people/row-scopes/), [Give your team access](/build/first-hour/team-access/), [Roles: who sees and does what](/discover/how-it-works/roles/), [Security and governance](/discover/security/) |
+| RBC-04 | Field visibility tags | [Hide a field from some roles](/admin/people/hidden-fields/), [Give your team access](/build/first-hour/team-access/), [Roles: who sees and does what](/discover/how-it-works/roles/), [Security and governance](/discover/security/) |
+| RBC-05 | Row scopes | [Show each role only its rows](/admin/people/row-scopes/), [Give your team access](/build/first-hour/team-access/), [Roles: who sees and does what](/discover/how-it-works/roles/), [Security and governance](/discover/security/) |
 | RBC-06 | Write enforcement | [Authorization enforcement](/admin/under-the-hood/how-access-is-enforced/), [Security and governance](/discover/security/), [Permission line syntax](/reference/permission-syntax/) |
-| RBC-07 | Role authority guard | [Roles and permission lines](/admin/people/roles-and-permissions/), [Roles, levels and the authority guard](/admin/people/who-can-change-roles/), [Security and governance](/discover/security/) |
-| RBC-08 | App grants | [Controlling app reach (grants)](/admin/apps-access/app-grants/), [Apps: grants ∩ roles](/build/apps/connect/what-an-app-can-do/), [How apps work on Facet](/build/apps/how-apps-work/), [Apps: built fast, replaced freely](/discover/how-it-works/apps/), [Security and governance](/discover/security/) |
+| RBC-07 | Role authority guard | [Roles and permissions](/admin/people/roles-and-permissions/), [Roles, levels and the authority guard](/admin/people/who-can-change-roles/), [Security and governance](/discover/security/) |
+| RBC-08 | App grants | [Control what apps can reach](/admin/apps-access/app-grants/), [Apps: grants ∩ roles](/build/apps/connect/what-an-app-can-do/), [How apps work on Facet](/build/apps/how-apps-work/), [Apps: built fast, replaced freely](/discover/how-it-works/apps/), [Security and governance](/discover/security/) |
 | RBC-09 | Metadata gate | [Authorization enforcement](/admin/under-the-hood/how-access-is-enforced/), [Security and governance](/discover/security/) |
 | RBC-10 | Auth contexts | [Auth contexts](/admin/under-the-hood/one-role-at-a-time/), [Security and governance](/discover/security/) |
-| RBC-11 | Permission manifest | [Gate your UI with the manifest](/build/apps/connect/permission-manifest/), [Security and governance](/discover/security/) |
+| RBC-11 | Permission manifest | [Show only what the user can do](/build/apps/connect/permission-manifest/), [Security and governance](/discover/security/) |
 | RBC-12 | Role connectivity channels | [Security and governance](/discover/security/) |
 
 ## Related

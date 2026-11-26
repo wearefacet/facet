@@ -1,7 +1,7 @@
 ---
 type: overview
 title: Compare
-description: Facet next to the tools you are shortlisting, with each alternative's strengths and each trade-off in the open, and what 50 users actually cost.
+description: "Compare Facet with the tools you are shortlisting: each alternative's strengths and each trade-off in the open, and what 50 users actually cost."
 audience: [evaluator]
 features: []
 verified_at: bd4be053

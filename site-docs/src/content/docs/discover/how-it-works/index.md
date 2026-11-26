@@ -13,7 +13,7 @@ Before the details, one picture. Here is what happens every time someone at Brig
 
 *One door. One set of checks. One memory.*
 
-```d2
+<!-- d2
 direction: down
 people: "People" {class: external}
 apps: "Apps" {class: external}
@@ -28,7 +28,11 @@ agents -> door
 door -> checks
 checks -> domains
 checks -> history
-```
+-->
+<div class="d2-diagram">
+<img class="d2-diagram__img d2-diagram__light" src="/diagrams/b4865c1b-light.svg" alt="People" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/b4865c1b-dark.svg" alt="People" loading="lazy" />
+</div>
 
 ## Five ideas, five short pages
 

@@ -1,12 +1,12 @@
 ---
 type: how-to
-title: Service accounts for backend apps
-description: Give a backend app a machine identity and call the API with an app-owned key.
+title: Backend apps and service accounts
+description: Give a backend app a service account and call the API with an app-owned key.
 audience: [developer, admin]
 features: [APP-07]
 sidebar:
   order: 4
-verified_at: a77c6171
+verified_at: eee55a2
 ---
 
 A backend app needs a machine identity. Facet provisions a service account
@@ -36,12 +36,13 @@ no person sits at the keyboard.
 
 ## Before you start
 
-- A `confidential` app registration exists — see [Registering an
+- A `confidential` app registration exists — see [Register an
   app](/build/apps/connect/register/).
 - You need `update` rights on `app.App` for the key routes.
 - You hold an operator browser session; the key routes refuse a key caller.
-- The service role lists `api` in its connectivity channels. Issuance refuses
-  with `422` otherwise.
+- The service role lists `api` in its connectivity channels, and its
+  permission lines reach the app's grant targets. Issuance refuses with
+  `422` otherwise.
 
 ## Steps
 
@@ -52,15 +53,65 @@ Settings tab. The role decides what exists to grant; the app's grants decide
 what may be attempted. Facet keeps only the actions the role also gives, on
 every request. Row scopes on the role still apply.
 
-### 2. Issue the key
-
-Call the issue route from an operator session. The route provisions the
-service account, re-pins its role, and revokes any active key first — one
-active key per app, so issuing again is a rotation:
+The stock-sync backend at Brightwater gets its own least-privilege role —
+one concrete permission line, the `api` channel, nothing else:
 
 ```sh
-curl -s -b cookies.txt -X POST \
-  https://facet.company.tld/Api/app/01JHQ7K2N6B1WJ8PC4T9XYR3M5/api-key \
+curl -sk -b cookies.txt -X POST https://facet.localhost:3443/Api/iam/Roles \
+  -H "Content-Type: application/json" \
+  -H "X-Requested-With: XMLHttpRequest" \
+  -d '{
+    "name": "stock_sync",
+    "level": 30,
+    "description": "Machine role for the Brightwater stock-sync backend. Reads and writes equipment items over the API.",
+    "permissions": [{ "on": "equipment.Item", "action": "*" }],
+    "connectivity": ["api"],
+    "visible_tags": ["default"]
+  }'
+```
+
+The create answers `201`; the role lives at `iam.Roles.stock_sync`.
+
+### 2. Register the app as confidential
+
+A backend app is a `confidential` registration with the service role pinned.
+No redirect addresses are needed — there is no browser round trip:
+
+```sh
+curl -sk -b cookies.txt -X POST https://facet.localhost:3443/Api/app/App \
+  -H "Content-Type: application/json" \
+  -H "X-Requested-With: XMLHttpRequest" \
+  -d '{
+    "slug": "bfr-stock-sync",
+    "name": "Brightwater stock sync",
+    "client_type": "confidential",
+    "no_launcher": true,
+    "service_role_id": "iam.Roles.stock_sync",
+    "redirect_uris": [],
+    "allowed_origins": [],
+    "grants": [
+      {
+        "target": "equipment.Item",
+        "actions": [{ "name": "read", "required": true }, { "name": "write", "required": true }]
+      }
+    ]
+  }'
+```
+
+The create answers `201` with `client_type: "confidential"`,
+`service_role_id: "iam.Roles.stock_sync"`, and the hook-written
+`client_id`. Activate it the same way as any app —
+`PATCH /Api/app/App/{id}` with `{"status": "active"}`.
+
+### 3. Issue the key
+
+Call the issue route from an operator session. The route provisions the
+service account, re-pins its role, and revokes any active key first. One
+active key per app exists, so issuing again is a rotation:
+
+```sh
+curl -sk -b cookies.txt -X POST \
+  https://facet.localhost:3443/Api/app/06H1G4RS1CQFAC128KPASQFX7H/api-key \
   -H "X-Requested-With: XMLHttpRequest"
 ```
 
@@ -68,11 +119,11 @@ The answer carries the raw key:
 
 ```json
 {
-  "id": "01JHQ8XC4M7T2WY9PB5K3NR6QD",
-  "key": "fct_7QW2N8XC4M5T3WY9PB6K1RD4EN",
-  "display_prefix": "fct_7QW2N8XC",
-  "service_account_id": "iam.Account.01JHQ9D8N2W5XK7PB3T6YR9M4C",
-  "role_id": "iam.Roles.integration"
+  "id": "06H1G4YA6WSM1T1H58V6M3YBQE",
+  "key": "fct_9AHD08J0GWCCVWZ064KX2SY7G1",
+  "display_prefix": "fct_9AHD08",
+  "service_account_id": "06H1G4YA3MM0CESP8SQ6K2GG58",
+  "role_id": "iam.Roles.stock_sync"
 }
 ```
 
@@ -80,8 +131,8 @@ Store the `key` now. It shows exactly once, and no route returns it again.
 
 The service account appears at the first issuance. Facet provisions it as
 an `iam.Account` with `service_account: true` and the email
-`svc.<slug>@apps.facet.invalid`. It holds exactly the pinned role and cannot
-log in with email and password.
+`svc.bfr-stock-sync@apps.facet.invalid`. It holds exactly the pinned role
+and cannot log in with email and password.
 
 | Route | Verb | Behaviour |
 | --- | --- | --- |
@@ -94,29 +145,92 @@ Forgery (CSRF) header. The two mutations also need `update` on `app.App`;
 the status route needs `read`. A key caller answers `403`: a key can never
 mint or revoke itself.
 
-### 3. Call the API
+The status route answers:
+
+```json
+{
+  "active": true,
+  "id": "06H1G4YA6WSM1T1H58V6M3YBQE",
+  "display_prefix": "fct_9AHD08",
+  "role_id": "iam.Roles.stock_sync",
+  "created_at": "2026-11-26T13:37:59Z",
+  "last_used_at": null
+}
+```
+
+### 4. Call the API
 
 Send the key as a bearer credential. No CSRF header is needed, because the
 request carries no ambient cookie:
 
 ```sh
-curl -s -H "Authorization: Bearer fct_7QW2N8XC4M5T3WY9PB6K1RD4EN" \
-  "https://facet.company.tld/Api/crm/Company?per_page=5"
+curl -sk -H "Authorization: Bearer fct_9AHD08J0GWCCVWZ064KX2SY7G1" \
+  "https://facet.localhost:3443/Api/equipment/Item?items=1"
 ```
 
-The response uses the same shapes and error codes as any other caller. The
-effective permission is grant ∩ pinned role, and the mutation records the
-app id and the key id.
+```json
+{
+  "data": [
+    {
+      "data": {
+        "name": "Main tent 10x15",
+        "status": "out",
+        "category": "equipment.Category.06H1FM176GDKRM4EKNBQAVC94X",
+        "serial_number": "TN-10015-A"
+      },
+      "meta": {
+        "id": "EQ-2026-0001",
+        "uri": "urn:facet:equipment:Item:EQ-2026-0001",
+        "display_name": "Main tent 10x15"
+      }
+    }
+  ],
+  "meta": { "count": 40, "more": false }
+}
+```
 
-### 4. Rotate and revoke
+The response uses the same shapes and error codes as any other caller.
+Note what is missing. `purchase_price` carries the `finance` tag, and the
+pinned role does not list that tag — the key sees the item, not its cost.
+The effective permission is grant ∩ pinned role, and the mutation records
+the app id and the key id.
+
+The key can also read its own bounds. The manifest on `GET /Api/iam/me`
+shows the effective intersection, the key's identity, and its channels:
+
+```json
+{
+  "account": {
+    "display_name": "Brightwater stock sync",
+    "email": "svc.bfr-stock-sync@apps.facet.invalid"
+  },
+  "active_role": "iam.Roles.stock_sync",
+  "expires_at": null,
+  "connectivity": ["api"],
+  "channel": "api",
+  "permissions": {
+    "equipment.Item": ["read", "create", "update"]
+  }
+}
+```
+
+`expires_at` is `null`: a key does not expire on its own. The `write` grant
+arrived as `create` plus `update`. See
+[Show only what the user can do](/build/apps/connect/permission-manifest/).
+
+### 5. Rotate and revoke
 
 Issue a new key to rotate: the route revokes the old key in the same
 transaction. Revoke with the delete route when the key is no longer needed:
 
 ```sh
-curl -s -b cookies.txt -X DELETE \
-  https://facet.company.tld/Api/app/01JHQ7K2N6B1WJ8PC4T9XYR3M5/api-key \
+curl -sk -b cookies.txt -X DELETE \
+  https://facet.localhost:3443/Api/app/06H1G4RS1CQFAC128KPASQFX7H/api-key \
   -H "X-Requested-With: XMLHttpRequest"
+```
+
+```json
+{"revoked": true}
 ```
 
 ## Explanation
@@ -146,35 +260,19 @@ backend's secret store at once. A lost key is replaced by issuing a new one,
 which revokes the old key.
 :::
 
-## Example
+## Troubleshooting
 
-A complete sequence, from operator sign-in to revocation:
+**Issuance answers `422`: "The app's grants do not intersect the service role's permissions".**
 
-```sh
-# 1. Sign in as an operator and keep the session cookies.
-curl -s -c cookies.txt -X POST https://facet.company.tld/Api/iam/login \
-  -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
-  -d '{"email": "admin@company.tld", "password": "op-secret"}'
-
-# 2. Issue the app key and store the raw value. It shows exactly once.
-curl -s -b cookies.txt -X POST \
-  https://facet.company.tld/Api/app/01JHQ7K2N6B1WJ8PC4T9XYR3M5/api-key \
-  -H "X-Requested-With: XMLHttpRequest" \
-  | jq -r .key > deal-bot.key
-chmod 600 deal-bot.key
-
-# 3. Call the API with the key. No CSRF header, no cookie.
-curl -s -H "Authorization: Bearer $(cat deal-bot.key)" \
-  "https://facet.company.tld/Api/crm/Company?per_page=5"
-
-# 4. Revoke when done. Idempotent.
-curl -s -b cookies.txt -X DELETE \
-  https://facet.company.tld/Api/app/01JHQ7K2N6B1WJ8PC4T9XYR3M5/api-key \
-  -H "X-Requested-With: XMLHttpRequest"
+```json
+{"error": "The app's grants do not intersect the service role iam.Roles.warehouse's permissions — the key would be refused at every request. Repeat each grant target as a concrete role permission line (e.g. {\"on\": \"equipment.Item\", \"action\": \"*\"}) or widen the role."}
 ```
 
-## Troubleshooting
+The pinned role's lines do not reach the grant targets. This bites when the
+role carries domain-wide lines such as `{"on": "equipment", "action": "*"}`:
+a domain-wide line covers the domain for a person, but an app channel needs
+the concrete target on the role. Write the line the message suggests —
+`{"on": "equipment.Item", "action": "*"}` — and issue again.
 
 **Every route answers `401` with a valid key.**
 
@@ -202,11 +300,12 @@ request answers `401`, and the server log carries the reason.
 
 - [How apps work on Facet](/build/apps/how-apps-work/) — the bounds behind the
   key.
-- [Registering an app](/build/apps/connect/register/) — create the confidential
+- [Register an app](/build/apps/connect/register/) — create the confidential
   registration.
 - [Use the REST API](/build/apps/data/rest-api/) — the surface the key calls.
-- [Machine access: API keys](/admin/apps-access/api-keys/) — self-service keys for
+- [API keys](/admin/apps-access/api-keys/) — self-service keys for
+
   people.
-- [Controlling app reach (grants)](/admin/apps-access/app-grants/) — the grant ceiling.
+- [Control what apps can reach](/admin/apps-access/app-grants/) — the grant ceiling.
 - Internals on GitHub:
   [app-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/app-system.md).

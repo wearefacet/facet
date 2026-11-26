@@ -41,6 +41,9 @@ Rules the validator enforces at save time:
 - Every root variable must be a declared field or a reserved variable.
   `{{ id }}` is rejected — the document id is not a variable. Declare a
   string field for a human-facing code and print that field.
+- A template must not reference a field that carries (or contains) a
+  secret value: the save rejects it with `search template must not
+  reference the secret field '…'` (same wording for `display_name`).
 - Variables used only inside `{% if %}` or `{% for %}` arguments are not
   validated.
 
@@ -197,3 +200,4 @@ stored label; the two templates above do not use it.
 - [View templates](/build/model/views/document-pages/) — the structured view templates, a separate format.
 - [View template schema](/reference/dvt-schema/) — the full variable list a view template binds.
 - [Computed fields](/build/model/data/computed-fields/) — Lua functions, not templates.
+- [Secret fields](/build/model/data/secret-fields/) — why a secret field cannot appear in a template.

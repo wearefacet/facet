@@ -25,7 +25,7 @@ customer. For the full trip and what to do about roles and people, see
 
 - **A published domain.** A draft cannot be exported — the command answers
   `422`.
-- **The `facet` command-line tool** on the machine, with access to its
+- **The [`facet` command-line tool](/reference/cli-facet/)** on the machine, with access to its
   database.
 - **A decision on documents.** Definitions move by default; data only with
   `--with-documents`.
@@ -205,3 +205,4 @@ the references resolve once their targets exist.
 - [Change a live domain safely](/build/model/change-a-live-domain/) — the version gate the merge enforces.
 - [The domain watcher](/build/model/in-files/domain-watcher/) — apply the same files automatically while you develop.
 - Internals on GitHub: [portable-domains.md](https://github.com/wearefacet/facet/blob/main/doc/backend/portable-domains.md) — the bundle format and every gate.
+- [The domain file layout](/build/model/in-files/domain-files/)

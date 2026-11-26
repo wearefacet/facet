@@ -1,7 +1,7 @@
 ---
 type: explanation
 title: How domains stay isolated
-description: What a domain owns, what crosses a boundary, and the two consents that let it cross.
+description: What a domain owns, what crosses a boundary, and the two consents that keep domains isolated.
 audience: [author, developer]
 features: [DOM-01, DOM-14]
 sidebar:

@@ -144,3 +144,4 @@ The endpoint needs authentication and a dev server. In production it answers
 - [Check before you publish](/build/model/in-app/check-before-publish/) — the report the agent reads.
 - [Build apps with a coding agent](/build/apps/agents/coding-agents/) — the app half of the story.
 - Internals on GitHub: [dev-domain-watcher.md](https://github.com/wearefacet/facet/blob/main/doc/backend/dev-domain-watcher.md).
+- [Choose how you build](/build/model/)

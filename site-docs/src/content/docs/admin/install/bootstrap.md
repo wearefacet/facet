@@ -1,18 +1,18 @@
 ---
+title: First start and bootstrap
+description: Bootstrap a fresh install — migrate, seed the core schema, create the first admin, and run the operator tasks.
 type: how-to
-title: Bootstrap and CLI tasks
-description: Run the facet CLI to bootstrap an install, manage accounts, recover access, and do maintenance.
 audience: [operator]
 features: [IAM-12, DOM-24]
 sidebar:
   order: 3
-verified_at: 008dd880
+verified_at: eee55a2
 ---
 
-The backend binary doubles as the operator CLI. One command, `facet`, runs
-the server and every bootstrap and maintenance task. The same binary sits
-inside the backend container image, so a one-off container runs any CLI task
-against the live stack.
+Your stack is up and the database is empty. Facet ships one binary that does
+two jobs: it runs the server, and it runs every bootstrap and maintenance
+task. The same binary sits inside the backend container image, so a one-off
+container runs any task against the live stack.
 
 ## When to use this
 
@@ -32,6 +32,9 @@ Run a CLI task when:
 - A command that mutates data publishes its events to Redis at exit. A
   publish failure forces exit code 1: the database write stands, but no
   consumer received the change.
+- In the release image the binary lives at `/app/facet` and is not on
+  `PATH`. A one-off container task runs through the entrypoint — see
+  [Go to production](/admin/install/production/) for the exact form.
 
 ## Steps
 
@@ -46,7 +49,7 @@ facet migrate && facet seed:core
 `migrate` applies every pending migration. `seed:core` seeds the core
 doctypes and the currency registry. Both steps are idempotent, so re-running
 them changes nothing. The container entrypoint runs this chain on every
-boot.
+server boot.
 
 Then create the first administrator:
 
@@ -57,7 +60,8 @@ facet seed:admin ops@your-company.tld
 The command prints a one-time password. It shows once, stores only a hash,
 and forces a password change at first login. Re-running the command with the
 same email exits non-zero: the bootstrap never resets an existing
-credential.
+credential. You can also set `SEED_ADMIN_EMAIL` instead of passing the
+address.
 
 `facet db_reset` is the destructive alternative. It drops the database,
 re-creates it, migrates, and seeds the core doctypes. It creates no account.
@@ -109,8 +113,8 @@ facet auth:mode hybrid
 | `facet doctype:migrate-retry <doctype>` | Clear a migration error and re-run the lazy migration. |
 | `facet cron:list` | Print the cron task table: id, schedule key, expression, next run (UTC). |
 
-See [Managed indexes](/admin/keep-running/indexes/) for `index:retry` and
-[File storage: filesystem or S3](/admin/configure/file-storage/) for the artifact
+See [Indexes](/admin/keep-running/indexes/) for `index:retry` and
+[File storage](/admin/configure/file-storage/) for the artifact
 commands.
 
 ### 5. Move a domain between installs
@@ -177,8 +181,10 @@ re-check the state; the database write itself succeeded.
 ## Related
 
 - [Database migrations](/admin/keep-running/migrations/) — what `migrate` and `db_reset` run.
-- [Deploy to production](/admin/install/production/) — the bootstrap inside the container path.
-- [Managed indexes](/admin/keep-running/indexes/) — the `index:retry` command in full.
-- [File storage: filesystem or S3](/admin/configure/file-storage/) — the artifact commands in full.
-- [Account lifecycle](/admin/people/accounts/) — the account states the CLI creates.
+- [Go to production](/admin/install/production/) — the bootstrap inside the container path.
+- [Indexes](/admin/keep-running/indexes/) — the `index:retry` command in full.
+- [File storage](/admin/configure/file-storage/) — the artifact commands in full.
+- [Manage accounts](/admin/people/accounts/) — the account states the CLI creates.
 - Internals on GitHub: [cli.md](https://github.com/wearefacet/facet/blob/main/doc/backend/cli.md), [first-deployment.md](https://github.com/wearefacet/facet/blob/main/doc/ops/first-deployment.md).
+- [Security and governance](/discover/security/)
+- [facet CLI](/reference/cli-facet/)

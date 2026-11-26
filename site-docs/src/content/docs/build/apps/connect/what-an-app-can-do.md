@@ -85,3 +85,4 @@ and the permission lines of the elected role.
 - [Roles, levels and the authority guard](/admin/people/who-can-change-roles/) — the role model the elected role comes from.
 - [Govern](/admin/) — edit the roles an app can elect.
 - Internals on GitHub: [app-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/app-system.md).
+- [Control what apps can reach](/admin/apps-access/app-grants/)

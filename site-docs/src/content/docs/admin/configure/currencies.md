@@ -1,18 +1,19 @@
 ---
+title: Currencies
+description: Manage the currency registry and learn how money values are stored, validated, and filtered.
 type: how-to
-title: Currencies and money
-description: Manage the currency list and learn how money values are stored, validated, and filtered.
 audience: [operator, author]
 features: [PLT-14, FE-15]
 sidebar:
   order: 5
-verified_at: 008dd880
+verified_at: eee55a2
 ---
 
-A currency is a document. Facet seeds the registry, and you curate it in
-the Configure area like any other list. A money field always carries a
-value and a ticker together. The backend stores both and checks the
-ticker on every write.
+Your team books rentals in euros, but a supplier invoices in dollars. A
+currency is a document. Facet seeds the registry, and you curate it in the
+Configure area like any other list. A money field always carries a value
+and a ticker together. The backend stores both and checks the ticker on
+every write.
 
 ## When to use this
 
@@ -26,7 +27,7 @@ Work on currencies when:
 
 - The `core` domain is hidden from the workspace sidebar. The Configure
   area is the way in.
-- `facet seed:core` seeds the currency rows. The command is idempotent,
+- [`facet seed:core`](/reference/cli-facet/) seeds the currency rows. The command is idempotent,
   so a re-run changes nothing.
 
 ## Steps
@@ -42,7 +43,8 @@ templates.
 
 The seed ships the ISO-4217 circulating currencies. Six rows start
 active — `CHF`, `CNY`, `EUR`, `GBP`, `JPY`, and `USD` — and every other
-row ships inactive. One row holds these fields:
+row ships inactive. `EUR` and `USD` are pinned as favorites. One row holds
+these fields:
 
 | Field | Meaning | Example |
 | --- | --- | --- |
@@ -50,7 +52,7 @@ row ships inactive. One row holds these fields:
 | `symbol` | The display glyph. Optional — an empty symbol renders the bare ticker. | `€` |
 | `name` | The English currency name. | `Euro` |
 | `digits` | Sub-unit digits, 0 to 4. Default `2`. | `2` |
-| `active` | Puts the ticker in create flows when `true`. | `true` |
+| `active` | Puts the ticker in create flows when `true`. A currency you create by hand starts active. | `true` |
 | `favorite` | Pins the row to the top of the currency picker. | `false` |
 | `grouping` | Display grouping: `standard` (thousands) or `lakhs` (12,34,567). | `standard` |
 
@@ -92,7 +94,9 @@ One money value is one JSON object:
 as a float, so precision survives.
 
 A money filter accepts two forms: `USD 1000` compares that currency
-only, and a bare `1000` compares any currency.
+only, and a bare `1000` compares any currency. An unregistered ticker in a
+filter is a caller typo, so it answers `422` instead of silently matching
+nothing.
 
 ## Example
 
@@ -125,6 +129,17 @@ curl -s -H "Authorization: Bearer $FACET_API_KEY" \
   "https://facet.localhost:3443/Api/hr/Employee?filters[salary__gte]=USD%201000"
 ```
 
+On the Brightwater example, the two filter forms behave differently. The
+items carry purchase prices in euros:
+
+```text
+GET /Api/equipment/Item?filters[purchase_price__gte]=USD 5000
+→ {"data":[],"meta":{"count":0,"more":false}}     # no USD-priced items exist
+
+GET /Api/equipment/Item?filters[purchase_price__gte]=1000
+→ the tents at EUR 4800.00                        # a bare amount crosses currencies
+```
+
 ## Troubleshooting
 
 **A save answers `422` with `inactive_currency`.**
@@ -139,7 +154,7 @@ row and save a document; the next write rebuilds the registry.
 
 **An import fails on a currency.**
 
-The ticker was deleted, not just deactivated. Re-add the currency row
+The ticker was deleted, not only deactivated. Re-add the currency row
 with the same ticker, then run the import again.
 
 **The config file holds no currency list.**

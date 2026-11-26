@@ -22,7 +22,7 @@ dialog shows the result before anything lands.
 
 ## Before you start
 
-- **A draft domain** that you hold the right to update.
+- **A [draft domain](/build/model/in-app/how-drafts-work/)** that you hold the right to update.
 - **Nothing to lose.** The check is read-only. It writes nothing.
 
 ## Steps
@@ -178,3 +178,4 @@ live domain safely](/build/model/change-a-live-domain/).
 - [How drafts work](/build/model/in-app/how-drafts-work/) — what publish re-checks on top.
 - [The domain watcher](/build/model/in-files/domain-watcher/) — where the same diagnostics surface in files mode.
 - Internals on GitHub: [draft-domains.md](https://github.com/wearefacet/facet/blob/main/doc/backend/draft-domains.md).
+- [The domain file layout](/build/model/in-files/domain-files/)

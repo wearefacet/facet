@@ -105,7 +105,7 @@ Settings pin can change the key-driven ones.
 The `lua:` config section loads (`src/config.cr:168-171,603-612`), but the
 sandbox does not read it — `src/lua/sandbox.cr:33-35` always constructs the
 engine with the defaults above. Raising the keys changes nothing until the
-wiring lands. Logged as discrepancy #19.
+wiring lands. Logged as discrepancy #28.
 
 ## Assistant
 
@@ -123,7 +123,7 @@ wiring lands. Logged as discrepancy #19.
 
 | Limit | Value | Config key / constant | Source |
 | --- | --- | --- | --- |
-| Password minimum length | 8 characters | constant | `src/iam/routes.cr:830` |
+| Password minimum length | 8 characters | constant | `src/iam/routes.cr:828` |
 | Password lockout threshold | 10 failed attempts per account, 300 s window | `MAX_PWD_ATTEMPTS` | `src/iam/login.cr:40-51`, `src/iam/login_throttle.cr:94` |
 | IP lockout threshold | 20 failed attempts per IP, 300 s window | `MAX_IP_ATTEMPTS` | `src/iam/login.cr:40-51`, `src/iam/login_throttle.cr:116` |
 | MFA challenge issue cap | 5 challenges, 300 s window | `MAX_CHALLENGE_ISSUES` | `src/iam/login.cr:40-51`, `src/iam/login_throttle.cr:140` |

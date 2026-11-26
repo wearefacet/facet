@@ -1,20 +1,16 @@
 ---
 title: Welcome to Facet
-description: Facet is a governed application platform for small and mid-sized organizations.
+description: Facet is one governed home for your business data, plus the apps that run on it.
 template: splash
 hero:
   title: Welcome to <span class="hero-accent">Facet</span>
-  tagline: Data, permissions, and history for the apps your teams build.
+  tagline: One governed home for your business data, plus the apps that run on it.
   actions:
-    - text: Evaluate
-      link: /discover/
-      icon: right-arrow
-    - text: Build
+    - text: Your first hour
       link: /build/first-hour/
       icon: right-arrow
-      variant: secondary
-    - text: Operate
-      link: /admin/
+    - text: How Facet works
+      link: /discover/how-it-works/
       icon: right-arrow
       variant: secondary
 ---
@@ -27,18 +23,17 @@ import LandingGrid from '../../components/landing/LandingGrid.astro';
 import Pillar from '../../components/landing/Pillar.astro';
 import SectionHead from '../../components/landing/SectionHead.astro';
 
-<SectionHead eyebrow="What Facet holds" title="One governed home for your business data">
+<SectionHead eyebrow="What Facet holds" title="The records, the rules, and the memory">
 
-Facet is a governed application platform for small and mid-sized
-organizations. You model your business data in domains. Every app — built by
-your team or by an AI agent — reads and writes that data under the same
-enforced permissions, with a full audit trail of every change.
+The records are your documents in **domains** — clients, equipment, rentals.
+The rules are **roles** that decide who reads and writes what, down to single
+fields and rows. The memory is a full record of every change, with undo.
 
 </SectionHead>
 
 <LandingGrid>
 	<Pillar kind="data" title="Data">
-		Model the business in domains — clients, equipment, hiring — one slice at
+		Model the business in domains — clients, equipment, rentals — one slice at
 		a time. Documents and files live in Facet, not in each app.
 	</Pillar>
 	<Pillar kind="permissions" title="Permissions">
@@ -63,23 +58,30 @@ history remain.
 	headings={['Apps', 'Facet', 'Domains']}
 	apps={["Your team's app", 'AI agent', 'Workspace']}
 	layers={['Accounts & roles', 'Permissions', 'Audit log']}
-	domains={['Clients', 'Equipment', 'Hiring']}
+	domains={['Clients', 'Equipment', 'Rentals']}
 	caption="Same roles, same rules, same audit trail — whoever built the app."
 />
 
-<SectionHead eyebrow="Start here" title="Pick your path" />
+<SectionHead eyebrow="Start here" title="Pick your tab" />
 
 <LandingGrid min="14rem">
-	<Door href="/discover/" title="Evaluate" step="01" icon="evaluate">
-		What Facet is, how it protects data, and whether it fits your organization.
+	<Door href="/discover/" title="Discover" step="01" icon="evaluate">
+		What is Facet, how does it work in plain words, and is it safe and right
+		for your organization?
 	</Door>
-	<Door href="/build/first-hour/" title="Build" step="02" icon="build">
-		Learn by doing: run Facet, build a domain, give your team access, ship an
-		app.
+	<Door href="/use/" title="Use" step="02" icon="use">
+		How do you find, read, change, and track your data day to day — and how
+		do you use the assistant?
 	</Door>
-	<Door href="/admin/" title="Operate" step="03" icon="operate">
-		Deploy with containers, configure the stack, and keep it healthy in
-		production.
+	<Door href="/build/" title="Build" step="03" icon="build">
+		How do you model your data, and build apps on it — in the app or in
+		files?
+	</Door>
+	<Door href="/admin/" title="Administer" step="04" icon="operate">
+		How do you install, configure, secure, govern, and run Facet?
+	</Door>
+	<Door href="/reference/" title="Reference" step="05" icon="reference">
+		What is the exact key, field, operator, command, or payload?
 	</Door>
 </LandingGrid>
 

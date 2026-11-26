@@ -1,0 +1,103 @@
+---
+type: overview
+title: Administer
+description: Install Facet, decide who sees what, follow every change, and keep the installation healthy — the admin and operator handbook.
+audience: [admin, operator]
+features: []
+verified_at: eee55a2
+sidebar:
+  order: 0
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+This tab is for the administrator and the operator — often the same person in
+a small organization. It covers the whole run book: install Facet, configure
+it, decide who sees and does what, follow every change, and keep the
+installation healthy. Each page stands alone; the cross-links fill in the
+model.
+
+Evaluating Facet first? [Security and governance](/discover/security/)
+answers the same questions from an auditor's point of view.
+
+## What do you want to do?
+
+<CardGrid>
+	<LinkCard title="Install Facet" description="System requirements, containers, going to production, and the first start." href="/admin/install/requirements/" />
+	<LinkCard title="Decide who sees what" description="Accounts, roles, row scopes, field tags, MFA, and single sign-on." href="/admin/people/" />
+	<LinkCard title="See what happened" description="Read the audit trail, roll a change back, and know what retention keeps." href="/admin/history/audit/" />
+	<LinkCard title="Keep it running" description="Health, jobs, migrations, upgrades, indexes, and backups." href="/admin/keep-running/" />
+</CardGrid>
+
+## All pages in this section
+
+**Install**:
+
+- [System requirements](/admin/install/requirements/) — what Facet needs to run.
+- [Run with containers](/admin/install/containers/) — the shipped compose stacks and TLS.
+- [Go to production](/admin/install/production/) — the checklist before real users arrive.
+- [First start and bootstrap](/admin/install/bootstrap/) — the admin account and the core domains.
+
+**Configure**:
+
+- [Configure Facet](/admin/configure/) — the group at a glance.
+- [Configuration files](/admin/configure/configuration-files/) — `config.{env}.yml`, the single source of truth.
+- [System settings](/admin/configure/system-settings/) — settings that change at runtime.
+- [Email](/admin/configure/email/) — outgoing mail for invites and notifications.
+- [File storage](/admin/configure/file-storage/) — local disk or S3.
+- [Currencies](/admin/configure/currencies/) — the money the workspace can hold.
+- [Languages](/admin/configure/languages/) — interface languages and locale formats.
+
+**People and access** — start at [People and access](/admin/people/), the nine steps in order:
+
+- [People and access](/admin/people/) — accounts, roles, scopes, and sign-in rules.
+- [Manage accounts](/admin/people/accounts/)
+- [Roles and permissions](/admin/people/roles-and-permissions/)
+- [Assign roles](/admin/people/assign-roles/)
+- [Show each role only its rows](/admin/people/row-scopes/)
+- [Hide a field from some roles](/admin/people/hidden-fields/)
+- [Who can change roles](/admin/people/who-can-change-roles/)
+- [Require MFA](/admin/people/mfa/)
+- [Single sign-on (OIDC)](/admin/people/sso/)
+- [Sessions and lockouts](/admin/people/sessions-lockouts/)
+
+**Apps and machine access**:
+
+- [Control what apps can reach](/admin/apps-access/app-grants/) — bound what an external app may attempt.
+- [API keys](/admin/apps-access/api-keys/) — static keys pinned to one account and role.
+
+**History and audit**:
+
+- [See who did what](/admin/history/audit/) — the mutation log and the login-event log.
+- [Roll back a change](/admin/history/roll-back/) — undo to an earlier mutation, restore a delete.
+- [Retention: what is kept](/admin/history/retention/) — how long each data class survives.
+
+**The assistant**:
+
+- [Connect a language model](/admin/assistant/connect-a-model/) — wire the assistant to a provider.
+- [Govern the assistant](/admin/assistant/govern/) — availability, budgets, instructions, and tools.
+
+**Keep it running**:
+
+- [Keep it running](/admin/keep-running/) — the group at a glance.
+- [Health, metrics and logs](/admin/keep-running/monitoring/)
+- [Background jobs and cron](/admin/keep-running/jobs-cron/)
+- [Database migrations](/admin/keep-running/migrations/)
+- [Upgrade Facet](/admin/keep-running/upgrades/)
+- [Indexes](/admin/keep-running/indexes/)
+- [Back up and restore](/admin/keep-running/backup-restore/)
+
+**Under the hood** — the L3 pages, for operators who want the exact model:
+
+- [Under the hood](/admin/under-the-hood/)
+- [The change log, in detail](/admin/under-the-hood/change-log/)
+- [Why you act as one role at a time](/admin/under-the-hood/one-role-at-a-time/)
+- [How access is enforced](/admin/under-the-hood/how-access-is-enforced/)
+- [Events and delivery guarantees](/admin/under-the-hood/events-and-delivery/)
+- [AI and permissions, in detail](/admin/under-the-hood/ai-and-permissions/)
+
+## Related
+
+- [Security and governance](/discover/security/) — the evaluator summary of this model.
+- [Write row rules for roles](/build/model/access/named-scopes/) — the author's half of row scopes.
+- [Reference](/reference/) — the exact config keys and system settings.

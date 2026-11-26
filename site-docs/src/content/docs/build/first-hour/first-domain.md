@@ -1,50 +1,84 @@
 ---
 type: tutorial
-title: Build your first domain
-description: Model an Inventory domain in the Builder — doctypes, fields, publish, kanban.
+title: Model your first domain
+description: Build the Brightwater equipment domain in a draft — doctypes, fields, and a kanban board — check it, then publish it to a live domain.
 audience: [author]
-features: [DOM-01, DOM-02, DOM-03, DOM-04, DOM-16, DOM-21, FE-10, FE-03]
+features: [DOM-01, DOM-02, DOM-03, DOM-04, DOM-16, DOM-21, FE-10, FE-03, AI-02]
 sidebar:
   order: 2
-verified_at: e7c24a4
+prev: /build/first-hour/run-facet/
+next: /build/first-hour/first-app/
+verified_at: eee55a2
 ---
 
-You model a small business area end to end: a domain named **Inventory** with
-two doctypes, one reference between them, and a kanban board your team can
-read at a glance. You do it all in the Builder — Facet's draft-and-publish
-modeling surface. No code, no schema files.
+You model the Brightwater equipment domain: the categories of gear, the
+items themselves, and the maintenance tickets that keep them working. You
+build it in a draft, try it on a kanban board, and publish it as a live
+domain. The draft keeps every experiment away from real data until you
+publish.
 
-This tutorial continues from [Run Facet in 15 minutes](/build/first-hour/run-facet/).
-Sign in as the admin you created there.
+**You will build:** the Brightwater `equipment` domain — three doctypes,
+typed fields, and a kanban board of maintenance tickets.
+**Time:** about 20 minutes.
+**You need:** [Facet running and your first admin signed
+in](/build/first-hour/run-facet/) — tutorial 1 ends there. Creating domains
+needs an administrator account; this tutorial signs in as that admin.
 
-## What you need
+*The path your domain takes from a private draft to the live workspace.*
 
-- A running instance with the core schema seeded (T1 leaves you there).
-- An admin session in the browser.
+<!-- d2
+direction: down
+draft: "Open a draft"
+model: "Add doctypes and fields"
+preview: "Try it in Preview"
+check: "Check"
+publish: "Publish"
+live: "Live domain" {class: ok}
+draft -> model
+model -> preview
+preview -> check
+check -> model: fix
+check -> publish: clean
+publish -> live
+-->
+<div class="d2-diagram">
+<img class="d2-diagram__img d2-diagram__light" src="/diagrams/f5f3c4f4-light.svg" alt="Open a draft" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/f5f3c4f4-dark.svg" alt="Open a draft" loading="lazy" />
+</div>
 
-## Step 1 — Create the draft
+## 1. Open the Builder and create a draft
 
-Open **Builder** in the sidebar. Click **New domain** and fill the dialog:
+Open **Builder** in the sidebar. The landing lists your drafts in progress;
+the Builder sidebar holds the actions. Click **New domain** and fill the
 
-- **Label**: `Inventory`
-- **Domain id**: `inventory` (the dialog fills it from the label)
+![The New domain dialog in the Builder: a Label field, a Domain id field with the rule that the id is permanent once the domain is published, and Cancel and Create draft buttons.](/assets/screens/build/first-domain-4.png)
+
+dialog:
+
+- **Label**: `Equipment` — the name people see in the interface.
+- **Domain id**: `equipment` — the permanent name the domain receives at
+  publish. Lowercase letters, digits, and dashes.
 
 Click **Create draft**.
 
-The draft gets a temporary id that starts with `_` (for example
-`_06h041qm5r0b`). That id is scratch — the publish step asks for the final
-name, and only lowercase letters, digits, and dashes are allowed there.
+The draft opens on its Overview. The header shows **Equipment**, a
+temporary id that starts with `_` (for example `_06h1gc0yjgkj`), and a
+**DRAFT** badge. The tab strip reads Overview / Doctypes / Editors /
+Grants / Check. Everything you build now stays in this private work area.
 
-### Checkpoint
+:::note
+**Do you have a model connected?** The domain-builder assistant can
+propose this whole draft from a plain-language description — "a warehouse
+domain with categories, items, and maintenance tickets". You review its
+proposal in the same editors this tutorial uses. Without a model, follow
+the manual steps below; they need nothing extra. See [Build with the
+assistant](/build/model/in-app/build-with-assistant/).
+:::
 
-The Builder opens the draft's Overview. The header shows
-**Inventory**, the `_`-prefixed id, and a **Draft** badge. The tab strip
-reads Overview / Doctypes / Editors / Grants / Check.
+## 2. Add the Category doctype
 
-## Step 2 — Add the Supplier doctype
-
-Click **Add doctype** in the sidebar, enter `Supplier`, and click
-**Create doctype**. The doctype editor opens on the Fields tab.
+Click **Add doctype** in the sidebar, type `Category`, and click **Create
+doctype**. The doctype editor opens on the Fields tab.
 
 Click **Add field**. A field named `new_field` appears. Set it up in the
 right pane:
@@ -55,154 +89,230 @@ right pane:
 - **Required**: on
 
 Click **Save** in the header. The flash message **Saved** confirms the
-write.
+write. Edits stay local until that save — a reload drops them.
 
-### Checkpoint
+A document needs a display label. Open the **General** tab, scroll to
+**Document templates**, set the **Label template** to `{{ name }}`, and
+save. Each category then displays by its name in every list and link.
 
-The Fields tab lists one field: `name` (string, required).
+You should see one field, `name`, marked required with an asterisk.
 
-## Step 3 — Add the Item doctype
+## 3. Add the Item doctype
 
-Click **Add doctype** again, enter `Item`, and click **Create doctype**.
-Add four fields, saving after each set of edits:
+Click **Add doctype** again, type `Item`, and click **Create doctype**.
+Add five fields, saving after each:
 
-| Key          | Type     | Settings                                                |
-| ------------ | -------- | ------------------------------------------------------- |
-| `name`       | String   | Title `Name`, **Required** on                           |
-| `quantity`   | Integer  | Title `Quantity`                                        |
-| `status`     | Enum     | Title `Status`; values `in_stock` (In stock), `low` (Low), `ordered` (Ordered) |
-| `supplier`   | Reference | Title `Supplier`; Target doctype `Supplier`            |
+| Key | Type | Settings |
+| --- | --- | --- |
+| `name` | String | Title `Name`, **Required** on |
+| `category` | Reference | Title `Category`; Target doctype `Category` |
+| `status` | Enum | Title `Status`; values `available`, `out`, `in_repair` |
+| `purchase_price` | Money | Title `Purchase price` |
+| `serial_number` | String | Title `Serial number`; **Unique** on |
 
-Two of these deserve a word:
+![Adding the category field on the Item doctype: the field editor with Key and Title, the Type list open on String, and the Filter capabilities chips below.](/assets/screens/build/first-domain-5.png)
 
-- **Enum** holds a fixed value set. Type each value key and press the add
-  control; `In stock` gets the label, and the first value is the default.
-  The status field drives the kanban lanes later, so an enum is the right
-  type — a plain string cannot group a board.
-- **Reference** points at another doctype. The editor qualifies the bare
-  target to `inventory.Supplier` (the publish-target domain, not the draft
-  id) — that qualified form is what the publish step needs.
+Four of these deserve a word:
 
-Add one more field for later: **Key** `cost_price`, **Type** Integer, Title
-`Cost price`. Save.
+- **Enum** holds a fixed value set. Type each value key into the `+ value`
+  box and press Enter — the interface shows a human label, so `available`
+  displays as Available. Only enum and boolean fields can group a kanban
+  board, which is why the statuses use this type.
+- **Reference** points at another doctype. On commit the editor qualifies
+  the bare target to the draft id — `_06h1gc0yjgkj.Category` in this run.
+  Publish rewrites it to `equipment.Category`, so the qualified form is
+  correct as it is.
+- **Money** stores an amount with a currency. The editor asks where the
+  currency comes from; the defaults are fine for now.
+- **Unique** refuses a second document with the same value — no two items
+  share a serial number.
 
-### Checkpoint
+Set the **Label template** to `{{ name }}` on the General tab and save.
+You should see five fields; the list shows a type chip on each — string,
+reference, enum, money, string.
 
-The Fields tab lists five fields: `name`, `quantity`, `status`, `supplier`,
-`cost_price`.
+## 4. Add the MaintenanceTicket doctype
 
-## Step 4 — Read the diagnostics
+Create the doctype the same way. Its fields:
 
-Open the **Check** tab. The Builder runs the definition diagnostics
-automatically and shows one of two things:
+| Key | Type | Settings |
+| --- | --- | --- |
+| `item` | Reference | Title `Item`; Target doctype `Item`; **Required** on |
+| `problem` | Long Text | Title `Problem`; **Required** on |
+| `status` | Enum | Title `State`; values `reported`, `diagnosing`, `waiting_parts`, `fixed` |
 
-- **"No problems detected — ready to publish."** — you are done here.
-- An issue list grouped **By doctype**. Fix what it names and click
-  **Refresh**.
+Two notes:
 
-:::note
-Warnings do not block a publish. One class is worth fixing before you go
-live anyway: a reference whose target is missing breaks every future write
-to that field.
-:::
+- The **Default ★ marks the default** select under the value chips picks
+  the value a new document starts with. Pick `reported`.
+- The key `status` with the title `State` is deliberate. `state` is a
+  reserved name, and the save refuses it with *"is a reserved field name
+  and cannot be used"*. The reserved names include `state`, `id`,
+  `version`, and `links`.
 
-### Checkpoint
+Set the **Label template** to `{{ item }}` — a ticket displays the item it
+is about — and save. You should see three fields, `item` and `problem`
+marked required.
 
-The Check tab shows the clean state, or only notices you understand.
+## 5. Try the model in Preview
 
-## Step 5 — Publish
+Click **Preview** in the top bar. The workspace opens with a banner —
+"Previewing draft … — schema edits are not available here" — and your
+draft's doctypes in the sidebar. Nothing here touches live data.
 
-Click **Publish** in the top bar. The dialog asks for the **Target domain
-name** — it is prefilled with `inventory`. Confirm with **Publish**.
+Open the **MaintenanceTicket** list. A new doctype has no views, so the
+page shows the starter screen: one card per layout. Pick **Kanban** —
+"Cards grouped into lanes".
 
-Publishing copies the structure into a fresh live domain named `inventory`
-and drops the draft. The reference targets are rewritten from the draft id
-to the real domain name as part of the copy.
+The New view dialog asks for:
 
-### Checkpoint
+![The New view dialog for a kanban view: Name, the Scope choice between Personal and General, Board mode with By field values and Custom lanes, Group by, Allow card moves, and Card sort.](/assets/screens/build/first-domain-6.png)
 
-The dialog closes and the Builder landing replaces the draft view. Open the
-workspace sidebar: **Inventory** is there with its two doctypes.
+- **Name**: `Board`
+- **Scope**: **General** — every reader of the doctype sees this view.
+  The choice is fixed after you save.
+- **Board mode**: **By field values** — one lane per value of the chosen
+  field.
+- **Group by**: `State`. Each value of the field becomes a lane.
 
-## Step 6 — Create some records
+Click **Create view**. Four lanes open — Reported, Diagnosing, Waiting for
+parts, Fixed — all empty.
 
-Click **Inventory → Item** in the sidebar. The doctype has no view yet: the
-starter screen shows one card per layout. Pick **Table** to create the
-first view — name it `All items`, keep the suggested columns, and save.
-The list opens on the new view. Use **New** (the list's create action)
-three times:
+Now feed the board. The ticket form requires an item, and the item form
+requires a category, so create them in that order through each list's
+**New** button:
 
-| Name           | Quantity | Status    | Supplier    | Cost price |
-| -------------- | -------- | --------- | ----------- | ---------- |
-| Standing desk  | 12       | In stock  | Acme Corp   | 240        |
-| Office chair   | 3        | Low       | Globex Ltd  | 95         |
-| Whiteboard     | 0        | Ordered   | Acme Corp   | 40         |
+| List | Documents |
+| --- | --- |
+| Category | `Tents` |
+| Item | `Main tent 10x15` (Tents), `Folding chair white` (Tents) |
+| MaintenanceTicket | three tickets, one per state: `reported` with the problem "Zip seam splits under load", `diagnosing` with "Frame pin sheared", `fixed` with "Loose guy-line clip replaced" |
 
-Create the suppliers through **Inventory → Supplier** first (Acme Corp,
-Globex Ltd), so the Item form can pick them in the supplier field.
+Each ticket card shows its item name — the label template at work. The
+board now groups three tickets over the four lanes. These documents are
+scratch: publish leaves them behind unless you tick **Import existing
+documents** in step 7.
 
-### Checkpoint
+## 6. Check the draft
 
-The Item table shows three rows. Each row's label comes from the
-`display_name` template — the document label is the item's name.
+Click **Exit preview** to return to the Builder, then open the **Check**
+tab. The report runs over every doctype in the draft and groups the result
+**By doctype**. A clean doctype shows `0 issues`. The **Notices** list
+below collects informational defaults — a missing search template, the
+standard view kinds. None of them needs action.
 
-## Step 7 — Add a kanban view
+One error a fresh domain often carries: a doctype with no label template
+and no search template. The report says *"No display_name and no search
+template: the cross-doctype search endpoint skips the doctype…"*. If it
+names one of yours, open that doctype's **General** tab, set the **Label
+template**, save, and click **Refresh** on the Check tab. When nothing is
+left, the publish dialog confirms: "No problems detected. Ready to
+publish."
 
-Stay on the Item list. At the right end of the view tab strip, click the
-**+** control (**Create a new view**). The wizard walks you through two
-steps:
+## 7. Publish
 
-1. **Choose a view type** — pick **Kanban** ("Cards grouped into lanes"),
-   then **Next**.
-2. **Name and grouping** — Name: `Board`. **Board mode**: **By field
-   values**. **Group by**: `status`. Then **Create view**.
+Click **Publish** in the top bar. The **Publish draft domain** dialog
+prefills the **Target domain name** with `equipment`.
 
-### Checkpoint
+![The Publish draft domain dialog over the Check tab: the target domain name prefilled with equipment, the Import existing documents box unticked, and Cancel and Publish buttons.](/assets/screens/build/first-domain-7.png)
 
-A new **Board** tab opens next to **All items**. Three lanes — In stock, Low,
-Ordered — each carrying the cards whose status matches. The lane filter is
-live: the In stock lane lists exactly the Standing desk.
+Leave the **Import
+existing documents** box unticked — the scratch documents stay behind and
+the draft drops. Click **Publish**.
 
-## Result
+Facet copies the doctype definitions, the document templates, and your
+saved views into a fresh live domain named `equipment`, then removes the
+draft. The report names the published domain; the Builder landing shows no
+drafts.
 
-You built and shipped a domain:
+## 8. See it in the workspace
 
-- a live `inventory` domain with `Supplier` and `Item` doctypes;
-- five typed fields on Item, including a reference and an enum;
-- three records in a table view;
-- a kanban board grouped by status.
+Open the workspace and pick **Equipment** in the domain picker. The three
+doctypes are there. Open **MaintenanceTicket**: the **Board** tab you
+created in Preview carried over, with its four lanes — empty, because the
+scratch tickets stayed behind.
 
-Every step ran on a draft first — you can change the model the same way
-any time: Builder → **Edit existing** → Inventory.
+On the loaded Brightwater example the board is at work. One lane per
+state, cards showing the item and the assignee:
+
+![The MaintenanceTicket board of the equipment domain on the finished Brightwater example: one lane per state — Reported, Diagnosing, Waiting for parts, Fixed — with ticket cards showing the item, the state chip, and the assignee.](/assets/screens/build/first-domain-1.png)
+
+The equipment domain is the base of the whole Brightwater story. The
+`clients` domain holds the companies, and the `rentals` domain holds their
+bookings — each booking line references one of your items. The surfaces
+your team works on every day look like this:
+
+![The Booking list of the finished Brightwater example: the All bookings table view with search, filters, Export and Import, beside a Calendar view tab.](/assets/screens/build/first-domain-2.png)
+
+![A Booking document of the finished example: its fields, the Lines children as chips, and the comments pane.](/assets/screens/build/first-domain-3.png)
+
+You built and shipped a domain. The live `equipment` domain carries three
+doctypes and typed fields: a reference, an enum, money, a unique
+constraint. A kanban board groups the tickets by state. Label templates
+give every document its name. To change the model later, open the Builder
+and use **Edit existing** — Facet drafts the live domain for you.
+
+## What you learned
+
+- A draft is a private work area; publish copies the structure and drops
+  the draft — read more in [Drafts, editors and
+  publishing](/build/model/in-app/drafts-and-publishing/).
+- Every field type and its settings — [Field
+  types](/build/model/data/field-types/).
+- The check report, and what it means for a publish — [Check before you
+  publish](/build/model/in-app/check-before-publish/).
+- Tables, boards, and calendars as saved views — [Collection
+  views](/build/model/views/lists-boards-calendars/).
+- The assistant can propose the model with you — [Build with the
+  assistant](/build/model/in-app/build-with-assistant/).
+- Prefer files and diffs? The same domain can live as a folder of files —
+  [The same domain in files](/build/first-hour/first-domain-in-files/).
 
 ## Troubleshooting
 
-### The publish dialog shows warnings
+### The save refuses a field name
 
-Open the **Check** tab, fix what the diagnostics name, and publish again.
-The dialog lists the same warnings with their doctypes.
+The error *"is a reserved field name and cannot be used"* names a key Facet
+uses internally (`state`, `id`, `version`, `links`, and the system
+timestamps). Pick another key and keep the visible name in the **Title** —
+that is what the example does with `status` / `State`.
 
-### The kanban Group by list has no status field
+### The Group by list has no field
 
 The picker offers only enum and boolean fields that carry an equality
-filter. If you created `status` as a string, switch the field's type to
-Enum in the Builder (Edit existing → Item → Fields), publish, and the
-field appears.
+filter. Open the field in the Builder and check its **Filter
+capabilities**.
 
-### The reference field shows no suppliers in the form
+### Publish refuses the target name
 
-The Item form lists only saved suppliers. Create them on the Supplier list
-first.
+The name must be lowercase letters, digits, and dashes, and start with a
+letter. A name that starts with `_` is a draft name. Fix the **Domain id**
+on the draft's Overview tab and publish again.
+
+### My change did not appear at once
+
+The definition cache updates a second or two after a save. Wait briefly
+and test again.
 
 ### A field edit did not stick
 
 Field edits are local until the header **Save**. The flash message
 **Saved** is the confirmation — re-check the field and save again.
 
-## Next steps
+## Related
 
-- [Give your team access](/build/first-hour/team-access/) — scope this
-  inventory for a sales colleague.
-- [Draft and publish lifecycle](/build/model/in-app/drafts-and-publishing/) — the full
-  model, including publishing over a live domain.
-- [Field types](/build/model/data/field-types/) — every type and its settings.
+- [Drafts, editors and publishing](/build/model/in-app/drafts-and-publishing/)
+  — the full draft lifecycle, co-editors, and publishing over a live
+  domain.
+- [Check before you publish](/build/model/in-app/check-before-publish/) —
+  every category the report can name.
+- [Field types](/build/model/data/field-types/) — the type system in full.
+- [Collection views](/build/model/views/lists-boards-calendars/) — table,
+  kanban, and calendar views beyond the starter.
+- [How drafts work](/build/model/in-app/how-drafts-work/)
+- [Field types](/reference/field-types/)
+## Next
+
+Your domain is live. In [Ship your first app](/build/first-hour/first-app/)
+you build the Brightwater check-out app on top of it, and the warehouse
+team signs in through Facet.

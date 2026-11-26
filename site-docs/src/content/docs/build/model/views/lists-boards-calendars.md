@@ -1,15 +1,20 @@
 ---
 type: how-to
-title: Collection views
+title: Lists, boards and calendars
 description: Give a doctype's list page saved table, kanban, and calendar views.
 audience: [author]
 features: [DOM-21]
 sidebar:
   order: 2
-verified_at: f1409cdc
+verified_at: eee55a2
 ---
 
-A list page shows one tab per saved view. Each view carries a name and a surface: a table with chosen columns, a kanban board with lanes, or a calendar placed on dates. Views are documents on the doctype, so you decide which tabs every user sees.
+The Brightwater warehouse tracks forty rental items, and the maintenance
+team works through tickets as cards, not rows. A doctype's list page shows
+one tab per saved view, and each view carries a name and a surface: a table
+with chosen columns, a kanban board with lanes, or a calendar placed on
+dates. Views are documents on the doctype, so you decide which tabs every
+user sees.
 
 ## When to use this
 
@@ -19,113 +24,191 @@ A list page shows one tab per saved view. Each view carries a name and a surface
 
 ## Before you start
 
-- **Create rights.** You need the right to create views on the doctype. The plus control on the tab strip is hidden without it.
-- **Good candidates.** Know which fields make good columns, lanes, or calendar dates.
+- **Create rights.** You need the right to create views on the doctype.
+  Without it, the plus control on the tab strip is hidden and the starter
+  screen shows a note instead of cards.
+- **Good candidates.** Know which fields make good columns, lanes, or
+  calendar dates.
 
-## Steps
+## Create a view
 
-### 1. Open the view editor
+Open the doctype's list page. The tab strip above the table lists the saved
+views. Select the plus control at the end of the strip (**Create a new
+view**) to open the view editor. A doctype with no views shows a starter
+screen instead: one card per surface — table, kanban, calendar. Pick a card
+and the editor opens with that surface preselected.
 
-Open the doctype's list page. The tab strip above the table lists the saved views. Select the plus control at the end of the tab strip (**Create a new view**) to open the view editor.
-
-### 2. Choose the surface
+### Choose the surface
 
 | Surface | You configure |
 | --- | --- |
-| `table` | An ordered column list. Each column has a key, a label, and an optional width. |
+| `table` | An ordered column list. Each column has a `key`, an optional `label`, and an optional `width`. |
 | `kanban` | A `group_by` field with `mode: values`, or fixed lanes with a filter each (`mode: custom`). |
-| `calendar` | A `discriminator` date field, an optional `end_field`, a `color_by` field, and a `title_template` for the chips. |
+| `calendar` | A `discriminator` date field, an optional `end_field`, a `color_by` field, a `week_start`, and a `title_template` for the chips. |
 
-### 3. Set columns or lanes
-
-For a table, add one entry per column in display order. For a kanban, either group by an enum field so Facet builds a lane per value, or write your own lanes with a filter each. For a calendar, pick the date field that places an entry, and optionally a second date as the end of a range.
+Facet validates the config against the doctype when you save. A kanban
+group-by field must be a writable enum or boolean field that serves equality
+filters; a calendar discriminator must be a period field, or a date or
+datetime field that serves comparison filters. A config that cannot render
+answers `422` with the field path instead of landing an empty surface. The
+calendar is offered for every doctype: the system timestamps `created_at`
+and `updated_at` work as the discriminator when the doctype has no date
+field of its own.
 
 :::tip
-The title of a calendar entry can carry field values. Write a Jinja2 template in `title_template`, for example `{{ title }}`. Only fields of the doctype are allowed there.
+The title of a calendar chip can carry field values. Write a Jinja2 template
+in `title_template`, for example `{{ name }}`. Only the doctype's own
+fields, the reserved `content` variable, and the system timestamps are
+allowed there.
 :::
 
-### 4. Choose who sees the view
+### Choose who sees the view
 
-A view is **general** (every reader of the doctype sees it) or **personal** (only you see it). The editor shows the toggle when your role may create general views. The choice is fixed after you save.
+A view is **general** (every reader of the doctype sees it) or **personal**
+(only you see it). The editor shows the choice when your role may create
+general views; a role limited to its own rows always creates personal views.
+The choice is part of the view at creation.
 
 :::caution
-A view cannot change between personal and general later. Create a new view
-and delete the old one.
+A view cannot change between personal and general later. To change it,
+create a new view with the right audience and delete the old one.
 :::
 
-### 5. Save, share, and pin
+### Save and pin
 
-Save the view. Its tab appears above the table, and the link in the address bar deep-links to it. You can pin a tab so it stays at hand; a pin is a personal preference and works for general views too.
+Save the view. Its tab appears above the table, and the address bar carries
+a deep link to it. You can pin a tab so it stays at hand; a pin is a
+personal preference and works for general and personal views alike.
 
-## Example
+### In files
 
-A `crm.Deal` doctype carries a general table view named **All Deals**. This is its complete configuration:
-
-```yaml
-content:
-  name: All Deals
-  surface: table
-  config:
-    columns:
-      - key: title
-        label: Deal
-      - key: value
-        label: Value
-        width: 120px
-      - key: status
-        label: Status
-        width: 110px
-      - key: probability
-        label: Prob.
-        width: 90px
-      - key: expected_close_date
-        label: Expected Close
-        width: 150px
-meta:
-  parent_id: crm.Deal
-```
-
-The list page then shows an **All Deals** tab. The table renders the five columns in this order, with the given widths. A boolean column can carry `editable: true`; readers with update rights then flip it in place.
-
-A second view on the same doctype shows the same deals as a kanban:
+In the files mode the same views are YAML files inside the domain folder,
+under `views/<domain>.<Doctype>/collection_views/`. This is the Brightwater
+maintenance board:
 
 ```yaml
+# equipment/views/equipment.MaintenanceTicket/collection_views/
+#   equipment.MaintenanceTicket.collection_view.board.yml
 content:
-  name: Pipeline
-  surface: kanban
+  name: Board
   config:
     kanban:
       mode: values
       group_by: status
       page_size: 25
+  surface: kanban
 meta:
-  parent_id: crm.Deal
+  parent_id: equipment.MaintenanceTicket
+```
+
+The watcher applies the file on save — see [The domain
+watcher](/build/model/in-files/domain-watcher/).
+
+## Example
+
+The Brightwater example carries three saved views you can compare against.
+
+**A table.** The item list ships one general view, **All items**, with five
+columns in display order:
+
+```yaml
+content:
+  name: All items
+  config:
+    columns:
+      - key: name
+      - key: category
+        width: 140px
+      - key: status
+        width: 120px
+      - key: serial_number
+        width: 160px
+      - key: purchase_price
+        width: 140px
+  surface: table
+meta:
+  parent_id: equipment.Item
+```
+
+A column bound to a boolean field can carry `editable: true`. Readers with
+update rights then flip it in place; the backend re-checks every flip.
+
+**A kanban board.** The maintenance tickets group by their status enum, one
+lane per value:
+
+```yaml
+content:
+  name: Board
+  config:
+    kanban:
+      mode: values
+      group_by: status
+      page_size: 25
+  surface: kanban
+meta:
+  parent_id: equipment.MaintenanceTicket
+```
+
+Each card renders through the doctype's `card` view template — see [Design
+document pages](/build/model/views/document-pages/). With
+`mode: custom` you write your own lanes, each with a label, an optional
+color, and a filter.
+
+**A calendar.** The bookings place on their date period:
+
+```yaml
+content:
+  name: Calendar
+  config:
+    calendar:
+      color_by: status
+      week_start: monday
+      discriminator: dates
+  surface: calendar
+meta:
+  parent_id: rentals.Booking
 ```
 
 ## The empty state
 
-A doctype ships with **no** views. Facet never creates one on its own — not at doctype creation, not at boot. The list page shows a starter screen: one card per layout (table, kanban, calendar). Pick a card, name the view, pick its columns, and save. A view you create this way starts as a **personal** view — only you see it until you switch it to general (if your role allows it).
+A doctype ships with **no** views. Facet never creates one on its own — not
+at doctype creation, not at boot. Until the first view exists, the list page
+shows the starter screen, and the `/check` report carries an info notice
+that asks for one. The notice is not an error: nothing is broken, the
+doctype has no listing surface yet.
 
-Until the first view exists, the `/check` report carries an info notice that asks for one. The notice is not an error: nothing is broken, the doctype simply has no listing surface yet.
-
-You can edit or delete a view like any other document. Deleting the last view brings the starter screen back, and Facet does not recreate the view. A publish never touches collection views, and a bundle merge updates general views by name but never deletes one that exists only on the target.
+You can edit or delete a view like any other document. Deleting the last
+view brings the starter screen back, and Facet does not recreate the view. A
+publish never touches saved collection views, and a bundle merge updates
+general views by name but never deletes one that exists only on the target.
 
 ## Troubleshooting
 
 **A column shows no values.**
 
-The column key does not match a stored field. Check the spelling and the nesting: an object field needs a path such as `address.city`.
+The column key does not match a stored field. Check the spelling and the
+nesting: an object field needs a path such as `address.city`.
 
 **The calendar shows no entries.**
 
-The discriminator field is not a date, datetime, or period field, or the stored values are empty. Pick a date field, or use the system timestamps `created_at` and `updated_at`.
+The discriminator field does not serve the window filter, or the stored
+values are empty. Pick a date or period field, or use the system timestamps
+`created_at` and `updated_at`.
 
 **A kanban lane stays empty.**
 
-The lane filter matches no rows. Compare the filter values with the stored ones; a money filter needs the currency, for example `"USD 25000"`.
+The lane filter matches no rows. Compare the filter values with the stored
+ones; a money filter needs the currency, for example `"EUR 25000"`.
+
+**The editor hides the general choice.**
+
+Your role may create only personal views. An administrator widens the
+create permission on views — see [Show each role only its
+rows](/admin/people/row-scopes/).
 
 ## Related
 
-- [Collection view reference](https://github.com/wearefacet/facet/blob/main/doc/backend/collection-view.md) — the full config keys per surface.
-- [Documents, doctypes and projections](/build/deeper/documents-and-projections/) — what a list reads.
-- [Named scopes](/build/model/access/named-scopes/) — limit which rows each role sees in the views.
+- [Design document pages](/build/model/views/document-pages/) — the surfaces users open from a list row.
+- [Display names and search text](/build/model/views/names-and-search/) — the label every row shows.
+- [Show each role only its rows](/admin/people/row-scopes/) — limit which rows each role sees in the views.
+- Internals on GitHub: [collection-view.md](https://github.com/wearefacet/facet/blob/main/doc/backend/collection-view.md).

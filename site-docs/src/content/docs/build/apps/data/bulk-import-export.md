@@ -32,7 +32,7 @@ Use the import/export routes when:
 
 - Exports need `read` rights on the doctype. An import needs `create` and
   `update` rights, because an upsert can do either.
-- The routes refuse child doctypes (`member_of`) and sidecar doctypes in
+- The routes refuse child doctypes (`member_of`) and [sidecar doctypes](/build/model/relations/comments-attachments/) in
   both directions.
 - Cookie sessions must send `X-Requested-With: XMLHttpRequest` on the POSTs.
   A bearer credential without a cookie is exempt.

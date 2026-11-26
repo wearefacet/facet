@@ -1,24 +1,23 @@
 ---
+title: Connect a language model
+description: Point the assistant at an OpenAI-compatible API, test the connection, and tune the turn behaviour.
 type: how-to
-title: Configuring the assistant
-description: Point the assistant at an OpenAI-compatible API and set its model, name, and tuning knobs.
-audience: [operator]
+audience: [admin, operator]
 features: [AI-08, AI-07, AI-09]
+verified_at: eee55a2
 sidebar:
   order: 0
-verified_at: 008dd880
 ---
 
-The assistant talks to any OpenAI-compatible API. As the operator you point
-it at an endpoint, pick a model, and tune the turn behaviour. The
-connection keys are hot: a settings save moves every conversation to the new
-connection at its next turn. Who may open the assistant, and how much each
-account may spend, is role business — see
-[Governing the assistant](/admin/assistant/govern/).
+The assistant is switched on for a role, but every turn ends in an error:
+no model is connected. Facet ships the assistant disabled — no provider, no
+crash at boot. You connect it to any OpenAI-compatible API: set an endpoint,
+a key, and a model. The connection is hot: a settings save moves every
+conversation to the new connection at its next turn. Who may open the
+assistant, and how much each account may spend, is role business — see
+[Govern the assistant](/admin/assistant/govern/).
 
 ## When to use this
-
-Configure the assistant when:
 
 - You connect a provider for the first time.
 - You switch the model or the endpoint.
@@ -26,64 +25,90 @@ Configure the assistant when:
 
 ## Before you start
 
-- You hold a role that can update `core.SystemSettings`, or you can edit the
-  config file and restart.
+- You hold a role that can update `core.SystemSettings` — the seeded
+  `iam.Roles.admin` does — or you can edit the config file and restart.
 - You have an API key for the provider.
-- Role budgets gate spending before any of these settings matter — set them
+- [Role budgets](/admin/assistant/govern/) gate spending before any of these settings matter — set them
   first if you need caps.
 
 ## Steps
 
 ### 1. Set the connection
 
-Pin the connection on the **Configure → Platform → Settings** page, or set
-the `assistant:` section in the config file:
+Open **Configure → Platform → Settings** and find the Assistant group. The
+connection fields are:
 
-```yaml
-assistant:
-  name: Assistant
-  api_endpoint: https://api.openai.com/v1
-  api_key: !env FACET_AI_API_KEY
-  model: gpt-4o
-  system_prompt: "Answer in short sentences. Name the document you base each answer on."
-  max_history: 40
-  max_tokens: 2048
-  temperature: 0.7
-  auto_execute_tools: true
-```
-
-| Key | Default | Meaning |
+| Field | Default | Meaning |
 | --- | --- | --- |
-| `assistant.name` | `Assistant` | The display name on every assistant surface. |
 | `assistant.api_endpoint` | `https://api.openai.com/v1` | The OpenAI-compatible endpoint. |
-| `assistant.api_key` | none | The provider key. A secret field; stored sealed when pinned. |
+| `assistant.api_key` | not set | The provider key. A secret: the page shows *set* or *not set*, never the value. |
 | `assistant.model` | `gpt-4o` | The model identifier. |
-| `assistant.system_prompt` | none | House instructions for every new conversation. |
-| `assistant.max_tokens` | none | Completion token cap per turn. |
-| `assistant.temperature` | none | Sampling temperature, 0.0 to 2.0. |
-| `assistant.max_history` | none | Turns kept in context. Unlimited when unset. |
-| `assistant.auto_execute_tools` | `true` | Resolve registered tool calls automatically. |
 
-The write gate bounds the values: temperature between 0.0 and 2.0,
-`max_tokens` above 0, `max_history` 0 or more.
+The same page carries the house persona — see
+[Govern the assistant](/admin/assistant/govern/) for `assistant.name`,
+`assistant.system_prompt`, and the tuning knobs.
 
-### 2. Know when a change reaches conversations
+### 2. Test the connection
 
-The connection resolves at every turn start. A model or endpoint change
-moves existing conversations at their next turn. The system prompt is
-different: each conversation bakes its prompt at creation, so a prompt
+Select **Send test request**. The button sends one minimal completion through
+the saved settings — the same path a chat turn takes. Save any pending change
+first; the test uses the saved settings.
+
+The answers:
+
+| Answer | Meaning |
+| --- | --- |
+| `200` `{model, endpoint, reply}` | The provider answered. |
+| `422` | No API key resolves. The message names the fix: *Set assistant.api_key (or the FACET_AI_API_KEY environment variable) and save before testing*. |
+| `502` | The provider or the transport failed. The message carries the transport's own words — `401 invalid_api_key` or `connection refused` is the diagnostic. |
+
+The probe never runs agent tools, never touches a conversation, and never
+writes a turn row. It dials the provider once, so it costs one tiny request.
+
+### 3. Know how the three tiers resolve
+
+Facet reads the connection at every turn start, in one fixed order:
+
+1. **The settings pin.** What an administrator saved on the settings page.
+   The API key sits in a sealed slot; the page shows only set or not set.
+2. **The config file.** The `assistant:` section of `config.{env}.yml`.
+   The shipped files read their values from the environment:
+
+   ```yaml
+   assistant:
+     api_endpoint: !env? FACET_AI_API_ENDPOINT
+     api_key: !env? FACET_AI_API_KEY
+     model: !env? FACET_AI_MODEL
+   ```
+
+   `!env?` is the optional tier: a missing variable collapses the key to
+   null, and the assistant stays disabled — no crash at boot.
+3. **The built-in default.** Endpoint `https://api.openai.com/v1`, model
+   `gpt-4o`, name `Assistant`.
+
+A key resolving through tier 1 or 2 is what "configured" means everywhere.
+The sign-in payload serves it as `assistant.configured`. When it is `false`,
+the dock stays visible but conversation creation is disabled. The message
+names system settings as the fix.
+
+### 4. Know when a change reaches conversations
+
+The endpoint, key, model, and sampling knobs resolve at every turn start. A
+change reaches existing conversations at their next turn. The system prompt
+is different: each conversation bakes its prompt at creation, so a prompt
 change reaches only conversations created afterwards.
 
 :::caution
 A model switch within one provider is the supported path. A switch across
-providers replays the stored history to the new provider, and no spec
-covers that replay. Verify the behaviour on a fresh conversation before you
-switch providers in production.
+providers replays the stored history to the new provider, and no spec covers
+that replay. Verify the behaviour on a fresh conversation before you switch
+providers in production.
 :::
 
-### 3. Set the file-only knobs
+### 5. Set the file-only knobs
 
-These keys bind at boot and stay file-only:
+These keys bind at boot and stay file-only — the settings page does not carry
+them:
 
 ```yaml
 assistant:
@@ -102,34 +127,43 @@ assistant:
 | `usage_retention_days` | `0` | Ledger retention in days. `0` keeps every row. |
 | `usage_prune_cron` | `30 4 * * *` | The ledger prune schedule. |
 
-### 4. Bound the usage ledger
+### 6. Bound the usage ledger
 
-Every turn that delivered output writes one ledger row: the model, the
-input and output tokens, and whether the count is an estimate. Role budgets
-compare against a rolling 30-day window over this ledger.
+Every turn that delivered output writes one ledger row: the model, the input
+and output tokens, and whether the count is an estimate. Role budgets compare
+against a rolling 30-day window over this ledger.
 
-If you set `usage_retention_days`, keep it at 31 or more. A window of 1 to
-30 under-counts every live budget, and the daily prune logs a warning. The
+If you set `usage_retention_days`, keep it at 31 or more. A window of 1 to 30
+under-counts every live budget, and the daily prune logs a warning. The
 default `0` keeps every row forever.
 
 :::tip
-Each caller can read their own meter at `GET /Api/assistant/usage`. The
-answer carries the rolling total, the effective budget, and the window
-start.
+Each caller can read their own meter at `GET /Api/assistant/usage`. From the
+running instance:
+
+```json
+{
+  "total": 43290,
+  "estimated_total": 0,
+  "budget": null,
+  "window_start": "2026-10-27T14:53:01Z",
+  "window_days": 30
+}
+```
 :::
 
-### 5. Know the stale-turn sweep
+### 7. Know the stale-turn sweep
 
-A process that dies mid-turn leaves its turn row in the `running` state.
-The sweep runs on `turn_sweep_cron`, finds `running` turns older than
+A process that dies mid-turn leaves its turn row in the `running` state. The
+sweep runs on `turn_sweep_cron`, finds `running` turns older than
 `turn_timeout_seconds`, and closes them: status `error` with the message
-`interrupted`. The client sees the terminal state at its next read. The
-pass is idempotent: it never touches an already-terminal row.
+`interrupted`. The client sees the terminal state at its next read. The pass
+is idempotent: it never touches an already-terminal row.
 
 ## Example
 
-A complete `assistant:` section for a self-hosted, OpenAI-compatible
-gateway:
+A complete `assistant:` section for a self-hosted, OpenAI-compatible gateway,
+with the file-only knobs:
 
 ```yaml
 assistant:
@@ -149,12 +183,15 @@ assistant:
   usage_prune_cron: "30 4 * * *"
 ```
 
+`!env` (without the `?`) fails the boot when the variable is missing. Use it
+when the deployment must not start without a key.
+
 ## Troubleshooting
 
 **Every turn answers `429`.**
 
 The account passed its rolling role budget. Widen the budget on the role —
-see [Governing the assistant](/admin/assistant/govern/).
+see [Govern the assistant](/admin/assistant/govern/).
 
 **The new instructions do not apply.**
 
@@ -163,13 +200,13 @@ The conversation predates the change. Start a new conversation.
 **A conversation is stuck on `running`.**
 
 The process died mid-turn. The sweep closes the turn after
-`turn_timeout_seconds` — status `error`, message `interrupted` — 15
-minutes by default.
+`turn_timeout_seconds` — status `error`, message `interrupted` — 15 minutes
+by default.
 
 **The budget check under-counts.**
 
-`usage_retention_days` is set below 31, so the prune deletes rows the
-30-day budget window still reads. Raise it to 31 or more, or set `0`.
+`usage_retention_days` is set below 31, so the prune deletes rows the 30-day
+budget window still reads. Raise it to 31 or more, or set `0`.
 
 **The assistant answers `401` or `403` from the provider.**
 
@@ -178,8 +215,9 @@ re-stage `assistant.api_key` on the settings page.
 
 ## Related
 
-- [Governing the assistant](/admin/assistant/govern/) — who may open it, and the token budgets.
-- [The assistant](/use/assistant/) — the workspace surface.
+- [Govern the assistant](/admin/assistant/govern/) — who may open it, and the token budgets.
+- [Using the assistant](/use/assistant/) — the workspace surface.
 - [System settings](/admin/configure/system-settings/) — the hot keys and the pin mechanics.
-- [AI under the caller's rights](/discover/how-it-works/assistant/) — why the assistant holds no rights of its own.
+- [The assistant: AI with your rights](/discover/how-it-works/assistant/) — why the assistant holds no rights of its own.
 - Internals on GitHub: [assistant.md](https://github.com/wearefacet/facet/blob/main/doc/backend/assistant.md), [system-settings.md](https://github.com/wearefacet/facet/blob/main/doc/backend/system-settings.md).
+- [AI and permissions, in detail](/admin/under-the-hood/ai-and-permissions/)

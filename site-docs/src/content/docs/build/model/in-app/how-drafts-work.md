@@ -146,7 +146,7 @@ shows the same list. See [Check before you publish](/build/model/in-app/check-be
 
 ## Related
 
-- [Choose how you build](/build/model/index/) — the two modes, and how to pick.
+- [Choose how you build](/build/model/) — the two modes, and how to pick.
 - [Drafts, editors and publishing](/build/model/in-app/drafts-and-publishing/) — open a draft and publish it, step by step.
 - [Check before you publish](/build/model/in-app/check-before-publish/) — read the diagnostics.
 - [How old documents follow a new schema](/build/deeper/schema-evolution/) — what happens to live documents after an overwrite publish.

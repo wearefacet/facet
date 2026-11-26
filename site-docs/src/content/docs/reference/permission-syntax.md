@@ -65,10 +65,12 @@ Rules the validator enforces:
 
 ## The `scope` field
 
-The array form is the form the validator accepts on every write path. The
-single-string form (`"scope": "$mine"`) is a legacy shape that stored roles
-may still carry; the parser accepts it on read, but a role write that sends
-a string scope fails with `must be an array` — always send the array form.
+The parser accepts both forms and normalises them to the array: a single
+string becomes a one-entry array, and `"$all"` collapses the whole result
+to unrestricted. The array form is the canonical shape — always send it.
+The single-string form is a legacy shape that stored roles may still carry;
+the parser still normalises it, so no write path rejects it
+(discrepancy #12).
 
 | Form | Rows the line reaches |
 | --- | --- |

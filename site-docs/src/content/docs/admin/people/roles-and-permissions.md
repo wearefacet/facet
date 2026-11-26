@@ -1,18 +1,22 @@
 ---
+title: Roles and permissions
+description: Write a role as permission lines, set its level, tags and channels, and know the guard that bounds every role write.
 type: how-to
-title: Roles and permission lines
-description: Edit role documents, write permission lines, and learn the guard that bounds every role write.
 audience: [admin, author]
 features: [RBC-01, RBC-07]
+verified_at: eee55a2
 sidebar:
   order: 2
-verified_at: fd345fe3
 ---
 
+Tom joins Brightwater as a salesperson. What may he read, change, and
+create? The answer sits in one document: a **role**. A role bundles permission
+lines, a level, field-visibility tags, and the connectivity channels. You
+write roles here, and every check in Facet reads them — on screens, in the
+API, in apps, and in the assistant.
+
 A role is a document of doctype `iam.Roles`. Its id is the qualified form
-`iam.Roles.<name>`, for example `iam.Roles.editor`. The role bundles permission
-lines, a level, field-visibility tags, and the connectivity channels. This page
-explains the parts and the guard that bounds who may change what.
+`iam.Roles.<name>`, for example `iam.Roles.editor`.
 
 ## When to use this
 
@@ -25,8 +29,10 @@ explains the parts and the guard that bounds who may change what.
 - **The right page.** Open **Configure → Access → Roles**. The list page hosts
   the grants editor; each role also has a detail page with the Details, Members,
   and Grants tabs.
+
+<!-- screenshot: configure-roles-detail -->
 - **The model.** Read
-  [Roles, levels and the authority guard](/admin/people/who-can-change-roles/) for
+  [Who can change roles](/admin/people/who-can-change-roles/) for
   the concept, and
   [How Facet checks permissions](/admin/under-the-hood/how-access-is-enforced/) for where
   enforcement runs.
@@ -64,7 +70,7 @@ every domain. Seeded admin roles hold it.
 The array form is required on every write path. Each entry names a scope
 declared on the target doctype. The aliases combine with OR: the line reaches
 rows that match any entry. Omitting `scope` reaches every row. See
-[Row scopes](/admin/people/row-scopes/) for the declaration and the aliases.
+[Show each role only its rows](/admin/people/row-scopes/) for the declaration and the aliases.
 
 ### `except`
 
@@ -118,16 +124,16 @@ An empty list is a browser-only role. Browser sessions and app tokens are
 never gated by the field.
 
 - `api` — the role may hold API keys. See
-  [Machine access: API keys](/admin/apps-access/api-keys/).
+  [API keys](/admin/apps-access/api-keys/).
 - `mcp` — agents may sign in through the Model Context Protocol (MCP) surface
   with this role.
 - `webhook` — the role may author and receive webhooks. See
   [Outbound webhooks](/build/model/automation/webhooks/).
 - `assistant` — the role may open the AI (artificial intelligence) assistant.
-  See [Governing the assistant](/admin/assistant/govern/).
+  See [Govern the assistant](/admin/assistant/govern/).
 
-  Every channel gate reads the role live. A channel you remove applies on the
-  next request.
+Every channel gate reads the role live. A channel you remove applies on the
+next request.
 
 ## Named actions
 
@@ -146,7 +152,7 @@ names that gate fixed routes are worth knowing:
 :::caution
 A role that an external app can elect must not hold `provision_credentials`,
 `mfa_disable`, `revoke`, `download`, or `purge`. Keep these five on human
-operator roles only. See [Controlling app reach](/admin/apps-access/app-grants/).
+operator roles only. See [Control what apps can reach](/admin/apps-access/app-grants/).
 :::
 
 ## The role authority guard
@@ -165,7 +171,7 @@ elected role of the request, never from the highest role they hold.
 
 The containment rule bounds a role editor: a level-30 editor cannot widen a
 level-20 role past what the previous content or their own role implies. See
-[Assigning roles and role election](/admin/people/assign-roles/) for the
+[Assign roles](/admin/people/assign-roles/) for the
 assignment flow.
 
 ## The seeded roles
@@ -184,13 +190,24 @@ The `core.SystemSettings` carve-out is the model to copy: the `editor` and
 `except: ["core.SystemSettings"]`, so runtime settings stay administrator-only.
 A bespoke role can still be granted the path explicitly.
 
+Brightwater adds three roles on top of the seeds: `manager` (level 60, sees
+the `finance` tag), `sales` (level 40, a row scope narrows it to its own
+clients), and `warehouse` (level 40, no `finance` tag). You meet all three on
+the next pages.
+
 ## The role name is immutable
 
 The document id is `iam.Roles.<name>`, and account documents reference that
 id. A rename would desync the id from the name, so the update hook refuses any
-write that carries `name`. To rename, create a new role under the new name,
-move the assignments, and delete the old one. The delete hook refuses while
-any account still holds the role.
+write that carries `name`:
+
+```json
+{"error": "Script validation failed", "details": [{"message": "'name' is immutable after creation — the role id is iam.Roles.wp18a_renamed; recreate the role under the new name", "code": "script"}]}
+```
+
+To rename, create a new role under the new name, move the assignments, and
+delete the old one. The delete hook refuses while any account still holds the
+role.
 
 ## Example
 
@@ -234,13 +251,14 @@ The name is immutable. Create the role again under the new name.
 ### A member sees a field you expected to hide
 
 Check `visible_tags` on their role — see
-[Field visibility with tags](/admin/people/hidden-fields/).
+[Hide a field from some roles](/admin/people/hidden-fields/).
 
 ## Related
 
-- [Assigning roles and role election](/admin/people/assign-roles/) — put roles on accounts.
-- [Row scopes](/admin/people/row-scopes/) — narrow a line to specific rows.
-- [Field visibility with tags](/admin/people/hidden-fields/) — narrow what a role sees inside a document.
-- [Roles, levels and the authority guard](/admin/people/who-can-change-roles/) — the concept page.
-- [Controlling app reach](/admin/apps-access/app-grants/) — the app-side bound.
+- [Assign roles](/admin/people/assign-roles/) — put roles on accounts.
+- [Show each role only its rows](/admin/people/row-scopes/) — narrow a line to specific rows.
+- [Hide a field from some roles](/admin/people/hidden-fields/) — narrow what a role sees inside a document.
+- [Who can change roles](/admin/people/who-can-change-roles/) — the concept page for the guard.
+- [Control what apps can reach](/admin/apps-access/app-grants/) — the app-side bound.
 - Internals on GitHub: [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md).
+- [Permission line syntax](/reference/permission-syntax/)

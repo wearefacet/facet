@@ -29,7 +29,7 @@ picture](/build/model/in-app/how-drafts-work/) has the one exception.
 
 ## Before you start
 
-- **The editor role.** Any account with the `editor` role can open a draft;
+- **The editor role.** Any account with the [`editor` role](/admin/people/roles-and-permissions/) can open a draft;
   you become its first editor.
 - **Edit rights on the live domain** to fork it into a draft. Use **Edit
   existing** in the Builder.
@@ -179,3 +179,4 @@ its drafts is open. Discard the draft first.
 - [Check before you publish](/build/model/in-app/check-before-publish/) — clear the issues before you publish.
 - [Build with the assistant](/build/model/in-app/build-with-assistant/) — let the chat write the first doctypes.
 - [Change a live domain safely](/build/model/change-a-live-domain/) — the version gate, explained.
+- [How domains stay isolated](/build/deeper/domain-isolation/)

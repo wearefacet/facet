@@ -1,0 +1,162 @@
+---
+type: how-to
+title: Reference numbers and uniqueness
+description: Generate readable identifiers like EQ-2026-0001, and keep field values unique across documents.
+audience: [author]
+features: [DOM-10, DOM-11]
+sidebar:
+  order: 2
+verified_at: eee55a2
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+By default Facet names every document with a ULID: a long, sortable, opaque
+id such as `06H1GPGJB49DCCDM4NV957AW3B`. Many records read better with a
+number people can say out loud — Brightwater items carry `EQ-2026-0001` and
+maintenance tickets carry `MT-2026-0001`. An `identifier` block on the
+doctype generates such numbers. Uniqueness rules on fields keep the data
+clean in a second way: no two documents may carry the same value.
+
+## When to use this
+
+Add an identifier when users quote document numbers in speech, email, or
+print. Add `unique` when a duplicate value would be a data error, such as two
+items with the same serial number.
+
+## Before you start
+
+- **The identifier becomes the document id.** It is generated at create time
+  and never changes.
+- **One counter per doctype.** Facet keeps one counter per domain and
+  doctype, shared by every writer. Concurrent creates queue on a lock, so two
+  writers can never draw the same number.
+
+## Steps
+
+<Tabs syncKey="build-mode">
+<TabItem label="Builder">
+
+1. Open the doctype in the **Builder** and find the **Identifier** section.
+2. Enter the template, for example `EQ-{year}-####`.
+3. Tick **Generated only** when callers must never pick their own id.
+4. For uniqueness, open the field and tick **Unique**.
+
+</TabItem>
+<TabItem label="Files">
+
+The Brightwater item doctype declares the identifier and a unique serial
+number:
+
+```yaml
+# equipment/doctypes/equipment.Item.yml (extract)
+identifier:
+  template: "EQ-{year}-####"
+fields:
+  serial_number:
+    type: string
+    title: Serial number
+    unique: true
+    filters: [equality]
+```
+
+</TabItem>
+</Tabs>
+
+### Shape the number with a template
+
+| Token | Meaning |
+| --- | --- |
+| `#` | One digit of the counter, zero-padded. Four digits count from `0001`. |
+| `{year}` | The current year, for example `2026`. |
+| `{month}` | The current month, for example `11`. |
+| `{day}` | The current day, for example `26`. |
+| other text | Literal text, copied as is: `EQ-`, `-`, `MT-`. |
+
+The template needs at least one `#` group, and a group is at most 18 digits.
+The counter starts at `1`. When the year or month in the template changes,
+the counter resets and numbering starts again at `1`.
+
+### Declare the identifier block
+
+```json
+"identifier": {
+  "template": "EQ-{year}-####",
+  "genonly": true
+}
+```
+
+`genonly: true` stops callers from supplying their own id on create. Without
+it, the template still generates the id when the caller omits one.
+
+### Add unique fields
+
+Set `unique: true` on any field whose value must differ between documents.
+Facet checks the rule on every create and update. A document without the
+field, or with `null`, never collides; two documents that both carry an empty
+string do.
+
+```json
+"serial_number": {
+  "type": "string",
+  "required": true,
+  "unique": true,
+  "filters": ["equality"]
+}
+```
+
+On an update, a document never collides with itself: its own stored value is
+excluded from the check.
+
+## Example
+
+The Brightwater item identifier generated these ids on the running example
+instance — the first forty items hold `EQ-2026-0001` through `EQ-2026-0040`:
+
+```json
+{
+  "identifier": { "template": "EQ-{year}-####", "genonly": false },
+  "fields": {
+    "serial_number": { "type": "string", "unique": true, "filters": ["equality"] }
+  }
+}
+```
+
+The number is the document id, so pages show it and the API can look a
+document up by it — `GET /Api/equipment/Item/EQ-2026-0001`. On 1 January,
+numbering restarts at `EQ-2027-0001`.
+
+:::caution
+When every digit group reaches its maximum, Facet falls back to a ULID for
+the next id. Give a fast-moving doctype enough digits, for example `######`.
+:::
+
+## Troubleshooting
+
+### A write answers `422` with a uniqueness error
+
+Another document of the same doctype already holds this value. Find it by
+filtering the list on the field, then change the value or correct the
+duplicate.
+
+### The caller cannot choose the id
+
+The doctype declares `genonly: true`. Callers omit the id and let Facet
+generate it.
+
+### A document carries a ULID instead of a number
+
+The counter overflowed, or the document was created before the identifier
+block was added. Identifiers apply to documents created after the block
+exists.
+
+### Two doctypes restart their counters at different times
+
+Each template carries its own time variables. A template with `{month}`
+resets monthly; a template with only `{year}` resets yearly.
+
+## Related
+
+- [Doctype schema (reference)](/reference/doctype-schema/) — the identifier block and field constraints in full.
+- [Choose field types](/build/model/data/field-types/) — the `unique` constraint beside the other constraints.
+- [Design a doctype](/build/model/data/design-doctypes/) — where the identifier block sits in the declaration.

@@ -1,18 +1,19 @@
 ---
+title: API keys
+description: Create API keys for machines, pin each to one account and role, and know exactly when a key stops working.
 type: how-to
-title: "Machine access: API keys"
-description: Create static API keys, pin them to one account and role, and know exactly when a key stops working.
 audience: [admin, developer]
 features: [IAM-09]
+verified_at: eee55a2
 sidebar:
   order: 1
-verified_at: fd345fe3
 ---
 
-An application programming interface (API) key is a static bearer token for
-machine clients. It pins one account and one role, fixed at creation. Every
-request re-checks the whole chain, so a key dies on its next use the moment
-its conditions change.
+Brightwater's booking report runs every night from a job runner. The runner
+is a machine — it cannot type a password or answer an MFA prompt. Ravi gives
+it an **API key**: a static bearer token pinned to one account and one role,
+fixed at creation. Every request re-checks the whole chain, so a key dies on
+its next use the moment its conditions change.
 
 ## When to use this
 
@@ -24,7 +25,7 @@ its conditions change.
 
 - **The role.** The role you pin must be assigned to you, and its
   `connectivity` must carry the `api` channel. See
-  [Roles and permission lines](/admin/people/roles-and-permissions/).
+  [Roles and permissions](/admin/people/roles-and-permissions/).
 - **The account.** Facet intends service accounts to hold keys. A service
   account cannot sign in with a password, so a key is its only door. See
   [Manage accounts](/admin/people/accounts/).
@@ -52,19 +53,23 @@ The answer shows the raw key exactly once:
 
 ```json
 {
-  "id": "01J8Z0A7G3Q5M2X9K4T6VBNR8D",
-  "key": "fct_PASTE-THIS-VALUE-NOW-IT-WILL-NOT-SHOW-AGAIN",
-  "display_prefix": "fct_PASTE6",
+  "id": "06H1G3VT6CC3J5WVRTEBGGWYQ5",
+  "key": "fct_6VBSG6PYWQDNFV3P7HQKXST2E9R",
+  "display_prefix": "fct_6VBSG6",
   "expires_at": null
 }
 ```
 
-`key` is the raw token: `fct_` followed by 26 characters. Copy it now.
-Storage keeps only its SHA-256 hash and a display prefix; no read path can
-return it.
+`key` is the raw token: `fct_` followed by 26 characters — 30 characters
+including the prefix. Copy it now. Storage keeps only its SHA-256 hash and a
+display prefix; no read path can return it.
 
 The create answers `422` when the role is not assigned to you or when the
-role's `connectivity` excludes `api`.
+role's `connectivity` excludes `api`:
+
+```json
+{"error": "The role's connectivity excludes the 'api' channel — enable it on the role first"}
+```
 
 ### 2. Call the API with the key
 
@@ -86,19 +91,33 @@ curl -k -H "Authorization: Bearer $FACET_API_KEY" \
 ```
 
 The list shows `id`, `name`, `display_prefix`, `role_id`, `created_at`,
-`expires_at`, `last_used_at`, and `revoked_at`. It never shows the secret.
+`expires_at`, `last_used_at`, and `revoked_at`. It never shows the secret:
+
+```json
+{
+  "id": "06H1G3VT6CC3J5WVRTEBGGWYQ5",
+  "name": "wp18a probe key",
+  "display_prefix": "fct_6VBSG6",
+  "role_id": "iam.Roles.wp18a_tester",
+  "created_at": "2026-11-26T13:33:17Z",
+  "expires_at": null,
+  "last_used_at": "2026-11-26T13:33:21Z",
+  "revoked_at": null
+}
+```
 
 ### 4. Revoke a key
 
 ```sh
 curl -k -X DELETE -H "Authorization: Bearer $FACET_API_KEY" \
   -H "X-Requested-With: XMLHttpRequest" \
-  "https://facet.localhost:3443/Api/iam/keys/01J8Z0A7G3Q5M2X9K4T6VBNR8D"
+  "https://facet.localhost:3443/Api/iam/keys/06H1G3VT6CC3J5WVRTEBGGWYQ5"
 ```
 
-The revoke is soft and idempotent. A repeated delete still answers `200`. A
-key id that is unknown or not yours answers a bare `404` that does not
-disclose which.
+The revoke answers `{"ok": true}` and is soft and idempotent. A repeated
+delete still answers `200`. A key id that is unknown or not yours answers a
+bare `404` that does not disclose which. The next call with the revoked key
+answers `401 {"error": "Authentication required"}`.
 
 ## Explanation
 
@@ -122,18 +141,18 @@ does not turn every request into a database write.
 
 ### Attribution in the audit trail
 
-Every mutation written through a key carries the key's row id in the
+Every change written through a key carries the key's row id in the
 `api_key` column of the mutation log. An audit view can join it to the key's
 name and display prefix and answer "which key wrote this change". The
 lifecycle also writes two events to the login-event log: `api_key_created`
-and `api_key_revoked`. See [Auditing activity](/admin/history/audit/).
+and `api_key_revoked`. See [See who did what](/admin/history/audit/).
 
 ### App-owned keys
 
 A key row can carry an `app_id`. Facet issues such keys for backend apps.
 Verification adds one gate — the app must be live and active — and the request
 runs with the app's grant and the pinned role at the same time, so the
-effective reach is the overlap. See [Controlling app reach](/admin/apps-access/app-grants/)
+effective reach is the overlap. See [Control what apps can reach](/admin/apps-access/app-grants/)
 for the grant model.
 
 ## Troubleshooting
@@ -149,7 +168,11 @@ design.
 
 ### The create answers `422` about the `api` channel
 
-For example: `422 The role's connectivity excludes the 'api' channel.`
+The message names it directly:
+
+```json
+{"error": "The role's connectivity excludes the 'api' channel — enable it on the role first"}
+```
 
 Enable the `api` channel on the role's Details tab, or pin a role that
 already carries it. The role must also be assigned to you.
@@ -157,7 +180,7 @@ already carries it. The role must also be assigned to you.
 ### The key works, but the client sees less than expected
 
 The pinned role decides. Check its permission lines, and check whether row
-scopes narrow the lists. See [Row scopes](/admin/people/row-scopes/).
+scopes narrow the lists. See [Show each role only its rows](/admin/people/row-scopes/).
 
 ### `last_used_at` did not change after one call
 
@@ -166,9 +189,10 @@ The timestamp updates at most once per minute. Wait and re-check.
 ## Related
 
 - [Your settings, sessions and API keys](/use/account/) — the self-service key surface.
-- [Roles and permission lines](/admin/people/roles-and-permissions/) — the `connectivity` channels.
+- [Roles and permissions](/admin/people/roles-and-permissions/) — the `connectivity` channels.
 - [Manage accounts](/admin/people/accounts/) — service accounts, the intended holders.
-- [Controlling app reach](/admin/apps-access/app-grants/) — the grant side of app-owned keys.
-- [Auditing activity](/admin/history/audit/) — key attribution in the logs.
-- [Auth contexts](/admin/under-the-hood/one-role-at-a-time/) — how a key resolves to one role.
+- [Control what apps can reach](/admin/apps-access/app-grants/) — the grant side of app-owned keys.
+- [See who did what](/admin/history/audit/) — key attribution in the logs.
+- [One role at a time](/admin/under-the-hood/one-role-at-a-time/) — how a key resolves to one role.
 - Internals on GitHub: [iam.md](https://github.com/wearefacet/facet/blob/main/doc/backend/iam.md).
+- [Security and governance](/discover/security/)

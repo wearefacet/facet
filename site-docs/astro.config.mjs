@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import starlight from '@astrojs/starlight';
 import svelte from '@astrojs/svelte';
@@ -379,6 +380,11 @@ export default defineConfig({
 				starlightLinksValidator(),
 			],
 		}),
+		// Required for the .mdx pages that embed synced mode tabs
+		// (build/model/data/*, build/model/relations/*). Placed after
+		// starlight() so Starlight's expressive-code preprocessor
+		// registers before the MDX renderer.
+		mdx(),
 	],
 	vite: {
 		plugins: [tailwindcss()],

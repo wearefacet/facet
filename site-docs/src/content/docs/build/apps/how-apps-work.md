@@ -6,7 +6,7 @@ audience: [developer]
 features: [APP-01, RBC-08]
 sidebar:
   order: 1
-verified_at: a77c6171
+verified_at: eee55a2
 ---
 
 An app on Facet is a registration: a document of doctype `app.App`. Your
@@ -19,10 +19,10 @@ policy that bounds every call the app makes.
 > plus `X-Requested-With: XMLHttpRequest`); the create hook writes the
 > read-only `client_id`. A browser app signs in with `GET /OAuth/authorize`,
 > then `POST /OAuth/token` with PKCE, and calls `GET /Api/{domain}/{doctype}`
-> with `Authorization: Bearer` or `DPoP <access_token>`. A backend app calls
-> with `Authorization: Bearer fct_…` from `POST /Api/app/:id/api-key`. Every
-> request resolves grant ∩ role from the live app document, so a grant edit
-> applies on the next request.
+> with `Authorization: Bearer` or `Authorization: DPoP` plus a proof. A
+> backend app calls with `Authorization: Bearer fct_…` from
+> `POST /Api/app/{id}/api-key`. Every request resolves grant ∩ role from the
+> live app document, so a grant edit applies on the next request.
 
 ## When to use this
 
@@ -56,8 +56,8 @@ The app document holds the fields that decide identity and reach:
 
 `client_id` is a generated id. The create hook writes it, and no caller can
 change it. Backend fields such as `service_role_id` belong to confidential apps —
-see [Backend apps](/build/apps/connect/backend-apps/). [Registering an
-app](/build/apps/connect/register/) walks through every field.
+see [Backend apps and service accounts](/build/apps/connect/backend-apps/).
+[Register an app](/build/apps/connect/register/) walks through every field.
 
 ### The app runs outside Facet
 
@@ -78,22 +78,47 @@ through a service account.
 
 ### The grant is a ceiling
 
-Each grant names one concrete doctype path, for example `crm.Contact`.
+Each grant names one concrete doctype path, for example `rentals.Booking`.
 Wildcard targets are refused at write time with `422 wildcard_target`. The
 actions are `read`, `write`, `delete`, or a named action of the doctype.
 `write` expands to `create` plus `update` at resolution. A `required: true`
 action must also sit on the role, or the role is unusable for the app.
 
+At Brightwater, the check-out app carries three grants: read on
+`rentals.Booking` and `rentals.BookingLine` (both required), and read plus
+write on `equipment.Item` (required). That list is everything the app can
+ever attempt — for any user.
+
 ### Two bounds apply together
 
-The grant is the ceiling. The role decides what exists to grant. Facet keeps
-only the actions the role also gives. The role comes from one of two places:
+The grant is the ceiling. The role decides what exists to grant. An app
+can never do more than both the app and the user are allowed: Facet keeps
+only the actions that sit in both sets — the grant ∩ the role. The role
+comes from one of two places:
 
 - **Browser flow** — the signing account elects one role on the consent
   screen. The screen shows on every sign-in.
 - **Backend flow** — the service role pinned on the app document.
 
 Row scopes on the role survive unchanged. A grant never widens a row filter.
+
+Ravi Menon holds the seeded `admin` role, whose permission line reaches
+
+every doctype. Through the check-out app, the same admin reaches exactly
+the three granted doctypes. The proof is the app token's own view of its
+rights, `GET /Api/iam/me`:
+
+```json
+"permissions": {
+    "rentals.Booking": ["read"],
+    "rentals.BookingLine": ["read"],
+    "equipment.Item": ["read", "create", "update"]
+}
+```
+
+The `write` grant arrived as `create` plus `update`; nothing else from the
+admin role leaked through. See
+[Show only what the user can do](/build/apps/connect/permission-manifest/).
 
 ### Re-resolved on every request
 
@@ -147,12 +172,13 @@ operator session keeps full edit rights.
 
 Every app-scoped mutation records the app id in `mutations.app`. The audit
 list filters with `app__eq`. Login events carry app attribution: consent
-grants, token refreshes, and refusals at the grant pre-check. See [Auditing
-activity](/admin/history/audit/).
+grants, token refreshes, and refusals at the grant pre-check. See
+[Auditing activity](/admin/history/audit/).
 
 ## Troubleshooting
 
-**A call answers `403` for a doctype the app used to reach.**
+**A call answers `403 {"error": "Forbidden"}` for a doctype the app used to
+reach.**
 
 The grant was narrowed or removed. The next request already runs under the
 tighter bound.
@@ -173,12 +199,12 @@ session.
 
 ## Related
 
-- [Registering an app](/build/apps/connect/register/) — create the registration.
-- [User login: OAuth 2.1 + PKCE](/build/apps/connect/user-login/) — the browser sign-in.
-- [Service accounts for backend apps](/build/apps/connect/backend-apps/) —
+- [Register an app](/build/apps/connect/register/) — create the registration.
+- [Sign users in](/build/apps/connect/user-login/) — the browser sign-in.
+- [Backend apps and service accounts](/build/apps/connect/backend-apps/) —
   the key channel.
 - [Apps, grants and roles](/build/apps/connect/what-an-app-can-do/) — the concept
   behind the two bounds.
-- [Controlling app reach (grants)](/admin/apps-access/app-grants/) — the admin view.
+- [Control what apps can reach](/admin/apps-access/app-grants/) — the admin view.
 - Internals on GitHub:
   [app-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/app-system.md).

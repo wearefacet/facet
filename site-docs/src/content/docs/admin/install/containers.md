@@ -1,19 +1,20 @@
 ---
-type: how-to
-title: Deploying with containers
+title: Run with containers
 description: Run the release container images behind a Caddy edge with automatic TLS.
+type: how-to
 audience: [operator]
 features: [PLT-16, APP-06]
 sidebar:
   order: 1
-verified_at: 008dd880
+verified_at: eee55a2
 ---
 
+You are deploying Facet with Docker or Compose. You need to know what each
+image carries, how the config reaches the backend, and who terminates TLS.
 Facet ships two release images on GHCR: one for the backend, one for the
 frontend. The release stack adds PostgreSQL, Redis, and a Caddy edge that
-terminates TLS and routes to app hosts. This page covers the images, the
-config contract, and the edge. The step-by-step walkthrough stays in
-[Deploy to production](/admin/install/production/).
+terminates TLS and routes to the app hosts. The step-by-step walkthrough
+stays in [Go to production](/admin/install/production/).
 
 ## When to use this
 
@@ -28,7 +29,7 @@ Read this page when:
 - Docker with Compose is on the host.
 - You know the public hostname and the SMTP relay values.
 - The host requirements are met — see
-  [System requirements and topology](/admin/install/requirements/).
+  [System requirements](/admin/install/requirements/).
 
 ## Steps
 
@@ -69,17 +70,21 @@ Three ways to overwrite the shipped example:
 | Use any path | `-e FACET_CONFIG_FILE=/etc/facet/facet.yml -v ./facet.yml:/etc/facet/facet.yml:ro` |
 
 Every `!env NAME` in the config must exist in the environment. A missing
-variable fails the boot at config load. The shipped example needs this set:
+variable fails the boot at config load. Compose fails loud on the same
+keys, so a missing value stops the stack before the backend starts. The
+shipped stack needs these set:
 
 | Variable | Role |
 | --- | --- |
+| `POSTGRES_PASSWORD` | The database password. Compose builds `DATABASE_URL` from it — one password source. |
 | `FACET_HOST` / `FACET_BASE_URL` | The public main URL. Must be the exact origin browsers see. |
 | `FACET_ARTIFACT_BASE_URL` | The origin that streams artifact bytes. |
 | `FACET_ARTIFACT_GRANT_SECRET` | HMAC secret for artifact capability URLs. |
-| `FACET_REDIS_URL` | The event bus Redis. |
+| `FACET_REDIS_URL` | The event bus Redis. Compose points it at the `redis` service. |
 | `FACET_MAIL_FROM_ADDRESS` / `FACET_MAIL_FROM_NAME` | Outbound email identity. |
 | `FACET_SMTP_HOST` / `FACET_SMTP_USERNAME` / `FACET_SMTP_PASSWORD` | The SMTP relay. |
-| `FACET_SECRETS_MASTER_KEY` | Protects every stored secret. Fails closed under 32 bytes. |
+| `FACET_SECRETS_MASTER_KEY` | Protects every stored secret. The store fails closed under 32 bytes. |
+| `JWT_SIGNING_KEY` | The access-token signing key, a P-256 private key in PEM form. Not a config key — the backend reads it straight from the environment. Without it, each boot mints a temporary key and every restart signs out bearer-token API clients. |
 
 `DATABASE_URL` and `APP_ENV` stay environment-only. The backend reads them
 outside YAML.
@@ -91,15 +96,16 @@ mount fails the boot with `File::AccessDeniedError`.
 
 ### 3. Let the entrypoint bootstrap the database
 
-The backend entrypoint runs one chain on every boot:
+The backend entrypoint runs one chain on every server boot:
 
 ```text
-render config (when absent) → migrate → seed:core → exec facet server
+render config (when absent) → migrate (3 attempts) → seed:core → exec facet server
 ```
 
 Every step is idempotent and non-destructive. The chain never drops
-anything. A one-off container runs any other command directly, so
-`facet migrate` in a one-off container just works.
+anything — it never runs `db_reset`. A one-off container runs any other
+command directly: the entrypoint skips the server branch and execs the
+command, so `run --rm backend seed:admin …` works without extra flags.
 
 ### 4. Serve TLS through the Caddy edge
 
@@ -107,14 +113,30 @@ The edge config has three site blocks:
 
 | Site block | Routes | TLS |
 | --- | --- | --- |
-| The main hostname | `/Healthcheck`, `/Api`, `/app`, `/.well-known`, `/a`, and `/Ws` go to the backend. Everything else goes to the frontend. | Internal CA on local names, ACME on public names. |
+| The main hostname | `/Api`, `/OAuth`, `/A`, `/Ws`, `/Healthcheck`, `/auth`, and `/.well-known` go to the backend. Everything else goes to the frontend. | Internal CA on local names, ACME on public names. |
 | Catch-all on the same port | Every other SNI goes to the backend, where app hosting resolves the host. | On-Demand TLS, gated by an ask endpoint. |
 | Port 80 | HTTP to HTTPS redirect. | — |
 
-The main hostname gets a certificate from the internal CA when the name is
-local (the default `facet.localhost`), and from Let's Encrypt when it is
-public. Public certificates through the ACME HTTP-01 challenge need port 80
+The main hostname gets a certificate from the internal CA for a local name
+(the default `facet.localhost`), and from Let's Encrypt for a public name.
+Public certificates through the ACME HTTP-01 challenge need port 80
 published.
+
+Two edge guards worth knowing:
+
+- A request to a lowercase twin of a backend namespace — `/api/Deal`, for
+  example — answers a 404 JSON that names the case rule. Caddy path
+  matching is case-insensitive, and the lowercase twins are legal domain
+  ids, so the edge routes them by case, not by name.
+- The probe names are reserved. `GET /healthcheck` (lowercase) answers 404
+  for every method, so a monitor that typoes the name fails loud instead of
+  reading the login page as health. `/metrics` is not routed through the
+  edge at all — scrape the backend origin.
+
+The edge sends `Strict-Transport-Security` (max-age 3600) and
+`X-Content-Type-Options: nosniff` on every main-host response. The frontend
+surface also carries a Content-Security-Policy and `X-Frame-Options:
+SAMEORIGIN`.
 
 The catch-all block serves registered app hosts — see
 [Controlling app reach](/admin/apps-access/app-grants/) and
@@ -125,9 +147,10 @@ host that is not a registered app host gets no certificate.
 
 ### 5. Verify the stack
 
-The release pipeline runs a smoke gate on every image: the stack boots, the
-backend answers `status: ok` on `/Healthcheck`, the login page loads through
-the frontend, and the core doctypes exist. Run the same gate locally:
+The release pipeline runs a smoke gate on every image. The gate boots the
+stack, checks `status: ok` on `/Healthcheck`, loads the login page through
+the frontend, and confirms the core doctypes exist. Run the same gate
+locally:
 
 ```sh
 make docker_images   # build the local tags: facet, facet-frontend
@@ -185,9 +208,10 @@ migrate step three times, then the boot stops.
 
 ## Related
 
-- [Deploy to production](/admin/install/production/) — the copy-paste Compose walkthrough.
-- [System requirements and topology](/admin/install/requirements/) — what the stack needs.
+- [Go to production](/admin/install/production/) — the copy-paste Compose walkthrough.
+- [System requirements](/admin/install/requirements/) — what the stack needs.
 - [Configuration files](/admin/configure/configuration-files/) — the keys inside the mounted file.
 - [Database migrations](/admin/keep-running/migrations/) — what the entrypoint runs at boot.
 - [App hosting and deployment](/build/apps/host/deploy/) — the hosted-app surface.
 - Internals on GitHub: [container-images.md](https://github.com/wearefacet/facet/blob/main/doc/ops/container-images.md), [first-deployment.md](https://github.com/wearefacet/facet/blob/main/doc/ops/first-deployment.md).
+- [Apps: built fast, replaced freely](/discover/how-it-works/apps/)

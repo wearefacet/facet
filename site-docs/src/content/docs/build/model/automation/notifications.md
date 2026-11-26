@@ -6,10 +6,14 @@ audience: [author, user]
 features: [AUT-06]
 sidebar:
   order: 2
-verified_at: fd345fe3
+verified_at: eee55a2
 ---
 
-A notification is a short message in a person's bell menu, pointing at a document. Two paths create them: you type `@` in a comment, or a script sends one. This page covers both, plus the switch that silences them.
+A maintenance ticket sits unassigned for two days because nobody knew. A
+notification is a short message in a person's bell menu, pointing at a
+document. Two paths create them: you type `@` in a comment, or a script
+sends one. Both paths are on this page, with the switch that silences them.
+The script path needs one Lua call; the mention path needs no code at all.
 
 ## When to use this
 
@@ -19,42 +23,51 @@ A notification is a short message in a person's bell menu, pointing at a documen
 
 ## Before you start
 
-- **For @mentions:** write a comment on any document. See [Comments and attachments](/use/documents/comments-attachments/).
-- **For scripted notifications:** you write Lua in a doctype script or a hook.
+- **For @mentions:** you write a comment on any document — see [Comments
+  and attachments](/use/documents/comments-attachments/).
+- **For scripted notifications:** you write Lua in a doctype script or a
+  hook.
 
-## Steps
+## Mention a person
 
-### 1. Mention a person
+Type `@` in a comment and pick a name from the list. The person receives a
+notification that links back to the document. Three rules keep it quiet:
 
-Type `@` in a comment and pick a name. The person receives a notification that links back to the document. Mentioning yourself does nothing, and an edit only notifies people who are new to the text.
+- Mentioning yourself sends nothing.
+- Only a picked mention sends; plain text with an `@` does not.
+- An edit notifies only the people who are new to the text — a mention kept
+  through an edit stays silent.
 
-### 2. Turn the panel on or off
+## Turn the panel on or off
 
 1. Open **Settings** and select the **Notifications** section.
 2. Switch **In-app notifications** on or off.
 
-Off stops the bell, the badge, and the live panel. Nothing is lost: Facet still records the notifications, and switching on again shows what arrived while you were muted.
+Off stops the bell, the badge, and the live panel. Nothing is lost: Facet
+still records the notifications, and switching on again shows what arrived
+while you were muted.
 
-### 3. Send from a script
+## Send from a script
 
-Scripts send notifications with `notification.send`. It takes a recipient, a document to point at, and the message. A complete call in a create hook:
+Scripts send notifications with `notification.send`. It takes a recipient,
+a document to point at, and the message. A complete call in a create hook
+on a Brightwater maintenance ticket:
 
 ```lua
 local export = {}
 
 function export.create(ctx)
+  if ctx.actor == nil then return end
+  if not ctx.root.assignee then return end
   local ok, sent = pcall(
     notification.send,
-    ctx.root.owner_id,
+    ctx.root.assignee,
     nil,
-    "leave_approved",
-    "Your leave request was approved",
+    "ticket_assigned",
+    "A ticket was assigned to you",
     {
-      icon = "check",
-      body = "Approved by a manager",
-      actions = {
-        { key = "reopen", label = "Reopen", variant = "primary" }
-      }
+      icon = "wrench",
+      body = "Reported by " .. tostring(ctx.actor_id)
     }
   )
   if not ok then
@@ -68,47 +81,70 @@ return export
 | Argument | Meaning |
 | --- | --- |
 | Recipient | An account id. Use a field of the document, as above. |
-| Document | The id of the document to open. `nil` means the current one. |
-| Kind | A short tag, for example `leave_approved`. |
+| Document | The qualified id of the document to open. `nil` means the current one. |
+| Kind | A short tag, for example `ticket_assigned`. |
 | Title | The one-line text in the bell menu. |
-| Options | An icon, a longer body, and buttons. |
+| Options | An icon, a longer body, structured data, and buttons. |
 
-The buttons run actions on the pointed document, under the reader's own rights. A notification can never hand out a right the reader does not have.
+A button is an action descriptor — `{ key = "confirm", label = "Confirm",
+variant = "primary" }` — and it must name an action that exists on the
+pointed document. Three rules bound the send:
 
-:::note
-A send is recorded only after the change that caused it is saved. A failed change sends nothing.
-:::
+- **The send waits for the write.** Facet records the notification only
+  after the change that caused it is saved. A failed change sends nothing.
+- **The buttons run under the reader's rights.** A button names an action
+  on the pointed document; running it dispatches through the same check as
+  the document menu. A notification can never hand out a right the reader
+  does not have.
+- **A button fires once.** The first successful action closes every button
+  on that notification; a second press answers `409`.
+
+Wrap the call in `pcall` when a failure is acceptable; a malformed send
+raises a Lua error at send time.
 
 ## Example
 
-The comment mention flow, end to end. Marie comments on the contract `accountancy.Contract.01HQABC3N7P2K5R8WVBN6P3A1YCD`:
+The comment mention flow, end to end, on the Brightwater example. Lucía
+comments on maintenance ticket `MT-2026-0004`:
 
 ```markdown
-@Ada Lovelace can you check the totals before Friday?
+@Tom Aaland can you order the contact cleaner today?
 ```
 
-Facet creates one notification for Ada with the title `Marie Dubois mentioned you on Contract 47`, pointing at the contract. Ada opens the bell, selects the entry, and lands on the contract. The entry stays unread until she reads or dismisses it.
+Facet creates one notification for Tom, pointing at the ticket. The title
+reads *Lucía Ferrer mentioned you* — the ticket has no `name`, `title`, or
+`label` field, so the host label is dropped rather than guessed. On a
+doctype that has one, the title carries it: *Lucía Ferrer mentioned you on
+Main tent 10x15*. Tom opens the bell, selects the entry, and lands on the
+ticket. The entry stays unread until he reads or dismisses it.
 
 ## Troubleshooting
 
 **A mention produced no notification.**
 
-You mentioned yourself, or the name was not picked from the list. Only a chip mention sends; plain text does not.
+You mentioned yourself, or the name was typed as plain text instead of
+picked from the list. Only a chip mention sends.
 
 **The bell shows nothing new.**
 
-The preference may be off, or the notification was already read. Check Settings → Notifications.
+The preference may be off, or the notification was already read. Check
+**Settings → Notifications**.
 
 **My script send fails with a validation error.**
 
-A required argument is missing or too long. The title has a length limit, and buttons must name actions that exist on the pointed document.
+A required argument is missing or too long: the title takes at most 256
+characters, and buttons must name actions that exist on the pointed
+document.
 
 **Buttons on a notification do nothing for me.**
 
-The action needs a right your role does not carry. Ask an administrator.
+The action needs a right your role does not carry, or the notification
+already fired its one action. Ask an administrator for the first, and
+expect `409` for the second.
 
 ## Related
 
-- [Notifications concern doc](https://github.com/wearefacet/facet/blob/main/doc/backend/notifications.md) — the store and the producer API.
-- [Event delivery](/admin/under-the-hood/events-and-delivery/) — how notifications reach the bell.
-- [Event and schedule hooks](/build/model/automation/event-hooks/) — send notifications on any change, not only comments.
+- [Comments and attachments](/use/documents/comments-attachments/) — where mentions live.
+- [React to events and schedules](/build/model/automation/event-hooks/) — send notifications on any change, not only comments.
+- [Events and delivery guarantees](/admin/under-the-hood/events-and-delivery/) — how notifications reach the bell.
+- Internals on GitHub: [notifications.md](https://github.com/wearefacet/facet/blob/main/doc/backend/notifications.md).

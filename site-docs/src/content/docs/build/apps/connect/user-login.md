@@ -1,18 +1,25 @@
 ---
 type: how-to
-title: "User login: OAuth 2.1 + PKCE"
-description: Run the full authorization code + PKCE sign-in flow and handle its errors.
+title: Sign users in
+description: Run the OAuth 2.1 authorization code flow with PKCE, from the consent screen to the refresh grant.
 audience: [developer]
 features: [APP-02, APP-05, FE-21]
 sidebar:
   order: 1
-verified_at: f1409cdc
+verified_at: eee55a2
 ---
 
-An app signs an account in through the Facet consent screen. The flow is the OAuth 2.1
-authorization code grant with PKCE (Proof Key for Code Exchange). The app sends the browser
-to `/OAuth/authorize`, the account signs in and elects one role, and Facet redirects back with
-a one-time code that the app exchanges for an access token and a refresh token.
+Your browser app signs Brightwater's people in through Facet, and the app
+
+never sees a password. The flow is OAuth 2.1: the authorization code grant
+
+with PKCE (Proof Key for Code Exchange). The app sends the browser to
+
+`/OAuth/authorize`. The account signs in and elects one role. Facet
+
+redirects back with a one-time code, and the app exchanges it for an access
+
+token and a refresh token.
 
 > **For agents:** Public client, no secret. Build `code_verifier` (random base64url, 43–128 characters) and
 > `code_challenge = base64url(SHA-256(verifier))`; keep `verifier` and `state` in `sessionStorage`. Navigate to
@@ -28,15 +35,17 @@ Use this page when:
 - You build a browser or native app that signs an account in through the consent screen.
 - You need the redirect round trip: authorize, consent, callback, token exchange.
 
-A pure backend caller uses an app-owned API key instead — see [Backend apps](/build/apps/connect/backend-apps/).
+A pure backend caller uses an app-owned API key instead — see
+[Backend apps and service accounts](/build/apps/connect/backend-apps/).
 
 ## Before you start
 
 - Register the app, publish it to `active`, and register the exact `redirect_uri` the app presents —
-  see [Registering an app](/build/apps/connect/register/). The match is exact, plus a `*` port rule on http loopback hosts.
+  see [Register an app](/build/apps/connect/register/). The match is exact, plus a `*` port rule on http loopback hosts.
 - Add the app origin to `allowed_origins`, so the browser may call the token endpoint — see
-  [CORS and allowed origins](/build/apps/connect/cors/).
-- The signing account must hold at least one role. The consent screen lists the roles the account holds.
+  [Allowed origins and CORS](/build/apps/connect/cors/).
+- The signing account must hold at least one role. The consent screen lists the roles the account holds that
+  cover the app's required grants.
 
 ## Steps
 
@@ -78,6 +87,17 @@ client uses 64. Compute `code_challenge = base64url(SHA-256(code_verifier))`. Th
 accepted method; `plain` is refused. Save `code_verifier` and `state` in `sessionStorage` — the callback must
 find them again.
 
+From a terminal, the pair looks like this:
+
+```sh
+openssl rand -base64 48 | tr '+/' '-_' | tr -d '='
+# YF-tTGf8ZKzGRypHYm6fyrF_W45UApWMR8Zas5EuoW8n1IBgIFyrzUndX1vQdu9F  <- code_verifier
+
+printf '%s' 'YF-tTGf8ZKzGRypHYm6fyrF_W45UApWMR8Zas5EuoW8n1IBgIFyrzUndX1vQdu9F' \
+  | openssl dgst -sha256 -binary | openssl base64 -A | tr '+/' '-_' | tr -d '='
+# JNVgr1Czh8QJ1zYgaq6fQFQT5bbfH90Snk4IEaRPQAc  <- code_challenge
+```
+
 ### 2. Send the browser to the authorize endpoint
 
 Navigate the browser to `GET /OAuth/authorize` with these parameters:
@@ -95,6 +115,42 @@ Without a browser session, the endpoint answers `302` to `/Login?redirectTo=…`
 URL embedded; the login page returns the browser to the authorize URL after sign-in. With a
 session, the endpoint redirects the browser to the `/OAuthConsent` route. The consent screen always
 shows — the account elects exactly one role for the app; there is no silent consent.
+
+The screen is built from a JSON payload the page fetches. For the Brightwater
+check-out app, Ravi's payload reads:
+
+```json
+{
+  "app": {
+    "id": "06H1FQF7NGDJJKSNHXPYT6627M",
+    "client_id": "06H1FQF7NG357EQ0P348Z2BEV5",
+    "slug": "bfr-checkout",
+    "display_name": "Brightwater Check-out",
+    "description": "The warehouse check-out board: today's bookings, with the items each booking needs. Marks items out and back in.",
+    "redirect_uris": ["http://localhost:5173/auth/callback"],
+    "allowed_origins": ["http://localhost:5173"],
+    "status": "active"
+  },
+  "roles": [
+    {
+      "role_id": "iam.Roles.admin",
+      "display_name": "Full administrative access to all resources.",
+      "effective_scope": [
+        { "target": "rentals.Booking", "actions": ["read"] },
+        { "target": "rentals.BookingLine", "actions": ["read"] },
+        { "target": "equipment.Item", "actions": ["read", "create", "update"] }
+      ]
+    }
+  ],
+  "state": "winter-fair-43",
+  "requested_scope": null
+}
+```
+
+Each entry under `roles` is one role the account may elect, with
+`effective_scope` showing what the app would keep for that role — the
+grant ∩ the role, computed live. A role that covers none of the app's
+required grant actions does not appear at all.
 
 ### 3. Handle the callback
 
@@ -117,21 +173,35 @@ exchange carried a DPoP proof, `"Bearer"` otherwise), `expires_in` (access-token
 `iam.jwt.access_token_ttl`, default `900`), and `refresh_token`. The token is not renewed: when
 `expires_in` elapses, call the refresh grant in step 6 before the next API call. There is no `scope`
 member — Facet advertises no scope vocabulary. Add a `DPoP` header to
-the exchange to bind the token to a key — see [DPoP token binding](/build/apps/connect/dpop/). The `authorization_code`
+the exchange to bind the token to a key — see
+[Bind tokens to your app (DPoP)](/build/apps/connect/dpop/). The `authorization_code`
 grant counts 30 exchanges per `client_id` and IP per 5-minute window; refreshes are exempt.
+
+The exchange for the walkthrough sign-in answered:
+
+```json
+{
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6ImZhY2V0LTEifQ.eyJzdWIiOiIwNkgxRk0wOThXQjJCN1g1QkE0OTQ2Nks0TiIsInNpZCI6IjQyZTliY2I2MGVmMGI3ZmQ3OTY1M2UxNDFkNTMyMjI2NmY2ODE3ZjY2MWRjZjUwNjQzNmE1YWQ2ZDVjNGM4M2EiLCJyb2xlIjoiaWFtLlJvbGVzLmFkbWluIiwianRpIjoiMDZIMUc0RlY5Q05RSDNLOThFTURTTUFBWjkiLCJ0eXAiOiJhcHAiLCJpYXQiOjE3OTU3MDAxNjEsImV4cCI6MTc5NTcwMTA2MSwiYXBwIjoiMDZIMUZRRjdOR0RKSktTTkhYUFlUNjYyN00ifQ.AqrsiB6iDvRCasWYNdlauDPTOuXSBERFmV-baW1aAlgd-HUxXI7s81PiDBFEBcognYPtyDM5tGieS5-OvXafAw",
+  "token_type": "Bearer",
+  "expires_in": 900,
+  "refresh_token": "42e9bcb60ef0b7fd79653e141d5322266f6817f661dcf506436a5ad6d5c4c83a.a91913d305aac321675056fd92fb5cf4be2e3827209e79cdf140f548f4b1538d"
+}
+```
 
 ### 5. Call the API with the access token
 
 Send the token in `Authorization: Bearer <access_token>`, or with the `DPoP` scheme when the token
-is bound. The token is an ES256 JWT with these claims:
+is bound. The token is an ES256 JWT with these claims — the payload of the
+token above, decoded:
 
 | Claim | Value |
 | --- | --- |
-| `sub` | the account id |
-| `sid` | a fresh app-session id |
-| `role` | the elected role name |
-| `app` | the app id |
+| `sub` | the account id — `06H1FM098WB2B7X5BA49466K4N` |
+| `sid` | a fresh app-session id — `42e9bcb60ef0b7fd79653e141d5322266f6817f661dcf506436a5ad6d5c4c83a` |
+| `role` | the elected role — `iam.Roles.admin` |
+| `app` | the app id — `06H1FQF7NGDJJKSNHXPYT6627M` |
 | `typ` | `"app"` |
+| `jti`, `iat`, `exp` | the token id, issued-at, and expiry (900 seconds after `iat`) |
 
 ### 6. Refresh the session
 
@@ -148,7 +218,18 @@ The refresh token is client-bound: a missing or different `client_id` answers `4
 the session intact. Every refresh re-reads live state — account, role, app status, and grant; a failed check
 revokes the session. A refresh sooner than 10 seconds after the last one answers
 `429 {"error": "slow_down"}` — wait, then retry. The response carries a fresh `access_token` and a rotated
-`refresh_token`.
+`refresh_token`:
+
+```json
+{
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6ImZhY2V0LTEifQ.eyJzdWIiOiIwNkgxRk0wOThXQjJCN1g1QkE0OTQ2Nks0TiIsInNpZCI6IjQyZTliY2I2MGVmMGI3ZmQ3OTY1M2UxNDFkNTMyMjI2NmY2ODE3ZjY2MWRjZjUwNjQzNmE1YWQ2ZDVjNGM4M2EiLCJyb2xlIjoiaWFtLlJvbGVzLmFkbWluIiwianRpIjoiMDZIMUc1SDVLODdETjNRRDZWN0hWVlpEWFkiLCJ0eXAiOiJhcHAiLCJpYXQiOjE3OTU3MDA0MzQsImV4cCI6MTc5NTcwMTMzNCwiYXBwIjoiMDZIMUZRRjdOR0RKSktTTkhYUFlUNjYyN00ifQ.OXS2AmjdTMDFOl_IPfa77j-lbGOPZ7formHoF4SxIHzUuItfLCbCh64-Cz_ffA4EUkAYiVHIcDOxB9mFhSinuA",
+  "token_type": "Bearer",
+  "expires_in": 900,
+  "refresh_token": "42e9bcb60ef0b7fd79653e141d5322266f6817f661dcf506436a5ad6d5c4c83a.8a10cdea40171e71c96fc7eaaab8ed1aabd11a84cf0a2b9c1d3783bf26a44790"
+}
+```
+
+Same `sid`, fresh `jti` — the session continues, the credential turned over.
 
 ## Example
 
@@ -159,9 +240,9 @@ This module runs the whole flow, bearer-only. Set the constants, serve the file 
 // facet-signin.ts — a complete OAuth 2.1 + PKCE browser client, modelled on
 // the reference client e2e/fixtures/miniapp/index.html.
 
-const API_ORIGIN = 'https://facet.example.tld';
-const CLIENT_ID = 'your-client-id';
-const REDIRECT_URI = 'https://app.example.tld/oauth/callback'; // must equal a registered redirect_uri
+const API_ORIGIN = 'https://facet.localhost:3443';
+const CLIENT_ID = '06H1FQF7NG357EQ0P348Z2BEV5';
+const REDIRECT_URI = 'http://localhost:5173/auth/callback'; // must equal a registered redirect_uri
 const AUTHORIZE_PATH = '/OAuth/authorize';
 const TOKEN_PATH = '/OAuth/token';
 const STORAGE_KEY = 'facet.signin';
@@ -265,7 +346,19 @@ unvalidated target. Check the registered address; the match is exact outside the
 server-side render does not share it. Keep the attempt in the tab that started the sign-in.
 
 **`invalid_grant` on a code you believe is correct.** The code is single-use and expires after
-60 seconds. A callback handler that runs twice sends a second exchange; only the first succeeds.
+60 seconds. A callback handler that runs twice sends a second exchange; only the first succeeds:
+
+```json
+{"error": "invalid_grant", "error_description": "Authorization code is invalid, expired, or already used"}
+```
+
+Start the sign-in again.
+
+**The consent screen lists no roles for this account.** The account's roles
+do not cover the app's required grant actions — check which actions the
+grants mark `required: true`, and which lines the roles carry. An
+administrator can widen a role or narrow the app's grants — see
+[Control what apps can reach](/admin/apps-access/app-grants/).
 
 **Every API call answers `401` after the token worked for a while.** The access token passed its
 `expires_in` lifetime. Refresh it, then retry the call. A refresh inside the 10-second floor after
@@ -273,8 +366,8 @@ the previous one answers `slow_down` — wait, then retry.
 
 ## Related
 
-- [DPoP token binding](/build/apps/connect/dpop/) — bind the token to a key.
-- [The TypeScript SDK (`@facetapp/sdk`)](/build/apps/data/sdk/) — `oauthBrowser` runs this flow for you, including the refresh floor.
-- [Registering an app](/build/apps/connect/register/) — client id, redirect addresses, origins.
+- [Bind tokens to your app (DPoP)](/build/apps/connect/dpop/) — bind the token to a key.
+- [The TypeScript SDK](/build/apps/data/sdk/) — `oauthBrowser` runs this flow for you, including the refresh floor.
+- [Register an app](/build/apps/connect/register/) — client id, redirect addresses, origins.
 - [Apps, grants and roles](/build/apps/connect/what-an-app-can-do/) — the elected role and the grants bound every request.
 - Internals on GitHub: [oauth.md](https://github.com/wearefacet/facet/blob/main/doc/backend/oauth.md).

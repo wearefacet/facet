@@ -1,18 +1,24 @@
 ---
+title: Control what apps can reach
+description: Set what an app may attempt with grants, and see how the grant and the role bound every request together.
 type: how-to
-title: Controlling app reach (grants)
-description: Set what an app may attempt with grants, and see how the grant and the role bound every request.
 audience: [admin]
 features: [RBC-08, FE-12]
+verified_at: eee55a2
 sidebar:
   order: 0
-verified_at: fd345fe3
 ---
 
-An external app gets access through a registration document. A grant on that
-document bounds what the app may attempt at all. The role it signs in with —
-elected on the consent screen, or pinned for a backend app — bounds what it
-may see and change. The two bounds apply together on every request.
+Jo, a freelance developer, builds the Brightwater check-out app for the
+warehouse. It lists today's bookings and marks items out and back in. Ravi
+lets it read bookings and change items — and nothing else, no client names,
+no prices. Two settings do that: a **grant** names what the app may attempt,
+and the role it signs in with bounds what it may see and change. The two
+bounds apply together on every request.
+
+An external app gets access through a registration document. This page shows
+how you set and change the bounds. The model behind them is on
+[Apps, grants and roles](/build/apps/connect/what-an-app-can-do/).
 
 ## When to use this
 
@@ -35,6 +41,8 @@ Open **Configure → Apps** and start the wizard. Pick a preset: a web app you
 host signs in through the browser; a backend app signs in with an API key. The
 setup step collects the name, the sign-in origins, and the redirect addresses.
 
+<!-- screenshot: configure-apps-wizard-permissions -->
+
 ### 2. Set the grants
 
 The permissions step — or the Grants tab on an existing app — lists every
@@ -56,6 +64,21 @@ A grant names one doctype, for example `crm.Contact`. Wildcard targets are
 refused. An app that renders labels or definitions needs an explicit read
 grant on `core.DocType`, or it hardcodes the values.
 :::
+
+The Brightwater check-out app carries these grants:
+
+```json
+{
+  "grants": [
+    {"target": "rentals.Booking", "actions": [{"name": "read", "required": true}]},
+    {"target": "rentals.BookingLine", "actions": [{"name": "read", "required": true}]},
+    {"target": "equipment.Item", "actions": [{"name": "read", "required": true}, {"name": "write", "required": true}]}
+  ]
+}
+```
+
+The app reads today's bookings and their lines, and reads and writes items.
+It cannot reach companies, contacts, or any other doctype.
 
 ### 3. Pin the service role (backend apps)
 
@@ -119,33 +142,9 @@ cannot read `core.DocType` unless a grant names it.
 
 Every app-channel mutation records the app id, and the audit list filters by
 it. Login events carry the app id for app sessions. Denials at the pre-check
-land in the login-event log — see [Auditing activity](/admin/history/audit/).
+land in the login-event log — see [See who did what](/admin/history/audit/).
 
-## Example
-
-This grant set on an app document lets the app read and write contacts,
-and read deals:
-
-```json
-{
-  "grants": [
-    {
-      "target": "crm.Contact",
-      "actions": [
-        { "name": "read", "required": true },
-        { "name": "write", "required": true }
-      ]
-    },
-    {
-      "target": "crm.Deal",
-      "actions": [
-        { "name": "read", "required": true },
-        { "name": "write", "required": false }
-      ]
-    }
-  ]
-}
-```
+## The grant actions
 
 `required: true` means the role must grant the action, or the role is unusable
 for the app. `required: false` means Facet includes the action only when the
@@ -175,7 +174,7 @@ the app's Grants tab.
 ## Related
 
 - [Apps, grants and roles](/build/apps/connect/what-an-app-can-do/) — the concept.
-- [Roles and permission lines](/admin/people/roles-and-permissions/) — the role side of the intersection.
-- [Machine access: API keys](/admin/apps-access/api-keys/) — the key channel.
-- [Auditing activity](/admin/history/audit/) — app attribution in the log.
+- [Roles and permissions](/admin/people/roles-and-permissions/) — the role side of the intersection.
+- [API keys](/admin/apps-access/api-keys/) — the key channel.
+- [See who did what](/admin/history/audit/) — app attribution in the log.
 - Internals on GitHub: [app-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/app-system.md).

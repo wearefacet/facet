@@ -1,6 +1,6 @@
 ---
 title: Use the REST API
-description: Create, read, update, list, and delete documents over plain HTTP with one envelope and one filter grammar.
+description: Use the REST API to create, read, update, list, and delete documents over plain HTTP — one envelope, one filter grammar.
 type: how-to
 audience: [developer]
 features: [DOC-01, DOC-02, DOC-03, DOC-04, PLT-13]
@@ -488,3 +488,4 @@ the JSON body.
 - [Live updates](/build/apps/data/realtime/) — push updates instead of polling.
 - [Gate your UI with the manifest](/build/apps/connect/permission-manifest/) — what the credential may attempt.
 - [REST API reference](/reference/rest-api/) — the full route and parameter reference.
+- [Documents: records with a memory](/discover/how-it-works/documents/)

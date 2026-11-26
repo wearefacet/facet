@@ -1,18 +1,24 @@
 ---
+title: Sessions and lockouts
+description: See how sessions and sign-in tokens work, how a stolen token dies, and how the login throttle and lockouts behave.
 type: how-to
-title: Sessions, refresh tokens and lockouts
-description: See where sessions live, how tokens rotate, and how the login throttle and lockouts work.
 audience: [admin]
 features: [IAM-01, IAM-02, IAM-10, IAM-11]
+verified_at: eee55a2
 sidebar:
   order: 9
-verified_at: f1409cdc
 ---
 
-Facet splits each sign-in into two credentials. The access token is a
-short-lived signed token. The refresh token is a long-lived, opaque token that
-stands for a server-side session in Redis. This page explains both, the
-rotation rule, and the lockout behaviour.
+A laptop is stolen at Brightwater. Ravi's two questions: how long does a
+stolen sign-in work, and how fast can he cut it? The answers live on this
+page. Facet splits each sign-in into two credentials. The access token is a
+short-lived signed token — 15 minutes by default. The refresh token is a
+long-lived, opaque token that stands for a server-side session, and revoking
+that session cuts both.
+
+## Before you start
+
+- [Manage accounts](/admin/people/accounts/) — the accounts whose sessions and lockouts this page controls.
 
 ## When to use this
 
@@ -68,13 +74,24 @@ it:
 3. For a grace window of 10 seconds (`iam.jwt.refresh_grace_window`), both ids
    are accepted, so two parallel requests do not kill the session.
 
-  A presented id that matches neither is token reuse. Facet deletes the session
-  at once and writes a `refresh_reuse` event to the login-event log. The access
-  token already issued stays valid to its TTL, the same rule as an explicit
-  revocation.
+A presented id that matches neither is token reuse. Facet deletes the session
+at once and writes a `refresh_reuse` event to the login-event log. The access
+token already issued stays valid to its TTL, the same rule as an explicit
+revocation.
 
-  The session lifetime is 14 days, set by `iam.jwt.refresh_token_ttl`. Each
-  successful refresh restarts the clock.
+The session lifetime is 14 days, set by `iam.jwt.refresh_token_ttl`. Each
+successful refresh restarts the clock.
+
+The three durations come from the shipped config files. From
+`config.dev.yml`:
+
+```yaml
+iam:
+  jwt:
+    access_token_ttl: 900
+    refresh_token_ttl: 1209600
+    refresh_grace_window: 10
+```
 
 ### Delivery modes
 
@@ -91,10 +108,18 @@ state changes: nothing rotates, the session stays.
 | `DELETE /Api/iam/sessions` | Revokes every session of the caller except the current one. |
 | `DELETE /Api/iam/apps/:app_id/sessions` | Revokes every session the caller holds for one app. |
 
+On the running instance, the list route answers:
+
+```json
+{"sessions": [{"session_id": "b556a6eb…", "created_at": "2026-11-26T13:31:56Z", "last_used": "2026-11-26T13:32:02Z", "user_agent": "curl/8.23.0", "ip": "127.0.0.1", "app": null, "role": "iam.Roles.viewer"}]}
+```
+
 After a revocation, the live access token works until its TTL expires; the
 next refresh fails because the session row is gone. Account holders manage
 their own sessions in the workspace — see
 [Your settings, sessions and API keys](/use/account/).
+
+<!-- screenshot: use-account-sessions -->
 
 ### The login throttle
 
@@ -120,11 +145,19 @@ triggered it started. The flag is set by the account password limit and by the
 MFA challenge lockout. While the flag is present, every sign-in answers `429`
 before any password check, even after the counter that caused it expired.
 
-The audit trail is deliberate: only the lockout writes a row to the login-event
-log. Each failed attempt goes to the backend log instead, under
+On the running instance, the tenth wrong password answers
+`{"error": "Invalid credentials", "remaining_attempts": "0"}`, and every later
+attempt — correct password included — answers:
+
+```json
+{"error": "Too many attempts. Try again later."}
+```
+
+The audit trail is deliberate: only the lockout writes a row to the
+login-event log. Each failed attempt goes to the backend log instead, under
 `facet.iam.login` at warn level, with the account id, the client address, and
-the remaining attempts. See [Auditing activity](/admin/history/audit/) for
-the event log.
+the remaining attempts. See [See who did what](/admin/history/audit/)
+for the event log.
 
 ## Steps
 
@@ -181,7 +214,9 @@ curl -k -X DELETE -H "Authorization: Bearer $FACET_API_KEY" \
 ```
 
 The answer names the count: `{"ok": true, "revoked": 3}`. Each revoked session
-writes a `session_revoked` event. The current session survives the call.
+writes a `session_revoked` event. The current session survives the call — on
+the running instance, a call with one live session answered
+`{"ok": true, "revoked": 0}`.
 
 ## Troubleshooting
 
@@ -210,7 +245,8 @@ That is the design. Only the lockout writes a row. Read the backend log under
 
 - [Sign in, MFA, reset your password](/use/first-day/sign-in/) — the sign-in and MFA steps.
 - [Your settings, sessions and API keys](/use/account/) — the self-service session list.
-- [Auditing activity](/admin/history/audit/) — the login-event log.
-- [Enforcing MFA](/admin/people/mfa/) — the MFA rate limits.
+- [See who did what](/admin/history/audit/) — the login-event log.
+- [Require MFA](/admin/people/mfa/) — the MFA rate limits.
 - [Manage accounts](/admin/people/accounts/) — the statuses the login checks.
 - Internals on GitHub: [iam.md](https://github.com/wearefacet/facet/blob/main/doc/backend/iam.md).
+- [Security and governance](/discover/security/)

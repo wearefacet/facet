@@ -1,6 +1,6 @@
 ---
 type: explanation
-title: Roles: who sees and does what
+title: "Roles: who sees and does what"
 description: See how roles decide who sees and does what, one role at a time, on every surface.
 audience: [evaluator, admin]
 features: [RBC-01, RBC-02, RBC-04, RBC-05]
@@ -13,7 +13,7 @@ Who may see which clients? Who may change a price, and who may not even see one?
 
 *A role decides the rows you may reach and the fields you may read. The checks run every time, on every surface.*
 
-```d2
+<!-- d2
 direction: down
 tom: "Tom · sales" {class: external}
 tomrows: "His list shows only his five clients" {class: ok}
@@ -21,7 +21,11 @@ lucia: "Lucía · warehouse" {class: external}
 luciafields: "She opens an item: no purchase price on the page" {class: ok}
 tom -> tomrows: "row rule"
 lucia -> luciafields: "field rule"
-```
+-->
+<div class="d2-diagram">
+<img class="d2-diagram__img d2-diagram__light" src="/diagrams/f572c5cd-light.svg" alt="Tom · sales" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/f572c5cd-dark.svg" alt="Tom · sales" loading="lazy" />
+</div>
 
 ## One role at a time
 

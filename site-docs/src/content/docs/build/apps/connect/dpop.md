@@ -1,18 +1,21 @@
 ---
 type: how-to
-title: DPoP token binding
+title: Bind tokens to your app (DPoP)
 description: Bind app tokens to a key with DPoP proofs on the token exchange and every API call.
 audience: [developer]
 features: [APP-03]
 sidebar:
   order: 2
-verified_at: a77c6171
+verified_at: eee55a2
 ---
 
-DPoP (Demonstrating Proof-of-Possession, RFC 9449) binds an app token to one key pair. Stolen
-token bytes alone cannot call the API: every call carries a fresh, signed proof. Binding is
-optional at sign-in — an exchange without a `DPoP` header yields a plain bearer token. A bound
-token fails closed at the API: every wrong presentation answers `401`.
+DPoP proves the token is being used by the app it was issued to, so a
+stolen token is useless on its own. DPoP (Demonstrating Proof-of-Possession,
+RFC 9449) binds an app token to one key pair. Stolen token bytes alone
+cannot call the API: every call carries a fresh, signed proof. Binding is
+optional at sign-in — an exchange without a `DPoP` header yields a plain
+bearer token. A bound token fails closed at the API: every wrong
+presentation answers `401`.
 
 > **For agents:** Make one ECDSA P-256 key pair before the redirect; keep the private JWK for the whole session.
 > Mint a proof JWT — header `typ: "dpop+jwt"`, `alg: "ES256"`, `jwk` with the public members only; payload `jti`
@@ -27,13 +30,13 @@ token fails closed at the API: every wrong presentation answers `401`.
 - **Your app can hold a key.** It generates a key pair and keeps the private key for the whole
   session.
 - **Not for cookies or WebSockets.** A bound token cannot ride a cookie or a WebSocket handshake —
-  see [Realtime with WebSockets](/build/apps/data/realtime/).
+  see [Live updates](/build/apps/data/realtime/).
 
   For an unbound bearer app, skip this page; the exchange sends no `DPoP` header.
 
 ## Before you start
 
-- Run the sign-in flow first — see [User login: OAuth 2.1 + PKCE](/build/apps/connect/user-login/).
+- Run the sign-in flow first — see [Sign users in](/build/apps/connect/user-login/).
 - Generate the key pair before the redirect, and keep the private material across the whole round
   trip. The reference client stores both JWKs in `sessionStorage`.
 - A lost key gives a `401` with no hint. There is no recovery: generate a new key and start a new
@@ -56,6 +59,48 @@ carries one is rejected. Send the proof in the `DPoP` header on `POST /OAuth/tok
 proof returns `token_type: "DPoP"`, and the access token embeds `cnf.jkt` — the thumbprint of the
 proof key.
 
+This exchange ran against the Brightwater instance. The proof, minted for
+`htu` `https://facet.localhost:3443/OAuth/token`:
+
+```sh
+DPoP: eyJhbGciOiJFUzI1NiIsInR5cCI6ImRwb3Arand0IiwiandrIjp7Imt0eSI6IkVDIiwiY3J2IjoiUC0yNTYiLCJ4Ijoid2RlMlAzMTI3UFZnSng2VlltSVY2Qm9ETVZPUEZsTWNIRGEweE91RnFoayIsInkiOiJhYkVnMTF3ZFhsSTRzRUFHcDR4TWVydXZ2Y250eVdTV1ExOTZEZEtJWFVJIn19.eyJqdGkiOiJjNTRkOTIxYy1jMjllLTRkMGUtYTFmMS0wOTM3Y2E5Njg4MTEiLCJodG0iOiJQT1NUIiwiaHR1IjoiaHR0cHM6Ly9mYWNldC5sb2NhbGhvc3Q6MzQ0My9PQXV0aC90b2tlbiIsImlhdCI6MTc5NTcwMDQ0NX0.nOo0MLl6DsdTj1q8JG7UgLAqWVMpsAueHLn-XEVhSgl-kQhgFWwior5Dmb6x_66tIBTIm9elxOMvVnnfaN3Swg
+```
+
+```sh
+curl -sk -X POST https://facet.localhost:3443/OAuth/token \
+  -H "DPoP: eyJhbGciOiJFUzI1NiIsInR5cCI6ImRwb3Arand0IiwiandrIjp7Imt0eSI6IkVDIiwiY3J2IjoiUC0yNTYiLCJ4Ijoid2RlMlAzMTI3UFZnSng2VlltSVY2Qm9ETVZPUEZsTWNIRGEweE91RnFoayIsInkiOiJhYkVnMTF3ZFhsSTRzRUFHcDR4TWVydXZ2Y250eVdTV1ExOTZEZEtJWFVJIn19.eyJqdGkiOiJjNTRkOTIxYy1jMjllLTRkMGUtYTFmMS0wOTM3Y2E5Njg4MTEiLCJodG0iOiJQT1NUIiwiaHR1IjoiaHR0cHM6Ly9mYWNldC5sb2NhbGhvc3Q6MzQ0My9PQXV0aC90b2tlbiIsImlhdCI6MTc5NTcwMDQ0NX0.nOo0MLl6DsdTj1q8JG7UgLAqWVMpsAueHLn-XEVhSgl-kQhgFWwior5Dmb6x_66tIBTIm9elxOMvVnnfaN3Swg" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data-urlencode 'grant_type=authorization_code' \
+  --data-urlencode 'code=3oLGa5snVVSHSYRm4CYsgR82-uzy3cZ_c4U3YzeW8kk' \
+  --data-urlencode 'client_id=06H1FQF7NG357EQ0P348Z2BEV5' \
+  --data-urlencode 'redirect_uri=http://localhost:5173/auth/callback' \
+  --data-urlencode 'code_verifier=YF-tTGf8ZKzGRypHYm6fyrF_W45UApWMR8Zas5EuoW8n1IBgIFyrzUndX1vQdu9F'
+```
+
+The answer marks the token as bound:
+
+```json
+{
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6ImZhY2V0LTEifQ.eyJzdWIiOiIwNkgxRk0wOThXQjJCN1g1QkE0OTQ2Nks0TiIsInNpZCI6IjI0YzZmZTUxZmQ5Nzk1ZGJhYzg5NGNiN2VkYzNjYzA1ZTZhOTEzMDM3MDY1MDMxZjgxYWVhZmJkMmM5ZmJhZWUiLCJyb2xlIjoiaWFtLlJvbGVzLmFkbWluIiwianRpIjoiMDZIMUc1SkowMDhNSlNHTkpaNEUxUVY5SjIiLCJ0eXAiOiJhcHAiLCJpYXQiOjE3OTU3MDA0NDUsImV4cCI6MTc5NTcwMTM0NSwiYXBwIjoiMDZIMUZRRjdOR0RKSktTTkhYUFlUNjYyN00iLCJjbmYiOnsiamt0IjoiTmxiU0RfUkM5YUJCRU1EVXFVV3hvS1B0XzNLNWhVa0wzOTkySHZmNEtlOCJ9fQ.-aPyzWALHqJnto9aBAkAdvjAXlwoUVrUZ1ZkoMjNnhhSoNxx7pedC_zJW9_UCy8CTGQ2i-G4KcLCy6OGGpTZrA",
+  "token_type": "DPoP",
+  "expires_in": 900,
+  "refresh_token": "24c6fe51fd9795dbac894cb7edc3cc05e6a913037065031f81aeafbd2c9fbaee.f975a56ce92e5729c3891d120db06bb8fc4e5fccebdedfcc0aee978f0fc8ab6d"
+}
+```
+
+Decoded, the access token's payload now carries the binding:
+
+```json
+{
+  "sub": "06H1FM098WB2B7X5BA49466K4N",
+  "sid": "24c6fe51fd9795dbac894cb7edc3cc05e6a913037065031f81aeafbd2c9fbaee",
+  "role": "iam.Roles.admin",
+  "typ": "app",
+  "app": "06H1FQF7NGDJJKSNHXPYT6627M",
+  "cnf": { "jkt": "NlbSD_RC9aBBEMDUqUWxoKPt_3K5hUkL3992Hvf4Ke8" }
+}
+```
+
 :::tip
 The token endpoint verifies the proof before it consumes the code. A failed proof does not
 consume the code — correct the proof and exchange the same code again.
@@ -74,8 +119,8 @@ compares `htu` and ignores the query and fragment parts, so the query string nev
 proof:
 
 ```http
-GET /Api/crm/Company?per_page=1
-→ proof htu: https://facet.example.tld/Api/crm/Company
+GET /Api/rentals/Booking?items=1
+→ proof htu: https://facet.localhost:3443/Api/rentals/Booking
 ```
 
 The proof contract, per claim:
@@ -94,12 +139,37 @@ the token and refresh grants, a proof failure answers `400` — `invalid_dpop_pr
 or signature faults, `invalid_claim` for payload faults, `invalid_grant` on a replay. At the API,
 every failure is the uniform `401`.
 
+One bound call, end to end. First compute `ath`, then mint the proof, then
+send both headers:
+
+```sh
+# ath = base64url(SHA-256(access_token))
+printf '%s' "$TOKEN" | openssl dgst -sha256 -binary | openssl base64 -A | tr '+/' '-_' | tr -d '='
+# jYnrjvsf4YY4csgr1DneikyppbGtRL5zPZeoad_BE-s
+
+curl -sk 'https://facet.localhost:3443/Api/rentals/Booking?items=1' \
+  -H "Authorization: DPoP $TOKEN" \
+  -H "DPoP: $(node dpop.mjs proof GET https://facet.localhost:3443/Api/rentals/Booking jYnrjvsf4YY4csgr1DneikyppbGtRL5zPZeoad_BE-s)"
+```
+
+The proof minting itself is the TS module in the Example section; the call
+answers `200` with the first booking. Replay the same headers and the
+proof's `jti` is spent:
+
+```
+{"error": "Authentication required"}
+```
+
+The downgrade path is closed too — the same bound token under the plain
+`Bearer` scheme answers the same `401 {"error": "Authentication required"}`,
+even while the token is otherwise valid.
+
 ### 5. Sign the configured origin, not the address bar
 
 The server rebuilds `htu` from the configured public origin only. It never reads `X-Forwarded-*`
 headers. A proof whose `htu` differs in scheme, host, or port answers `400` at the token endpoint
 and `401` at the API, with a message that names both URLs:
-`DPoP htu mismatch: expected https://facet.example.tld/OAuth/token, got http://facet.example.tld:8080/OAuth/token`.
+`DPoP htu mismatch: expected https://facet.localhost:3443/OAuth/token, got http://facet.localhost:3443:8080/OAuth/token`.
 
 :::caution
 A TLS-terminating proxy must forward the public origin, or the operator must set `host` (or
@@ -127,7 +197,7 @@ Generate and save the key before `location.assign(...)` in your sign-in:
 // facet-dpop.ts — DPoP key, proof minting, and bound API calls, modelled on
 // the reference client e2e/fixtures/miniapp/index.html.
 
-const API_ORIGIN = 'https://facet.example.tld';
+const API_ORIGIN = 'https://facet.localhost:3443';
 const TOKEN_URL = `${API_ORIGIN}/OAuth/token`;
 const DPOP_STORAGE = 'facet.dpop';
 
@@ -166,7 +236,8 @@ export function saveDpopKey(key: DpopKey): void {
 
 function loadDpopKey(): DpopKey | null {
   const raw = sessionStorage.getItem(DPOP_STORAGE);
-  return raw === null ? null : (JSON.parse(raw) as DpopKey);
+  if (raw === null) return null;
+  return JSON.parse(raw) as DpopKey;
 }
 
 export async function signDpopProof(key: DpopKey, htm: string, htu: string, ath?: string): Promise<string> {
@@ -211,10 +282,10 @@ export async function exchangeBoundToken(
   });
 }
 
-export async function readCompanies(accessToken: string): Promise<Response> {
+export async function readBookings(accessToken: string): Promise<Response> {
   const key = loadDpopKey();
   if (!key) throw new Error('No DPoP key in this browser session.');
-  const htu = `${API_ORIGIN}/Api/crm/Company`;
+  const htu = `${API_ORIGIN}/Api/rentals/Booking`;
   const ath = await sha256B64url(accessToken);
   const proof = await signDpopProof(key, 'GET', htu, ath);
   return fetch(htu, { headers: { Authorization: `DPoP ${accessToken}`, DPoP: proof } });
@@ -245,7 +316,7 @@ scheme, or sign in again with a proof on the exchange.
 
 ## Related
 
-- [User login: OAuth 2.1 + PKCE](/build/apps/connect/user-login/) — the sign-in flow this page binds.
-- [The TypeScript SDK (`@facetapp/sdk`)](/build/apps/data/sdk/) — the SDK client and its `oauthBrowser` sign-in.
-- [Realtime with WebSockets](/build/apps/data/realtime/) — a bound token cannot ride the handshake.
+- [Sign users in](/build/apps/connect/user-login/) — the sign-in flow this page binds.
+- [The TypeScript SDK](/build/apps/data/sdk/) — the SDK client and its `oauthBrowser` sign-in.
+- [Live updates](/build/apps/data/realtime/) — a bound token cannot ride the handshake.
 - Internals on GitHub: [oauth.md](https://github.com/wearefacet/facet/blob/main/doc/backend/oauth.md).

@@ -194,3 +194,4 @@ A request that carries `Authorization: Bearer` is exempt from the header check â
 ## Related
 
 - [REST API](/reference/rest-api/) â€” the endpoint surface these statuses belong to.
+- [Use the REST API](/build/apps/data/rest-api/)

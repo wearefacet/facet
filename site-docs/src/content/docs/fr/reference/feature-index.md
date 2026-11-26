@@ -31,8 +31,8 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 
 | ID | Fonctionnalité | Pages |
 | --- | --- | --- |
-| APP-01 | App registry | [Enregistrer une app](/fr/build/apps/connect/register/), [Comment fonctionnent les apps sur Facet](/fr/build/apps/how-apps-work/), [Apps: built fast, replaced freely](/discover/how-it-works/apps/) |
-| APP-02 | OAuth 2.1 authorization server | [Connexion utilisateur : OAuth 2.1 + PKCE](/fr/build/apps/connect/user-login/) |
+| APP-01 | App registry | [Enregistrer une app](/fr/build/apps/connect/register/), [Comment fonctionnent les apps sur Facet](/fr/build/apps/how-apps-work/), [Démarrage rapide avec la CLI dev](/fr/build/apps/quickstart/), [Apps: built fast, replaced freely](/discover/how-it-works/apps/) |
+| APP-02 | OAuth 2.1 authorization server | [Connexion utilisateur : OAuth 2.1 + PKCE](/fr/build/apps/connect/user-login/), [Démarrage rapide avec la CLI dev](/fr/build/apps/quickstart/) |
 | APP-03 | DPoP proof binding | [Liaison DPoP des tokens](/fr/build/apps/connect/dpop/) |
 | APP-04 | Dynamic client registration | [MCP : connecter des agents](/fr/build/apps/agents/mcp/) |
 | APP-05 | Consent screen | [Connexion utilisateur : OAuth 2.1 + PKCE](/fr/build/apps/connect/user-login/) |
@@ -111,16 +111,16 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 | DOM-12 | Named scopes | [Les périmètres de lignes](/fr/admin/people/row-scopes/), [Les périmètres nommés](/fr/build/model/access/named-scopes/) |
 | DOM-13 | Domain editors | [Domaines, brouillons et éditeurs](/fr/build/model/in-app/drafts-and-publishing/) |
 | DOM-14 | Domain grants | [Réplication entre domaines](/fr/build/deeper/cross-domain-replication/), [How domains stay isolated](/build/deeper/domain-isolation/), [Partager des données entre domaines](/fr/build/model/relations/across-domains/), [Domaines et isolement](/fr/discover/how-it-works/domains/) |
-| DOM-15 | Portable domain bundles | [Déplacer des domaines avec des bundles](/fr/build/model/bundles/), [From dev to production](/build/model/dev-to-production/), [The domain file layout](/build/model/in-files/domain-files/) |
+| DOM-15 | Portable domain bundles | [The same domain in files](/build/first-hour/first-domain-in-files/), [Déplacer des domaines avec des bundles](/fr/build/model/bundles/), [From dev to production](/build/model/dev-to-production/), [The domain file layout](/build/model/in-files/domain-files/) |
 | DOM-16 | Definition diagnostics | [Build your first domain](/build/first-hour/first-domain/), [Vérifier un domaine avant publication](/fr/build/model/in-app/check-before-publish/), [Brouillon → publication](/fr/build/model/in-app/how-drafts-work/) |
 | DOM-17 | Lazy document migration | [Évolution du schéma](/fr/build/deeper/schema-evolution/), [Faire évoluer un schéma](/fr/build/model/change-a-live-domain/) |
 | DOM-18 | Re-projection CLI | [Faire évoluer un schéma](/fr/build/model/change-a-live-domain/), [CLI facet](/fr/reference/cli-facet/) |
-| DOM-19 | Dev domain watcher | [From dev to production](/build/model/dev-to-production/), [Vérifier un domaine avant publication](/fr/build/model/in-app/check-before-publish/), [The domain file layout](/build/model/in-files/domain-files/), [Le watcher de domaines en dev](/fr/build/model/in-files/domain-watcher/), [Build domains with a coding agent](/build/model/in-files/with-a-coding-agent/), [Choose how you build](/build/model/) |
+| DOM-19 | Dev domain watcher | [The same domain in files](/build/first-hour/first-domain-in-files/), [From dev to production](/build/model/dev-to-production/), [Vérifier un domaine avant publication](/fr/build/model/in-app/check-before-publish/), [The domain file layout](/build/model/in-files/domain-files/), [Le watcher de domaines en dev](/fr/build/model/in-files/domain-watcher/), [Build domains with a coding agent](/build/model/in-files/with-a-coding-agent/), [Choose how you build](/build/model/) |
 | DOM-20 | Domain schematic | [La vue schématique](/fr/build/model/views/schematic/) |
 | DOM-21 | CollectionView | [Build your first domain](/build/first-hour/first-domain/), [Vues de collection](/fr/build/model/views/lists-boards-calendars/), [Listes, filtres et vues enregistrées](/fr/use/finding/lists-and-views/) |
 | DOM-22 | DocumentView templates | [Modèles de vue](/fr/build/model/views/document-pages/), [Schéma du modèle DVT](/fr/reference/dvt-schema/), [Contexte des modèles Jinja2](/fr/reference/jinja2-context/) |
 | DOM-23 | Jinja2 templating for derived columns | [Documents, doctypes et projections](/fr/build/deeper/documents-and-projections/), [Nom d’affichage et texte de recherche](/fr/build/model/views/names-and-search/), [Contexte des modèles Jinja2](/fr/reference/jinja2-context/) |
-| DOM-24 | Core seeding | [Amorçage et tâches CLI](/fr/admin/install/bootstrap/), [Installer pour le développement](/fr/build/dev-environment/), [Run Facet in 15 minutes](/build/first-hour/run-facet/) |
+| DOM-24 | Core seeding | [Amorçage et tâches CLI](/fr/admin/install/bootstrap/), [Installer pour le développement](/fr/build/dev-environment/), [Run Facet](/build/first-hour/run-facet/) |
 | DOM-25 | Cross-domain field replication | [Réplication entre domaines](/fr/build/deeper/cross-domain-replication/), [Partager des données entre domaines](/fr/build/model/relations/across-domains/) |
 | DOM-26 | Doctype maintenance console | — |
 | DOM-27 | Eager document migration | — |
@@ -134,7 +134,7 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 
 | ID | Fonctionnalité | Pages |
 | --- | --- | --- |
-| FE-01 | Auth screens | [Run Facet in 15 minutes](/build/first-hour/run-facet/), [Connexion, MFA et mot de passe](/fr/use/first-day/sign-in/) |
+| FE-01 | Auth screens | [Run Facet](/build/first-hour/run-facet/), [Connexion, MFA et mot de passe](/fr/use/first-day/sign-in/) |
 | FE-02 | Dashboard | [Le tableau de bord](/fr/use/first-day/dashboard/) |
 | FE-03 | List surfaces | [Build your first domain](/build/first-hour/first-domain/), [Listes, filtres et vues enregistrées](/fr/use/finding/lists-and-views/) |
 | FE-04 | Document show page | [Modèles de vue](/fr/build/model/views/document-pages/), [Commentaires et pièces jointes](/fr/use/documents/comments-attachments/), [Consulter et modifier un document](/fr/use/documents/view-and-edit/) |
@@ -152,7 +152,7 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 | FE-16 | Configure audit | [Auditer l’activité](/fr/admin/history/audit/) |
 | FE-17 | Settings | [Paramètres, sessions et clés API](/fr/use/account/) |
 | FE-18 | Import and export UI | [Importer et exporter des données](/fr/use/documents/import-export/) |
-| FE-19 | Welcome tour | [Run Facet in 15 minutes](/build/first-hour/run-facet/) |
+| FE-19 | Welcome tour | [Run Facet](/build/first-hour/run-facet/) |
 | FE-20 | Internationalization | [Localisation](/fr/admin/configure/languages/) |
 | FE-21 | OAuth consent page | [Connexion utilisateur : OAuth 2.1 + PKCE](/fr/build/apps/connect/user-login/) |
 | FE-22 | Assistant chat UI | [Utiliser l’assistant](/fr/use/assistant/) |
@@ -169,13 +169,13 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 | IAM-03 | MFA with TOTP and backup codes | [Imposer le MFA](/fr/admin/people/mfa/), [Sécurité et gouvernance](/fr/discover/security/), [Connexion, MFA et mot de passe](/fr/use/first-day/sign-in/) |
 | IAM-04 | Forced password change | [Sécurité et gouvernance](/fr/discover/security/), [Connexion, MFA et mot de passe](/fr/use/first-day/sign-in/) |
 | IAM-05 | Self-service password reset | [Sécurité et gouvernance](/fr/discover/security/), [Connexion, MFA et mot de passe](/fr/use/first-day/sign-in/) |
-| IAM-06 | Invites and temporary passwords | [Gérer les comptes](/fr/admin/people/accounts/), [Give your team access](/build/first-hour/team-access/), [Sécurité et gouvernance](/fr/discover/security/) |
+| IAM-06 | Invites and temporary passwords | [Gérer les comptes](/fr/admin/people/accounts/), [People and access](/admin/people/), [Give your team access](/build/first-hour/team-access/), [Sécurité et gouvernance](/fr/discover/security/) |
 | IAM-07 | Account lifecycle | [Gérer les comptes](/fr/admin/people/accounts/), [Sécurité et gouvernance](/fr/discover/security/) |
 | IAM-08 | Inbound OIDC SSO | [Le SSO avec OIDC](/fr/admin/people/sso/), [Sécurité et gouvernance](/fr/discover/security/) |
 | IAM-09 | Static API keys | [Accès machine : clés d’API](/fr/admin/apps-access/api-keys/), [Sécurité et gouvernance](/fr/discover/security/), [Paramètres, sessions et clés API](/fr/use/account/) |
 | IAM-10 | Login throttle and lockout | [Sessions, tokens et verrouillages](/fr/admin/people/sessions-lockouts/), [Sécurité et gouvernance](/fr/discover/security/), [Connexion, MFA et mot de passe](/fr/use/first-day/sign-in/) |
 | IAM-11 | Session management | [Sessions, tokens et verrouillages](/fr/admin/people/sessions-lockouts/), [Sécurité et gouvernance](/fr/discover/security/), [Paramètres, sessions et clés API](/fr/use/account/) |
-| IAM-12 | Bootstrap CLI | [Amorçage et tâches CLI](/fr/admin/install/bootstrap/), [Déployer en production](/fr/admin/install/production/), [Installer pour le développement](/fr/build/dev-environment/), [Run Facet in 15 minutes](/build/first-hour/run-facet/), [Sécurité et gouvernance](/fr/discover/security/), [CLI facet](/fr/reference/cli-facet/) |
+| IAM-12 | Bootstrap CLI | [Amorçage et tâches CLI](/fr/admin/install/bootstrap/), [Déployer en production](/fr/admin/install/production/), [Installer pour le développement](/fr/build/dev-environment/), [Run Facet](/build/first-hour/run-facet/), [Sécurité et gouvernance](/fr/discover/security/), [CLI facet](/fr/reference/cli-facet/) |
 | IAM-13 | Login event log | [Auditer l’activité](/fr/admin/history/audit/), [Sécurité et gouvernance](/fr/discover/security/) |
 | IAM-14 | Caller identity endpoint | [Contextes d’authentification](/fr/admin/under-the-hood/one-role-at-a-time/), [Dimensionner l’UI avec le manifeste](/fr/build/apps/connect/permission-manifest/), [Sécurité et gouvernance](/fr/discover/security/) |
 | IAM-15 | Service accounts | [Sécurité et gouvernance](/fr/discover/security/) |
@@ -184,7 +184,7 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 
 | ID | Fonctionnalité | Pages |
 | --- | --- | --- |
-| PLT-01 | YAML config | [Fichiers de configuration](/fr/admin/configure/configuration-files/), [Installer pour le développement](/fr/build/dev-environment/), [Run Facet in 15 minutes](/build/first-hour/run-facet/), [Clés du fichier de configuration](/fr/reference/config-keys/) |
+| PLT-01 | YAML config | [Fichiers de configuration](/fr/admin/configure/configuration-files/), [Installer pour le développement](/fr/build/dev-environment/), [Run Facet](/build/first-hour/run-facet/), [Clés du fichier de configuration](/fr/reference/config-keys/) |
 | PLT-02 | System settings | [Paramètres système](/fr/admin/configure/system-settings/), [Imposer le MFA](/fr/admin/people/mfa/), [Clés de réglage système](/fr/reference/system-settings-keys/) |
 | PLT-03 | Secret store | [Champs secrets et en écriture seule](/fr/build/model/data/secret-fields/) |
 | PLT-04 | Artifact store | [Stockage de fichiers : local ou S3](/fr/admin/configure/file-storage/), [Téléverser et servir des fichiers](/fr/build/apps/data/files/), [Fichiers et artifacts dans les champs](/fr/build/model/data/files/) |
@@ -199,14 +199,14 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 | PLT-13 | HTTP admission gates | [Utiliser l’API REST](/fr/build/apps/data/rest-api/), [Réponses d’erreur](/fr/reference/error-responses/) |
 | PLT-14 | Currency registry and money math | [Devises et montants](/fr/admin/configure/currencies/) |
 | PLT-15 | Graceful shutdown | [Mises à niveau et arrêt propre](/fr/admin/keep-running/upgrades/) |
-| PLT-16 | Container images | [Déployer avec des conteneurs](/fr/admin/install/containers/), [Déployer en production](/fr/admin/install/production/), [Prérequis système et topologie](/fr/admin/install/requirements/), [Installer pour le développement](/fr/build/dev-environment/), [Run Facet in 15 minutes](/build/first-hour/run-facet/) |
+| PLT-16 | Container images | [Déployer avec des conteneurs](/fr/admin/install/containers/), [Déployer en production](/fr/admin/install/production/), [Prérequis système et topologie](/fr/admin/install/requirements/), [Installer pour le développement](/fr/build/dev-environment/), [Run Facet](/build/first-hour/run-facet/) |
 | PLT-17 | Account settings store | [Clés de réglage de compte](/fr/reference/account-settings-keys/), [Paramètres, sessions et clés API](/fr/use/account/) |
 
 ## RBC — authorization and governance
 
 | ID | Fonctionnalité | Pages |
 | --- | --- | --- |
-| RBC-01 | Roles | [Rôles et lignes de permission](/fr/admin/people/roles-and-permissions/), [Rôles, niveaux et garde-fou](/fr/admin/people/who-can-change-roles/), [Give your team access](/build/first-hour/team-access/), [Roles: who sees and does what](/discover/how-it-works/roles/), [Sécurité et gouvernance](/fr/discover/security/), [Syntaxe des lignes de permission](/fr/reference/permission-syntax/) |
+| RBC-01 | Roles | [People and access](/admin/people/), [Rôles et lignes de permission](/fr/admin/people/roles-and-permissions/), [Rôles, niveaux et garde-fou](/fr/admin/people/who-can-change-roles/), [Give your team access](/build/first-hour/team-access/), [Roles: who sees and does what](/discover/how-it-works/roles/), [Sécurité et gouvernance](/fr/discover/security/), [Syntaxe des lignes de permission](/fr/reference/permission-syntax/) |
 | RBC-02 | Role assignment and election | [Affecter les rôles et l’élection](/fr/admin/people/assign-roles/), [Give your team access](/build/first-hour/team-access/), [Roles: who sees and does what](/discover/how-it-works/roles/), [Sécurité et gouvernance](/fr/discover/security/) |
 | RBC-03 | Read enforcement | [Application des autorisations](/fr/admin/under-the-hood/how-access-is-enforced/), [Sécurité et gouvernance](/fr/discover/security/), [Syntaxe des lignes de permission](/fr/reference/permission-syntax/) |
 | RBC-04 | Field visibility tags | [Visibilité des champs par étiquettes](/fr/admin/people/hidden-fields/), [Give your team access](/build/first-hour/team-access/), [Roles: who sees and does what](/discover/how-it-works/roles/), [Sécurité et gouvernance](/fr/discover/security/) |

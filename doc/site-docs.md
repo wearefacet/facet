@@ -62,7 +62,7 @@ The old `changelog/` section is now one Reference page, `reference/changelog.md`
 
 Every content page carries a `type` front-matter key from this list: `overview`, `tutorial`, `how-to`, `explanation`, `reference` (schema in `src/content.config.ts`; the splash landing page carries none). The type drives the sidebar grouping, the coverage rules, and the voice rules (see [`documentation.md`](documentation.md) → Rule 2b — the layer model maps explanation/how-to pages onto it).
 
-Sections follow the rule "one page = one job". A tab index or section index opens with three to five job cards and then the full page list. The landing page (`index.mdx`, splash template) opens the site and keeps its three doors. See [Landing page](#landing-page).
+Sections follow the rule "one page = one job". A tab index or section index opens with three to five job cards and then the full page list. The landing page (`index.mdx`, splash template) opens the site: two hero buttons (**Your first hour**, **How Facet works**) and one door per tab. See [Landing page](#landing-page).
 
 ### Old URLs
 
@@ -85,13 +85,15 @@ The landing page is the site's front door. Two pages share it: `src/content/docs
 | `src/components/landing/SectionHead.astro` | A section heading: eyebrow, h2, optional lead paragraph (the slot). |
 | `src/components/landing/Pillar.astro` | One promise card — `data`, `permissions` or `history` — with a small looping illustration. |
 | `src/components/landing/FlowDiagram.astro` | The "how it fits" diagram: apps → Facet layers → domains, with travelling packets. All labels are props. |
-| `src/components/landing/Door.astro` | An entry-door card (Evaluate / Build / Operate): icon, step number, hover reveal. |
+| `src/components/landing/Door.astro` | An entry-door card, one per tab (Discover, Use, Build, Administer, Reference): icon, step number, hover reveal. |
 | `src/components/landing/LandingGrid.astro` | The responsive grid for card rows; the `min` prop sets the column floor (default `15rem`). |
 | `src/components/landing/Closing.astro` | The closing call-to-action band: title and links (the slot) over a drifting gem pattern. |
 
 Rules:
 
 - **All words live in the pages.** The `.mdx` files hold every sentence, so the raw `.md` twin stays the readable source for agents. `FlowDiagram` takes its labels as props so each locale passes its own words; `Hero` keeps only the eyebrow inside the component.
+- **The hero sentence is the product definition.** The `tagline` says in one sentence what Facet is (from Why Facet: "One governed home for your business data, plus the apps that run on it"), and the two hero actions route to the golden path (`/build/first-hour/`) and the mental model (`/discover/how-it-works/`).
+- **The five doors carry the tabs' questions.** Each `Door` opens one tab and answers the question that tab exists for (Discover: what is it and is it for me; Use: day-to-day work; Build: model data and build apps; Administer: install, configure, secure, govern, run; Reference: the exact key, field, operator, command, or payload).
 - **Components opt out of prose styling** with the `not-content` class. Starlight's markdown styles would otherwise fight the component CSS.
 - **Every animation sits behind `prefers-reduced-motion`**, including the SMIL packets, which hide under it. With motion off, the page must read complete.
 - **Colours come from the theme tokens** — `--accent`, `--surface-2`, `--border`, `--sunken`, and friends. The few fixed golds (`#c26f22`, `#d9822b`, `#f2c14e`, `#e8a33d`, `#9a4f12` for light, plus `#f8dc94` and `#b8621b` for dark) copy the two logo lockups (`src/assets/facet-lockup-*.svg`); update the components when the lockups move.
@@ -208,6 +210,22 @@ Rules for authors:
 - **Keep labels short.** A wide diagram is scaled down to fit the content column, and the text shrinks with it. Prefer `Permission` over `The permission record that names an action`.
 
 Each theme is its own compile, with its palette as the base override. D2 emits `dark-theme-overrides` inside a `prefers-color-scheme` media block, and the site switches theme with a `data-theme` attribute, so a single compile with both palettes would never apply the dark one.
+
+## Screenshots
+
+Playwright captures the UI screenshots the tutorial pages embed. One script, one shot list:
+
+| File | Covers |
+| --- | --- |
+| `scripts/screens/capture.mjs` | The capture script. Reads a YAML shot file (`--shots`, default `scripts/screens/shots.yml`), accepts `--base` and `--only <id,...>`. One browser context per persona, signed in once through the real sign-in form (`/Login`, placeholder-driven, "Skip for now" on the MFA enrollment interstitial). Per shot: goto (networkidle, 30 s), optional `wait` selector, `settle` ms, optional `highlight` (2 px `#2563eb` outline), screenshot of the `crop` element or full page, `animations: disabled`, `caret: hide`, written to `src/assets/screens/<out>`. A `login: true` shot runs unauthenticated in a throwaway context. Run: `cd site-docs && NODE_PATH=$(pwd)/../frontend/node_modules node scripts/screens/capture.mjs`. |
+| `scripts/screens/shots.yml` | The shot list: defaults (base `https://facet.localhost:3443`, viewport 1280×800, light theme), five personas (nadia, tom, lucia, ravi, admin), and one entry per shot with its output path under `src/assets/screens/`. |
+
+Two classes of shot live in the list:
+
+- **Standard shots** — reproducible on any instance with the Brightwater example loaded. They read live data, so views that show today-relative content (kanban boards, dashboard panels) differ on every run; the shots.yml header names them.
+- **Captured-once shots** — listed in the shots.yml comment block. They depend on one-off UI states (an OTP sign-in screen, a filled New Account form, a generated temporary password) and were taken against scratch flows outside the standard run; recapture them by replaying those flows.
+
+Pages embed the PNGs with markdown image syntax and a descriptive alt text; the alt text says what the shot shows, not "screenshot".
 
 ## Tailwind
 

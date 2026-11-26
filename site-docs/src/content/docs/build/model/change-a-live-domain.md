@@ -1,7 +1,7 @@
 ---
 type: how-to
 title: Change a live domain safely
-description: Which doctype changes are safe on live data, which need a version bump, and how documents follow.
+description: Which doctype changes are safe on a live domain, which need a version bump, and how documents follow.
 audience: [author]
 features: [DOM-17, DOM-18]
 sidebar:
@@ -26,7 +26,7 @@ with a migration, and how the stored documents follow.
 
 - **Update rights** on the doctype definition.
 - **The current `schema_version`** of the doctype.
-- **Draft domains skip all of this:** edit freely, publish, and start here.
+- **[Draft domains](/build/model/in-app/how-drafts-work/) skip all of this:** edit freely, publish, and start here.
 
 ## Steps
 

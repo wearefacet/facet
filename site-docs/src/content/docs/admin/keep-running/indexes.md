@@ -1,53 +1,75 @@
 ---
+title: Indexes
+description: Watch the managed indexes Facet builds for doctype fields, and retry a failed index build.
 type: how-to
-title: Managed indexes
-description: Watch the managed indexes Facet creates for doctype fields, and retry failed index builds.
 audience: [operator]
 features: [PLT-05]
+verified_at: eee55a2
 sidebar:
   order: 5
-verified_at: 008dd880
 ---
 
-Facet manages its own PostgreSQL indexes. When an author declares that a
-field is filterable or sortable, Facet computes the indexes that serve that
-declaration, builds them online, and drops them when the field changes. Your
-job as the operator is to watch the status surface and retry the rare
+A list view got slower after a domain import, and you need to know why. Facet
+manages its own PostgreSQL indexes. When an author declares a field
+filterable or sortable, Facet computes the indexes that serve the
+declaration. It builds them online and drops them when the field changes.
+Your job as the operator is to watch the status surface and retry the rare
 failure.
 
 ## When to use this
 
-Check the index surface when:
-
 - You check index health after a schema change or a domain import.
 - An index build failed and you need it back.
-- You want to know why an index exists or why one does not.
+- You want to know why an index exists, or why one does not.
 
 ## Before you start
 
 - The status route needs a wildcard `read` permission on `*.*` — the same
-  rule as the global audit log.
+  rule as the [global audit log](/admin/history/audit/).
 - The retry command runs from a host that reaches the database.
-- Index DDL is safe to run while the server is live. It never blocks
-  reads or writes on the documents.
+- Index DDL is safe to run while the server is live. It never blocks reads or
+  writes on the documents.
+
+## Two layers of indexes
+
+Facet keeps two index families, and the status surface covers one of them.
+
+**Managed doctype indexes** are the ones this page watches. Each serves one
+field of one doctype, tracked in the `doctype_indexes` table, built and
+dropped by Facet itself.
+
+**System-level indexes** come with the schema and nobody manages them per
+doctype. Two of them shape everyday behaviour:
+
+- The search column carries a GIN trigram index, partial on
+  `deleted_at IS NULL`. Full-text list search uses it.
+- The links column carries a GIN index, partial the same way, for
+  "which documents link to this one?" queries.
+
+The partial predicate matters beyond speed: a deleted document is a
+tombstone that keeps its content until the retention prune clears it. The
+`deleted_at IS NULL` clause keeps tombstoned rows out of the indexes, so
+their retained payloads never surface in search or link lookups.
 
 ## Steps
 
 ### 1. Read the index status
 
-Open the index status page under **Configure → Platform**, or call the
-route:
+Open the index status page under **Configure → Platform**, or call the route:
 
 ```sh
-curl -s -H "Authorization: Bearer $FACET_API_KEY" \
+curl -s -g -H "Authorization: Bearer $FACET_API_KEY" \
   "https://facet.localhost:3443/Api/Indexes?filters[status__eq]=error&filters[domain__eq]=hr"
 ```
 
-One row per managed index carries: `id`, `domain`, `doc_type`,
-`field_name`, `index_type`, `index_name`, `status`, `error_message`,
-`created_at`, and `updated_at`. The status lifecycle:
+One row per managed index carries: `id`, `domain`, `doc_type`, `field_name`,
+`index_type`, `index_name`, `status`, `error_message`, `created_at`, and
+`updated_at`. The status lifecycle:
+
+*One managed index from build to retirement.*
 
 <!-- d2
+direction: down
 pending: pending
 active: active {class: ok}
 error: error {class: danger}
@@ -59,8 +81,8 @@ active -> dropped
 error -> dropped
 -->
 <div class="d2-diagram">
-<img class="d2-diagram__img d2-diagram__light" src="/diagrams/46455962-light.svg" alt="Diagram" loading="lazy" />
-<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/46455962-dark.svg" alt="Diagram" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__light" src="/diagrams/dcad920b-light.svg" alt="Diagram" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/dcad920b-dark.svg" alt="Diagram" loading="lazy" />
 </div>
 
 - `pending` — the build is queued or running.
@@ -69,7 +91,15 @@ error -> dropped
 - `dropped` — the field no longer wants the index.
 
 Filterable fields: `domain`, `doc_type`, `status`, `field_name`. Sortable:
-the same set plus `index_type`, `created_at`, `updated_at`.
+the same set plus `index_type`, `created_at`, and `updated_at`. A live list
+from the running instance, filtered to active indexes:
+
+```text
+count: 99
+domain: equipment  doc_type: MaintenanceTicket  field: reported_by  btree  active
+domain: equipment  doc_type: MaintenanceTicket  field: assignee     btree  active
+domain: equipment  doc_type: MaintenanceTicket  field: status       btree  active
+```
 
 ### 2. Retry failed builds
 
@@ -84,20 +114,18 @@ The command retries two kinds of rows:
 - `pending` rows stale for more than 10 minutes — the shape a dead build
   process leaves behind.
 
-  A fresh `pending` row belongs to a live build in the running server, so the
-  command never touches it. Each row is re-checked against the current
-  doctype definition: a still-wanted index is rebuilt; a field that no longer
-  exists drops the row. Rows are independent — one failure does not stop the
-  others. The command exits `0` when every attempt succeeded and `1` when at
-  least one failed.
+A fresh `pending` row belongs to a live build in the running server, so the
+command never touches it. Each row is re-checked against the current doctype
+definition: a still-wanted index is rebuilt; a field that no longer exists
+drops the row. Rows are independent — one failure does not stop the others.
+The command exits `0` when every attempt succeeded and `1` when at least one
+failed.
 
-## Explanation
+## How Facet decides the indexes
 
-### Where indexes come from
-
-The planner reads each field's declared `filters` capabilities —
-`equality`, `comparison`, `text_search`, `interval`, `membership`,
-`currency`. One capability maps to one index family:
+The planner reads each field's declared `filters` capabilities — `equality`,
+`comparison`, `text_search`, `interval`, `membership`, `currency`. One
+capability maps to one index family:
 
 | Declared capability | Index created |
 | --- | --- |
@@ -107,10 +135,13 @@ The planner reads each field's declared `filters` capabilities —
 | `membership` on an `array` field | One GIN JSONB |
 | `interval` on `period` / `dateperiod` | One GiST range index |
 
-A field with `unique: true` gets a unique B-tree with no capability needed.
-A `reference` field always gets one B-tree, whatever its capabilities
-declare. Computed, write-only, read-only, and free-form object fields take
-no index.
+Three rules sit around the table:
+
+- A field with `unique: true` gets a unique B-tree, with no capability
+  needed.
+- A `reference` field always gets one B-tree, whatever its capabilities
+  declare.
+- Computed, write-only, read-only, and free-form object fields take no index.
 
 Every managed index is partial. The `WHERE` clause scopes it to one domain,
 one doctype, and live rows, so each index stays small:
@@ -123,9 +154,9 @@ WHERE domain = 'hr' AND doc_type = 'Employee' AND deleted_at IS NULL
 
 Builds run as `CREATE INDEX CONCURRENTLY` in background fibres, so the
 doctype save itself always succeeds. A global advisory-lock gate serializes
-all managed DDL across fibres and processes, which prevents the deadlock
-two concurrent builds would otherwise hit. Deadlocks that still occur retry
-with backoff: 3 attempts at runtime, 5 in `index:retry`.
+all managed DDL across fibres and processes, which prevents the deadlock two
+concurrent builds would otherwise hit. Deadlocks that still occur retry with
+backoff: 3 attempts at runtime, 5 in `index:retry`.
 
 ## Example
 
@@ -133,7 +164,7 @@ After a large domain import, one index failed. Recover it:
 
 ```sh
 # What failed?
-curl -s -H "Authorization: Bearer $FACET_API_KEY" \
+curl -s -g -H "Authorization: Bearer $FACET_API_KEY" \
   "https://facet.localhost:3443/Api/Indexes?filters[status__eq]=error"
 
 # Read error_message on the row, then plan the retry:
@@ -150,9 +181,8 @@ index again.
 
 **A row stays `pending` for a long time.**
 
-A big table builds for a while; `CONCURRENTLY` scans the whole table. Past
-10 minutes of staleness, `index:retry` treats the row as dead and rebuilds
-it.
+A big table builds for a while; `CONCURRENTLY` scans the whole table. Past 10
+minutes of staleness, `index:retry` treats the row as dead and rebuilds it.
 
 **An `error` row names a deadlock.**
 
@@ -179,6 +209,6 @@ re-imported. The planner wants the index again, so a new build starts.
 
 - [Field types](/build/model/data/field-types/) — where the `filters` capabilities come from.
 - [Identifiers and unique constraints](/build/model/data/identifiers-uniqueness/) — the unique B-tree path.
-- [Evolving a schema](/build/model/change-a-live-domain/) — the schema changes that trigger builds.
-- [Bootstrap and CLI tasks](/admin/install/bootstrap/) — the CLI surface around `index:retry`.
+- [Change a live domain safely](/build/model/change-a-live-domain/) — the schema changes that trigger builds.
+- [First start and bootstrap](/admin/install/bootstrap/) — the CLI surface around `index:retry`.
 - Internals on GitHub: [index-management.md](https://github.com/wearefacet/facet/blob/main/doc/backend/index-management.md), [cli.md](https://github.com/wearefacet/facet/blob/main/doc/backend/cli.md).

@@ -1,136 +1,136 @@
 ---
 type: how-to
 title: Search and the command palette
-description: Find records with search, and jump to any page or command from the palette.
+description: Jump to any page or record with the command palette, and search records across one domain or every domain you may read.
 audience: [user]
 features: [FE-07, DOC-06]
 sidebar:
   order: 2
-verified_at: 49d7c7e5
+verified_at: eee55a2
 ---
 
-The command palette opens pages, records, and commands from one box. Press
-`Ctrl+K`, or select the search box in the top bar. The palette also searches
-your records. This page shows both uses.
+You remember part of a name — a client, a tent, a booking — and you want the
+record, not the path to it. The **command palette** does that: one box that
+opens pages, finds records, and runs commands. Press `Ctrl+K` and start
+typing.
+
+## Before you start
+
+- [A tour of the workspace](/use/first-day/) — the layout this page navigates from.
+
+![The search box in the top bar — the same box the Ctrl+K shortcut opens.](/assets/screens/use/finding-search-1.png)
 
 ## The command palette
 
-### 1. Open the palette
+Press `Ctrl+K` (`Cmd+K` on a Mac), or select the search box in the top bar.
+The palette opens with up to four groups:
 
-Press `Ctrl+K`. On macOS, press `Cmd+K`. You can also select the search box in
-the top bar.
+| Group | What it holds |
+|---|---|
+| **Navigate** | Domains and record types — select one to open its list |
+| **Recent** | The records you opened recently in this domain |
+| **Records** | Records that match what you type |
+| **Actions** | Commands, such as opening the assistant or collapsing the sidebar |
 
-The palette shows up to four groups: **Navigate**, **Recent**, **Records**,
-and **Actions**. A group with no items stays hidden.
+A group with nothing to show stays hidden. Move with `↑` and `↓`, run with
+`Enter`, close with `Esc` — pressing `Ctrl+K` again closes it too.
 
-:::tip
-Press `Ctrl+K` again to close the palette. `Esc` also closes it.
-:::
+In **Configure**, the palette lists the Configure pages and a way back to
+the workspace. The Builder has no search box in the top bar, but `Ctrl+K`
+still opens the palette there.
 
-:::note
-In Configure, the palette lists the Configure sections and a way back to the
-workspace. Builder mode has no search box in the top bar, but `Ctrl+K` still
-opens the palette there.
-:::
+## Search for records
 
-### 2. Jump to a page
+Type at least two characters. The **Records** group lists the matches,
+grouped by record type, closest first:
 
-Type the name of a domain or a doctype. The **Navigate** group lists the
-matches. Select one to open the page.
+- Search matches part of a word: `vire` finds *Château de Vireloup*.
+- Letter case and accents do not matter: `chateau` finds the same record.
+- Results show record names, not field values.
+- Search returns at most 25 records, and at most 5 of one record type. A
+  common term needs a longer word to narrow it.
 
-The **Recent** group lists the records you opened recently in the current
-domain.
+Some records are parts of a parent — a booking line inside a booking, a
+contact inside a company. When the match is on the part, the result shows
+the parent's name with the part that matched below it. Selecting it opens
+the parent record.
 
-### 3. Search for records
+## Widen the search to all domains
 
-Type at least two characters, for example `inv`. The **Records** group lists
-the matching records. Each result shows the record name. Select a result to
-open the record.
+Search starts inside your current domain. To look everywhere, select
+**Search all domains for …** at the bottom of the results. The palette then
+marks the wider scope with an **All domains** chip; select the chip to come
+back to your domain.
 
-Some records are parts of a parent record. A match on a part shows the parent
-name, with the part that matched below it. Selecting it opens the parent
-record.
+The option is always there, even when your domain has no matches — it is
+the way to reach a record that lives in another domain.
 
-:::tip
-Select **Search all domains for …** to widen the search. The palette then
-marks the wider scope with an **All domains** chip. Select the chip to search
-the current domain again.
-:::
+## Run a command
 
-### 4. Run a command
+The **Actions** group lists the commands your role allows: the same pages
+and controls the sidebar shows. A command your role does not allow does not
+appear. Select one to run it.
 
-The **Actions** group lists commands. Examples: open Builder, open Configure,
-show the keyboard shortcuts, collapse the sidebar. Commands follow the same
-rights as the sidebar. A command your role does not allow does not appear.
+## What search finds — and what it does not
 
-Move with `↑` and `↓`. Press `Enter` to run the selected item.
+Search reads the names of records and the searchable text the domain author
+defined for each record type. That text holds the name and the key fields —
+and for comments, the comment text. You search this text, not the record's
+fields one by one.
 
-## Document search
+Search does **not** find:
 
-### 1. Type your term
+- Files and their contents — attachments stay out of search.
+- Records your role cannot read. Search follows the same rules as your
+  lists: what you cannot open does not appear. See
+  [Roles: who sees and does what](/discover/how-it-works/roles/).
+- Deleted records, not even in the trash.
 
-Search starts at two characters. Type two or more letters, for example `ada`.
-
-### 2. Read the results
-
-Search matches part of a word. The term `ada` matches "Ada Lovelace". Search
-ignores letter case and accents.
-
-The closest matches come first. The palette groups the results by doctype.
-Search returns at most 25 records, and at most 5 records per doctype.
-
-Results show record names. They do not show field values.
-
-### 3. Widen or narrow the scope
-
-Search covers the current domain. Use **Search all domains for …** to search
-every domain you may read. This option is always present, also when the current
-domain has no match — it is the way to find a record that lives in another
-domain.
-
-### What search reads
-
-- A doctype appears in search only when its definition defines searchable
-  text. The text usually holds the record name and key fields. Doctype authors
-  set this text in the doctype definition.
-- You see only records your role may read.
-- Deleted records never appear.
-
-The search box on a list page is a filter, not this search. It narrows the
-current list. It matches the searchable text, the record name, and the record
-id. See [Lists, filters and views](/use/finding/lists-and-views/).
+The search box on a list page is a different thing: it filters the one list
+you are on. See [Lists, boards and calendars](/use/finding/lists-and-views/).
 
 ## Troubleshooting
 
 ### Search returns no records
 
-1. Check the term. Search needs two characters or more.
-2. Check the doctype. It may define no searchable text, so it never appears
-   here.
-3. Check your rights. Your role may not read the doctype.
-4. Check the record. It may live in another domain, or it may be deleted.
+Work down this list:
+
+1. Type at least two characters.
+2. Try a longer piece of the name. A short term can hit the 25-record
+   limit before your record appears.
+3. Check the scope. The record may live in another domain — select
+   **Search all domains for …**.
+4. Check the record type. If its author defined no searchable text, it
+   never appears here.
+5. Still nothing? The record may be deleted, or your role may not reach
+   it. Ask your administrator.
 
 The palette shows **No results for …** when nothing matches.
 
 ### The Records group is missing
 
-Type at least two characters. If the search request fails, the palette hides
-the Records group. The other groups stay usable.
+Type at least two characters first. If the search request fails, the palette
+hides the Records group and keeps the other groups usable — reload the page
+if it stays away.
 
 ### A command is missing from Actions
 
-Commands follow your rights. In Configure, the palette lists Configure
-sections instead of workspace commands.
+Commands follow your role, the same as the sidebar. If the sidebar does not
+show the page, the palette does not offer it either.
 
 ### The top bar has no search box
 
-Builder mode has none. Press `Ctrl+K`.
+That is the Builder. Press `Ctrl+K` instead.
 
 ## Related
 
-- [Keyboard shortcuts](/use/finding/keyboard-shortcuts/) — every key combination, including `Ctrl+K`.
-- [Lists, filters and views](/use/finding/lists-and-views/) — the search box that filters one list.
-- [Viewing and editing a document](/use/documents/view-and-edit/) — what opens when you select a result.
-- [The dashboard](/use/first-day/dashboard/) — shows the same recently opened records.
-- [Domains and isolation](/discover/how-it-works/domains/) — why search starts inside your current domain.
-- [Documents, doctypes and projections](/build/deeper/documents-and-projections/) — where record names and searchable text come from.
+- [Keyboard shortcuts](/use/finding/keyboard-shortcuts/) — every key
+  combination, including `Ctrl+K`.
+- [Lists, boards and calendars](/use/finding/lists-and-views/) — the search
+  box that filters one list.
+- [Open and edit a document](/use/documents/view-and-edit/) — what opens
+  when you select a result.
+- [The dashboard](/use/first-day/dashboard/) — shows the same recently
+  opened records.
+- [Display names and search text](/build/model/views/names-and-search/) —
+  how the domain author chooses what search reads.

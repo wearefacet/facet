@@ -1,18 +1,24 @@
 ---
+title: Require MFA
+description: Switch MFA (multi-factor authentication) on for the instance, pick the enforcement level, and handle recovery.
 type: how-to
-title: Enforcing MFA
-description: Switch multi-factor authentication on for the instance, pick the enforcement level, and handle recovery.
 audience: [admin]
 features: [IAM-03, PLT-02]
+verified_at: eee55a2
 sidebar:
   order: 7
-verified_at: fd345fe3
 ---
 
-Facet supports time-based one-time passwords (TOTP) as its multi-factor
-authentication (MFA) factor. You decide whether accounts are asked to enroll,
-or must enroll. This page covers the two enforcement levels, the two
-configuration tiers, enrollment, and the recovery paths.
+One stolen password should not open Brightwater's client list. Ravi asks
+every account for a second factor: a six-digit code from an authenticator
+app. Facet calls this multi-factor authentication (MFA). He picks whether
+accounts are *asked* to enroll or *must* enroll, and he keeps the recovery
+path ready for the day someone loses their phone.
+
+The factor is time-based one-time password (TOTP) as specified by RFC 6238: a
+6-digit code that changes every 30 seconds. The account holds the shared
+secret in an authenticator app. Each account also holds single-use backup
+codes as the self-recovery path.
 
 ## When to use this
 
@@ -29,15 +35,7 @@ configuration tiers, enrollment, and the recovery paths.
 - **The member's side.** Read [Sign in, MFA, reset your password](/use/first-day/sign-in/)
   for the account holder's side.
 
-## Explanation
-
-### The factor
-
-The factor is TOTP as specified by RFC 6238: a 6-digit code that changes
-every 30 seconds. The account holds the shared secret in an authenticator app.
-Each account also holds single-use backup codes as the self-recovery path.
-
-### The two enforcement levels
+## The two enforcement levels
 
 | Level | Behaviour |
 | --- | --- |
@@ -53,7 +51,7 @@ Switch to `always` deliberately. Every account without MFA stops at
 the enrollment screen at its next sign-in, including administrators.
 :::
 
-### The two configuration tiers
+## The two configuration tiers
 
 | Tier | Where | Keys |
 | --- | --- | --- |
@@ -64,6 +62,23 @@ The runtime value wins when it is set. A null runtime field means "follow the
 file". Every authentication decision reads the runtime document row directly,
 never a cache, so a save applies at once.
 
+Both configuration files that the server ships with carry the same section.
+From `config.dev.yml`:
+
+```yaml
+iam:
+  mfa:
+    totp:
+      enabled: true
+      window: 1
+      issuer: "Facet"
+```
+
+`window: 1` accepts a code from one step before or after the current one, so
+a slow typing hand still works. `issuer` is the name the authenticator app
+shows — on the running instance the enrollment URI reads
+`otpauth://totp/Facet:tom@brightwater.example?secret=…`.
+
 ## Steps
 
 ### 1. Set the runtime policy
@@ -71,6 +86,8 @@ never a cache, so a save applies at once.
 Open **Configure → Platform → Settings** and go to the Security chapter. Set
 **MFA factor type** to `totp`, then set **MFA enforcement**. The enforcement
 select shows only while the factor type is `totp`. Select **Save**.
+
+<!-- screenshot: configure-settings-security -->
 
 The page sends a sparse update through the standard document route:
 
@@ -119,7 +136,12 @@ curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
   "https://facet.localhost:3443/Api/iam/mfa/totp/verify"
 ```
 
-The answer carries `"backup_codes": [...]` and `"mfa_enabled": true`.
+The answer carries `"backup_codes": [...]` and `"mfa_enabled": true`. On the
+running instance the codes arrive in this shape:
+
+```json
+{"ok": true, "mfa_enabled": true, "backup_codes": ["384f-0d34", "… nine more …"]}
+```
 
 ### 4. Tell accounts about the backup codes
 
@@ -144,7 +166,7 @@ curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
 The route requires the `mfa_disable` permission on `iam.Account`. The seeded
 `iam.Roles.admin` role holds it through `*` on `*.*`. Do not grant
 `mfa_disable` to a role that an external app can elect; see
-[Roles and permission lines](/admin/people/roles-and-permissions/). The call clears
+[Roles and permissions](/admin/people/roles-and-permissions/). The call clears
 the stored secret, the replay counter, and the backup codes, and sets
 `mfa_enabled` to `false`. The account signs in and enrolls again.
 
@@ -160,7 +182,7 @@ call and hides for a purely federated account.
 | Enroll-at-login | 5 wrong codes on the token | The token dies and the account locks out. |
 
 A success resets the counter. See
-[Sessions, refresh tokens and lockouts](/admin/people/sessions-lockouts/) for
+[Sessions and lockouts](/admin/people/sessions-lockouts/) for
 the lockout handling.
 
 ## Troubleshooting
@@ -195,6 +217,8 @@ Check that the server clock is correct; TOTP depends on it.
 
 - [Sign in, MFA, reset your password](/use/first-day/sign-in/) — the account holder's enrollment and sign-in steps.
 - [Manage accounts](/admin/people/accounts/) — the `mfa_enabled` field and the reset action.
-- [Sessions, refresh tokens and lockouts](/admin/people/sessions-lockouts/) — the lockout the rate limits set.
-- [Retention](/admin/history/retention/) — the lifetime of MFA challenges.
+- [Sessions and lockouts](/admin/people/sessions-lockouts/) — the lockout the rate limits set.
+- [Retention: what is kept](/admin/history/retention/) — the lifetime of MFA challenges.
 - Internals on GitHub: [iam.md](https://github.com/wearefacet/facet/blob/main/doc/backend/iam.md), [system-settings.md](https://github.com/wearefacet/facet/blob/main/doc/backend/system-settings.md).
+- [Security and governance](/discover/security/)
+- [System settings keys](/reference/system-settings-keys/)

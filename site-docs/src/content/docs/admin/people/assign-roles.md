@@ -1,13 +1,18 @@
 ---
+title: Assign roles
+description: Put roles on accounts through the assignments editor, and learn why one role is elected per sign-in.
 type: how-to
-title: Assigning roles and role election
-description: Put roles on accounts through the assignments editor, and learn how one role is elected per sign-in.
 audience: [admin]
 features: [RBC-02]
+verified_at: eee55a2
 sidebar:
   order: 3
-verified_at: fd345fe3
 ---
+
+Nadia at Brightwater needs a second hat: she approves bookings as *Manager*
+and answers the assistant as a plain *Viewer* when she tests. You give her
+account both roles. When she signs in, she picks one — and Facet runs every
+request under exactly that one until she switches.
 
 An account holds roles in its `roles` array. A request never merges them: it
 runs under exactly one elected role. This page shows how an administrator
@@ -26,7 +31,7 @@ refresh.
   `update` rights on `iam.Account`.
 - **The guard.** The role authority guard applies: you can only assign roles
   at or below your own elected level. See
-  [Roles and permission lines](/admin/people/roles-and-permissions/).
+  [Roles and permissions](/admin/people/roles-and-permissions/).
 
 ## Steps
 
@@ -42,6 +47,8 @@ Open **Configure → Access → Assignments**. The editor has two modes:
 Both modes share one write path. The page URL is deep-linkable, for example
 `/Configure/access/assignments?mode=account&account=<id>`; the state survives
 a reload.
+
+<!-- screenshot: configure-assignments -->
 
 ### 2. Assign a role
 
@@ -97,7 +104,7 @@ their next sign-in or token refresh.
 Roles never merge. An account with `editor` and `viewer` acts under one of
 them per request. The effective permission set is exactly one role's lines.
 Cross-role scope reconciliation has no non-surprising answer, so Facet does
-not attempt it. See [Auth contexts](/admin/under-the-hood/one-role-at-a-time/) for the model.
+not attempt it. See [One role at a time](/admin/under-the-hood/one-role-at-a-time/) for the model.
 
 ### Election at sign-in
 
@@ -113,17 +120,23 @@ curl -k -X POST -H "Content-Type: application/json" \
 
 The resolution order: the explicit election, then `default_role`, then the
 first assigned role. An election of a role the account does not hold answers
-`403`. The sign-in, refresh, and `me` responses all carry the pair:
+`403`:
+
+```json
+{"error": "Role 'iam.Roles.manager' is not assigned to this account"}
+```
+
+The sign-in, refresh, and `me` responses all carry the pair:
 
 - `active_role` — the elected role id.
 - `available_roles` — the assigned role ids, the list a member can switch
   between.
 
-  A roleless account runs under the seeded `iam.Roles.anonymous` role. The
-  response shows `available_roles: []` with the anonymous role as `active_role`;
-  the workspace renders a no-role screen from that pair. See
-  [Roles and permission lines](/admin/people/roles-and-permissions/) for what the
-  anonymous role controls.
+A roleless account runs under the seeded `iam.Roles.anonymous` role. The
+response shows `available_roles: []` with the anonymous role as `active_role`;
+the workspace renders a no-role screen from that pair. See
+[Roles and permissions](/admin/people/roles-and-permissions/) for what the
+anonymous role controls.
 
 ### Switching during a session
 
@@ -137,9 +150,15 @@ curl -k -X POST -H "Content-Type: application/json" \
   "https://facet.localhost:3443/Api/iam/refresh"
 ```
 
-The route answers `403 Role not assigned` when the account does not hold the
-role, and `403 Role not found or disabled` when the role document does not
-exist. The workspace sidebar exposes the same switch in its **Switch Role**
+Two refusals exist, and they mean different things:
+
+- `403 Role not assigned` — the account does not hold the role in its
+  `roles` array. This is also the answer for a role name that exists but was
+  never assigned, and for a name that does not exist at all.
+- `403 Role not found or disabled` — the role is still in the account's
+  array, but its document is gone. Fix the data, not the sign-in.
+
+The workspace sidebar exposes the same switch in its **Switch Role**
 menu. The new role's permission manifest rides the response, so the interface
 narrows at once.
 
@@ -164,13 +183,14 @@ first, or sign in without the `role` field.
 
 Ask which role they elected. One role applies per request; the rights may come
 from a wider role than you expect. The audit log names the acting role on
-every write — see [Auditing activity](/admin/history/audit/).
+every write — see [See who did what](/admin/history/audit/).
 
 ## Related
 
-- [Roles and permission lines](/admin/people/roles-and-permissions/) — what one role carries.
+- [Roles and permissions](/admin/people/roles-and-permissions/) — what one role carries.
 - [Manage accounts](/admin/people/accounts/) — create the account first.
-- [Auth contexts](/admin/under-the-hood/one-role-at-a-time/) — the one-role-per-request model.
-- [Auditing activity](/admin/history/audit/) — the `acting_role` on every write.
+- [One role at a time](/admin/under-the-hood/one-role-at-a-time/) — the one-role-per-request model.
+- [See who did what](/admin/history/audit/) — the `acting_role` on every write.
 - [Sign in, MFA, reset your password](/use/first-day/sign-in/) — the member's sign-in steps.
 - Internals on GitHub: [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md), [access-assignments.md](https://github.com/wearefacet/facet/blob/main/doc/frontend/access-assignments.md).
+- [Roles: who sees and does what](/discover/how-it-works/roles/)

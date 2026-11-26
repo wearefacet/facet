@@ -1,19 +1,25 @@
 ---
+title: Hide a field from some roles
+description: Tag sensitive fields so only the roles you choose can read them — on screens, in the API, and in the audit log.
 type: how-to
-title: Field visibility with tags
-description: Hide sensitive fields per role on reads, refuse writes into them, and redact them in the audit log.
 audience: [admin, author]
 features: [RBC-04, AUD-03]
+verified_at: eee55a2
 sidebar:
   order: 5
-verified_at: fd345fe3
 ---
 
-A field can carry one or more sensitivity tags. A role declares which tags it
-may see with its `visible_tags` list. Facet hides every other field on reads,
-refuses writes into hidden fields, and removes their values from the audit
-log. The rule fails closed: a tag that no role grants hides the field from
-everyone.
+Lucía leads the Brightwater warehouse. She reads every item all day — she
+needs names, categories, serial numbers. What she does not need is what each
+item cost. The `purchase_price` field carries the `finance` tag, her
+*Warehouse* role does not hold it, and the field is absent from everything she
+sees. Not greyed out, not zero — absent, in the app and in the API alike.
+
+A **field tag** is a sensitivity label on a field. A role declares which tags
+it may see with its `visible_tags` list. Facet hides every other field on
+reads, refuses writes into hidden fields, and removes their values from the
+audit log. The rule fails closed: a tag that no role grants hides the field
+from everyone.
 
 ## When to use this
 
@@ -26,21 +32,19 @@ everyone.
 - **Field definitions.** You edit them — see
   [Designing doctypes](/build/model/data/design-doctypes/).
 - **Role content.** You edit it — see
-  [Roles and permission lines](/admin/people/roles-and-permissions/).
+  [Roles and permissions](/admin/people/roles-and-permissions/).
 
 ## Steps
 
 ### 1. Tag the field
 
 ```yaml
-# hr.Employee definition
+# equipment.Item definition (the Brightwater example)
 fields:
-  name:
-    type: string
-  salary:
+  purchase_price:
     type: money
     currency: EUR
-    tags: ["salary"]
+    tags: ["finance"]
 ```
 
 A field without `tags` carries the tag `default`.
@@ -49,20 +53,36 @@ A field without `tags` carries the tag `default`.
 
 ```json
 {
-  "name": "hr_partner",
-  "visible_tags": ["default", "salary"]
+  "name": "manager",
+  "visible_tags": ["default", "finance"]
 }
 ```
 
 A role that must not see the field keeps the default `visible_tags` of
-`["default"]`.
+`["default"]`. At Brightwater, `manager` lists `finance`; `sales` and
+`warehouse` do not.
 
 ### 3. Check what each role sees
 
-| Caller | Reads `name` | Reads `salary` |
+Nadia reads an item with the *Manager* role:
+
+```json
+{"name": "Festival tent 5x5", "purchase_price": {"value": "4800.00", "currency": "EUR"}, "status": "available"}
+```
+
+Tom reads the same item with the *Sales* role:
+
+```json
+{"name": "Festival tent 5x5", "status": "available"}
+```
+
+There is no `purchase_price` key in Tom's response, not a null.
+
+| Caller | `visible_tags` | Reads `purchase_price` |
 | --- | --- | --- |
-| `hr_partner` (`["default", "salary"]`) | yes | yes, with its value |
-| `team_lead` (`["default"]`) | yes | the field is absent from the response |
+| Nadia · manager | `["default", "finance"]` | yes, with its value |
+| Tom · sales | `["default"]` | the field is absent from the response |
+| Lucía · warehouse | `["default"]` | the field is absent from the response |
 
 ## Explanation
 
@@ -94,7 +114,7 @@ principal.
 
 ### Audit redaction
 
-The mutation log stores real values. Facet removes invisible values per
+The change log stores real values. Facet removes invisible values per
 calling principal when it reads the log. The response lists the removed
 content paths in a `redacted` metadata block. Each entry is an array of path
 segments — the same shape the diff paths use.
@@ -111,7 +131,7 @@ the removal.
 :::tip
 Rollback checks visibility on the real transition, not on the log entry. A
 rollback that would rewind a value into an invisible field answers `403` —
-see [Rolling back changes](/admin/history/roll-back/).
+see [Roll back a change](/admin/history/roll-back/).
 :::
 
 ### Tags are not secrets
@@ -122,20 +142,6 @@ Tags hide a field per role. Two field kinds hide from everyone:
 - A `write_only` field accepts input and never comes back on reads.
 
 See [Secret and write-only fields](/build/model/data/secret-fields/).
-
-## Example
-
-An employee record carries `name` and the tagged `salary` field from step 1.
-
-1. `hr_partner` reads the employee. The response holds `name` and `salary`
-   with its value.
-2. `team_lead` reads the same employee. The response holds `name` only. There
-   is no `salary` key, not a null.
-3. `team_lead` sends a patch that sets `salary` to `null`. Facet answers `403`
-   and names the path: an explicit null is a write.
-4. `team_lead` opens the employee history. The salary rows show without
-   values, and the `redacted` block names the paths. `hr_partner` reads the
-   same history and sees the values.
 
 ## Troubleshooting
 
@@ -159,8 +165,9 @@ are guarded.
 
 ## Related
 
-- [Roles and permission lines](/admin/people/roles-and-permissions/) — where `visible_tags` lives.
-- [Row scopes](/admin/people/row-scopes/) — narrow rows the same way tags narrow fields.
-- [Auditing activity](/admin/history/audit/) — where the `redacted` block appears.
+- [Roles and permissions](/admin/people/roles-and-permissions/) — where `visible_tags` lives.
+- [Show each role only its rows](/admin/people/row-scopes/) — narrow rows the same way tags narrow fields.
+- [See who did what](/admin/history/audit/) — where the `redacted` block appears.
 - [Secret and write-only fields](/build/model/data/secret-fields/) — hiding from everyone, not per role.
 - Internals on GitHub: [rbac.md](https://github.com/wearefacet/facet/blob/main/doc/backend/rbac.md), [audit.md](https://github.com/wearefacet/facet/blob/main/doc/backend/audit.md).
+- [Roles: who sees and does what](/discover/how-it-works/roles/)

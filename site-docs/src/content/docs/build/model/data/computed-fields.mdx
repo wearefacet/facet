@@ -1,0 +1,169 @@
+---
+type: how-to
+title: Computed fields
+description: Derive a field value with a Lua compute function and have Facet re-run it when its inputs change.
+audience: [author, developer]
+features: [DOM-09]
+sidebar:
+  order: 3
+verified_at: eee55a2
+---
+
+**You need Lua for this page.** A computed field runs a small Lua function
+from the doctype script. If you have never written Lua, start with the
+ten-line primer in the [Lua API (reference)](/reference/lua-api/).
+
+A computed field keeps a value current without a user writing it. A Brightwater
+booking shows the shape: the booking's `total` is the sum of its lines, and
+nobody types it. You declare the field, name a function, and list the inputs
+that trigger a re-run. Facet runs the function on create, again on every
+change of a listed input, and stores the result on the document.
+
+## When to use this
+
+Add a computed field for a value users would otherwise maintain by hand and
+get wrong: a total over booking lines, a tenure in days, a display number
+assembled from parts. Never accept a computed field from user input; Facet
+rejects it.
+
+## Before you start
+
+- **Three parts.** A computed field has the type `data`, a `compute` name,
+  and a `compute_when` list.
+- **A function in the script.** The function must exist in the doctype
+  [script](/build/model/behaviour/scripts-and-guards/). Facet checks this when you save the doctype.
+- **Read-only by design.** The compute may read documents but never write
+  them. To change other documents, use an action or a domain hook.
+
+## Steps
+
+### 1. Declare the field
+
+```json
+"total": {
+  "type": "data",
+  "compute": "booking_total",
+  "compute_when": ["lines"]
+}
+```
+
+The `compute` value names the exported function; Facet calls
+`compute_booking_total`. Each entry in `compute_when` is either a field of
+the doctype or the name of a child relationship. Anything else fails when you
+save the doctype.
+
+### 2. Write the function
+
+Return the value. The full module pattern applies, as in every doctype
+script:
+
+```lua
+local export = {}
+
+function export.compute_booking_total(ctx)
+  return (ctx.root.qty or 0) * (ctx.root.unit_price or 0)
+end
+
+return export
+```
+
+Returning `nil` clears the field. Use that for a conditional value, for
+example a tenure that stays empty until the hire date exists.
+
+### 3. Compute over children
+
+When `compute_when` names a child relationship, Facet stages the live child
+rows for you in `ctx.children`, and re-runs the parent field whenever a child
+in that relationship changes. This is how the Brightwater booking sums its
+lines:
+
+```lua
+local export = {}
+
+function export.compute_booking_total(ctx)
+  local total = 0
+  for _, line in ipairs((ctx.children or {}).lines or {}) do
+    local qty = line.quantity or 0
+    local price = 0
+    if line.price and line.price.value then
+      price = tonumber(line.price.value) or 0
+    end
+    total = total + qty * price
+  end
+  return total
+end
+
+return export
+```
+
+The field declares `compute_when: ["lines"]`, where `lines` is the `children`
+entry of the doctype.
+
+## Example
+
+The Brightwater booking doctype declares two fields that matter here:
+
+```json
+{
+  "fields": {
+    "total": { "type": "data", "compute": "booking_total", "compute_when": ["lines"] }
+  },
+  "children": {
+    "lines": { "doctype": "BookingLine", "collection": true }
+  }
+}
+```
+
+A create with one line — quantity `2`, price `250` — stores `total: 500`.
+Add a second line, and the recompute runs in the same write and stores the
+new sum. When the trigger is a child relationship, the re-run writes the
+parent value as its own history entry, so the audit shows who and what drove
+it.
+
+:::note
+The display name and search text of a doctype are derived too, but through
+Jinja2 templates, not through Lua. See
+[Display names and search text](/build/model/views/names-and-search/).
+:::
+
+## How recalculation times work
+
+- **On create**, every computed field runs.
+- **On update**, only the fields whose `compute_when` list intersects the
+  changed fields run. A field with no `compute_when` list runs on every
+  update.
+- **On a child change**, the parent's relationship-named fields run after the
+  child write lands.
+- Fields are sorted topologically, so a field that reads another computed
+  field runs after it.
+- A failing function rolls the whole write back, so no stale value is stored.
+
+## Troubleshooting
+
+### The field stays empty
+
+The function returned `nil`, or a trigger never fired. Check that every
+`compute_when` entry is a field name or a child relationship of the same
+doctype. Facet refuses the definition otherwise.
+
+### The value is stale after a child changed
+
+The `compute_when` list must name the child relationship, not a field of the
+child. With `["lines"]`, every change under `lines` re-runs the parent field.
+
+### The write answers `422` with `Computed fields failed`
+
+The function raised an error. Read the message, fix the function, and save
+the doctype.
+
+### A user tried to set the field
+
+Computed fields reject user input by design. Remove the field from the form,
+or make it a normal field and compute nothing.
+
+## Related
+
+- [Lua API (reference)](/reference/lua-api/) — the compute surface and its limits.
+- [Parent and child documents](/build/model/relations/parent-child/) — the children the compute reads.
+- [Display names and search text](/build/model/views/names-and-search/) — derive names and search text with Jinja2 templates.
+- [How old documents follow a new schema](/build/deeper/schema-evolution/) — what a computed change costs on a live domain.

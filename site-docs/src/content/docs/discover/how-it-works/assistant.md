@@ -1,6 +1,6 @@
 ---
 type: explanation
-title: The assistant: AI with your rights
+title: "The assistant: AI with your rights"
 description: See how the assistant answers under your own rights, where it appears, and what an administrator controls.
 audience: [evaluator, admin]
 features: [AI-01, AI-02, AI-03, AI-05, AI-07, AI-08]
@@ -13,7 +13,7 @@ Nadia asks, "Which tents are free on 14 June?" The assistant reads the stock and
 
 *It works as you, under your role. Its changes are yours, in the history, marked as assistant work.*
 
-```d2
+<!-- d2
 direction: down
 nadia: "Nadia asks a question" {class: external}
 assistant: "The assistant"
@@ -24,7 +24,11 @@ nadia -> assistant
 assistant -> check
 check -> records
 check -> history
-```
+-->
+<div class="d2-diagram">
+<img class="d2-diagram__img d2-diagram__light" src="/diagrams/7b9011cf-light.svg" alt="Nadia asks a question" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/7b9011cf-dark.svg" alt="Nadia asks a question" loading="lazy" />
+</div>
 
 ## It acts as you
 

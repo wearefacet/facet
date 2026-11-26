@@ -1,6 +1,6 @@
 ---
 type: explanation
-title: Apps: built fast, replaced freely
+title: "Apps: built fast, replaced freely"
 description: See how apps connect to Facet, what they may reach, and why your data survives them.
 audience: [evaluator, author]
 features: [APP-01, APP-06, RBC-08]
@@ -13,7 +13,7 @@ The workspace covers most days. Sooner or later a team wants a tool of its own �
 
 *An app is a guest with a badge. It signs in through Facet and reaches only what both the guest and the badge allow.*
 
-```d2
+<!-- d2
 direction: down
 lucia: "Lucía signs in" {class: external}
 app: "The check-out app" {class: external}
@@ -26,7 +26,11 @@ app -> consent
 consent -> overlap
 ceiling -> overlap
 overlap -> records
-```
+-->
+<div class="d2-diagram">
+<img class="d2-diagram__img d2-diagram__light" src="/diagrams/8eadf685-light.svg" alt="Lucía signs in" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/8eadf685-dark.svg" alt="Lucía signs in" loading="lazy" />
+</div>
 
 ## The workspace is built in
 

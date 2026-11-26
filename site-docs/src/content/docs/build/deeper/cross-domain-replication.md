@@ -1,7 +1,7 @@
 ---
 type: explanation
 title: Cross-domain replication
-description: A consumer domain can copy selected fields from another domain's doctype, one hop, behind a grant.
+description: How cross-domain replication copies selected fields from another domain's doctype — one hop, behind a grant.
 audience: [author, admin]
 features: [DOM-25, DOM-14]
 sidebar:

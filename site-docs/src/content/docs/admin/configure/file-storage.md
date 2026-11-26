@@ -1,18 +1,20 @@
 ---
-type: how-to
-title: "File storage: filesystem or S3"
+title: File storage
 description: Store uploaded files on a local directory or an S3 bucket, and run the store care tasks.
+type: how-to
 audience: [operator]
 features: [PLT-04]
 sidebar:
   order: 4
-verified_at: 008dd880
+verified_at: eee55a2
 ---
 
-Every uploaded file lives in one object store. PostgreSQL holds the
-metadata and the access rules; the store holds the bytes. You choose the
-backend at boot: a local directory or an S3 bucket. S3-compatible services
-such as MinIO, R2, and Backblaze work through the endpoint setting.
+The team starts uploading photos of damaged equipment, and you must decide
+where the bytes live. Every uploaded file lives in one object store.
+PostgreSQL holds the metadata and the access rules; the store holds the
+bytes. You choose the backend at boot: a local directory or an S3 bucket.
+S3-compatible services such as MinIO, R2, and Backblaze work through the
+endpoint setting.
 
 ## When to use this
 
@@ -83,6 +85,7 @@ change the file during a restart window.
 | `artifact.grant_ttl_media_seconds` | `21600` | Signed-URL TTL for audio and video. |
 | `artifact.upload_grant_ttl_seconds` | `300` | TTL of a one-time signed upload URL for agent surfaces. |
 | `artifact.prune_after_days` | `30` | Ownerless files become prune-eligible after this window. `0` keeps every file forever. |
+| `artifact.grant_prune_days` | `7` | Expired ephemeral grant rows leave the table after this window. `0` keeps every row forever. |
 
 All knobs except `storage` are hot keys. A settings save changes them from
 the next mint or prune run — see
@@ -115,8 +118,8 @@ facet artifacts:revoke <artifact-id>  # invalidate every signed URL for one file
 
 The prune keeps a file that any live owner row or recent reference names.
 The admin page at **Configure → Platform → Artifacts** lists the store with
-per-row counts. See [Bootstrap and CLI tasks](/admin/install/bootstrap/) for
-the command details.
+per-row counts. See [First start and bootstrap](/admin/install/bootstrap/)
+for the command details.
 
 ## Example
 
@@ -170,8 +173,8 @@ window, or pin it on the settings page.
 
 Access follows provenance, not knowledge of the id. A caller reads a file
 through an owner row they can read, or through an operator `download *.*`
-action — see [Field visibility tags](/admin/people/hidden-fields/) for the
-tag layer.
+action. See [Hide a field from some roles](/admin/people/hidden-fields/)
+for the tag layer.
 
 ## Related
 
@@ -179,5 +182,5 @@ tag layer.
 - [System settings](/admin/configure/system-settings/) — the hot serving knobs.
 - [Files in doctypes](/build/model/data/files/) — the author-side view of file fields.
 - [Files in apps](/build/apps/data/files/) — file uploads from the app surface.
-- [Retention: what is kept and for how long](/admin/history/retention/) — the prune window among the other windows.
+- [Retention](/admin/history/retention/) — the prune window among the other windows.
 - Internals on GitHub: [artifact.md](https://github.com/wearefacet/facet/blob/main/doc/backend/artifact.md), [config.md](https://github.com/wearefacet/facet/blob/main/doc/backend/config.md).
