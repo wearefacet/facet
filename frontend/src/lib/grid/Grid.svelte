@@ -36,13 +36,14 @@
 	import { copyText } from '$lib/clipboard.js';
 	import { toast } from '$lib/toast.svelte.js';
 	import { can } from '$lib/permissions.svelte';
+	import { displayTimezone } from '$lib/settings.svelte';
 	import { DataSourceError } from '$lib/datasource/types.js';
 	import type { DocumentResponse } from '$lib/datasource/types.js';
 	import { createSelection } from './selection.svelte.js';
-	import { cellCopyText, serializeTSV } from './clipboard.js';
+	import { cellCopyText, parseTSV, serializeTSV } from './clipboard.js';
 	import { fetchSummaries, type FieldSummary } from './summary.js';
 	import { createWriteQueue } from './writeQueue.js';
-	import { valueEquals } from './coerce.js';
+	import { valueEquals, coercePaste } from './coerce.js';
 	import { WRITABLE_FIELD_TYPES } from './fieldTypes.js';
 	import CellEditor from './editors/CellEditor.svelte';
 	import type { CommitMove } from './editors/types.js';
@@ -441,31 +442,39 @@
 	}
 
 	/**
-	 * Write one cell: optimistic apply, one queued PATCH, then the response
-	 * settles it. A 403 reverts, toasts, and locks the row for the session;
-	 * any other failure (422, network) keeps the typed value on the cell
-	 * under the error state — Esc reverts.
+	 * Write one row's cells: optimistic apply, one queued PATCH carrying the
+	 * whole diff, then the response settles it. A 403 reverts the row, toasts,
+	 * and locks it for the session; any other failure (422, network) keeps the
+	 * written values on the cells under the error state — Esc reverts. Keys
+	 * whose value already matches the row drop — a no-op never PATCHes.
 	 */
-	async function commitCell(r: number, c: number, value: unknown): Promise<void> {
-		const col = columns[c];
+	async function commitDiff(r: number, changes: Record<string, unknown>): Promise<void> {
 		const item = items[r];
-		if (!col || !item) return;
+		if (!item) return;
 		const rowId = rowKey(item);
-		const before = (item as Record<string, unknown>)[col.key];
-		if (valueEquals(before, value)) return; // a no-op never PATCHes
-		applyCell(rowId, col.key, value);
-		setPending(rowId, col.key, { status: 'saving', value });
+		const record = item as Record<string, unknown>;
+		const effective: Record<string, unknown> = {};
+		const before: Record<string, unknown> = {};
+		for (const [key, value] of Object.entries(changes)) {
+			const current = record[key];
+			if (valueEquals(current, value)) continue;
+			effective[key] = value;
+			before[key] = current;
+		}
+		if (Object.keys(effective).length === 0) return;
+		for (const key of Object.keys(effective)) {
+			applyCell(rowId, key, effective[key]);
+			setPending(rowId, key, { status: 'saving', value: effective[key] });
+		}
 		try {
-			const saved = (await writeQueue.push(
-				rowId,
-				{ [col.key]: value },
-				{
-					before: { [col.key]: before }
-				}
-			)) as DocumentResponse<T> | undefined;
-			setPending(rowId, col.key, null);
+			const saved = (await writeQueue.push(rowId, effective, { before })) as
+				| DocumentResponse<T>
+				| undefined;
+			for (const key of Object.keys(effective)) setPending(rowId, key, null);
 			if (saved?.meta) {
-				applyCell(rowId, col.key, value, saved.meta.updated_at);
+				for (const key of Object.keys(effective)) {
+					applyCell(rowId, key, effective[key], saved.meta.updated_at);
+				}
 				// Computed columns refresh from the PATCH response — the
 				// backend recomputed them server-side on this write.
 				const content = saved.data as Record<string, unknown> | undefined;
@@ -479,21 +488,32 @@
 			}
 		} catch (err) {
 			if (err instanceof DataSourceError && err.status === 403) {
-				setPending(rowId, col.key, null);
-				applyCell(rowId, col.key, before);
+				for (const key of Object.keys(effective)) {
+					setPending(rowId, key, null);
+					applyCell(rowId, key, before[key]);
+				}
 				const next = new Set(lockedRows);
 				next.add(rowId);
 				lockedRows = next;
 				toast({ message: errorMessage(err, m.common_save_failed()), variant: 'error' });
 			} else {
-				setPending(rowId, col.key, {
-					status: 'error',
-					value,
-					before,
-					message: errorMessage(err, m.common_save_failed())
-				});
+				for (const key of Object.keys(effective)) {
+					setPending(rowId, key, {
+						status: 'error',
+						value: effective[key],
+						before: before[key],
+						message: errorMessage(err, m.common_save_failed())
+					});
+				}
 			}
 		}
+	}
+
+	/** One cell of a row — the editors' path onto the shared diff write. */
+	async function commitCell(r: number, c: number, value: unknown): Promise<void> {
+		const col = columns[c];
+		if (!col) return;
+		await commitDiff(r, { [col.key]: value });
 	}
 
 	/** Booleans have no edit mode — the flip IS the write (the Table's
@@ -613,6 +633,108 @@
 		const tsv = selectionTSV();
 		if (tsv == null) return false;
 		return copyText(tsv);
+	}
+
+	// ── Paste (Excel → grid) ──────────────────────────────────────────
+
+	/** The native paste on the focused cell — the container hears it bubble.
+	 *  An open editor's input keeps its own paste untouched. */
+	function handlePaste(e: ClipboardEvent): void {
+		if (editing || isTypingTarget(e.target)) return;
+		if (!selRange) return;
+		const text = e.clipboardData?.getData('text/plain');
+		if (!text) return;
+		e.preventDefault();
+		pasteBlock(text);
+	}
+
+	/**
+	 * Land a pasted TSV block with its top-left at the selection's top-left.
+	 * The block never leaves the loaded page: rows and columns past it are
+	 * skipped, as are read-only cells (counted, one toast). A cell whose text
+	 * does not coerce keeps its value and takes the error frame (counted).
+	 * Each touched row sends one PATCH; ⌘Z then reverts a row per press.
+	 */
+	function pasteBlock(text: string): void {
+		const block = parseTSV(text);
+		const range = selRange;
+		if (block.length === 0 || !range || items.length === 0) return;
+		const tz = displayTimezone();
+		let skipped = 0;
+		let failed = 0;
+		let landed = 0;
+		const rowWrites: { r: number; changes: Record<string, unknown> }[] = [];
+		for (let i = 0; i < block.length; i++) {
+			const r = range.rowStart + i;
+			if (r > maxRow) {
+				skipped += block.slice(i).reduce((n, row) => n + row.length, 0);
+				break;
+			}
+			const item = items[r];
+			if (!item) break;
+			const record = item as Record<string, unknown>;
+			const rowId = rowKey(item);
+			const changes: Record<string, unknown> = {};
+			for (let j = 0; j < block[i].length; j++) {
+				const c = range.colStart + j;
+				if (c > maxCol) {
+					skipped += block[i].length - j;
+					break;
+				}
+				const col = columns[c];
+				if (!col || !cellWritable(item, col)) {
+					skipped++;
+					continue;
+				}
+				const field = fieldFor(col);
+				if (!field) {
+					skipped++;
+					continue;
+				}
+				const result = coercePaste(field, block[i][j], {
+					current: record[col.key],
+					timezone: tz
+				});
+				if (!result.ok) {
+					failed++;
+					setPending(rowId, col.key, {
+						status: 'error',
+						value: record[col.key],
+						before: record[col.key],
+						message: result.error
+					});
+					continue;
+				}
+				changes[col.key] = result.value;
+				// A stale error frame from an earlier failed paste marks text that
+				// never landed. This cell now coerces — drop the frame up front:
+				// the write may turn out a no-op (the value already matches the
+				// row) and never touch the pending state itself.
+				if (pendingFor(rowId, col.key)?.status === 'error') {
+					setPending(rowId, col.key, null);
+				}
+			}
+			if (Object.keys(changes).length > 0) {
+				rowWrites.push({ r, changes });
+				landed += Object.keys(changes).length;
+			}
+		}
+		for (const { r, changes } of rowWrites) void commitDiff(r, changes);
+		if (landed > 0) {
+			// The selection covers the pasted block (clamped into the page).
+			selection.setFocus(range.rowStart, range.colStart, maxRow, maxCol);
+			selection.extendTo(
+				Math.min(range.rowStart + block.length - 1, maxRow),
+				Math.min(range.colStart + block[0].length - 1, maxCol),
+				maxRow,
+				maxCol
+			);
+			refocusCell(range.rowStart, range.colStart);
+		}
+		if (skipped > 0) toast({ message: m.grid_paste_readonly({ count: skipped }) });
+		if (failed > 0) {
+			toast({ message: m.grid_paste_unreadable({ count: failed }), variant: 'error' });
+		}
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -866,6 +988,7 @@
 			aria-colcount={columns.length + (selectable ? 1 : 0)}
 			tabindex="0"
 			onkeydown={handleKeydown}
+			onpaste={handlePaste}
 			bind:this={gridEl}
 		>
 			<!-- header -->

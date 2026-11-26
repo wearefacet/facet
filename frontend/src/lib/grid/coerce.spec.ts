@@ -2,13 +2,21 @@
 // Copyright (c) 2026 Amplitude Solutions Ltd
 
 import { describe, it, expect } from 'vitest';
-import { coerceScalar, parseHexColor, valueEquals } from './coerce.js';
+import {
+	coerceScalar,
+	coercePaste,
+	parseDecimalText,
+	parseHexColor,
+	valueEquals
+} from './coerce.js';
 import type { FieldDef } from '$lib/doctype/types.js';
 
 /**
  * Unit tests for the grid's text → value coercion: the stored shapes per
  * field type, the bounds checks, the enum match order, and the no-op
- * equality that keeps an unchanged cell from PATCHing.
+ * equality that keeps an unchanged cell from PATCHing — plus the paste-side
+ * coercion (`coercePaste`) that accepts every form the copy side emits and
+ * the locale-shaped decimals Excel pastes.
  */
 
 const str: FieldDef = { key: 'title', type: 'string', title: 'Title' };
@@ -126,5 +134,143 @@ describe('valueEquals', () => {
 		expect(valueEquals(42, 42)).toBe(true);
 		expect(valueEquals('a', 'b')).toBe(false);
 		expect(valueEquals(true, true)).toBe(true);
+	});
+});
+
+describe('parseDecimalText', () => {
+	it('keeps the canonical decimal shape', () => {
+		expect(parseDecimalText('1200.50')).toBe('1200.50');
+		expect(parseDecimalText('1200')).toBe('1200');
+		expect(parseDecimalText('-1200')).toBe('-1200');
+	});
+
+	it('strips spaces and the app grouping mark', () => {
+		expect(parseDecimalText('1 234.56')).toBe('1234.56');
+		expect(parseDecimalText('1\u00A0234,56')).toBe('1234.56');
+		expect(parseDecimalText("1'234.56")).toBe('1234.56');
+	});
+
+	it('resolves the rightmost mark as the decimal when both appear', () => {
+		expect(parseDecimalText('1,234.56')).toBe('1234.56');
+		expect(parseDecimalText('1.234,56')).toBe('1234.56');
+		expect(parseDecimalText('1.234.567,89')).toBe('1234567.89');
+	});
+
+	it('reads a lone comma as the decimal with 1–2 trailing digits', () => {
+		expect(parseDecimalText('1234,56')).toBe('1234.56');
+		expect(parseDecimalText('12,5')).toBe('12.5');
+	});
+
+	it('reads Excel thousands grouping as grouping', () => {
+		expect(parseDecimalText('1,234')).toBe('1234');
+		expect(parseDecimalText('1,234,567')).toBe('1234567');
+		expect(parseDecimalText('-1,234')).toBe('-1234');
+	});
+
+	it('rejects ambiguous or non-numeric text', () => {
+		expect(parseDecimalText('1234,5678')).toBeNull();
+		expect(parseDecimalText('1.234.567')).toBeNull();
+		expect(parseDecimalText('abc')).toBeNull();
+		expect(parseDecimalText('1200 EUR')).toBeNull();
+	});
+});
+
+describe('coercePaste', () => {
+	const money: FieldDef = { key: 'value', type: 'money', title: 'Value', currency: 'EUR' };
+	const date: FieldDef = { key: 'close_date', type: 'date', title: 'Close' };
+	const datetime: FieldDef = { key: 'due_at', type: 'datetime', title: 'Due' };
+	const period: FieldDef = { key: 'term', type: 'period', title: 'Term' };
+	const dateperiod: FieldDef = { key: 'sprint', type: 'dateperiod', title: 'Sprint' };
+	const bool: FieldDef = { key: 'won', type: 'boolean', title: 'Won' };
+	const ref: FieldDef = { key: 'owner', type: 'reference', title: 'Owner' };
+
+	it('clears on an empty cell', () => {
+		expect(coercePaste(str, '')).toEqual({ ok: true, value: null });
+		expect(coercePaste(money, '  ')).toEqual({ ok: true, value: null });
+		expect(coercePaste(bool, '')).toEqual({ ok: true, value: null });
+	});
+
+	it('builds the money object, keeping the cell currency', () => {
+		expect(coercePaste(money, '1250.5')).toEqual({
+			ok: true,
+			value: { value: '1250.5', currency: 'EUR' }
+		});
+		expect(
+			coercePaste(money, '1,200.00', { current: { value: '130000', currency: 'USD' } })
+		).toEqual({
+			ok: true,
+			value: { value: '1200.00', currency: 'USD' }
+		});
+		expect(coercePaste(money, '1234,56')).toEqual({
+			ok: true,
+			value: { value: '1234.56', currency: 'EUR' }
+		});
+		expect(coercePaste(money, 'cent').ok).toBe(false);
+	});
+
+	it('takes dates verbatim in the ISO calendar form', () => {
+		expect(coercePaste(date, '2026-09-30')).toEqual({ ok: true, value: '2026-09-30' });
+		expect(coercePaste(date, '2026-02-30').ok).toBe(false);
+		expect(coercePaste(date, '30/09/2026').ok).toBe(false);
+	});
+
+	it('normalizes datetimes to UTC — offset, wall time, date only', () => {
+		expect(coercePaste(datetime, '2026-09-30T14:30:00+02:00')).toEqual({
+			ok: true,
+			value: '2026-09-30T12:30:00.000Z'
+		});
+		expect(coercePaste(datetime, '2026-09-30 14:30', { timezone: 'UTC' })).toEqual({
+			ok: true,
+			value: '2026-09-30T14:30:00.000Z'
+		});
+		expect(coercePaste(datetime, '2026-09-30T16:30', { timezone: 'Europe/Paris' })).toEqual({
+			ok: true,
+			value: '2026-09-30T14:30:00.000Z'
+		});
+		expect(coercePaste(datetime, '2026-09-30', { timezone: 'UTC' })).toEqual({
+			ok: true,
+			value: '2026-09-30T00:00:00.000Z'
+		});
+		expect(coercePaste(datetime, 'soon').ok).toBe(false);
+	});
+
+	it('splits range cells on the copy arrow', () => {
+		expect(
+			coercePaste(period, '2026-11-01T00:00:00Z → 2027-01-31T23:59:59Z', { timezone: 'UTC' })
+		).toEqual({
+			ok: true,
+			value: { start: '2026-11-01T00:00:00.000Z', end: '2027-01-31T23:59:59.000Z' }
+		});
+		expect(coercePaste(dateperiod, '2026-12-01 → 2026-12-21')).toEqual({
+			ok: true,
+			value: { start: '2026-12-01', end: '2026-12-21' }
+		});
+		expect(coercePaste(period, '2026-11-01T00:00:00Z').ok).toBe(false);
+		expect(coercePaste(dateperiod, '2026-02-30 → 2026-03-01').ok).toBe(false);
+	});
+
+	it('reads booleans in any case', () => {
+		expect(coercePaste(bool, 'TRUE')).toEqual({ ok: true, value: true });
+		expect(coercePaste(bool, 'false')).toEqual({ ok: true, value: false });
+		expect(coercePaste(bool, 'vrai').ok).toBe(false);
+	});
+
+	it('takes references as the raw stored id', () => {
+		expect(coercePaste(ref, 'crm.GridContact.1')).toEqual({ ok: true, value: 'crm.GridContact.1' });
+		expect(coercePaste(ref, '')).toEqual({ ok: true, value: null });
+	});
+
+	it('normalizes grouped integers then applies the bounds', () => {
+		expect(coercePaste(int, '1,200')).toEqual({ ok: true, value: 1200 });
+		expect(coercePaste(int, '12.5').ok).toBe(false);
+		expect(coercePaste(bounded, '1,101').ok).toBe(false);
+	});
+
+	it('delegates the remaining types to coerceScalar', () => {
+		expect(coercePaste(str, '  Acme  ')).toEqual({ ok: true, value: 'Acme' });
+		expect(coercePaste(dur, '11700')).toEqual({ ok: true, value: 11700 });
+		expect(coercePaste(dur, '2h 30m')).toEqual({ ok: true, value: 9000 });
+		expect(coercePaste(enumField, 'PILOT')).toEqual({ ok: true, value: 'pilot' });
+		expect(coercePaste(color, '#3fb39a')).toEqual({ ok: true, value: '#3FB39A' });
 	});
 });

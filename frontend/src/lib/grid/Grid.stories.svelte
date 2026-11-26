@@ -13,6 +13,7 @@
 	import type { DataSource } from '$lib/datasource/interface.js';
 	import { wallToUtcIso, type Wall } from '$lib/zonedTime.js';
 	import { displayTimezone } from '$lib/settings.svelte';
+	import { dismissToast, getToasts } from '$lib/toast.svelte';
 
 	// The edit affordances gate on the viewer's `update` grant — the module
 	// grants everything so the editing stories can drive the write path.
@@ -284,6 +285,15 @@
 		{ key: 'site', label: 'Site', width: '200px' },
 		{ key: 'weighted', label: 'CA pondéré', width: '160px', align: 'right', summary: 'sum' },
 		{ key: 'won', label: 'Gagné', width: '96px', align: 'center' }
+	];
+
+	/** The paste story's strip — string, enum, and money columns plus the
+	 *  computed read-only one the paste must skip. */
+	const pasteColumns: GridColumn[] = [
+		{ key: 'title', label: 'Opportunité', width: '240px' },
+		{ key: 'status', label: 'Statut', width: '170px' },
+		{ key: 'value', label: 'CA prévisionnel', width: '180px', align: 'right' },
+		{ key: 'weighted', label: 'CA pondéré', width: '160px', align: 'right' }
 	];
 
 	/** The editing stories' strips — one editor column, always data-col 0. */
@@ -987,6 +997,109 @@ its writes never // leak into another story's seed. The edited column is always 
 		expect(cell.textContent).toContain('Déploiement');
 		const row = await stored(args.datasource, 'crm.GridDeal.1');
 		expect(row.title).toBe('Déploiement plateforme qualité Meridian');
+	}}
+/>
+
+<Story
+	name="PasteTSV"
+	args={{ ...storyArgs(editDriver(), pasteColumns) }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		// Excel → grid: the focused cell receives the native paste event with
+		// a TSV payload — CRLF row breaks, a quoted multi-line cell, a
+		// thousands-separated amount, and the computed column to skip.
+		const cell = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
+		await userEvent.click(cell);
+		const tsv = 'Colle A\tpilot\t1250.5\t0\r\n' + '"ligne 1\nligne 2"\tinconnu\t"1,200.00"\t0';
+		const event = new Event('paste', { bubbles: true }) as ClipboardEvent;
+		Object.defineProperty(event, 'clipboardData', { value: { getData: () => tsv } });
+		cell.dispatchEvent(event);
+		await sleep(150);
+		// The block landed with its top-left at the focused cell, and the
+		// selection now covers it.
+		expect(cell.textContent).toContain('Colle A');
+		const far = canvasElement.querySelector('[data-row="1"][data-col="2"]')!;
+		expect(far.getAttribute('aria-selected')).toBe('true');
+		// The undeclared enum key failed: the cell keeps its value under the
+		// error frame.
+		const bad = canvasElement.querySelector('[data-row="1"][data-col="1"]')!;
+		expect(bad.className).toContain('cell-error');
+		expect(bad.textContent).toContain('Devis');
+		// Both rows persisted through the datasource — the money cells kept
+		// their row currencies, the computed column stayed read-only.
+		const first = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(first.title).toBe('Colle A');
+		expect(first.status).toBe('pilot');
+		expect(first.value).toEqual({ value: '1250.5', currency: 'USD' });
+		expect(first.weighted).toBe(65000);
+		const second = await stored(args.datasource, 'crm.GridDeal.2');
+		expect(second.title).toBe('ligne 1\nligne 2');
+		expect(second.status).toBe('quote');
+		expect(second.value).toEqual({ value: '1200.00', currency: 'EUR' });
+	}}
+/>
+
+<Story
+	name="PasteErrors"
+	args={{ ...storyArgs(editDriver(), pasteColumns) }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		// The toast stack is shared across stories in this browser session.
+		for (const t of [...getToasts()]) dismissToast(t.id);
+		// A mixed block: row 0 fails its enum and money cells, row 1 lands in
+		// full, and the computed column is skipped twice.
+		const cell = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
+		await userEvent.click(cell);
+		const tsv = 'Titre A\tinconnu\tcent\t0\r\nTitre B\tpilot\t1,200.00\t0';
+		const event = new Event('paste', { bubbles: true }) as ClipboardEvent;
+		Object.defineProperty(event, 'clipboardData', { value: { getData: () => tsv } });
+		cell.dispatchEvent(event);
+		await sleep(150);
+		// The two bad cells keep their values under the error frame, with the
+		// coercion message as the tooltip.
+		const badEnum = canvasElement.querySelector('[data-row="0"][data-col="1"]')!;
+		expect(badEnum.className).toContain('cell-error');
+		expect(badEnum.getAttribute('title')).toBe('Pick a value from the list');
+		const badMoney = canvasElement.querySelector('[data-row="0"][data-col="2"]')!;
+		expect(badMoney.className).toContain('cell-error');
+		expect(badMoney.getAttribute('title')).toBe('Enter an amount like 1200.50');
+		// The landed row persisted; the failed cells kept their stored values.
+		const first = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(first.title).toBe('Titre A');
+		expect(first.status).toBe('review');
+		expect(first.value).toEqual({ value: '130000', currency: 'USD' });
+		const second = await stored(args.datasource, 'crm.GridDeal.2');
+		expect(second.title).toBe('Titre B');
+		expect(second.status).toBe('pilot');
+		expect(second.value).toEqual({ value: '1200.00', currency: 'EUR' });
+		// One toast per problem kind, with the counts.
+		const messages = getToasts().map((t) => t.message);
+		expect(messages).toContain('2 read-only cells skipped');
+		expect(messages).toContain('2 cells could not be read — marked on the grid');
+		expect(getToasts().find((t) => t.message.includes('could not be read'))?.variant).toBe('error');
+		for (const t of [...getToasts()]) dismissToast(t.id);
+		// A second paste over the same cells clears the stale frames — even
+		// when the write is a no-op: the enum cell takes the value the row
+		// already holds, and row 1 is a full no-op block.
+		const repaste = 'Titre A2\treview\t100\t0\r\nTitre B\tpilot\t1,200.00\t0';
+		const secondEvent = new Event('paste', { bubbles: true }) as ClipboardEvent;
+		Object.defineProperty(secondEvent, 'clipboardData', { value: { getData: () => repaste } });
+		cell.dispatchEvent(secondEvent);
+		await sleep(150);
+		expect(badEnum.className).not.toContain('cell-error');
+		expect(badMoney.className).not.toContain('cell-error');
+		const repasted = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(repasted.title).toBe('Titre A2');
+		expect(repasted.status).toBe('review');
+		expect(repasted.value).toEqual({ value: '100', currency: 'USD' });
+		const repastedSecond = await stored(args.datasource, 'crm.GridDeal.2');
+		expect(repastedSecond.status).toBe('pilot');
+		expect(repastedSecond.value).toEqual({ value: '1200.00', currency: 'EUR' });
+		const secondMessages = getToasts().map((t) => t.message);
+		expect(secondMessages).toContain('2 read-only cells skipped');
+		expect(secondMessages).not.toContain('2 cells could not be read — marked on the grid');
+		// Clean the shared toast stack for later stories.
+		for (const t of [...getToasts()]) dismissToast(t.id);
 	}}
 />
 

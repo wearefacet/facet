@@ -5,9 +5,11 @@
  * Raw text → typed value for the grid's editable cell types.
  *
  * The client coerces only to build a well-formed PATCH — the server stays
- * the validator, and a 422 still shows on the cell. The same parser will
- * serve the paste path (phase 3), so one grammar feeds both editors and
- * paste.
+ * the validator, and a 422 still shows on the cell. `coerceScalar` serves
+ * the cell editors' text entry; `coercePaste` serves the paste path (Excel →
+ * grid) and accepts every form the copy side emits — one grammar per field
+ * type feeds editors and paste, so a copied block re-pastes where it came
+ * from.
  *
  * Value shapes mirror the stored forms the renderers read:
  * - `string` / `longtext` / `phone` / `url` — text; empty input clears (`null`).
@@ -17,9 +19,17 @@
  * - `enum` — exact key first, then exact label, then the case-insensitive
  *   form of either.
  * - `color` — `#RGB` / `#RRGGBB`, normalized to uppercase `#RRGGBB`.
+ * - `money` — decimal text → `{ value, currency }` (paste; the currency is
+ *   kept from the cell, else the field's declared one).
+ * - `date` — `YYYY-MM-DD` verbatim; `datetime` — RFC-3339 normalized to UTC
+ *   (a bare wall time resolves through the display zone, the picker's rule).
+ * - `period` / `dateperiod` — the two bounds joined with ` → ` (paste; the
+ *   copy grammar).
  */
 import * as m from '$lib/paraglide/messages';
 import { parseDuration } from '$lib/components/primitives/forms/durationMath.js';
+import { DECIMAL_RE } from '$lib/components/primitives/forms/moneyFormat.js';
+import { daysInMonth, wallToUtcIso } from '$lib/zonedTime.js';
 import type { FieldDef } from '$lib/doctype/types.js';
 
 /** Success carries the typed value; failure carries a user-facing message. */
@@ -161,5 +171,191 @@ export function coerceScalar(field: FieldDef, raw: string): CoerceResult {
 		}
 		default:
 			return { ok: false, error: m.grid_coerce_type({ type: field.type }) };
+	}
+}
+
+// ── Paste (Excel → grid) ─────────────────────────────────────────────────
+
+/** Options for one pasted cell's coercion. */
+export interface CoercePasteOptions {
+	/** The cell's current value — a money cell keeps its currency. */
+	current?: unknown;
+	/** IANA zone for a bare wall-clock datetime (no explicit offset) — the
+	 *  user's display zone, the picker's rule. Defaults to `'UTC'`. */
+	timezone?: string;
+}
+
+/** The ISO calendar-date grammar — `YYYY-MM-DD`. */
+const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/**
+ * A datetime bound: the date, optional `HH:MM[:SS]` (space or `T` separator,
+ * fractional seconds dropped), optional `Z` / `±HH[:]MM` offset.
+ */
+const DATETIME_RE =
+	/^(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$/;
+
+/** A validated `YYYY-MM-DD` calendar date, or null. */
+function parseDateText(text: string): string | null {
+	const match = DATE_RE.exec(text);
+	if (!match) return null;
+	const month = Number(match[2]);
+	const day = Number(match[3]);
+	if (month < 1 || month > 12 || day < 1 || day > daysInMonth(Number(match[1]), month)) {
+		return null;
+	}
+	return text;
+}
+
+/**
+ * One datetime bound → the stored UTC RFC-3339 form. An explicit offset (or
+ * `Z`) names the instant directly; a bare wall time resolves through
+ * `timezone` — the display zone, the picker's rule; a date-only bound is
+ * midnight there. Returns null outside the grammar or on a non-existent
+ * calendar date. `JS Date.parse` alone would roll `2026-02-30` over, so the
+ * date part validates first.
+ */
+function parseDatetimeText(text: string, timezone: string): string | null {
+	const match = DATETIME_RE.exec(text);
+	if (!match) return null;
+	const date = parseDateText(match[1]);
+	if (date == null) return null;
+	const [y, mo, d] = date.split('-').map(Number);
+	if (match[2] === undefined) {
+		return wallToUtcIso({ y, m: mo, d, h: 0, mi: 0 }, timezone) || null;
+	}
+	const h = Number(match[2]);
+	const mi = Number(match[3]);
+	const s = match[4] != null ? Number(match[4]) : 0;
+	if (h > 23 || mi > 59 || s > 59) return null;
+	const offset = match[5];
+	if (offset) {
+		const off =
+			offset === 'Z'
+				? '+00:00'
+				: offset.length === 5
+					? `${offset.slice(0, 3)}:${offset.slice(3)}`
+					: offset;
+		const ms = Date.parse(`${date}T${match[2]}:${match[3]}:${match[4] ?? '00'}${off}`);
+		return Number.isNaN(ms) ? null : new Date(ms).toISOString();
+	}
+	return wallToUtcIso({ y, m: mo, d, h, mi }, timezone) || null;
+}
+
+/**
+ * Normalize a pasted decimal to the canonical `DECIMAL_RE` shape.
+ *
+ * Clipboard decimals vary by source locale: `1200.50`, `1,234.56` (US),
+ * `1 234,56` (fr — spaces and the non-breaking forms strip too), `1'234`
+ * (the app's own grouping mark). Spaces and `'` always strip. When `.` and
+ * `,` both appear, the rightmost is the decimal mark and the other is
+ * grouping. A lone `,` is the decimal mark with 1–2 trailing digits
+ * (`12,56`) and thousands grouping with exactly three (`1,234`) — the two
+ * shapes Excel's own copy formats produce; anything else fails, so a
+ * misread never lands silently in a cell.
+ */
+export function parseDecimalText(raw: string): string | null {
+	const text = raw.replace(/[\s']/g, '');
+	const lastDot = text.lastIndexOf('.');
+	const lastComma = text.lastIndexOf(',');
+	const trailingDigits = text.length - lastComma - 1;
+	const commaAsDecimal =
+		lastComma >= 0 && lastComma > lastDot && trailingDigits >= 1 && trailingDigits <= 2;
+	const decimalChar = commaAsDecimal ? ',' : lastDot > lastComma ? '.' : null;
+	let normalized: string;
+	if (decimalChar == null) {
+		// No decimal mark: the separators left must be thousands grouping —
+		// `1,234` / `1,234,567` — or there are none and the text is a bare
+		// (possibly signed) integer. A dot, or a lone comma in another shape
+		// (`1234,5678`), is junk — the text names no one number.
+		const commas = (text.match(/,/g) ?? []).length;
+		if (lastDot >= 0 || !(commas === 0 || commas > 1 || (commas === 1 && trailingDigits === 3))) {
+			return null;
+		}
+		normalized = text.replace(/[.,]/g, '');
+	} else {
+		const groupChar = decimalChar === '.' ? ',' : '.';
+		const decIdx = text.lastIndexOf(decimalChar);
+		const intPart = text.slice(0, decIdx).split(groupChar).join('');
+		const fracPart = text.slice(decIdx + 1);
+		if (!/^-?\d+$/.test(intPart) || !/^\d*$/.test(fracPart)) return null;
+		normalized = fracPart === '' ? intPart : `${intPart}.${fracPart}`;
+	}
+	return DECIMAL_RE.test(normalized) ? normalized : null;
+}
+
+/**
+ * Coerce one pasted cell's text into the field's stored value shape — the
+ * paste-side twin of `coerceScalar`. The types without a text editor gain
+ * their paste grammar here (money, dates, ranges, booleans, references);
+ * the rest delegate. An empty cell clears, so a pasted blank overwrites —
+ * the spreadsheet rule. A reference accepts the raw stored id; the server
+ * validates it and a 422 still shows on the cell.
+ */
+export function coercePaste(
+	field: FieldDef,
+	raw: string,
+	options: CoercePasteOptions = {}
+): CoerceResult {
+	const text = raw.trim();
+	switch (field.type) {
+		case 'money': {
+			if (text === '') return { ok: true, value: null };
+			const amount = parseDecimalText(text);
+			if (amount == null) return { ok: false, error: m.grid_coerce_money() };
+			const current =
+				typeof options.current === 'object' && options.current !== null
+					? (options.current as Record<string, unknown>)
+					: null;
+			const currentCurrency = typeof current?.currency === 'string' ? current.currency : '';
+			return {
+				ok: true,
+				value: { value: amount, currency: currentCurrency || field.currency || '' }
+			};
+		}
+		case 'date': {
+			if (text === '') return { ok: true, value: null };
+			const date = parseDateText(text);
+			if (date == null) return { ok: false, error: m.grid_coerce_date() };
+			return { ok: true, value: date };
+		}
+		case 'datetime': {
+			if (text === '') return { ok: true, value: null };
+			const iso = parseDatetimeText(text, options.timezone ?? 'UTC');
+			if (iso == null) return { ok: false, error: m.grid_coerce_datetime() };
+			return { ok: true, value: iso };
+		}
+		case 'period':
+		case 'dateperiod': {
+			if (text === '') return { ok: true, value: null };
+			const arrow = text.indexOf(' → ');
+			if (arrow < 0) return { ok: false, error: m.grid_coerce_period() };
+			const start = text.slice(0, arrow).trim();
+			const end = text.slice(arrow + 3).trim();
+			const tz = options.timezone ?? 'UTC';
+			const startBound =
+				field.type === 'period' ? parseDatetimeText(start, tz) : parseDateText(start);
+			const endBound = field.type === 'period' ? parseDatetimeText(end, tz) : parseDateText(end);
+			if (startBound == null || endBound == null)
+				return { ok: false, error: m.grid_coerce_period() };
+			return { ok: true, value: { start: startBound, end: endBound } };
+		}
+		case 'boolean': {
+			const lower = text.toLowerCase();
+			if (lower === '') return { ok: true, value: null };
+			if (lower === 'true') return { ok: true, value: true };
+			if (lower === 'false') return { ok: true, value: false };
+			return { ok: false, error: m.grid_coerce_boolean() };
+		}
+		case 'reference':
+			return { ok: true, value: text === '' ? null : text };
+		case 'integer': {
+			if (text === '') return { ok: true, value: null };
+			const normalized = parseDecimalText(text);
+			if (normalized == null) return { ok: false, error: m.grid_coerce_integer() };
+			return coerceScalar(field, normalized);
+		}
+		default:
+			return coerceScalar(field, raw);
 	}
 }

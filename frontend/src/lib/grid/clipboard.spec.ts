@@ -2,13 +2,14 @@
 // Copyright (c) 2026 Amplitude Solutions Ltd
 
 import { describe, it, expect } from 'vitest';
-import { serializeTSV, cellCopyText } from './clipboard.js';
+import { serializeTSV, parseTSV, cellCopyText } from './clipboard.js';
 import type { FieldDef } from '$lib/doctype/types.js';
 
 /**
- * Unit tests for the grid's copy-side clipboard: the TSV grammar (tabs,
- * embedded newlines, quote doubling) and the raw-form copy text per field
- * type (round-trip clean, empty for absent values).
+ * Unit tests for the grid's clipboard grammar: the TSV serialization (tabs,
+ * embedded newlines, quote doubling), the raw-form copy text per field type
+ * (round-trip clean, empty for absent values), and the paste-side parser
+ * that accepts the same grammar plus Excel's copy dialect (CRLF rows).
  */
 
 describe('serializeTSV', () => {
@@ -39,6 +40,55 @@ describe('serializeTSV', () => {
 	it('serializes an empty block as empty text', () => {
 		expect(serializeTSV([])).toBe('');
 		expect(serializeTSV([['', '']])).toBe('\t');
+	});
+});
+
+describe('parseTSV', () => {
+	it('splits tab cells and newline rows', () => {
+		expect(parseTSV('a\tb\nc\td')).toEqual([
+			['a', 'b'],
+			['c', 'd']
+		]);
+	});
+
+	it('accepts Excel CRLF row breaks and a lone CR', () => {
+		expect(parseTSV('a\tb\r\nc\td')).toEqual([
+			['a', 'b'],
+			['c', 'd']
+		]);
+		expect(parseTSV('a\rb')).toEqual([['a'], ['b']]);
+	});
+
+	it('unescapes quoted cells — doubled quotes and embedded newlines', () => {
+		expect(parseTSV('"a\tb"\tc')).toEqual([['a\tb', 'c']]);
+		expect(parseTSV('"line1\nline2"\td')).toEqual([['line1\nline2', 'd']]);
+		expect(parseTSV('"say ""hi"""')).toEqual([['say "hi"']]);
+	});
+
+	it('keeps trailing empty cells and pads short rows to a rectangle', () => {
+		expect(parseTSV('a\t')).toEqual([['a', '']]);
+		expect(parseTSV('a\tb\nc')).toEqual([
+			['a', 'b'],
+			['c', '']
+		]);
+	});
+
+	it('drops one trailing row break but keeps interior blank rows', () => {
+		expect(parseTSV('a\tb\n')).toEqual([['a', 'b']]);
+		expect(parseTSV('a\r\n\r\nb')).toEqual([['a'], [''], ['b']]);
+	});
+
+	it('returns an empty block for empty text', () => {
+		expect(parseTSV('')).toEqual([]);
+	});
+
+	it('round-trips serializeTSV output', () => {
+		const block = [
+			['Acme Corp — Platform License', 'open', '120000'],
+			['multi\nline', 'tab\there', 'say "hi"'],
+			['', '2026-09-30 → 2026-12-21', '']
+		];
+		expect(parseTSV(serializeTSV(block))).toEqual(block);
 	});
 });
 

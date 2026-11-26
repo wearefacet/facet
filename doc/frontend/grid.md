@@ -19,12 +19,14 @@ them), but no app surface mounts the grid yet.
   copy, Σ row, footer, and the per-cell editors.
 - `frontend/src/lib/grid/types.ts` — `GridColumn`, `GridProps`.
 - `frontend/src/lib/grid/selection.svelte.ts` — active cell, ranges, moves (pure logic).
-- `frontend/src/lib/grid/clipboard.ts` — TSV serialize + copy text (pure logic).
+- `frontend/src/lib/grid/clipboard.ts` — TSV serialize + parse, and the copy text (pure
+  logic).
 - `frontend/src/lib/grid/summary.ts` — per-column Σ aggregate calls and response
   normalization.
 - `frontend/src/lib/grid/writeQueue.ts` — per-row write batching, concurrency cap, and the
   session undo stack.
-- `frontend/src/lib/grid/coerce.ts` — raw text → typed value for the text editors.
+- `frontend/src/lib/grid/coerce.ts` — raw text → typed value for the text editors and the
+  paste path.
 - `frontend/src/lib/grid/editors/` — the per-type cell editors over the existing form
   inputs (`CellEditor` shell + one editor per type).
 - `frontend/src/lib/grid/fieldTypes.ts` — the field-type capability sets both the surface
@@ -91,9 +93,17 @@ footer pattern (range, rows-per-page, pagination). On top of that it adds:
   Tab, Home, and End move; Shift extends; the gutter click selects a row; drag extends a
   range. Esc clears. Enter and Space open the peek drawer, except on a writable cell where
   editing takes over.
-- **Copy** — ⌘C serializes the range as TSV in the raw stored form (money copies
+- **Copy & paste** — ⌘C serializes the range as TSV in the raw stored form (money copies
   `120000`, enums copy the key, a range cell copies its two stored bounds as
-  `start → end` — a `period`'s UTC instants, a `dateperiod`'s calendar dates).
+  `start → end` — a `period`'s UTC instants, a `dateperiod`'s calendar dates). A native
+  paste on the focused cell reads the same grammar back — Excel's copy dialect included
+  (`\r\n` row breaks, quoted multi-line cells, `TRUE`/`FALSE`, thousands-separated
+  decimals like `1,234.56` / `1 234,56`). The block lands with its top-left at the
+  selection's top-left and never leaves the loaded page: rows and columns past it are
+  skipped, as are read-only cells (one toast counts them). A cell whose text does not
+  coerce keeps its value and takes the error frame (Esc drops it, and so does a later
+  paste that coerces on the same cell); each touched row sends one PATCH, so
+  ⌘Z reverts one row per press. After the paste the selection covers the pasted block.
 - **Σ row** — columns with a `summary` run one parallel `list({ aggregate, field })` call
   each over the whole filtered set (`summary.ts`); `count` summaries share one call. A
   failed aggregate leaves its Σ cell empty.
@@ -159,10 +169,13 @@ validation). A `grid` surface passes the backend gate unvalidated today; the fro
 - The surface has a filter bar (the table rule) — the grid is a working surface, not a
   read-only projection.
 - One row height (40 px); no density config.
-- The toolbar has no undo or fill buttons — undo is keyboard-only (⌘Z), and fill is ⌘D
-  plus the fill handle in a later phase.
-- Paste, fill down, and the ghost new-row line are later phases; `allow_create` is
-  authored already and stays off unless the view opts in.
+- The toolbar has no undo or fill buttons — undo is keyboard-only (⌘Z), and fill is the
+  fill handle in a later phase.
+- Fill down and the ghost new-row line are later phases; `allow_create` is authored
+  already and stays off unless the view opts in.
+- Paste reads the ISO grammar and the copy forms — the stored raw values, ` → ` ranges,
+  and locale-shaped decimals. Excel's localized date text (`30/09/2026`) needs a reformat
+  before it lands.
 - The enum chip carries the value colour in the tinted background and dot, and the label in
   the theme ink — the design mock's value-coloured text fails AA contrast on the light
   theme.
