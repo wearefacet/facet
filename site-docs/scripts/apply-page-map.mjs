@@ -56,7 +56,11 @@ function gitMv(srcRel, dstRel) {
 }
 
 function gitRm(srcRel) {
-	execFileSync('git', ['rm', '-q', `src/content/docs/${srcRel}`], { cwd: root });
+	// -f: the link-rewrite pass modifies pages before their tab runs; the
+	// pre-move original is preserved in ledgers/originals/, so the working-tree
+	// modification (rewritten links in a page that is being deleted) is safe
+	// to discard.
+	execFileSync('git', ['rm', '-q', '-f', `src/content/docs/${srcRel}`], { cwd: root });
 }
 
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
