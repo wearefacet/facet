@@ -119,7 +119,7 @@ export default defineConfig({
 				{ label: 'Discover', items: [{ autogenerate: { directory: 'discover' } }] },
 				{ label: 'Tutorials', items: [{ autogenerate: { directory: 'tutorials' } }] },
 				{ label: 'Concepts', items: [{ autogenerate: { directory: 'concepts' } }] },
-				{ label: 'Use the workspace', items: [{ autogenerate: { directory: 'workspace' } }] },
+				{ label: 'Use', items: [{ autogenerate: { directory: 'use' } }] },
 				{ label: 'Build domains', items: [{ autogenerate: { directory: 'build' } }] },
 				{ label: 'Govern access', items: [{ autogenerate: { directory: 'govern' } }] },
 				{ label: 'Build apps', items: [{ autogenerate: { directory: 'apps' } }] },
