@@ -1,0 +1,32 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+      - type: section
+        label: Company
+        children:
+          - type: row
+            layout: 2fr 1fr
+            children:
+              - type: input
+                field: name
+              - type: input
+                field: city
+      - type: section
+        label: Account
+        children:
+          - type: input
+            field: account_manager
+      - type: relation
+        label: Contacts
+        source:
+          rel: contacts
+          kind: children
+        doctype: clients.Contact
+        editable: true
+        limit: 25
+  parent_doctype: clients.Company
+meta:
+  parent_id: clients.Company

@@ -53,7 +53,7 @@ Work packages (one agent each; some split into batches):
 |---|---|---|---|---|
 | 10 | [`10-wp-inventory-audit.md`](10-wp-inventory-audit.md) | `inventory.yml`, audit ledgers | — | done (2026-11-26, `8fb69df`; 138 → 158 IDs; see `ledgers/`) |
 | 11 | [`11-wp-scaffold.md`](11-wp-scaffold.md) | config, moves, redirects, schema, components | 10; decisions D1, D2, D4, D8 | done (2026-11-26, `c9ee65b`; ~144 pages + fr twins moved per tab, 23 stubs, 246 redirects, gate 288/288 old URLs answer; see report in `ledgers/wp11-report.md`) |
-| 12 | [`12-wp-running-example.md`](12-wp-running-example.md) | `site-docs/examples/brightwater/` | 11, D3, running instance | open |
+| 12 | [`12-wp-running-example.md`](12-wp-running-example.md) | `site-docs/examples/brightwater/` | 11, D3, running instance | done (2026-11-26; 3 domain bundles + load.sh + seed.py + export.sh + README; fresh-import path verified green; discrepancies #17, #18; see `ledgers/12.md` and `ledgers/wp12-report.md`) |
 | 13 | [`13-wp-discover.md`](13-wp-discover.md) | `discover/` | 11; D6, D10, D12 | open |
 | 14 | [`14-wp-first-hour.md`](14-wp-first-hour.md) | `build/first-hour/`, `build/dev-environment.md`, screenshots | 11, 12 | open |
 | 15 | [`15-wp-use.md`](15-wp-use.md) | `use/` | 11, 12 | open |

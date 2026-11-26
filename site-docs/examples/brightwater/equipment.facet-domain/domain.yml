@@ -1,0 +1,16 @@
+---
+content:
+  color: "#0F766E"
+  description: Rental equipment — items, categories, and maintenance tickets.
+  hooks:
+    - id: booking-drives-stock
+      kind: event
+      source:
+        domain: rentals
+        doc_type: Booking
+        events:
+          - booking_confirmed
+          - booking_returned
+      script: !read_file hooks/1-booking-drives-stock.lua
+meta: {}
+

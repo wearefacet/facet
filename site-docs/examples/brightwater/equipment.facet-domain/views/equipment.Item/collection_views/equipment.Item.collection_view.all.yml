@@ -1,0 +1,17 @@
+---
+content:
+  name: All items
+  config:
+    columns:
+      - key: name
+      - key: category
+        width: 140px
+      - key: status
+        width: 120px
+      - key: serial_number
+        width: 160px
+      - key: purchase_price
+        width: 140px
+  surface: table
+meta:
+  parent_id: equipment.Item

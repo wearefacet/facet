@@ -1,0 +1,39 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+      - type: section
+        label: Booking
+        children:
+          - type: row
+            layout: 2fr 1fr
+            children:
+              - type: input
+                field: client
+              - type: input
+                field: status
+          - type: row
+            layout: repeat(2, minmax(180px, 1fr))
+            children:
+              - type: input
+                field: dates
+              - type: input
+                field: status
+      - type: section
+        label: Notes
+        children:
+          - type: input
+            field: notes
+      - type: relation
+        label: Lines
+        source:
+          rel: lines
+          kind: children
+        doctype: rentals.BookingLine
+        editable: true
+        limit: 50
+  parent_doctype: rentals.Booking
+meta:
+  parent_id: rentals.Booking

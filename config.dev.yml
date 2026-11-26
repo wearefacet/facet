@@ -330,9 +330,9 @@ assistant:
 # domains' definition surface (and, in discard mode, their data). Never
 # enable this in production — the boot code refuses the watcher there even
 # when the section is present. See `Facet::Dev::DomainWatcher`.
-#
-# dev:
-#   domain_watch:
-#     path: ./dev
-#     poll_ms: 500
-#     documents: preserve
+
+dev:
+  domain_watch:
+    path: ./site-docs/examples/brightwater
+    poll_ms: 500
+    documents: preserve

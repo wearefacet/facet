@@ -1,0 +1,13 @@
+---
+content:
+  name: All clients
+  config:
+    columns:
+      - key: name
+      - key: city
+        width: 160px
+      - key: account_manager
+        width: 180px
+  surface: table
+meta:
+  parent_id: clients.Company

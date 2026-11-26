@@ -276,3 +276,62 @@ require); `src/rbac/read_enforcer.cr` (uses `RBAC::AuthContext`, no require);
 Found by WP 11 (generator fixes). Maintainer triage: add the require to
 `read_enforcer.cr` (or to `filter_compiler.cr`) so the compiler compiles
 standalone. Code untouched by WP 11.
+
+## #17 — Update guards cannot read the state before the patch
+
+Where: `src/document/script_context/base.cr` (setup_ctx), doctype Lua scripts.
+
+Docs say: nothing yet — the gap surfaced while building the Brightwater
+example (WP 12), whose Item docttype wanted the classic lifecycle guard "an
+item in repair cannot be booked out".
+
+Code does: the `update` script context exposes `ctx.root` as the MERGED
+document (current content with the patch applied) and `ctx.patch` as the
+partial body — but no pre-merge state. A transition guard like
+`ctx.patch.status == "out" and ctx.root.status == "in_repair"` is
+self-contradictory: after the merge, `ctx.root.status` is already `"out"`,
+so the condition can never fire. The script's `validate` hook sees the same
+ctx. Old→new transition guards are not expressible in doctype Lua today.
+
+Evidence: `spec/document/script_context_spec.cr` ("exposes ctx.patch as the
+partial PATCH body", "does not set ctx.patch when no patch is supplied");
+`src/document/update.cr` (run_script_update passes `merged` as root); the
+Brightwater Item guard, which silently passed the hook's write until the
+check moved into the hook (`site-docs/examples/brightwater/equipment/
+facet-domain/doctypes/equipment.Item.lua`, `hooks/1-booking-drives-stock.lua`).
+
+Found by WP 12. Maintainer triage: either expose the pre-merge document
+(e.g. `ctx.previous`) to update hooks, or document that transition guards
+belong in the writing side (actions, hooks) — the example now does the
+latter. Code untouched by WP 12.
+
+## #18 — Auto-filed grant tickets are narrower than a hook's runtime reads, and depend on import order
+
+Where: `src/grants/publish_tickets.cr` (group_edges),
+`src/domain/portable/import.cr` (file_grant_tickets, the liveness check).
+
+Docs say: nothing yet — same origin as #17, the Brightwater example.
+
+Code does: the ticket scan derives cross-domain edges from (a) `replicate`
+fields and (b) event hooks' declared `source` (producer doctype, `default`
+tag). It cannot see the doctypes a hook's Lua reads at runtime — the
+Brightwater hook declares source `rentals.Booking` but also lists
+`rentals.BookingLine` through `document.list`, so the auto-filed grant is
+missing BookingLine and the hook's reads fail until the grant is widened by
+hand (or by the example's loader). Second edge: tickets file only into LIVE
+producer domains, so importing bundles in an order where the producer lands
+after the consumer silently drops that ticket (the import answer shows no
+hint; a later re-sync or re-import files it).
+
+Evidence: `site-docs/examples/brightwater/load.sh` (ensure_grant widens the
+resource set and logs "widened (added: BookingLine)"); the fresh-instance
+repro: import → boot → load → seed leaves all 40 items available with
+"no active grant ... on BookingLine" warnings in the backend log, fixed by
+the widen; the import log for the same order shows only the clients ticket
+filed.
+
+Found by WP 12. Maintainer triage: widen the scan (parse `document.list` /
+`document.get` literals out of hook scripts — best effort), or document that
+a hook's runtime reads need a hand-widened grant. The import-order drop
+could surface as a `/check` warning (the code's own comment says draft
+producers surface there). Code untouched by WP 12.

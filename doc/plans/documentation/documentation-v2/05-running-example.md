@@ -6,9 +6,11 @@ page builds on the last instead of starting from zero. This is the single
 biggest help for onboarding: the reader learns Facet, not a new toy example
 on every page.
 
-The company name and scenario are decision D3 in `99-decisions.md`. This file
-is the proposal; if the maintainer picks another scenario, replace the names
-here and keep the structure.
+The company name and scenario are decision D3 in `99-decisions.md`. The
+example is built: the three domains live in `site-docs/examples/brightwater/`
+with a loader (`load.sh`), a deterministic data script (`seed.py`), and export
+bundles (`bundles/`). That directory is the source of truth for names; this
+document describes what is in it.
 
 ---
 
@@ -24,28 +26,44 @@ line ("Brightwater Rentals is a fictional company we use in every example").
 
 ## 2. The people (and their roles)
 
-| Person | Job | Facet role | Uses |
-|---|---|---|---|
-| **Nadia** | Operations director | `manager` | Everything; approves bookings; sees costs |
-| **Tom** | Salesperson | `sales` | Clients and bookings — **only his own clients** (row scope) |
-| **Lucía** | Warehouse lead | `warehouse` | Equipment and maintenance — **cannot see purchase prices** (field tag) |
-| **Ravi** | Part-time IT and admin | `admin` | Accounts, roles, SSO, audit |
-| **Jo** | Freelance developer | `developer` app access | Builds the check-out app |
+| Person | Job | Facet role | Email / dev password | Uses |
+|---|---|---|---|---|
+| **Nadia Bertrand** | Operations director | `manager` | `nadia@brightwater.example` / `brightwater-nadia` | Everything; approves bookings; sees costs |
+| **Tom Aaland** | Salesperson | `sales` | `tom@brightwater.example` / `brightwater-tom` | Clients and bookings — **only his own clients** (row scope) |
+| **Lucía Ferrer** | Warehouse lead | `warehouse` | `lucia@brightwater.example` / `brightwater-lucia` | Equipment and maintenance — **cannot see purchase prices** (field tag) |
+| **Ravi Menon** | Part-time IT and admin | `admin` | `ravi@brightwater.example` / `brightwater-ravi` | Accounts, roles, SSO, audit |
+| **Jo** | Freelance developer | `developer` app access | — | Builds the check-out app |
+
+Passwords are dev-only, created by `load.sh` (the bundle README lists them
+too). Jo has no account in the bundle yet; the app pages (WP 17, WP 19) add
+one when they need it.
 
 Use these names consistently. Do not add new people unless a page needs one;
 if it does, add them here first (in your report as a request).
 
 ## 3. The domains
 
-The detailed field list is built and tested in WP 12 and lives as a bundle in
-`site-docs/examples/brightwater/`. Pages must use the field names from that
-bundle, not from this sketch.
+The bundles in `site-docs/examples/brightwater/` are the source of truth;
+`load.sh` + `seed.py` take a fresh instance to the full example. The data is
+deterministic: fixed names, prices and dates around the anchor date
+**2026-12-07** (a Monday), so screenshots stay stable. 6 categories, 40 items,
+10 companies, 14 contacts, 15 bookings, 5 maintenance tickets.
 
-| Domain | Doctypes (sketch) | Shows off |
+| Domain | Doctypes (as built) | Shows off |
 |---|---|---|
-| `equipment` | **Item** (name, category, status: available / out / in repair, purchase price, serial number), **Category**, **MaintenanceTicket** (item, problem, state, assignee) | Field types, identifiers (`EQ-0001`), unique serial numbers, a kanban board of tickets by state, field tag on purchase price, named action "Send to repair", lifecycle guard ("an item in repair cannot be booked") |
-| `clients` | **Company**, **Contact** (child of Company), with `account_manager` | Parent/child, references and backlinks, named scope "my clients", row scope for `sales` |
-| `rentals` | **Booking** (client, dates, state: draft / confirmed / returned), **BookingLine** (child: item, quantity, price) | Money and computed totals, a calendar view, an event hook (confirmed booking → items marked *out*), a webhook to the accounting system, cross-domain replication (client name copied onto the booking) |
+| `equipment` | **Item** (name, category ref, status `available` / `out` / `in_repair`, `purchase_price` money field tagged `finance`, unique `serial_number`, identifier `EQ-{year}-####`), **Category**, **MaintenanceTicket** (item, problem, status, assignee, reported_by) | Field types, identifiers (`EQ-2026-0001`), unique serial numbers, a kanban board of tickets by status, the `finance` field tag on purchase price, the named action **Send to repair**, and the `booking-drives-stock` event hook — a confirmed booking marks its items out, a returned booking brings them back; the hook refuses items in repair and keeps the rest of the booking moving |
+| `clients` | **Company** (name, city, `account_manager` → iam.Account), **Contact** (child of Company: full_name, email, role) | Parent/child composition, references, the `my_clients` named scope (`account_manager = $self`), row scope for `sales` |
+| `rentals` | **Booking** (client ref, `dates` dateperiod, status `draft` / `confirmed` / `returned`, notes, replicated `client_name`, computed `total`), **BookingLine** (child: item ref → equipment.Item, quantity, `price` money) | Money and the computed booking total, a calendar view, the **confirm** / **mark_returned** named actions (their events drive the hook), cross-domain replication (client name copied onto the booking) |
+
+Two access rules the bundles prove on a real instance:
+
+- **Row scope**: Tom's `sales` role reads `clients.Company` only through the
+  `$my_clients` scope — he sees his five companies, nobody else's. Bookings
+  stay readable to him (a named scope filters on the doctype's own fields,
+  and a booking's manager lives on its client — not expressible today).
+- **Field tag**: `purchase_price` carries the `finance` tag; only the
+  `manager` role lists that tag in `visible_tags`. Lucía and Tom read items
+  but never see what they cost.
 
 Other features attach to this story:
 
@@ -64,6 +82,9 @@ Other features attach to this story:
 
 ## 4. Rules for using the example
 
+- Load it once per working session: start the dev stack, run
+  `site-docs/examples/brightwater/load.sh` (the bundle README has the two
+  load paths). Sign in as the person the page is about.
 - Use it wherever it fits. Do not force it into operator pages about TLS or
   metrics; use `example.com`-style placeholders there.
 - Field names, IDs, labels and outputs come from the real bundle on a real

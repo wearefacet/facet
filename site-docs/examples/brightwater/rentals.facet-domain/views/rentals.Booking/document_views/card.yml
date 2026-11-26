@@ -1,0 +1,18 @@
+---
+content:
+  kind: card
+  template:
+    type: col
+    children:
+      - type: field
+        label: State
+        value: $status
+      - type: field
+        label: Dates
+        value: $dates
+      - type: field
+        label: Total
+        value: $total
+  parent_doctype: rentals.Booking
+meta:
+  parent_id: rentals.Booking

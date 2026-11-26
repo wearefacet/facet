@@ -1,0 +1,69 @@
+---
+content:
+  icon: wrench
+  color: "#b91c1c"
+  domain: equipment
+  fields:
+    item:
+      type: reference
+      title: Item
+      doctype: equipment.Item
+      required: true
+      filters:
+        - equality
+      description: "The item that needs attention."
+    problem:
+      type: longtext
+      title: Problem
+      required: true
+      description: "What is wrong, in the reporter's words."
+    status:
+      type: enum
+      title: State
+      values:
+        - key: reported
+          color: "#a16207"
+          label: Reported
+        - key: diagnosing
+          color: "#0e7490"
+          label: Diagnosing
+        - key: waiting_parts
+          color: "#7c3aed"
+          label: Waiting for parts
+        - key: fixed
+          color: "#15803d"
+          label: Fixed
+      default: reported
+      filters:
+        - equality
+      description: "Where the ticket stands. The kanban board groups by this field."
+    assignee:
+      type: reference
+      title: Assignee
+      doctype: iam.Account
+      filters:
+        - equality
+      description: "The warehouse person on the job."
+    reported_by:
+      type: reference
+      title: Reported by
+      doctype: iam.Account
+      description: "The account that reported the problem."
+  doctype: MaintenanceTicket
+  sidecars:
+    comments:
+      doctype: core.Comment
+      column: target
+    attachments:
+      doctype: core.Attachment
+      column: target
+  identifier:
+    genonly: false
+    template: "MT-{year}-####"
+  description: "A repair job on one item. Photos of the damage ride as attachments."
+  display_name: "{{ item }}"
+  search: "{{ problem }}"
+  aggregate_root: true
+  schema_version: 1
+meta:
+  parent_id: equipment

@@ -1,0 +1,80 @@
+---
+content:
+  icon: package
+  color: "#0F766E"
+  domain: equipment
+  fields:
+    name:
+      type: string
+      title: Name
+      required: true
+      filters:
+        - equality
+        - text_search
+      description: "The item's working name, e.g. 'Main tent 10x15'."
+    category:
+      type: reference
+      title: Category
+      doctype: equipment.Category
+      required: true
+      filters:
+        - equality
+      description: "The equipment category this item belongs to."
+    status:
+      type: enum
+      title: Status
+      values:
+        - key: available
+          color: "#15803d"
+          label: Available
+        - key: out
+          color: "#b45309"
+          label: Out
+        - key: in_repair
+          color: "#b91c1c"
+          label: In repair
+      default: available
+      filters:
+        - equality
+      description: "Where the item is: in the warehouse, out on a booking, or in repair."
+    purchase_price:
+      type: money
+      title: Purchase price
+      currency: EUR
+      precision: 2
+      tags:
+        - finance
+      filters:
+        - comparison
+        - currency
+      description: "What the item cost to buy. Visible to roles that hold the finance tag."
+    serial_number:
+      type: string
+      title: Serial number
+      unique: true
+      filters:
+        - equality
+      description: "The manufacturer serial number. Unique across the warehouse."
+    notes:
+      type: longtext
+      title: Notes
+      description: "Free notes about the item's condition or quirks."
+  script: !read_file equipment.Item.lua
+  actions:
+    send_to_repair:
+      args: {}
+  doctype: Item
+  sidecars:
+    comments:
+      doctype: core.Comment
+      column: target
+  identifier:
+    genonly: false
+    template: "EQ-{year}-####"
+  description: "One physical piece of rental equipment."
+  display_name: "{{ name }}"
+  search: "{{ name }} {{ serial_number }}"
+  aggregate_root: true
+  schema_version: 1
+meta:
+  parent_id: equipment
