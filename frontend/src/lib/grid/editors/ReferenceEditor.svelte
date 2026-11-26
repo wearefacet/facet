@@ -47,7 +47,10 @@
 		if (e.key === 'Enter' || e.key === 'Tab') {
 			if (driver && menuOpen()) return; // the picker picks the highlighted record
 			e.preventDefault();
-			oncommit(draft === '' ? null : draft, e.key === 'Enter' ? 'down' : e.shiftKey ? null : 'right');
+			oncommit(
+				draft === '' ? null : draft,
+				e.key === 'Enter' ? 'down' : e.shiftKey ? null : 'right'
+			);
 		} else if (e.key === 'Escape') {
 			if (driver && menuOpen()) return; // the picker closes its menu first
 			e.preventDefault();

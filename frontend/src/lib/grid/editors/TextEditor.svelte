@@ -12,8 +12,7 @@
 	import type { CellEditorProps, CommitMove } from './types.js';
 	import { coerceScalar } from '../coerce.js';
 
-	let { field, value, seed = null, label, ondraft, oncommit, oncancel }: CellEditorProps =
-		$props();
+	let { field, value, seed = null, label, ondraft, oncommit, oncancel }: CellEditorProps = $props();
 
 	let inputEl = $state<HTMLInputElement | null>(null);
 	// svelte-ignore state_referenced_locally — seed-only: the editor mounts

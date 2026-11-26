@@ -40,7 +40,10 @@
 	function handleKeydown(e: KeyboardEvent): void {
 		if (e.key === 'Enter' || e.key === 'Tab') {
 			e.preventDefault();
-			oncommit(draft === '' ? null : draft, e.key === 'Enter' ? 'down' : e.shiftKey ? null : 'right');
+			oncommit(
+				draft === '' ? null : draft,
+				e.key === 'Enter' ? 'down' : e.shiftKey ? null : 'right'
+			);
 		} else if (e.key === 'Escape') {
 			e.preventDefault();
 			e.stopPropagation();

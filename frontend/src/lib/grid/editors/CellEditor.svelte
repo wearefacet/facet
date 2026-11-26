@@ -79,33 +79,98 @@
 	from reaching the grid's cells, so it never arms the drag-select (the
 	enum list closes the editor under the held button — without this, the
 	cells exposed underneath sweep-select). -->
-<div
-	class="cell-editor"
-	class:floating
-	class:wide
-	onmousedown={(e) => e.stopPropagation()}
->
+<div class="cell-editor" class:floating class:wide onmousedown={(e) => e.stopPropagation()}>
 	{#if field.type === 'longtext'}
-		<LongTextEditor {field} {label} {...rest} ondraft={handleDraft} oncommit={handleCommit} oncancel={handleCancel} />
+		<LongTextEditor
+			{field}
+			{label}
+			{...rest}
+			ondraft={handleDraft}
+			oncommit={handleCommit}
+			oncancel={handleCancel}
+		/>
 	{:else if field.type === 'enum'}
-		<EnumEditor {field} {label} {...rest} ondraft={handleDraft} oncommit={handleCommit} oncancel={handleCancel} />
+		<EnumEditor
+			{field}
+			{label}
+			{...rest}
+			ondraft={handleDraft}
+			oncommit={handleCommit}
+			oncancel={handleCancel}
+		/>
 	{:else if field.type === 'integer'}
-		<IntegerEditor {field} {label} {...rest} ondraft={handleDraft} oncommit={handleCommit} oncancel={handleCancel} />
+		<IntegerEditor
+			{field}
+			{label}
+			{...rest}
+			ondraft={handleDraft}
+			oncommit={handleCommit}
+			oncancel={handleCancel}
+		/>
 	{:else if field.type === 'duration'}
-		<DurationEditor {field} {label} {...rest} ondraft={handleDraft} oncommit={handleCommit} oncancel={handleCancel} />
+		<DurationEditor
+			{field}
+			{label}
+			{...rest}
+			ondraft={handleDraft}
+			oncommit={handleCommit}
+			oncancel={handleCancel}
+		/>
 	{:else if field.type === 'money'}
-		<MoneyEditor {field} {label} {...rest} ondraft={handleDraft} oncommit={handleCommit} oncancel={handleCancel} />
+		<MoneyEditor
+			{field}
+			{label}
+			{...rest}
+			ondraft={handleDraft}
+			oncommit={handleCommit}
+			oncancel={handleCancel}
+		/>
 	{:else if field.type === 'date' || field.type === 'datetime'}
-		<DateEditor {field} {label} {...rest} ondraft={handleDraft} oncommit={handleCommit} oncancel={handleCancel} />
+		<DateEditor
+			{field}
+			{label}
+			{...rest}
+			ondraft={handleDraft}
+			oncommit={handleCommit}
+			oncancel={handleCancel}
+		/>
 	{:else if field.type === 'period' || field.type === 'dateperiod'}
-		<PeriodEditor {field} {label} {...rest} ondraft={handleDraft} oncommit={handleCommit} oncancel={handleCancel} />
+		<PeriodEditor
+			{field}
+			{label}
+			{...rest}
+			ondraft={handleDraft}
+			oncommit={handleCommit}
+			oncancel={handleCancel}
+		/>
 	{:else if field.type === 'reference'}
-		<ReferenceEditor {field} {label} {...rest} ondraft={handleDraft} oncommit={handleCommit} oncancel={handleCancel} />
+		<ReferenceEditor
+			{field}
+			{label}
+			{...rest}
+			ondraft={handleDraft}
+			oncommit={handleCommit}
+			oncancel={handleCancel}
+		/>
 	{:else if field.type === 'color'}
-		<ColorEditor {field} {label} {...rest} ondraft={handleDraft} oncommit={handleCommit} oncancel={handleCancel} />
+		<ColorEditor
+			{field}
+			{label}
+			{...rest}
+			ondraft={handleDraft}
+			oncommit={handleCommit}
+			oncancel={handleCancel}
+		/>
 	{:else}
 		<!-- `string`, `phone`, `url` — the bare text input. -->
-		<TextEditor {field} {label} {...rest} ondraft={handleDraft} oncommit={handleCommit} oncancel={handleCancel} />
+		<TextEditor
+			{field}
+			{label}
+			{...rest}
+			ondraft={handleDraft}
+			oncommit={handleCommit}
+			oncancel={handleCancel}
+		/>
 	{/if}
 </div>
 

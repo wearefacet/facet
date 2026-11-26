@@ -12,15 +12,12 @@
 	import type { CellEditorProps, CommitMove } from './types.js';
 	import { coerceScalar } from '../coerce.js';
 
-	let { field, value, seed = null, label, ondraft, oncommit, oncancel }: CellEditorProps =
-		$props();
+	let { field, value, seed = null, label, ondraft, oncommit, oncancel }: CellEditorProps = $props();
 
 	// svelte-ignore state_referenced_locally — seed-only: the editor mounts
 	// fresh per open; the draft starts from the cell's value and the seed
 	// char, then the input owns it.
-	let draft = $state(
-		seed ?? (value == null ? '' : String(value))
-	);
+	let draft = $state(seed ?? (value == null ? '' : String(value)));
 	let error = $state<string | null>(null);
 
 	const ariaLabel = $derived(label ?? field.title ?? field.key);

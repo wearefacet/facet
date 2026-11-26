@@ -13,8 +13,7 @@
 	import { coerceScalar } from '../coerce.js';
 	import { parseDuration } from '$lib/components/primitives/forms/durationMath.js';
 
-	let { field, value, seed = null, label, ondraft, oncommit, oncancel }: CellEditorProps =
-		$props();
+	let { field, value, seed = null, label, ondraft, oncommit, oncancel }: CellEditorProps = $props();
 
 	// svelte-ignore state_referenced_locally — seed-only: the editor mounts
 	// fresh per open; the draft starts from the cell's value and the seed

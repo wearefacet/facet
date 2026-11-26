@@ -31,7 +31,10 @@
 	// svelte-ignore state_referenced_locally — seed-only: the highlight
 	// starts on the stored value's option, then the keyboard owns it.
 	let active = $state(
-		Math.max(0, (field.values ?? []).findIndex((e) => e.key === (typeof value === 'string' ? value : '')))
+		Math.max(
+			0,
+			(field.values ?? []).findIndex((e) => e.key === (typeof value === 'string' ? value : ''))
+		)
 	);
 
 	const ariaLabel = $derived(label ?? field.title ?? field.key);
@@ -43,7 +46,9 @@
 		currentKey ? field.values?.find((e) => e.key === currentKey) : undefined
 	);
 	const currentLabel = $derived(currentKey ? (currentEntry?.label ?? humanize(currentKey)) : '');
-	const currentColor = $derived(currentKey ? (currentEntry?.color ?? 'var(--text-3)') : 'transparent');
+	const currentColor = $derived(
+		currentKey ? (currentEntry?.color ?? 'var(--text-3)') : 'transparent'
+	);
 
 	/** The declared values narrowed by the draft — key or label, either case. */
 	const options = $derived.by(() => {
@@ -51,8 +56,7 @@
 		const q = draft.trim().toLowerCase();
 		if (q === '') return values;
 		return values.filter(
-			(e) =>
-				e.key.toLowerCase().includes(q) || (e.label ?? '').toLowerCase().includes(q)
+			(e) => e.key.toLowerCase().includes(q) || (e.label ?? '').toLowerCase().includes(q)
 		);
 	});
 
@@ -152,8 +156,8 @@
 				// mousedown keeps the input's focus from blurring first.
 				e.preventDefault();
 				clearAll();
-			}}
-		>✕</button>
+			}}>✕</button
+		>
 	</span>
 {/if}
 <input

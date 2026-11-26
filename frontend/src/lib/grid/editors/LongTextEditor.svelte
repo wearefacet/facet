@@ -12,8 +12,7 @@
 	import type { CellEditorProps, CommitMove } from './types.js';
 	import { coerceScalar } from '../coerce.js';
 
-	let { field, value, seed = null, label, ondraft, oncommit, oncancel }: CellEditorProps =
-		$props();
+	let { field, value, seed = null, label, ondraft, oncommit, oncancel }: CellEditorProps = $props();
 
 	// svelte-ignore state_referenced_locally — seed-only: the editor mounts
 	// fresh per open; the draft starts from the cell's value and the seed
@@ -67,8 +66,7 @@
 	class:invalid={error != null}
 	title={error ?? undefined}
 	oninput={publish}
-	onkeydown={handleKeydown}
-></textarea>
+	onkeydown={handleKeydown}></textarea>
 
 <style>
 	.cell-textarea {

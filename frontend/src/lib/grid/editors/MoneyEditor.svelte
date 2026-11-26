@@ -84,55 +84,55 @@
 	<MoneyInput bind:value={draft} preferredCurrency={field.currency} />
 </div>
 
-	<style>
-		.money-editor {
-			flex: 1;
-			min-width: 0;
-			height: 100%;
-			min-height: 0;
-			display: flex;
-			align-items: center;
-		}
+<style>
+	.money-editor {
+		flex: 1;
+		min-width: 0;
+		height: 100%;
+		min-height: 0;
+		display: flex;
+		align-items: center;
+	}
 
-		/* The cell provides the frame — flatten the input's own box into it.
+	/* The cell provides the frame — flatten the input's own box into it.
 		   Every level carries an explicit height so the amount input spans the
 		   frame: a percentage height against the box's content height resolves
 		   short and parks the number at the top. */
-		.money-editor :global(.money-input-wrap) {
-			flex: 1;
-			min-width: 0;
-			height: 100%;
-			min-height: 0;
-		}
+	.money-editor :global(.money-input-wrap) {
+		flex: 1;
+		min-width: 0;
+		height: 100%;
+		min-height: 0;
+	}
 
-		.money-editor :global(.money-input-box) {
-			border: none;
-			background: none;
-			padding: 0;
-			height: 100%;
-			min-height: 0;
-			box-shadow: none;
-		}
+	.money-editor :global(.money-input-box) {
+		border: none;
+		background: none;
+		padding: 0;
+		height: 100%;
+		min-height: 0;
+		box-shadow: none;
+	}
 
-		.money-editor :global(.money-currency) {
-			height: 100%;
-			gap: 4px;
-			padding: 0 7px;
-		}
+	.money-editor :global(.money-currency) {
+		height: 100%;
+		gap: 4px;
+		padding: 0 7px;
+	}
 
-		.money-editor :global(.money-currency-symbol) {
-			font-size: 12px;
-		}
+	.money-editor :global(.money-currency-symbol) {
+		font-size: 12px;
+	}
 
-		.money-editor :global(.money-currency-code) {
-			font-size: 11px;
-		}
+	.money-editor :global(.money-currency-code) {
+		font-size: 11px;
+	}
 
-		.money-editor :global(.money-amount) {
-			font-family: var(--font-mono);
-			font-size: 13px;
-			padding: 0;
-			height: 100%;
-			min-height: 0;
-		}
-	</style>
+	.money-editor :global(.money-amount) {
+		font-family: var(--font-mono);
+		font-size: 13px;
+		padding: 0;
+		height: 100%;
+		min-height: 0;
+	}
+</style>
