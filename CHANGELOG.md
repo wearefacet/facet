@@ -2,16 +2,49 @@
 
 Notable changes to Facet. The project is pre-1.0: a release can contain breaking changes.
 
-## Unreleased
+## 0.2.2 — beta (2026-11-26)
+
+Workspace authoring and a security sweep. A new doctype starts with zero collection views, kanban boards gain per-view lane control and card moves, forms edit multi-reference fields as chips, and the 13 confirmed findings of the 2026-11-25 external security review are closed.
+
+**Deployment notes**
+
+- No new migration file.
+- Compose deployments require `JWT_SIGNING_KEY` — a P-256 private key in PEM form (see `docker/.env.example`); the stack refuses to start without it. The backend reads the variable straight from the environment: without it, every boot minted a temporary signing key and each restart invalidated outstanding access tokens.
+- The Caddy frontend now sets HSTS, `nosniff`, a content-security policy, and anti-framing headers; self-managed reverse proxies may want the same.
+- The embedded seed corpus changed (email-id mentions). The next boot after the rebuild reconciles the drifted `core.Comment` script — no action beyond the normal rebuild and restart.
+
+### Security
+
+- iam — route identity comes from the verified auth context; every JWT claim read verifies the ES256 signature; change-password gains a per-account throttle; `/Api/iam/refresh` refuses app-scoped sessions; one live MFA challenge per account with a creation cap, and lockout blocks all.
+- document — the field-visibility gate runs on filters and sorting (`403`) on the list and export paths; per-document sidecar handlers bind the sidecar target to the URL host record (non-disclosing `404`).
+- oauth — `allowed_origins` validates at create and update (a bare origin, `https` on any host, `http` on loopback only); the MCP branch re-checks the redirect shape at consent and at code issue.
+- lua — `string.find` / `match` / `gmatch` / `gsub` refuse an over-size subject or an over-complex pattern (more than 8 quantifiers) before the C matcher runs, closing the pattern-match time-limit escape.
+- webhook — the transport dials the gate-checked IP while keeping the hostname for SNI and `Host`, closing the DNS-rebinding window.
+- frontend — chat markdown applies a link and image scheme allowlist.
 
 ### Workspace UI
 
 - **No default collection view.** A new doctype starts with zero views. The listing shows a starter screen — one card per layout (table, kanban, calendar) — that opens the view editor with the surface preselected; a view created there starts as a **personal** view. Without `create` permission on views the starter shows a note. Views created by earlier releases (the seeded `All Records`) remain; deleting the last view now stays deleted — the boot seed no longer recreates it.
 - The doctype `/check` report (and the domain-builder agent's check tools) carries an `:info` notice — not a warning — when a doctype has no collection view.
+- The grants editor renders named-action pills on child doctypes too. A custom action declared on a member-of child was ungrantable through the UI — the app token's effective scope never carried it and every invocation answered `403`. Activating a pill on an inherited child keeps the inherited level.
+- **Kanban lane control and card moves.** A values-mode board orders and hides lanes per saved view (`config.kanban.lane_order`, `hidden_lanes`), and cards move between lanes by drag & drop when the view opts in (`allow_move` — absent keeps the board read-only, so deployed views are unaffected). A move writes the target lane's value through the document update path, gated on the viewer's update permission; lanes without a single writable `field__eq` filter accept no drops. Moves are optimistic and revert with a toast on failure. The kanban editor gains the lane list (visibility toggle, move up/down); hiding every lane blocks save.
+- **Multi-reference fields edit as a chip list.** A `collection: true` reference field renders each stored target as a removable, hydrated capsule, with an embedded picker as the add control; a repeated target shows the same duplicate message the backend enforces. The fallback form renders it for `collection: true` references and arrays of reference too. Array bindings inside form templates stay read-only — `collection: true` is the supported declaration for an editable multi-reference field.
+- Escape closes the peek drawer. When the drawer was reached through a reference, the first press walks back one entry of the nav stack and the next closes the drawer; loading, error, and tombstone states close too. An Escape a picker inside the drawer already handled is untouched.
+- Reference picker — `Enter` no longer wipes a fresh pick (the chip row answers only its own keyboard events), focus moves to the chip row so the keyboard flow keeps working, and an embedded picker without a `Field` label names its combobox from the placeholder.
 
 ### HTTP API
 
 - Child lists paginate. `GET /Api/:domain/:doctype/:id/:rel` now forwards the full list grammar — `page`, `items`, `sort`, `filters`, `select`, `scope`, `deleted`, `aggregate`, `field` — with the flat route's validation and defaults (`page: 1`, `items: 100`). Before, the route fixed page 1 at 1000 items and ignored every other parameter. Clients that passed `page` / `sort` to a child list and relied on the fixed answer must pass no parameters to keep the old (unsorted, first-page) shape. Child-list ETags changed value once (the fingerprint now covers page/items/sort); clients holding `If-None-Match` take one 200, then stable. Sidecar lists stay unpaginated.
+
+### Audit
+
+- Successful token refreshes stop writing `iam.LoginEvent` rows. A refresh ran on the 15-minute access-token clock, so an active session wrote four permanent rows an hour — rows nothing consumed and that 180-day retention never freed (a `LoginEvent` holds a single mutation, and the compaction cut refuses `idx <= 1`). One log line per refresh (`facet.iam.refresh` / `facet.oauth.refresh`) carries the trace instead; the security events (`refresh_reuse`, `refresh_failed`, lockout) stay. Code-only: historical rows are untouched.
+
+### Fixed
+
+- `GET /Api/:domain/Domain/:id/check` answered `500` (`DB::ColumnTypeMismatchError`) when a doctype's view declared a children-source relation — the view-template validator ran its nested query through a result set that was still open and desynced the connection.
+- A denied draft-from names the requirement — "You must be an editor of domain 'X' to create a draft from it" — instead of a bare `403`.
+- Mentions notify email-id accounts. Account ids are the account's lowercased email, but the comment scan, the notification queue, and document links all assumed a 26-char ULID, so a mention of a real account never notified. No retroactivity: an existing comment notifies when its body is edited again.
 
 ## 0.2.1 — beta (2026-11-24)
 
