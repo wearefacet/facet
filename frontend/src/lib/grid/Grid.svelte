@@ -22,6 +22,7 @@
 -->
 
 <script lang="ts" generics="T">
+	import { tick } from 'svelte';
 	import * as m from '$lib/paraglide/messages';
 	import { Checkbox } from 'bits-ui';
 	import Pagination from '$lib/components/primitives/navigation/Pagination.svelte';
@@ -45,6 +46,8 @@
 	import { createWriteQueue } from './writeQueue.js';
 	import { valueEquals, coercePaste } from './coerce.js';
 	import { WRITABLE_FIELD_TYPES } from './fieldTypes.js';
+	import { missingRequired, newRowBody, newRowDefaults, draftDirty } from './newRow.js';
+	import { renderValidationError } from '$lib/datasource/validationMessages.js';
 	import CellEditor from './editors/CellEditor.svelte';
 	import type { CommitMove } from './editors/types.js';
 	import type { GridColumn, GridProps } from './types.js';
@@ -67,7 +70,8 @@
 		pageSize = 25,
 		onRowClick = undefined,
 		onReferenceClick = undefined,
-		toolbarActions = undefined
+		toolbarActions = undefined,
+		allowCreate = false
 	}: GridProps<T> = $props();
 
 	// ── Layout math — sticky frozen columns ──────────────────────────────
@@ -173,8 +177,9 @@
 				total = counted.meta.count;
 				more = counted.meta.more;
 			}
-			// A refetch that shrank the data pulls the selection back in bounds.
-			selection.clampTo(items.length - 1, columns.length - 1);
+			// A refetch that shrank the data pulls the selection back in bounds
+			// (the ghost row counts as a bound when the new-row line is on).
+			selection.clampTo(canCreateRow ? items.length : items.length - 1, columns.length - 1);
 			// The re-query never clobbers a cell in flight or under a local
 			// error: the pending values re-apply on top of the refreshed rows,
 			// and the open editor stays open (its draft is its own).
@@ -282,11 +287,13 @@
 	const maxRow = $derived(items.length - 1);
 	const maxCol = $derived(columns.length - 1);
 
-	/** The row item the focus cell sits on — Enter/Space open its peek. */
+	/** The row item the focus cell sits on — Enter/Space open its peek.
+	 *  `null` on the ghost row: a pending new row has nothing to peek. */
 	const focusItem = $derived.by<T | null>(() => {
 		const focus = selection.focus;
 		if (!focus || items.length === 0) return null;
-		return items[Math.min(focus.row, items.length - 1)] ?? null;
+		if (focus.row >= items.length) return null;
+		return items[focus.row] ?? null;
 	});
 
 	function cellMouseDown(r: number, c: number, e: MouseEvent) {
@@ -304,9 +311,9 @@
 		// never reaches here (the editor's shell stops it).
 		pressArmed = true;
 		if (e.shiftKey) {
-			selection.extendTo(r, c, maxRow, maxCol);
+			selection.extendTo(r, c, navMaxRow, maxCol);
 		} else {
-			selection.setFocus(r, c, maxRow, maxCol);
+			selection.setFocus(r, c, navMaxRow, maxCol);
 		}
 		refocusCell(r, c);
 	}
@@ -319,7 +326,7 @@
 		if (!pressArmed) return;
 		if ((e.buttons & 1) === 0) return;
 		if (e.shiftKey) return;
-		selection.extendTo(r, c, maxRow, maxCol);
+		selection.extendTo(r, c, navMaxRow, maxCol);
 	}
 
 	/** Gutter click selects the whole row (all data columns of the row). */
@@ -372,6 +379,201 @@
 	/** The user-gesture counter — one gesture (a cell commit, a flip, a
 	 *  whole pasted block) shares one action id, the undo unit's identity. */
 	let actionSeq = 0;
+
+	// ── The ghost new-row line (`allow_create`) ─────────────────────
+
+	/** The qualified doctype id the `create` grant reads. */
+	const qualifiedName = $derived(doctype ? `${doctype.domain}.${doctype.doctype}` : '');
+
+	/** A 403 on a create locks the line off for the session — the row-403
+	 *  contract (revert, toast, lock). */
+	let createLocked = $state(false);
+
+	/** The ghost row's own grant chain: the view opts in, the schema is
+	 *  loaded, the viewer holds the flat `create` grant, and no 403 locked
+	 *  it off. */
+	const canCreateRow = $derived(
+		allowCreate && doctype !== undefined && !createLocked && can(qualifiedName, 'create')
+	);
+
+	/** The ghost row's index in the selection space — one past the data. */
+	const newRow = $derived(canCreateRow ? items.length : -1);
+
+	/** The navigation bounds include the ghost row; copy/paste keep the
+	 *  real-data bounds (nothing to copy, nothing to PATCH there). */
+	const navMaxRow = $derived(canCreateRow ? items.length : maxRow);
+
+	/** The new-row draft — only committed user values. Declared defaults
+	 *  never enter it: they preview from the schema and the server fills
+	 *  them at create time. */
+	let newDraft = $state<Record<string, unknown>>({});
+
+	/** The rejected create's per-cell messages, keyed by column key — the
+	 *  invalid state that holds until the value is fixed or Esc clears the
+	 *  draft. */
+	let newErrors = $state<Map<string, string>>(new Map());
+
+	/** A create is in flight — the row dims; commits stage into the draft. */
+	let creating = $state(false);
+
+	/** The writable columns' declared defaults — the ghost row's preview. */
+	const newDefaults = $derived(
+		canCreateRow && doctype ? newRowDefaults(columns, doctype.fields) : {}
+	);
+
+	/** The required-no-default fields the draft still misses (column-backed
+	 *  ones — the client gate's only honest scope). */
+	const newMissingKeys = $derived.by<Set<string>>(() => {
+		if (!canCreateRow || !doctype) return new Set();
+		return new Set(missingRequired(newDraft, columns, doctype.fields).map((f) => f.key));
+	});
+
+	const newDirty = $derived(canCreateRow && draftDirty(newDraft));
+
+	/** The first writable column — the clean row's prompt sits there. */
+	const newPromptCol = $derived.by<number>(() => {
+		for (let c = 0; c < columns.length; c++) {
+			if (newCellWritable(columns[c])) return c;
+		}
+		return -1;
+	});
+
+	/** The ghost row's per-column writability — the column flag plus the
+	 *  field gates. The row's grant is the viewer's `create`, not `update`
+	 *  (a create-only role still types the new-row line). */
+	function newCellWritable(col: GridColumn): boolean {
+		if (!doctype || col.editable === false) return false;
+		if (SYSTEM_TS_KEYS.has(col.key)) return false;
+		const field = fieldFor(col);
+		if (!field || field.read_only || field.write_only) return false;
+		return WRITABLE_FIELD_TYPES.has(field.type);
+	}
+
+	/** The value a ghost cell previews — the committed draft value, else
+	 *  the declared default. An explicitly cleared cell shows empty: the
+	 *  body omits the key, so the server refills the default on create. */
+	function newCellValue(key: string): unknown {
+		if (key in newDraft) return newDraft[key];
+		return newDefaults[key];
+	}
+
+	/** Where a ghost commit sends the selection: Tab walks right, Enter
+	 *  stays (the clamp holds the row — Excel's wrap needs a row below
+	 *  that does not exist yet). */
+	function moveAfterNewRowCommit(c: number, move: CommitMove, targetRow: number): void {
+		const nextCol = move === 'right' ? Math.min(maxCol, c + 1) : c;
+		selection.setFocus(targetRow, nextCol, targetRow, maxCol);
+		const f = selection.focus;
+		if (f) refocusCell(f.row, f.col);
+	}
+
+	/**
+	 * One ghost cell's commit — stage into the draft, then create as soon
+	 * as the client gate passes. A blocked create (required fields still
+	 * missing) stays silent after the first heads-up: the missing cells
+	 * carry the inline hint. A refused create (422) keeps the draft under
+	 * error frames — the invalid state holds until the value is fixed (the
+	 * next commit retries) or Esc clears the draft. A 403 reverts the draft
+	 * and locks the line off for the session.
+	 */
+	async function commitNewRowCell(c: number, value: unknown, move: CommitMove): Promise<void> {
+		const col = columns[c];
+		if (!col || !doctype) return;
+		const wasDirty = newDirty;
+		const next = { ...newDraft };
+		if (value === null || value === '') delete next[col.key];
+		else next[col.key] = value;
+		newDraft = next;
+		// A fresh value replaces a failed one — the paste's stale-frame rule.
+		if (newErrors.has(col.key)) {
+			const cleared = new Map(newErrors);
+			cleared.delete(col.key);
+			newErrors = cleared;
+		}
+
+		const missing = missingRequired(newDraft, columns, doctype.fields);
+		if (missing.length > 0) {
+			// One heads-up when the row first blocks; the inline hints on the
+			// missing cells carry the rest (a toast per commit is noise).
+			if (!wasDirty) {
+				toast({ message: m.grid_new_row_fill({ field: missing[0].title ?? missing[0].key }) });
+			}
+			moveAfterNewRowCommit(c, move, newRow);
+			return;
+		}
+
+		const body = newRowBody(newDraft);
+		if (Object.keys(body).length === 0) {
+			moveAfterNewRowCommit(c, move, newRow);
+			return;
+		}
+		// One create at a time: a commit that lands while one flies only
+		// stages — on success the delta PATCH carries it onto the created
+		// row; on failure the draft keeps it for the next attempt.
+		if (creating) {
+			moveAfterNewRowCommit(c, move, newRow);
+			return;
+		}
+
+		creating = true;
+		const action = ++actionSeq;
+		try {
+			const saved = await datasource.create(body as T);
+			// Flatten the created projection onto the row shape, the same
+			// fold `loadData` applies to list items.
+			const meta = saved.meta;
+			const createdRow = {
+				id: meta.id,
+				created_at: meta.created_at,
+				updated_at: meta.updated_at,
+				...saved.data
+			} as T;
+			// The values typed while the create flew stage onto the created
+			// row through the normal write path (undo-able, one gesture).
+			const delta: Record<string, unknown> = {};
+			for (const [key, value] of Object.entries(newDraft)) {
+				if (!valueEquals(body[key], value)) delta[key] = value;
+			}
+			creating = false;
+			newDraft = {};
+			newErrors = new Map();
+			items = [...items, createdRow];
+			const r = items.length - 1;
+			if (Object.keys(delta).length > 0) void commitDiff(r, delta, action);
+			void loadData();
+			// Excel's rhythm: the fresh ghost row below takes the selection.
+			// The tick lets the appended row render first — the refocus
+			// queries the DOM for the moved-ghost cell.
+			void tick().then(() => moveAfterNewRowCommit(c, move, items.length));
+		} catch (err) {
+			creating = false;
+			if (err instanceof DataSourceError && err.status === 403) {
+				newDraft = {};
+				newErrors = new Map();
+				createLocked = true;
+				toast({ message: errorMessage(err, m.common_save_failed()), variant: 'error' });
+				return;
+			}
+			// The refused create keeps the draft on the row: the cells the 422
+			// details name take the error frame; the committed cell falls back
+			// when the failure has no usable field list (the invalid state).
+			const marks = new Map<string, string>();
+			const details = err instanceof DataSourceError ? err.details : undefined;
+			if (details) {
+				for (const detail of details) {
+					if (!detail.field) continue;
+					const key = detail.field.split('.')[0];
+					if (columns.some((column) => column.key === key)) {
+						marks.set(key, renderValidationError(detail));
+					}
+				}
+			}
+			if (marks.size === 0) marks.set(col.key, errorMessage(err, m.common_save_failed()));
+			newErrors = marks;
+			toast({ message: errorMessage(err, m.common_save_failed()), variant: 'error' });
+			moveAfterNewRowCommit(c, move, newRow);
+		}
+	}
 
 	function pendingFor(rowId: string, key: string): CellPending | undefined {
 		return pending.get(rowId)?.get(key);
@@ -430,6 +632,15 @@
 		const focus = selection.focus;
 		if (!focus || editing) return;
 		const col = columns[focus.col];
+		if (!col) return;
+		if (focus.row === newRow) {
+			// The ghost row: writable non-boolean columns take the editor —
+			// the row's grant is `create`, not `update`.
+			if (fieldFor(col)?.type === 'boolean') return;
+			if (!newCellWritable(col)) return;
+			editing = { r: focus.row, c: focus.col, seed };
+			return;
+		}
 		const item = items[focus.row];
 		if (!col || !item) return;
 		if (fieldFor(col)?.type === 'boolean') return; // booleans have no edit mode
@@ -605,6 +816,12 @@
 		const current = editing;
 		closeEditor();
 		if (!current) return;
+		if (current.r === newRow) {
+			// The ghost row's commit stages into the draft and drives the
+			// create attempt — it owns the selection move.
+			void commitNewRowCell(current.c, value, move);
+			return;
+		}
 		void commitCell(current.r, current.c, value, ++actionSeq);
 		if (move === 'down') selection.move(1, 0, false, maxRow, maxCol);
 		else if (move === 'right') selection.move(0, 1, false, maxRow, maxCol);
@@ -856,43 +1073,48 @@
 		switch (key) {
 			case 'ArrowDown':
 				e.preventDefault();
-				selection.move(1, 0, extend, maxRow, maxCol);
+				selection.move(1, 0, extend, navMaxRow, maxCol);
 				focusAfterMove();
 				break;
 			case 'ArrowUp':
 				e.preventDefault();
-				selection.move(-1, 0, extend, maxRow, maxCol);
+				selection.move(-1, 0, extend, navMaxRow, maxCol);
 				focusAfterMove();
 				break;
 			case 'ArrowRight':
 				e.preventDefault();
-				selection.move(0, 1, extend, maxRow, maxCol);
+				selection.move(0, 1, extend, navMaxRow, maxCol);
 				focusAfterMove();
 				break;
 			case 'ArrowLeft':
 				e.preventDefault();
-				selection.move(0, -1, extend, maxRow, maxCol);
+				selection.move(0, -1, extend, navMaxRow, maxCol);
 				focusAfterMove();
 				break;
 			case 'Home':
 				e.preventDefault();
-				selection.setFocus(0, 0, maxRow, maxCol);
+				selection.setFocus(0, 0, navMaxRow, maxCol);
 				focusAfterMove();
 				break;
 			case 'End':
 				e.preventDefault();
-				selection.setFocus(maxRow, 0, maxRow, maxCol);
+				selection.setFocus(navMaxRow, 0, navMaxRow, maxCol);
 				focusAfterMove();
 				break;
 			case 'Enter':
 				// Editing takes Enter over on a writable cell; elsewhere it
-				// keeps opening the row like the table's Enter does.
+				// keeps opening the row like the table's Enter does. The ghost
+				// row's writable cells take the editor from the create grant.
 				if (
 					focus &&
-					focusCol &&
-					focusRowItem &&
-					cellWritable(focusRowItem, focusCol) &&
-					fieldFor(focusCol)?.type !== 'boolean'
+					((focus.row === newRow &&
+						focusCol &&
+						newCellWritable(focusCol) &&
+						fieldFor(focusCol)?.type !== 'boolean') ||
+						(focusRowItem &&
+							focusCol &&
+							cellWritable(focusRowItem, focusCol) &&
+							fieldFor(focusCol)?.type !== 'boolean'))
 				) {
 					e.preventDefault();
 					openEditor(null);
@@ -923,20 +1145,30 @@
 				}
 				break;
 			case 'Escape':
-				// A failed cell reverts first; the next Escape clears the range.
-				revertErrorCells();
-				selection.clear();
+				// The pending new row clears first — Esc is the row-level
+				// cancel: the draft and its error frames drop, the prompt
+				// returns. With no draft, the failed cells revert and the
+				// range clears (the existing contract).
+				if (newDirty || newErrors.size > 0) {
+					newDraft = {};
+					newErrors = new Map();
+				} else {
+					revertErrorCells();
+					selection.clear();
+				}
 				break;
 			default:
 				// A printable char starts the editor with that char — the
 				// spreadsheet's type-to-replace. Booleans have no edit mode.
+				// The ghost row takes the same path from the create grant.
 				if (
 					key.length === 1 &&
 					focus &&
 					focusCol &&
-					focusRowItem &&
-					cellWritable(focusRowItem, focusCol) &&
-					fieldFor(focusCol)?.type !== 'boolean'
+					fieldFor(focusCol)?.type !== 'boolean' &&
+					(focus.row === newRow
+						? newCellWritable(focusCol)
+						: focusRowItem != null && cellWritable(focusRowItem, focusCol))
 				) {
 					e.preventDefault();
 					openEditor(key);
@@ -1080,7 +1312,7 @@
 			class="grid"
 			style={`--grid-cols: ${gridTemplate}; --row-h: ${ROW_HEIGHT}px; --mark-fade-ms: ${MARK_FADE_MS}ms;`}
 			role="grid"
-			aria-rowcount={items.length}
+			aria-rowcount={items.length + (canCreateRow ? 1 : 0)}
 			aria-colcount={columns.length + (selectable ? 1 : 0)}
 			tabindex="0"
 			onkeydown={handleKeydown}
@@ -1246,6 +1478,107 @@
 					<div class="g-empty">{m.table_records_empty()}</div>
 				{/if}
 			{/each}
+
+			<!-- ghost new-row line (`allow_create`) -->
+			{#if canCreateRow}
+				{@const newRowLabel = doctype?.label ?? doctype?.doctype ?? ''}
+				<div
+					class="g-row g-new"
+					class:g-new-creating={creating}
+					role="row"
+					aria-rowindex={items.length + 1}
+				>
+					<div
+						class="g-cell gutter new-gutter frozen"
+						class:frozen-last={lastSticky === 'gutter'}
+						style="left: 0"
+						aria-hidden="true"
+					>
+						+
+					</div>
+					{#if selectable}
+						<div
+							class="g-cell check frozen"
+							class:frozen-last={lastSticky === 'check'}
+							style={`left: ${GUTTER_WIDTH}px`}
+							role="gridcell"
+							tabindex="-1"
+							aria-colindex={1}
+						></div>
+					{/if}
+					{#each columns as col, c (col.key)}
+						{@const sticky = frozenLefts[c]}
+						{@const frozenLast =
+							sticky != null && c === Math.min(Math.max(0, frozen), columns.length) - 1}
+						{@const inRange =
+							selRange != null &&
+							selRange.rowStart <= newRow &&
+							newRow <= selRange.rowEnd &&
+							selRange.colStart <= c &&
+							c <= selRange.colEnd}
+						{@const isFocus =
+							inRange &&
+							selRange!.rowStart === newRow &&
+							selRange!.rowEnd === newRow &&
+							selRange!.colStart === c &&
+							selRange!.colEnd === c}
+						{@const errText = newErrors.get(col.key)}
+						{@const value = newCellValue(col.key)}
+						{@const hasValue = value !== undefined && value !== null && value !== ''}
+						{@const isEditing = editing?.r === newRow && editing?.c === c}
+						<div
+							class="g-cell new-cell {colAlign(col)}"
+							class:frozen={sticky != null}
+							class:frozen-last={frozenLast}
+							class:in-range={inRange && !isFocus}
+							class:focused={isFocus}
+							class:cell-error={errText != null}
+							class:editing={isEditing}
+							style={sticky != null ? `left: ${sticky}px` : ''}
+							role="gridcell"
+							tabindex="-1"
+							aria-selected={inRange}
+							aria-colindex={c + 1}
+							data-row={newRow}
+							data-col={c}
+							title={errText ?? undefined}
+							onmousedown={(e) => cellMouseDown(newRow, c, e)}
+							onmouseenter={(e) => cellMouseEnter(newRow, c, e)}
+							ondblclick={() => openEditor(null)}
+						>
+							{#if isEditing}
+								<CellEditor
+									field={fieldFor(col)!}
+									label={col.label}
+									{value}
+									seed={editing!.seed}
+									{driver}
+									oncommit={handleEditorCommit}
+									oncancel={handleEditorCancel}
+									bind:this={editorApi}
+								/>
+							{:else if hasValue}
+								<FieldValue
+									{value}
+									fieldType={fieldFor(col)?.type ?? null}
+									fieldDef={fieldFor(col)}
+								/>
+							{:else if newMissingKeys.has(col.key) && newDirty}
+								<!-- The invalid state's inline cue: the row stages values
+								     but cannot create until the required field is named
+								     (the design's "created once named"). -->
+								<span class="new-hint">
+									{m.grid_new_row_missing({ field: col.label ?? col.key })}
+								</span>
+							{:else if c === newPromptCol && !newDirty}
+								<span class="new-hint">
+									{m.grid_new_row_prompt({ doctype: newRowLabel })}
+								</span>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			{/if}
 
 			<!-- Σ row -->
 			{#if summaryColumns.length > 0 && items.length > 0}
@@ -1664,6 +1997,33 @@
 	button.cell-bool:disabled {
 		cursor: default;
 		opacity: 0.6;
+	}
+
+	/* ── Ghost new-row line ── */
+
+	/* The `+` gutter carries the create affordance colour. */
+	.new-gutter {
+		color: var(--accent-ink);
+		font-size: 15px;
+	}
+
+	/* Ghost values read one step dimmer than real data — they are what the
+	   create will send, not what the collection holds. */
+	.new-cell {
+		color: var(--text-2);
+	}
+
+	.new-hint {
+		font-style: italic;
+		color: var(--text-3);
+		font-size: 13px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	/* A create in flight dims the whole line — the values are not settled. */
+	.g-new-creating .g-cell {
+		opacity: 0.55;
 	}
 
 	/* ── Σ row ── */

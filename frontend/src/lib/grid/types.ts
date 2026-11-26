@@ -71,6 +71,10 @@ export interface GridProps<T> {
 	pageSize?: number;
 	/** Open the row's peek drawer — row click, Enter, or Space. */
 	onRowClick?: (item: T) => void;
+	/** The ghost new-row line under the rows (`config.grid.allow_create`).
+	 *  The component ANDs it with the viewer's `create` grant; a denied
+	 *  create (403) locks the line off for the session. */
+	allowCreate?: boolean;
 	/** Click handler forwarded to reference capsules (peek navigation). */
 	onReferenceClick?: ReferenceClickHandler;
 	/** Snippet receiving the toolbar state (the view-export controls). */

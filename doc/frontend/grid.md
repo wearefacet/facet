@@ -31,6 +31,7 @@ them), but no app surface mounts the grid yet.
   inputs (`CellEditor` shell + one editor per type).
 - `frontend/src/lib/grid/fieldTypes.ts` — the field-type capability sets both the surface
   and the editor read (see below).
+- `frontend/src/lib/grid/newRow.ts` — the ghost new-row line's draft model (pure logic).
 - `frontend/src/lib/grid/Grid.stories.svelte` — Storybook stories (component tests).
 - `frontend/src/lib/components/primitives/data/CollectionViewGridForm.svelte` — the view
   editor's grid form.
@@ -109,6 +110,23 @@ footer pattern (range, rows-per-page, pagination). On top of that it adds:
   not fade); each touched row sends one PATCH. One paste is one undo unit — a single
   ⌘Z reverts the whole block, ⌘⇧Z re-applies it. After the paste the selection covers
   the pasted block.
+- **New-row line** — the ghost row under the rows (`grid.allow_create`, AND-ed with the
+  viewer's `create` grant): Excel's "type in the row below the data". The clean row shows the
+  `+` gutter and an italic "New {doctype} — type to create" prompt on the first writable
+  column; declared defaults preview faintly in their cells. Typing opens the per-type editor
+  from the create grant (not `update` — a create-only role still uses the line; booleans are
+  inert until the row exists). A commit stages into the draft, and the create fires as soon as
+  the draft satisfies the required-no-default fields the columns expose (the client gate — the
+  server re-checks everything on the POST, and its defaults fill the rest). A blocked commit
+  stays silent after one heads-up toast: the missing cells carry an italic "{field} required"
+  hint, the design's "created once named". A refused create (422) keeps the draft under error
+  frames — the invalid state holds until the value is fixed (the next commit retries; the
+  cells the 422 `details` name take the frame, rendered through the validation catalogue) or
+  Esc clears the draft (the row-level cancel). A 403 reverts the draft, toasts, and locks the
+  line off for the session — the row-403 contract. On success the created row appends, a
+  refetch restores the canonical order, the Σ row refreshes, and the fresh ghost line below
+  takes the selection. Values typed while the create flew ride a follow-up PATCH onto the
+  created row. Creates are not undo units — ⌘Z after a create walks the last PATCH group.
 - **Σ row** — columns with a `summary` run one parallel `list({ aggregate, field })` call
   each over the whole filtered set (`summary.ts`); `count` summaries share one call. A
   failed aggregate leaves its Σ cell empty.
@@ -183,9 +201,10 @@ validation). A `grid` surface passes the backend gate unvalidated today; the fro
   changed them) with one error toast per press — `grid_undo_skipped` / `grid_redo_skipped`.
 - Undo of an action whose PATCH is still in flight is safe: the queue serializes per row,
   and the straggler op's entry lands after the press — the next ⌘Z picks it up.
-- Fill down and the ghost new-row line are later phases; `allow_create` is authored
-  already and stays off unless the view opts in.
-- Paste reads the ISO grammar and the copy forms — the stored raw values, ` → ` ranges,
+- Fill down is a later phase. The ghost new-row line ships (`allow_create` + the viewer's
+  `create` grant); paste-overflow into the new-row line — the design's paste preview — is the
+  next phase of it.
+- Paste reads the ISO grammar and the copy forms — the stored raw values, `→` ranges,
   and locale-shaped decimals. Excel's localized date text (`30/09/2026`) needs a reformat
   before it lands.
 - The enum chip carries the value colour in the tinted background and dot, and the label in

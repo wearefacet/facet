@@ -343,6 +343,58 @@
 		return storyArgs({ driver: bundle.driver, ds: failing }, one('title', 'Opportunité', '280px'));
 	}
 
+	/** The new-row stories' strip — the required title, an enum, and a
+	 *  money column (enough to stage a partial draft). */
+	const newColumns: GridColumn[] = [
+		{ key: 'title', label: 'Opportunité', width: '240px' },
+		{ key: 'status', label: 'Statut', width: '170px' },
+		{ key: 'value', label: 'CA prévisionnel', width: '180px', align: 'right' }
+	];
+
+	/**
+	 * The new-row stories' arg set — the ghost line on. `failCreate`
+	 * shadows `create` with a 422 rejection for the invalid-state story.
+	 * The plays assert through the store (row counts, content) — the mock
+	 * keeps insertion order with no sort, so a created row appends.
+	 */
+	function newRowArgs(failCreate = false) {
+		const bundle = editDriver();
+		const ds = Object.create(bundle.ds) as DataSource<Record<string, unknown>>;
+		if (failCreate) {
+			ds.create = (content: Record<string, unknown>) => {
+				const title = String(content.title ?? '');
+				if (title.toLowerCase().includes('boom')) {
+					return Promise.reject(
+						new DataSourceError(422, 'Ce titre est déjà pris', [
+							{ field: 'title', message: 'Ce titre est déjà pris', code: 'unique' }
+						])
+					);
+				}
+				return bundle.ds.create(content);
+			};
+		}
+		return { ...storyArgs({ driver: bundle.driver, ds }, newColumns), allowCreate: true };
+	}
+
+	/** The ghost row's cells — row 8 in the seeded fixture. */
+	function newCell(canvasElement: HTMLElement, c: number): HTMLElement {
+		return canvasElement.querySelector('[data-row="8"]' + `[data-col="${c}"]`)!;
+	}
+
+	/** The store's document count — the create's observable outcome. */
+	async function rowCount(ds: DataSource<unknown>): Promise<number> {
+		const res = await ds.list();
+		return res.meta.count;
+	}
+
+	/** The created document's id, found by a title the play just wrote. */
+	async function createdId(ds: DataSource<unknown>, title: string): Promise<string> {
+		const res = await ds.list();
+		const hit = res.data.find((item) => (item.data as Record<string, unknown>).title === title);
+		if (!hit) throw new Error(`No created document with title "${title}"`);
+		return hit.meta.id;
+	}
+
 	/** A driver with the GridDeal schema and zero documents — the empty state. */
 	function makeEmptyDriver(): MockDataDriver {
 		const d = new MockDataDriver();
@@ -1196,5 +1248,136 @@ its writes never // leak into another story's seed. The edited column is always 
 			headers.find((h) => h.textContent?.includes('CA pondéré'))?.querySelector('.fx')
 		).toBeTruthy();
 		expect(canvasElement.querySelector('[data-row="0"] button.cell-bool')).toBeTruthy();
+	}}
+/>
+
+<Story
+	name="NewRow"
+	args={{ ...newRowArgs() }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+		// The ghost line under the eight rows: the `+` gutter and the prompt
+		// on the first writable column.
+		const prompt = canvas.getByText(/New GridDeal — type to create/);
+		expect(prompt).toBeTruthy();
+		// Click the ghost title cell and type — the editor opens with the
+		// seed char (the grid's type-to-replace), Enter commits.
+		await userEvent.click(newCell(canvasElement, 0));
+		await userEvent.keyboard('Deal nouvelle ligne');
+		await userEvent.keyboard('{Enter}');
+		await sleep(200);
+		// The row landed in the store, and the fresh ghost line took the
+		// prompt back (Excel's type-next-row rhythm).
+		expect(await rowCount(args.datasource)).toBe(9);
+		const bodyRows = canvasElement.querySelectorAll('.g-row:not(.g-head):not(.g-foot):not(.g-new)');
+		expect(bodyRows).toHaveLength(9);
+		expect(bodyRows[8].textContent).toContain('Deal nouvelle ligne');
+		expect(canvas.getByText(/New GridDeal — type to create/)).toBeTruthy();
+	}}
+/>
+
+<Story
+	name="NewRowRequiredStage"
+	args={{ ...newRowArgs() }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+		// Excel lets the row exist before it is complete; the create cannot.
+		// A commit into a non-required cell stages the draft and holds: one
+		// heads-up toast, the required cell carries the inline hint, and no
+		// create call goes out. The money column commits with Enter — no
+		// portalled picker to drive. MoneyInput does not auto-focus its
+		// amount input on open, so the play targets the input directly (the
+		// MoneyEdit story's pattern).
+		await userEvent.click(newCell(canvasElement, 2));
+		await userEvent.keyboard('1');
+		const amountInput = newCell(canvasElement, 2).querySelector<HTMLInputElement>(
+			'input.money-amount'
+		)!;
+		await userEvent.clear(amountInput);
+		await userEvent.type(amountInput, '1250.5');
+		await userEvent.keyboard('{Enter}');
+		await sleep(150);
+		// No create yet: the store holds eight documents, the required cell
+		// carries the inline hint, and the staged value previews in its own.
+		expect(await rowCount(args.datasource)).toBe(8);
+		expect(canvas.getByText('Opportunité required')).toBeTruthy();
+		expect(newCell(canvasElement, 2).textContent).toContain('1,250.50');
+		// Naming the required field fires the create — the row lands with
+		// both staged values, and the fresh ghost line returns.
+		await userEvent.click(newCell(canvasElement, 0));
+		await userEvent.keyboard('Deal nommée');
+		await userEvent.keyboard('{Enter}');
+		await sleep(200);
+		expect(await rowCount(args.datasource)).toBe(9);
+		const created = await stored(args.datasource, await createdId(args.datasource, 'Deal nommée'));
+		expect(created.title).toBe('Deal nommée');
+		expect(created.value).toEqual({ value: '1250.5', currency: 'USD' });
+		const bodyRows = canvasElement.querySelectorAll('.g-row:not(.g-head):not(.g-foot):not(.g-new)');
+		expect(bodyRows).toHaveLength(9);
+		expect(bodyRows[8].textContent).toContain('Deal nommée');
+		expect(canvas.getByText(/New GridDeal — type to create/)).toBeTruthy();
+	}}
+/>
+
+<Story
+	name="NewRowInvalid"
+	args={{ ...newRowArgs(true) }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		// The server refuses the create (unique title). The invalid state
+		// holds: the draft stays on the ghost line under an error frame with
+		// the refusal as its tooltip, and the row count does not move. The
+		// tooltip text renders through the validation catalogue (the seam
+		// renderer), not the raw backend message.
+		await userEvent.click(newCell(canvasElement, 0));
+		await userEvent.keyboard('Boom deal');
+		await userEvent.keyboard('{Enter}');
+		await sleep(200);
+		expect(await rowCount(args.datasource)).toBe(8);
+		const ghostTitle = newCell(canvasElement, 0);
+		expect(ghostTitle.className).toContain('cell-error');
+		expect(ghostTitle.getAttribute('title')).toBe('This value is already in use.');
+		expect(ghostTitle.textContent).toContain('Boom deal');
+		// Fixing the value re-attempts on the next commit — the refusal
+		// frame drops and the row lands.
+		await userEvent.click(newCell(canvasElement, 0));
+		await userEvent.keyboard('Deal corrigée');
+		await userEvent.keyboard('{Enter}');
+		await sleep(200);
+		expect(await rowCount(args.datasource)).toBe(9);
+		expect(canvasElement.querySelector('.g-new .cell-error')).toBeNull();
+		expect(
+			canvasElement.querySelectorAll('.g-row:not(.g-head):not(.g-foot):not(.g-new)')
+		).toHaveLength(9);
+	}}
+/>
+
+<Story
+	name="NewRowCancel"
+	args={{ ...newRowArgs() }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+		// Esc is the row-level cancel: the draft and the inline hints drop,
+		// the prompt returns, and no create went out. MoneyInput does not
+		// auto-focus its amount input on open — target the input directly.
+		await userEvent.click(newCell(canvasElement, 2));
+		await userEvent.keyboard('1');
+		const amountInput = newCell(canvasElement, 2).querySelector<HTMLInputElement>(
+			'input.money-amount'
+		)!;
+		await userEvent.clear(amountInput);
+		await userEvent.type(amountInput, '1250.5');
+		await userEvent.keyboard('{Enter}');
+		await sleep(150);
+		expect(canvas.getByText('Opportunité required')).toBeTruthy();
+		await userEvent.keyboard('{Escape}');
+		await sleep(100);
+		// No create went out, the hint dropped, and the prompt returned.
+		expect(await rowCount(args.datasource)).toBe(8);
+		expect(canvas.queryByText('Opportunité required')).toBeNull();
+		expect(canvas.getByText(/New GridDeal — type to create/)).toBeTruthy();
 	}}
 />
