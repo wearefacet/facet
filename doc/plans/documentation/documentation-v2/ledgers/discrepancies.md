@@ -254,3 +254,25 @@ PascalCase; `/metrics` is not).
 Evidence: `src/http/metrics_handler.cr:24`; `src/http/auth_handler.cr:65-68`.
 
 Found by WP 10 (audit A).
+
+## #16 — Filter compiler compiles only via require order
+
+Where: `src/document/filter_compiler.cr`, `src/rbac/read_enforcer.cr`.
+
+Docs say: (nothing — this surfaced as a tooling break, not a doc claim).
+
+Code does: `src/rbac/read_enforcer.cr` references `RBAC::AuthContext` without
+a `require "../rbac/auth_context"`. The type resolves only when some other
+file in the require chain happens to load `auth_context` first. Any minimal
+compilation unit that needs the filter compiler alone — for example
+`scripts/gen_docs/filter_operators.cr`, which reads the operator table from
+the compiler — fails with `undefined constant RBAC::AuthContext` unless it
+adds the missing require itself (which the generator now does).
+
+Evidence: `scripts/gen_docs/filter_operators.cr` (header comment, the added
+require); `src/rbac/read_enforcer.cr` (uses `RBAC::AuthContext`, no require);
+`src/document/filter_compiler.cr` (no require of `auth_context`).
+
+Found by WP 11 (generator fixes). Maintainer triage: add the require to
+`read_enforcer.cr` (or to `filter_compiler.cr`) so the compiler compiles
+standalone. Code untouched by WP 11.

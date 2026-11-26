@@ -59,6 +59,8 @@ Verify commands by running them. Verify UI steps by clicking through the running
 
 Language baseline: the repo's ASD-STE100 plain English. One idea per sentence. Active voice. Present tense. Everyday verbs.
 
+Sentence length: aim for an average of about 15 words, with a hard limit of 25 outside tables. The average keeps prose readable; the limit keeps it from sounding robotic. Split a sentence when two ideas share it.
+
 Action-first means the reader always knows what to do next:
 
 - **Lead with the task.** "When to use this" and the steps come before background and explanation. Theory goes after the steps, and only when it helps the reader act.
@@ -109,6 +111,64 @@ What changed: the reader's records open the page (rule 2); each layout carries i
 - **Reference pages.** Tables, key lists, and generated blocks keep their exact shape. Apply rules 1–4 to the lead, the asides, and the surrounding prose only.
 - **Operator and developer pages.** Keep the warm "you" ("Restart the process, then check the log"), but the exact command, port, and key always win.
 - **Glossaries and index pages.** A term-to-definition list has no prose to restructure. Style the lead; leave the list.
+
+Warmth comes through care, not jokes: name the reader's situation, say why a step matters, give the next step. "No humor" stays.
+
+## Rule 2b — Layers and onboarding
+
+The site must stay simple for a newcomer and complete for an expert. It does this with three layers of depth. A reader climbs down only when they want to.
+
+| Layer | Question it answers | Where it lives | Jargon allowed |
+| --- | --- | --- | --- |
+| **L1 — orientation** | "What is this, and why should I care?" | `discover/`, tab index pages, the first paragraph of every page | None |
+| **L2 — task** | "How do I do this job?" | Tutorials and how-to pages in `use/`, `build/`, `admin/` | Product terms, each defined at first use on the page |
+| **L3 — depth** | "How exactly does it work? What are the edge cases?" | `build/deeper/`, `admin/under-the-hood/`, `reference/`, and the "How it works" section at the end of a how-to | Full precision, still defined |
+
+Layer rules:
+
+- **Each page lives at one layer.** A how-to page does not open with the internals. It can end with a short `## How it works` section and a link down to L3.
+- **Each page links one layer up and one layer down** in `## Related`, when those pages exist ("New to roles? Start with *Roles: who sees and does what*." / "For the exact enforcement order, see *How access is enforced*.").
+- **Moving a fact down a layer is allowed. Deleting it is not.** When a rewrite sends a fact to a deeper page, that page must carry it.
+- **Precision never decreases with depth; vocabulary does.** An L1 page is not allowed to be wrong for the sake of simplicity. "Facet keeps every change" is true; "Facet keeps every change forever" is false — retention compacts old history. Say "Facet records every change, and keeps the full history for as long as your retention settings say."
+
+How a page moves the reader through itself:
+
+1. **The lead is situation, job, payoff.** The first two to four sentences say where the reader is, what the page helps them do, and what they get. Do not open with "Read this page to see…", "This page covers…", or "In this section…", and do not open two neighbour pages with the same sentence shape.
+2. **One new idea per page.** If a page needs two new concepts, link the second to its own page with one plain sentence of summary, or split the page.
+3. **Name the idea after you show it.** Introduce a term after the reader understands what it does, then name it, in bold, once: "That copy is a **draft**, and the switch is **publish**." The precise mechanics (naming rules, gating) belong on the L3 page.
+4. **Say why, briefly.** Each rule, limit, or safety step gets one sentence of why. People follow rules they understand.
+5. **Show the expected result** after important steps: the screen, the message, the output. Use real output.
+6. **End with a next step.** The next tutorial step, the deeper page, or the related job. A reader never reaches a dead end.
+
+Vocabulary:
+
+- **Product terms** (domain, doctype, document, draft, publish, role, row scope, grant, app, and so on — the site glossary holds the list) keep one meaning each. Define each at its first use on a page; a short clause is enough.
+- **Engine words describe the engine, not the job.** Projection, mutation, auth context, enforcer, tombstone, coalescing, compaction, at-most-once, ETag, and their kind appear only in L3 pages and "How it works" sections — never in L1, never in the lead of an L2 page. In L1/L2, use the plain translation:
+
+  | Engine word | Say instead (L1/L2) |
+  | --- | --- |
+  | mutation log | the history (of a document) / the change log |
+  | mutation | a change |
+  | projection | the current version of a document |
+  | elected role | the role you act as (you pick one when you have several) |
+  | auth context | who is calling and with which role |
+  | grants ∩ roles | an app can never do more than both the user and the app are allowed |
+  | enforcer / enforcement | Facet checks the rule on every request |
+  | non-disclosing denial | Facet answers "not found" instead of "forbidden", so nobody learns the document exists |
+  | tombstone | a deleted document Facet still remembers, for history |
+  | lazy migration | old documents update to the new structure the next time someone reads them |
+  | at-most-once delivery | a webhook or hook can miss an event in rare failures; the reconcile job repairs it |
+
+- **Words we do not use.** Belittling: simply, just, easily, obviously, trivial, merely. Hype: powerful, seamless, robust, blazing, magic, leverage, unlock, effortless. Hedges the code could verify away: should, might, probably, usually. Future tense for features: will soon, coming, planned.
+- **UI labels are bold and exact**, as in the running app: **Builder**, **New domain**, **Publish**. Check `frontend/messages/en.json` for the string. Code names, keys, paths, and commands are in `code`. Never paraphrase a label, a key, or an error message.
+
+Titles (they are the sidebar; a newcomer scans them to find their job):
+
+- **How-to pages: the job, as a verb phrase.** "Hide a field from some roles", not "Field visibility with tags".
+- **Explanation pages: the idea, as a plain noun phrase or a question.** "Why you act as one role at a time", not "Auth contexts".
+- **Reference pages: the thing.** "Config file keys", "Lua API".
+- The product term may follow in the description and the lead, so search and agents still find it.
+- 40 characters or fewer, sentence case, no section prefix, no parentheses.
 
 ## Rule 3 — Confirm it renders
 
@@ -168,4 +228,4 @@ A page opens with a short lead paragraph in plain prose. Do not use a callout bo
 
 ## Dispatch plans
 
-The active page-writing tasks are dispatched from [`plans/documentation/README.md`](plans/documentation/README.md). That directory holds the page inventory, per-page sources and write scopes. The durable rules for that work live here — when a rule in a plan file disagrees with this file, this file wins.
+The active page-writing tasks are dispatched from [`plans/documentation/documentation-v2/README.md`](plans/documentation/documentation-v2/README.md). That directory holds the new information architecture, the page map, and per-workpackage write scopes. The durable rules for that work live here — when a rule in a plan file disagrees with this file, this file wins.
