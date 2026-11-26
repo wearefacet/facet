@@ -1,0 +1,89 @@
+# Screenshot declarations for the docs capture pipeline.
+#
+# One YAML file lists every shot: the persona it is taken as, the URL to
+# visit after programmatic sign-in, and where the PNG lands. Run the capture
+# script from site-docs/ (see capture.mjs header for the exact command).
+#
+# Fields per shot:
+#   id         short unique name, used in logs and --only filters
+#   persona    key into the personas map below
+#   url        full URL to open after sign-in (or `login: true` to shoot the
+#              sign-in screen before any credentials are entered)
+#   out        output path relative to site-docs/src/assets/screens/
+#   viewport   optional, default 1280x800
+#   theme      optional, default light
+#   wait       optional CSS selector that must exist before the shutter
+#   settle     optional extra wait in ms after the network goes quiet
+#   crop       optional CSS selector — screenshot only that element
+#   highlight  optional CSS selector — draw an outline around it first
+
+defaults:
+  base: https://facet.localhost:3443
+  viewport: { width: 1280, height: 800 }
+  theme: light
+
+# Dev-instance demo accounts (site-docs/examples/brightwater/README.md).
+personas:
+  nadia: { email: nadia@brightwater.example, password: brightwater-nadia }
+  tom: { email: tom@brightwater.example, password: brightwater-tom }
+  lucia: { email: lucia@brightwater.example, password: brightwater-lucia }
+  ravi: { email: ravi@brightwater.example, password: brightwater-ravi }
+  admin: { email: admin@example.tld, password: admin }
+
+shots:
+  # Your first hour — overview.
+  - id: dashboard-nadia
+    persona: nadia
+    url: /
+    out: build/index-1.png
+    wait: main
+    settle: 1200
+
+  # Tutorial 2 (first-domain) — the surfaces the domain work lands on.
+  - id: ticket-kanban
+    persona: nadia
+    url: /equipment/MaintenanceTicket?view=board
+    out: build/first-domain-1.png
+    wait: main
+    settle: 1500
+
+  - id: booking-list
+    persona: nadia
+    url: /rentals/Booking
+    out: build/first-domain-2.png
+    wait: main
+    settle: 1200
+
+  - id: booking-document
+    persona: nadia
+    url: /rentals/Booking/BK-2026-0001
+    out: build/first-domain-3.png
+    wait: main
+    settle: 1200
+
+  # Tutorial 2b (first-domain-in-files) — the equipment domain's Item list.
+  - id: item-list
+    persona: nadia
+    url: /equipment/Item
+    out: build/first-domain-in-files-1.png
+    wait: main
+    settle: 1200
+
+  # Tutorial 4 (team-access) — what the roles see.
+  - id: tom-clients-scoped
+    persona: tom
+    url: /clients/Company
+    out: build/team-access-1.png
+    wait: main
+    settle: 1200
+
+  - id: lucia-item-no-price
+    persona: lucia
+    url: /equipment/Item/EQ-2026-0001
+    out: build/team-access-2.png
+    wait: main
+    settle: 1200
+
+  # Tutorial 1 (run-facet) shots are declared in a separate file run against
+  # a fresh throwaway stack (the tour only opens for a seeded admin whose
+  # show_welcome flag is still true — see tmp/wp14-shots-t1.yml).

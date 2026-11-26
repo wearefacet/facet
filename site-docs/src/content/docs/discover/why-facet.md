@@ -1,110 +1,84 @@
 ---
 type: explanation
-title: What is Facet
-description: Learn what Facet is — the governed home for your business data and the apps you build on it.
+title: Why Facet
+description: See the problems Facet solves and the one idea behind it — apps are disposable, your data is not.
 audience: [evaluator]
 features: []
+verified_at: eee55a2
 sidebar:
   order: 1
-verified_at: 7a6cb462
 ---
 
-Facet is a governed application platform for small and mid-sized
-organizations. It hosts the internal apps you build. It owns the data, the
-rights, and the history those apps run on.
+*Apps come and go. The records, the rules, and the history stay.*
 
-## The problem it solves
-
-A business person can describe the app they want to Claude Code or another
-coding agent, and the agent writes it in hours. Running that app safely used
-to be the slow part:
-
-- someone must host it,
-- someone must decide who can read and change each record,
-- someone must keep a history of every change.
-
-Facet takes that work off the table.
-
-**Apps are disposable; your data is not.** The app your agent built last
-quarter can be replaced. The records, the rules, and the history stay.
-
-## The substrate and the app
-
-Facet separates two things that custom stacks usually mix:
-
-| Layer               | What it holds                                                                   | Lifespan                          |
-| ------------------- | ------------------------------------------------------------------------------- | --------------------------------- |
-| The substrate       | Documents, roles, permissions, audit log, files, secrets, identity              | Years — it outlives every app     |
-| The app             | A frontend or an agent that reads and writes through the API                    | Weeks or months — replace it freely |
-
-**The app stays outside.** An app never runs inside Facet and never touches
-the database. It signs in over OAuth (an open authorization protocol) and
-calls the HTTP API under the rights you gave it. Delete the app, and the data,
-the rules, and the history remain.
-
-## What you get for free
-
-Every app on Facet inherits the same services. You do not build them again:
-
-| Service  | What it means                                                                                                                       |
-| -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Identity | Accounts, passwords, MFA (multi-factor authentication), SSO (single sign-on) through OIDC, and API keys                              |
-| Rights   | Roles decide who reads and writes — per record type, down to single fields and rows. Enforcement sits in the data layer, not in the app |
-| Audit    | Every change lands in an append-only log: who changed what, when, and why. Roll any document back to a prior state                   |
-| Hosting  | Facet serves the app frontend, signs users in, and proxies the API calls                                                             |
-
-## Build with an agent, not an IT project
-
-You do not need the classical development stack to ship an internal tool:
-
-- **With a coding agent.** Connect Claude Code or any MCP (Model Context
-  Protocol) client to Facet. The agent gets tools to read and write data under
-  one role you pin. The platform checks every call, exactly as it checks a
-  human user.
-- **Inside the workspace.** The domain-builder assistant drafts doctypes and
-  views from prompts.
-- **By hand.** For a hand-written frontend, the TypeScript SDK and CLI cover
-  the build, and Facet hosts the result and signs in its users.
-
-  The agent never touches the database. Rights, audit, and history come from
-  the platform, so the app your business person describes is safe by default.
-
-## What it runs on
-
-- **Backend:** Crystal, PostgreSQL, Redis. Documents are JSONB rows.
-- **Workspace:** a web app with table, kanban, grid, calendar, form, and show
-  surfaces. Your team works with no extra frontend work.
-- **Apps and agents:** a REST API, a TypeScript SDK, a CLI, and MCP (Model
-  Context Protocol) tools.
-
-## See it running
-
-```sh
-git clone https://github.com/wearefacet/facet.git
-cd facet
-cp docker/.env.example docker/.env   # fill in hostname, SMTP, secrets
-docker compose -f docker/compose.prod.yml up -d --build
+```d2
+direction: down
+app: "The app of the month" {class: external}
+next: "The next app" {class: external}
+home: "Facet" {class: accent}
+records: "Your records" {class: store}
+rules: "Who may see and change them" {class: store}
+history: "Every change, remembered" {class: store}
+app -> home
+next -> home: "replaces it"
+home -> records
+home -> rules
+home -> history
 ```
 
-The entrypoint applies migrations and seeds the core schema on boot. Then
-create the first administrator:
+## The everyday problem
 
-```sh
-docker compose -f docker/compose.prod.yml exec backend facet seed:admin ops@your-company.tld
-```
+At Brightwater, the equipment list lives in a spreadsheet, bookings in a calendar, clients in a CRM. Each tool makes sense alone. Together they cost the company in five ways:
 
-The command prints a one-time password. Sign in at `https://<your-hostname>`
-and set a real password when prompted. The full steps are in
-[Deploy to production](/admin/install/production/).
+- **The data is scattered.** One client exists three times under three spellings. Nobody knows which copy is right.
+- **Nobody can say who sees what.** The spreadsheet has no rule that says a salesperson may see only their own clients. Trust fills the gap, until it cannot.
+- **The bridges break.** The booking calendar mails the warehouse a list every morning. When someone renames a sheet, the mail is wrong and nobody notices.
+- **IT says no, for good reasons.** A home-made tool needs hosting, accounts, backups, and an audit trail. That is a month of work before the first useful screen, so the queue grows.
+- **Prices rise with no way out.** The tools rent your own data back to you, per seat, per month, forever.
 
-:::tip
-Load the sample domains with `scripts/import-fixtures` in a source checkout.
-You get a customer, HR, and production model with data, before you build your
-own.
-:::
+## The idea
+
+Facet is one governed home for your business data, plus the apps that run on it. The home holds the records, the rules about who may see and change them, and the memory of every change. An app is only a face on top — a screen, a mobile tool, a chat window.
+
+An app never touches the database and never runs inside Facet. It signs in, like a person does, and gets no more rights than it was given. Delete the app and nothing of yours is lost: the records, the rules, and the history stay. **Apps are disposable; your data is not.**
+
+That is the whole bet. Tools wear out; your clients, your stock, and your bookings do not.
+
+## What every app gets for free
+
+Because the home carries the hard parts, each app stays small:
+
+| You get | What it means |
+|---|---|
+| Accounts | Sign-in, passwords, MFA, single sign-on, managed in one place |
+| Rights | Rules about rows and fields, checked on every read and write |
+| Memory | Every change recorded: who, when, and through what; undo included |
+| Hosting | Facet serves the app's screens and signs in its users |
+
+## Three ways to build
+
+- **Describe it.** Tell a coding agent what the team needs. It writes the app and connects to Facet's front door. The platform checks every call, exactly as it checks a person.
+- **Ask the assistant.** In the workspace, the assistant drafts record kinds and screens from a sentence, and you adjust.
+- **Write it by hand.** A typed SDK and a CLI cover the calls; Facet hosts the result.
+
+## What Facet is not
+
+- **Not a public app platform.** Accounts come from invitations; there is no self-service sign-up for your customers.
+- **Not an analytics tool.** Lists and filters serve daily work, not company-wide statistics.
+- **Not for heavy data loads.** Every write is checked and recorded, which costs a little per row.
+- **Not for several companies at once.** One installation serves one organization.
+- **Not a hosted service.** You run it on your servers, and the data stays in your PostgreSQL.
+
+The limits page puts numbers and workarounds on each line: [Is Facet right for you?](/discover/is-it-right-for-you/).
+
+## For the technical detail
+
+- [How access is enforced](/admin/under-the-hood/how-access-is-enforced/) — the exact checks behind "who may see and change what".
+- [The change log, in detail](/admin/under-the-hood/change-log/) — how the memory is stored and for how long.
+- [How domains stay isolated](/build/deeper/domain-isolation/) — the boundary, line by line.
 
 ## Related
 
-- [Is Facet right for you?](/discover/is-it-right-for-you/) — the good fits, the poor fits, and the business cases it answers.
-- [Architecture at a glance](/discover/how-it-works/) — how a request moves through the system.
-- [Domains, drafts and domain editors](/build/model/in-app/drafts-and-publishing/) — how Facet organizes data.
+- [The big picture](/discover/how-it-works/) — one diagram and the five ideas behind it.
+- [Security and governance](/discover/security/) — the same story, told for an audit.
+- [Compare](/discover/compare/) — Facet next to the tools you know.

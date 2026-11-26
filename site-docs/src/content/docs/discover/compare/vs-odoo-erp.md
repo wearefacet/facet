@@ -25,31 +25,31 @@ Facet starts from the other end: your process, not a template of one. You model 
 
 The two approaches meet where your business stops looking like the template.
 
-In Odoo, the Custom plan unlocks Studio (no-code customization), the external API, multi-company and custom modules; the Standard plan runs no custom code. Every deviation you build becomes code you carry through each version upgrade. Odoo partners estimate upgrade costs in the thousands, driven by customizations rather than by data volume.
+In Odoo, only the Custom plan carries Studio (no-code customization), the external API, multi-company and custom modules; the Standard plan runs no custom code. Every deviation you build becomes code you carry through each version upgrade. Odoo partners estimate upgrade costs in the thousands, driven by customizations rather than by data volume.
 
 In Facet, your model is data, not code. Domains are versioned and published from drafts, and there is no upgrade treadmill for the model itself. Changing a field or adding a document type is something the assistant does with you in the product, not a module a partner writes and maintains.
 
 ### Where the cost grows: headcount
 
-Odoo is priced per user per month, with promotional first-year pricing that renews higher and prices that vary by country. Studio and the API sit on the Custom plan, and that higher rate applies to every user, not just the ones who need customization. Facet has no per-user licence: you pay for servers, your own AI usage, and our services if you want them.
+Odoo is priced per user per month, with promotional first-year pricing that renews higher and prices that vary by country. Studio and the API sit on the Custom plan, and that higher rate applies to every user, not only the ones who need customization. Facet has no per-user licence: you pay for servers, your own AI usage, and our services if you want them.
 
 ## Side by side
 
 | Dimension | Odoo and ERP suites | Facet |
 | --- | --- | --- |
 | Primary purpose | Integrated business suite: accounting, inventory, CRM, HR, manufacturing, website, POS | Governed home for your own operational data, plus the apps that run on it |
-| Who builds | The vendor ships the processes; staff and partners configure; Studio (Custom plan) and Python modules customize | You model your domains with the AI assistant, or our team does it with you |
+| Who builds | The vendor ships the processes; staff and partners configure; Studio (Custom plan) and Python modules customize | You model your domains with the AI assistant |
 | Data ownership & portability | Odoo Online (hosted, with database backup download); Community self-host; Custom plan: on-premise or Odoo.sh | Your own PostgreSQL; domain export/import, API, webhooks |
-| Hosting & data residency | Odoo Online, Odoo.sh, or self-hosted (Community, or Custom plan) | Self-host anywhere, or managed hosting with your choice of location |
-| Permissions | Per-app access rights and record rules, configured per model | Roles with row scopes and field tags, enforced in the data layer on every access path |
-| Audit & history | Change tracking on the fields each module chooses to track; a complete audit trail needs an add-on module | Full change log on every record by default: who, what, when; per-document rollback. Retention set by you, globally or per document |
+| Hosting & data residency | Odoo Online, Odoo.sh, or self-hosted (Community, or Custom plan) | Self-host anywhere |
+| Permissions | Per-app access rights and record rules, configured per model | Roles with row scopes and field tags; Facet checks them on every access path |
+| Audit & history | Change tracking on the fields each module chooses to track; a complete audit trail needs an add-on module | Full change log on every record by default: who, what, when; per-document rollback. Retention set by you, globally or per doctype |
 | File storage | Attachments on records; the Documents app on paid plans | Built-in, on S3-compatible storage, under the same grants as the records. Volume limited only by your storage |
 | Changing the model | Studio on the Custom plan, or custom Python modules carried through each upgrade | Versioned domains, edited as drafts with the assistant and published; no code to migrate |
 | Custom apps on top | Website builder and portal; anything else is a custom module | Any app your AI tool builds, on the SDK, signed in over OAuth. Facet hosts it; the person who built it can publish it and roll it back |
 | AI | Agentic AI on the Custom plan | In-app assistant and builder on your own API key, any provider; embeddable assistant for your apps; MCP for coding agents. Every AI acts within the user's role |
 | Logic & automation | Automation rules; custom modules | Lua lifecycle hooks on document events inside a domain; real-time updates; webhooks to drive external automation tools |
 | Reporting & analytics | Reports inside each app, accounting in particular | No built-in charts; BI reads data through export or the API, so the role rules still apply. Direct database access is an admin privilege, outside the role model |
-| Ready-made business modules | Yes: the point of the product | None prebuilt yet; you model what is specific to you. A marketplace of one-click domains, with apps and roles, is planned |
+| Ready-made business modules | Yes: the point of the product | None prebuilt; you model what is specific to you with the assistant |
 | Pricing model | Per user per month; One App Free, Standard, Custom; promotional first year; priced by country | Free to use and self-host (source-available, BSL 1.1), for any number of users; paid services only if you want them |
 | Maturity | Mature suite, large partner network | Young product in beta, small ecosystem, built on proven foundations: PostgreSQL, Redis, an event log |
 
@@ -85,7 +85,7 @@ Move one domain at a time. Each lands on the same accounts, roles, history and f
 
 We would rather you hear this from us:
 
-- **There are no prebuilt business modules yet**: no CRM, accounting, inventory or HR. Today, your domains are modelled for you, which takes design time up front. The assistant shortens it; our team can take it on. A marketplace is planned: ready-made domains (B2B and B2C CRM, HR and more) that install in one click, with their apps and roles, and that you then adapt like any domain of your own.
+- **There are no prebuilt business modules**: no CRM, accounting, inventory or HR. You model your domains with the assistant, which takes design time up front.
 - **There is no cross-domain workflow engine.** Lua hooks run inside one domain. Workflows that span domains, or approval chains, run in an automation tool such as n8n, driven by Facet's webhooks or API.
 - **There is no built-in reporting.** Odoo's per-app reports exist today; with Facet, you export or connect a BI tool through the API.
 - **Facet is in beta.** Odoo's maturity, partner network and localized accounting are real advantages that Facet does not match.
@@ -93,22 +93,22 @@ We would rather you hear this from us:
 ## FAQ
 
 **Can Facet do accounting?**
-Not today. Facet has no accounting, invoicing, payroll or tax localization, so for those, use an ERP. Facet is for the operational domains around it. Ready-made domains are on the roadmap (see below), but if you need accounting now, an ERP is the right answer.
+No. Facet has no accounting, invoicing, payroll or tax localization, so for those, use an ERP. Facet is for the operational domains around it. If you need accounting now, an ERP is the right answer.
 
 **Will Facet become an ERP?**
-In its own way. The plan is a marketplace of ready-made domains (CRM for B2B or B2C, HR and more), each installed in one click with its apps and roles. The difference from a classic ERP is what happens next: an installed domain is data, so you adapt it with the assistant like anything you built yourself, with no custom module to carry through upgrades. Until a module you need ships, judge Facet on what it does today.
+No. Facet holds your operational data and the apps that run on it; accounting, invoicing and payroll stay in an ERP. The difference runs deeper than modules: a domain is modelled data. The assistant builds it with you, and you can export it — there is no custom module to carry through upgrades.
 
 **We already run Odoo. Where does Facet fit?**
 Around it. Companies typically keep Odoo for finance and standard flows, and move the specific operational data (the parts that would otherwise become custom Odoo modules) into Facet domains, connected through the API or webhooks.
 
 **Should we customize Odoo or model the process in Facet?**
-Count the customization's lifetime cost, not just its build cost. A custom Odoo module must be re-validated at each version upgrade, and upgrade cost grows with customization. It also requires the Custom plan for every user. A Facet domain is data: it survives version changes, you can export it, and the assistant can change it with you.
+Count the customization's lifetime cost, not only its build cost. A custom Odoo module must be re-validated at each version upgrade, and upgrade cost grows with customization. It also requires the Custom plan for every user. A Facet domain is data: it survives version changes, you can export it, and the assistant can change it with you.
 
 **Which should we adopt first?**
 If accounting and standard processes are the pain, the ERP comes first. If the pain is specific operational data that needs permissions and history, Facet can come first, and the ERP can join later through the API.
 
 **Does Facet import Odoo data?**
-Yes, through Odoo's export or external API. The import maps onto your Facet domain model; there is no ready-made Odoo connector today, so plan the mapping, or let our team run it.
+Yes, through Odoo's export or external API. The import maps onto your Facet domain model; there is no ready-made Odoo connector, so plan the mapping.
 
 ## Related
 

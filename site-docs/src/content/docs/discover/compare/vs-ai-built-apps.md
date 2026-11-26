@@ -9,11 +9,11 @@ sidebar:
 verified_at: bd4be053
 ---
 
-**In one line:** keep the vibe coding. Just AI builds the app *and* everything under it, again for every app. AI on Facet builds only the screens, on data that stays protected and outlives the app.
+**In one line:** keep the vibe coding. AI alone builds the app *and* everything under it, again for every app. AI on Facet builds only the screens, on data that stays protected and outlives the app.
 
 ## Who this page is for
 
-You lead or work in an organization of 20 to 200 people. Someone on your team, maybe with no programming background, just showed you a working tool that an AI built in an afternoon: a quote tracker, a maintenance log, a hiring pipeline. It works, and people already want to use it.
+You lead or work in an organization of 20 to 200 people. Someone on your team — maybe with no programming background — just showed you a working tool that an AI built in an afternoon. Say a quote tracker, a maintenance log, a hiring pipeline. It works, and people already want to use it.
 
 This page helps you decide what that tool should stand on before real data and real colleagues depend on it.
 
@@ -72,9 +72,9 @@ enforce -> records
 | Primary purpose | Whatever the prompt asked for | The same app, standing on governed data |
 | Who builds what | You and the AI, at every layer: data, permissions, screens, hosting | The AI writes the screens; Facet already provides data, rights, history and hosting |
 | Data ownership & portability | Wherever the AI put it: a generated database, a spreadsheet, files on a laptop | Your own PostgreSQL; domain export/import, API, webhooks |
-| Hosting & data residency | You host it, or it sits on a free tier somewhere | Self-hosted (a small deployment runs on 2 vCPU and 2–4 GB RAM), or managed hosting with your choice of location |
+| Hosting & data residency | You host it, or it sits on a free tier somewhere | Self-hosted (a small deployment runs on 2 vCPU and 2–4 GB RAM); your data location is your choice |
 | Deploying the app | A server, a pipeline, a domain, a certificate, and someone who knows how they fit together | Upload the built files to Facet. No server, no pipeline; any earlier version can be restored |
-| Permissions | Whatever was generated, if anything, and rarely reviewed | Roles with row and field grants, enforced in the data layer on every access path |
+| Permissions | Whatever was generated, if anything, and rarely reviewed | Roles with row and field grants; Facet checks them on every access path |
 | Audit & history | Only if someone asked for it, and then different in every app | Every change recorded by default: who, what, when; roll any document back |
 | File storage | Ad hoc: local disk, or a cloud bucket with its own rules | Built-in, on S3-compatible storage, under the same grants as the records |
 | Custom apps | It is the app | Your vibe-coded app on the SDK, signed in over OAuth; Facet hosts its files |
@@ -113,8 +113,8 @@ The two columns are not rivals; one grows into the other.
 Keep prototyping with your AI tool. When a prototype earns real data, point it at Facet:
 
 1. An admin registers the app in Facet. The app signs users in over OAuth (an open authorization standard), so it never sees or stores a password, and you never build a login screen.
-2. The app receives a DPoP-bound token: a token tied to the app's own key, so a copied token fails anywhere else. Its rights are always a subset of the signed-in user's role.
-3. Your AI tool builds the screens against the Facet SDK (software development kit). Facet hosts the finished files: no separate hosting, no deployment pipeline. Whoever built the app can publish it, and restore an earlier version if a new one breaks. <!-- TODO(link): custom-apps and SDK pages when the apps section ships -->
+2. The app receives a token tied to the app's own key, so a copied token fails anywhere else. Its rights never exceed the signed-in user's role or the app's grant.
+3. Your AI tool builds the screens against the Facet SDK (software development kit). Facet hosts the finished files: no separate hosting, no deployment pipeline. Whoever built the app can publish it, and restore an earlier version if a new one breaks. See [The TypeScript SDK](/build/apps/data/sdk/).
 4. One call adds the embeddable assistant to the app. It inherits the signed-in user's role and acts only within it.
 
 Coding agents can also connect to Facet through MCP (Model Context Protocol, a standard way for AI tools to call a product's functions) and work under one role you pin. Facet checks every call, whatever wrote the code. See [What is Facet](/discover/why-facet/).
@@ -151,13 +151,13 @@ Throw it away. The data, the roles and the history remain. Build version two on 
 Yes, and that is safe by design. Facet serves the app's files itself, so publishing a new version needs no server and no pipeline. The app can change as often as its owner likes; the data model, the permissions and the history cannot be touched from the app. If a release turns out broken, restore the previous version. The worst case is a bad screen for a few minutes, never a data leak or a lost record.
 
 **Who maintains it after launch?**
-For the app: nobody, beyond the screens themselves. Hosting, TLS, sign-in, permissions, backups and security fixes live in Facet and are maintained once for every app on it, by you if you self-host or by us with managed hosting.
+For the app: nobody, beyond the screens themselves. Hosting, TLS, sign-in, permissions, backups and security fixes live in Facet and are maintained once for every app on it, by you when you self-host.
 
 **Are we locking ourselves in?**
 Less than with a generated app. Your records live in standard PostgreSQL, on your own server if you choose. You can export any domain, read everything through the API, and the source code is available to you.
 
 **Can we start without a developer?**
-Yes. The portal gives you list, calendar and kanban views plus an edit page per document, generated from templates the assistant writes for you. Daily data work needs no code. For a specific workflow screen, use an AI tool against the SDK.
+Yes. The workspace gives you list, calendar and kanban views plus an edit page per document, generated from templates the assistant writes for you. Daily data work needs no code. For a specific workflow screen, use an AI tool against the SDK.
 
 **Do we have to move everything at once?**
 No. Start with one domain: the records that hurt most in spreadsheets. It sets up the accounts, roles, history and hosting, and each domain after that reuses them. Value starts small and compounds.
@@ -168,11 +168,12 @@ No. Start with one domain: the records that hurt most in spreadsheets. It sets u
 - [Facet vs Supabase and Firebase](/discover/compare/vs-supabase-firebase/): the developer-backend version of this question.
 - [Facet vs Airtable and Notion databases](/discover/compare/vs-airtable-notion/): the spreadsheet-stage version.
 - [What is Facet](/discover/why-facet/)
-- [Security & governance overview](/discover/security/)
+- [Security and governance](/discover/security/)
+- [Licensing and services](/discover/licensing-and-services/): what "source-available, BSL 1.1" means.
 
 ## Sources
 
 - Veracode, 2025 GenAI Code Security Report: models chose the insecure implementation in 45% of 80 task types across more than 100 models; larger and newer models did no better — https://www.veracode.com/press-release/ai-generated-code-poses-major-security-risks-in-nearly-half-of-all-development-tasks-veracode-research-reveals/ — checked 2026-11-13
 - UpGuard, "Everything Everywhere: Systemic Data Exposure in Supabase Apps" (October 2026): 16,326 databases with readable tables across about 300,000 domains; more than half with personal-data indicators; the Moltbook leak of February 2026; the immigration-coaching example — https://www.upguard.com/blog/everything-everywhere-systemic-data-exposure-in-supabase-apps — checked 2026-11-13
 - SC World, on Backslash research: explicit security instructions in prompts improve model output — https://www.scworld.com/news/llms-make-insecure-coding-choices-for-45-of-tasks-study-finds — checked 2026-11-13
-- Facet's own claims come from this site: [What is Facet](/discover/why-facet/) and the [Security & governance overview](/discover/security/).
+- Facet's own claims come from this site: [What is Facet](/discover/why-facet/) and the [Security and governance](/discover/security/) page.

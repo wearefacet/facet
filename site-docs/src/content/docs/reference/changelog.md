@@ -1,17 +1,18 @@
 ---
 type: reference
 title: Releases
-description: How Facet versions and ships releases, and where to read the release notes.
+description: How Facet versions and ships releases, and where the release notes live.
 audience: [operator, developer]
 features: []
 sidebar:
   order: 20
-verified_at: 7a6cb462
+verified_at: eee55a2
 ---
 
-Use this page to find out what a release contains and where it lands. One git
-tag starts each release, and the tag prefix picks the artifact: `v*` publishes
-versioned container images, and a package prefix publishes one npm package.
+One git tag starts each release, and the tag prefix picks the artifact: a
+`v*` tag publishes versioned container images, and a package prefix publishes
+one npm package. `CHANGELOG.md` at the repository root is the source of
+record for release notes.
 
 ## How releases work
 
@@ -58,13 +59,19 @@ one release:
 The tag version must equal the `version` in the package's `package.json`, so a
 tag without a version bump publishes nothing. A version with a `-`, for
 example `0.0.2-beta.1`, is a prerelease: it publishes under the `beta`
-dist-tag and never becomes `latest`. Each release opens a GitHub Release with
-generated notes.
+dist-tag and never becomes `latest`. The publish is staged: a maintainer
+approves the version in the npm console before it goes live. Each release
+opens a GitHub Release with generated notes.
 
 ## Release notes
 
-Read the notes for each release on its GitHub Release. They start with the
-first release.
+`CHANGELOG.md` at the repository root holds the notes for every release. It
+is the source of record — this page does not repeat its content. The project
+is pre-1.0, so a release can contain breaking changes: read the deployment
+notes of a release before you upgrade.
+
+Each release tag also opens a GitHub Release. Those notes are generated from
+the merged pull requests, not from `CHANGELOG.md`.
 
 ## Related
 

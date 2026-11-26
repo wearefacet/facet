@@ -335,3 +335,275 @@ Found by WP 12. Maintainer triage: widen the scan (parse `document.list` /
 a hook's runtime reads need a hand-widened grant. The import-order drop
 could surface as a `/check` warning (the code's own comment says draft
 producers surface there). Code untouched by WP 12.
+
+## #19 — Compare pages offer managed hosting and design services the repo cannot source
+
+Where: `site-docs/src/content/docs/discover/compare/index.md` (closing
+bullet), `compare/vs-ai-built-apps.md` (table row "Hosting & data residency",
+FAQ "Who maintains it after launch?"), `compare/vs-airtable-notion.md` (table
+row "Hosting", FAQ "Is Facet a self-hosted Airtable?", FAQ "Can I import…?",
+FAQ "What does Facet cost…?"), `compare/vs-odoo-erp.md` (table rows "Who
+builds" and "Hosting", FAQ "Does Facet import Odoo data?", "What Facet does
+not do" list), `compare/vs-retool-lowcode.md` (table row "Hosting", FAQ "Is
+the per-user pricing a problem?"), `compare/vs-supabase-firebase.md` (table
+row "Hosting").
+
+Docs say: "we offer managed hosting, with your choice of location, and domain
+design and migration services" / "our team designs it" / "our team can run
+the migration" / "our team can take it on" / "by us with managed hosting" /
+"or that we run for you".
+
+Code does: the repository contains no support, hosting or services URL, offer
+or product (D10 checked by grep at `8fb69df`; re-checked at `eee55a2`).
+`LICENSING.md` only permits *third parties* to sell such services under the
+Additional Use Grant. The WP 10 audit (batch E) had flagged these claims as
+unsourceable; decision D10 keeps them out of the docs until the maintainer
+supplies wording and links.
+
+Evidence: `grep -ri "managed hosting\|design services" src/ packages/ docker/
+README.md` → no offer; `doc/plans/documentation/documentation-v2/99-decisions.md`
+→ D10 decision note.
+
+Found by WP 13 (batch B). Fix applied in the WP 13 voice pass: the offers are
+cut, the self-hosting claim stays. If the maintainer later supplies a
+services page, re-add with links.
+
+## #20 — Compare pages promise a domain marketplace that is not shipped
+
+Where: `compare/vs-odoo-erp.md` (table row "Ready-made business modules", FAQ
+"Can Facet do accounting?", FAQ "Will Facet become an ERP?", "What Facet does
+not do" list), `compare/vs-supabase-firebase.md` (table row "Ready-made
+business modules").
+
+Docs say: "A marketplace of one-click domains, with apps and roles, is
+planned" / "Ready-made domains are on the roadmap" / "The plan is a
+marketplace of ready-made domains … each installed in one click".
+
+Code does: no marketplace exists — `grep -ri marketplace src/ packages/`
+returns nothing, and `00-contract.md` §2 rule 2 lists the domain marketplace
+among known unshipped features. The contract bans roadmap claims.
+
+Evidence: the grep; `00-contract.md` §2.
+
+Found by WP 13 (batch B). Fix applied: roadmap sentences cut; the pages now
+state the present fact ("none prebuilt; you model what is specific to you
+with the assistant") and keep the verdict (an ERP for standard processes,
+Facet for your own domains).
+
+## #21 — Login-event log claim includes refreshes; code writes no event for them
+
+Where: old `start/security-governance.md` (now
+`discover/security.md`, rewritten by WP 13).
+
+Docs say: "Every authentication event — sign-in, sign-out, denial, refresh —
+lands in an append-only login-event log."
+
+Code does: a successful token refresh writes no LoginEvent, on purpose — a
+session refreshes on a clock, so the log would fill with rows retention would
+have to keep (comment at `src/iam/refresh.cr:26` and `134-139`). The events
+written are: `login`, `logout`, `lockout`, `refresh_reuse`, `oidc_login`,
+`oidc_denied`, `oidc_provisioned`, `layer1_denied` (app-attributed denials
+only — ordinary browser-session denials write none, `src/iam/helpers.cr:127-141`),
+plus security changes (`password_change`, `mfa_enabled/disabled`,
+`api_key_created/revoked`, `session_revoked`, `invite_sent`,
+`password_reset_*`).
+
+Evidence: the `write_login_event` call sites listed above
+(`grep -rn "write_login_event" src/`).
+
+Found by WP 13 (batch B). Fix applied: `discover/security.md` now says the
+log records sign-ins, sign-outs, lockouts and security changes, with app and
+SSO denials — it no longer claims routine refreshes.
+
+## #22 — Compare pages call the built-in UI "the portal"; the product word is "workspace"
+
+Where: `compare/index.md`, `vs-ai-built-apps.md`, `vs-airtable-notion.md`,
+`vs-retool-lowcode.md`, `vs-supabase-firebase.md` (13 occurrences of
+"portal" for Facet's own UI; one more in `vs-odoo-erp.md` refers to Odoo's
+portal feature and is correct).
+
+Docs say: "Facet's portal gives list, calendar and kanban views…" / "the
+portal and app hosting come with the software".
+
+Code does: the UI has no "portal" label. `frontend/messages/en.json` contains
+no portal string; the main data surface is the workspace (`AGENTS.md` →
+fullpage layout "sidebar, top bar, workspace, peek drawer"; the Use tab's
+tour page is "A tour of the workspace").
+
+Evidence: the en.json grep; `doc/frontend/workflow.md` vocabulary.
+
+Found by WP 13 (batch B). Fix applied: "portal" → "workspace" for Facet's UI
+across the five pages; Odoo's own portal untouched.
+
+## #23 — Old "decide in one afternoon" command cannot run in the release image
+
+Where: old `start/is-facet-right-for-you.md` (now
+`discover/is-it-right-for-you.md`, rewritten by WP 13).
+
+Docs say: `docker compose -f docker/compose.prod.yml exec backend facet
+seed:admin …`.
+
+Code does: the release image puts the binary at `/app/facet` and never on
+`PATH` (`docker/backend.Dockerfile:46`, no symlink; the entrypoint itself
+calls `./facet`, `docker/backend-entrypoint.sh:60`). A bare `facet` inside
+`exec` does not resolve, so the command fails with "facet: not found". The
+shipped runbook uses `docker compose -f docker/compose.prod.yml run --rm
+backend seed:admin …` (`admin/install/production.md:42`), which works: the
+entrypoint skips the server branch and execs `./facet seed:admin`.
+
+Evidence: the Dockerfile and entrypoint lines above; the production runbook.
+
+Found by WP 13 (batch B). Fix applied: the rewritten page uses the runbook's
+exact command.
+
+## #24 — Two D2 diagram ids do not match the sha256 of their own sources
+
+Where: `build/deeper/schema-evolution.md` (id `9bdb23d4`, sha256 of source
+`ad5f626b`) and `build/deeper/cross-domain-replication.md` (id `f1eb9af1`,
+sha256 of source `dc32efd4`). The mismatch exists since the original
+`concepts/` pages (release commit 037187e carries the same pairs).
+
+Docs say: the house rule (`scripts/build-diagrams.mjs:55-57`) derives the id
+from the embedded source: `sha256(source)[:8]`, source = the lines between
+the fences.
+
+Code does: the two image blocks above carry ids that their own sources do
+not hash to. The build tolerates it: `public/diagrams/` is gitignored, so
+every clean build re-renders the SVGs from the embedded sources under the
+ids the img srcs name (`ensureRendered`) — what ships is always correct.
+The cost is future edits: an agent that follows the house rule computes a
+"new" id, sees it differ from the shipped one, and cannot tell which side
+is stale.
+
+Evidence: `sha256` computed over both embedded sources at HEAD and at
+037187e; `git ls-files site-docs/public/diagrams/` returns nothing;
+`site-docs/.gitignore:4`.
+
+Found by WP 16 (batch A). Not fixed: batch A keeps the blocks byte-identical
+per the handoff. Suggested fix: re-render and rename the ids to the true
+hashes in one mechanical pass (diagram only, no prose change).
+
+## #24 — Voice-plan example overstates publish: "never the test documents"
+
+Where: `doc/plans/documentation/documentation-v2/01-voice-and-vibe.md` §4.3
+(the after-example sentence meant as a model for L1/L2 copy). Also relevant
+to any page that copies it verbatim.
+
+Docs say: "Publishing copies the structure only, never the test documents you
+created in the draft. That way, nothing you typed while experimenting ends up
+in production data."
+
+Code does: structure-only is the publish **default**, not the rule. The
+publish route accepts an optional `documents` field
+(`{\"import\": true, \"doctypes\": [...]}`) that carries draft documents into
+the target — every doctype by default, or a named list (`doc/backend/
+draft-domains.md` → Publish — copy-and-drop). An overwrite publish refuses to
+merge a draft doctype into live rows (422), but a fresh publish can import.
+
+Evidence: `doc/backend/draft-domains.md:89-101` (`documents` field, import
+modes, `documents_imported` in the response); `Domain::Publish` service.
+
+Found by WP 13 (batch A). Fix applied: `discover/how-it-works/domains.md`
+says "Publishing copies the structure; the practice records you typed while
+experimenting stay behind unless you choose to bring them along." WP 16
+(`build/model/in-app/how-drafts-work.md`) should keep the opt-in explicit.
+
+## #25 — SDK types an aggregate answer as a row list; the wire carries an object
+
+Where: `site-docs/src/content/docs/build/apps/data/sdk.md` §Documents and
+queries (the aggregate example); `packages/sdk/src/client.ts` (the
+`ListPage<T>` type). WP 17 batch B documents the gap; no product change
+requested.
+
+Docs say (the natural reading of the types): `list({ aggregate: 'sum',
+field: ... })` returns `ListPage<T>` whose `data` is `ListItem<T>[]`.
+
+Code does: the aggregate wire shape is `{data: {value: …}, meta}` — an
+object, not an array. At runtime `agg.data.value` holds the money bag
+(`{"EUR": "72076.00"}` on the Brightwater instance), but TypeScript reads
+`data` as `ListItem[]` and rejects `.value` (`TS2551`). The SDK's own doc
+comment acknowledges the shape shift for `next()` only, not for `data`.
+
+Evidence: `packages/sdk/dist/client.d.ts` (`ListPage extends
+ListResponse`, `data: ListItem<T>[]`); live call
+`GET /Api/equipment/Item?aggregate=sum&field=purchase_price` answers
+`{"data":{"value":{"EUR":"72076.00"}},"meta":{"count":40,...}}`; scratch
+type-check `tmp/sdk-check/` fails on `agg.data.value` with the plain types.
+The page casts (`agg.data as unknown as { value: Record<string, string> }`)
+until the SDK grows an aggregate result type.
+
+Found by WP 17 (batch B). Suggested fix: a `AggregateResult<T>` return type
+on `CollectionHandle.list` when `aggregate` is set (discriminated union on
+`params.aggregate`), or a dedicated `aggregate()` method.
+
+## #26 — REST filter grammar takes one bracket level; an old page shape still ranks in search
+
+Where: `site-docs/src/content/docs/build/apps/data/rest-api.md` §List and
+filter (fixed this batch). Logged because the wrong form is easy to
+reintroduce: it looks like the Rack/Rails nested-params convention.
+
+Docs said (old page): `filters[status][eq]=active` — nested brackets.
+
+Code does: the query parser strips exactly one bracket pair and reads the
+inside as the whole key (`src/http/list_request.cr`, "strip \"filters[\"
+prefix and "]\" suffix"). The nested form reaches the filter compiler as the
+field name `name][match` and answers `422 Unknown filter field 'name][match'
+(filterable: …)`. The correct form is `filters[name__match]=Lumi` — the
+`__op` suffix rides inside the brackets.
+
+Evidence: live call `?filters[name][match]=Lumi` → `422` with the error
+above; `?filters[name__match]=Lumi` → `200`; `src/http/list_request.cr:294-296`.
+
+Found by WP 17 (batch B). Fixed in this batch; no product change needed.
+
+## #27 — Writes silently ignore If-Match; no 409 concurrency conflict exists on document routes
+
+Where: the old `build/apps/rest-api.md` (§Errors table: "`409` | Concurrent
+write on the document. Re-issue the same request.") claimed a concurrency
+`409`. The rewritten page drops the claim; logged so nobody restores it.
+
+Docs said: a concurrent write on a document answers `409`.
+
+Code does: no route in `src/` reads `If-Match` on writes (`grep -rn
+'If-Match' src/` answers nothing). Live checks on the Brightwater instance:
+a `PATCH` with a stale ETag answers `200`, a `PATCH` with `If-Match:
+"bogus"` answers `200`, a `DELETE` with `If-Match: "bogus"` answers `204`.
+The ETag is a read-side validator only (`If-None-Match` → `304`; writes
+mint a fresh `mid`). No write path returns `409` on document routes.
+
+Evidence: `curl` transcripts in the WP 17 ledger (`ledgers/17b.md`, claim
+rows for rest-api.md); `src/http/caching.cr` handles `If-None-Match` for
+lists; `grep -c If-Match src/` = 0.
+
+Found by WP 17 (batch B). Fix applied (docs): the errors table and
+troubleshooting no longer mention a write-side `409`. If optimistic
+concurrency is wanted on writes, that is a product decision — raise it as a
+feature, not a doc fix.
+
+## #28 — The `lua:` config section loads but never reaches the sandbox
+
+Where: `reference/limits.md` (new in WP 19) lists the Lua sandbox budgets.
+The limits page states the values the engine actually enforces and notes the
+gap; logged so a reader who raises `lua.instruction_limit` knows why
+nothing changes.
+
+Docs would say: raising `lua.instruction_limit` / `lua.memory_limit_mb` /
+`lua.time_limit_s` in `config.{env}.yml` raises the sandbox budgets (the
+0.2.1 changelog even instructs operators to raise these keys).
+
+Code does: the `lua:` section loads into `Config::LuaConfig`
+(`src/config.cr:168-171,603-612`), but nothing wires it into the sandbox —
+`src/lua/sandbox.cr:33-35` always calls `Engine.new` with the engine
+defaults (1,000,000 instructions / 32 MB / 0.5 s, `src/lua/engine.cr:82-84`).
+Only the spec suite reads `cfg.lua` (`spec/config_spec.cr:966-968`).
+Behaviour matches the defaults by accident, not by wiring.
+
+Evidence: `grep -rn "config.lua" src/` finds no consumer outside the loader;
+`grep -n "Engine.new" src/lua/sandbox.cr` shows the call site with no
+class-level state; the 0.2.1 CHANGELOG (line 56) tells operators to raise
+the keys.
+
+Found by WP 19 (limits page, reference batch). Docs impact: the limits page
+cites the enforced engine defaults, not the config keys, and carries an
+explicit note. Product fix (wiring the section into `Lua::Sandbox`) is the
+maintainer's call.

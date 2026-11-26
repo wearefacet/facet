@@ -1,7 +1,7 @@
 ---
 type: explanation
-title: Facet vs Airtable and Notion databases
-description: Airtable and Notion make it easy to start a database. Facet makes it safe to depend on one. Compare them before your business records outgrow the workspace.
+title: Facet vs Airtable and Notion
+description: Airtable and Notion are built to start fast. Facet is built to be safe to depend on. Compare them before your business records outgrow the workspace.
 audience: [evaluator]
 features: []
 sidebar:
@@ -9,7 +9,7 @@ sidebar:
 verified_at: bd4be053
 ---
 
-**In one line:** Airtable and Notion are built to start fast and collaborate; Facet is built for records your business must protect, prove and keep, whatever tool edits them next.
+**In one line:** Airtable and Notion are built to start fast and collaborate. Facet is built for records your business must protect, prove and keep, whatever tool edits them next.
 
 ## Who this page is for
 
@@ -25,7 +25,7 @@ These are reasonable choices for a SaaS business. In practice, they mean a 50-pe
 
 Notion is also, first, a documents and wiki tool. Facet does not compete there: keep Notion for knowledge. The comparison below is about the *database* side of both tools, used for operational records.
 
-One more fact worth knowing: in August 2026, Bending Spoons agreed to acquire Airtable; the deal had not closed when this page was last checked. Whoever owns a SaaS product decides its pricing, plans and roadmap. Facet is software you run; those decisions stay yours.
+One more fact worth knowing: in August 2026, Bending Spoons agreed to acquire Airtable; the deal had not closed when this page was last checked. Whoever owns a SaaS product decides its pricing, plans and direction. Facet is software you run; those decisions stay yours.
 
 ## Side by side
 
@@ -34,16 +34,16 @@ One more fact worth knowing: in August 2026, Bending Spoons agreed to acquire Ai
 | Primary purpose | Airtable: app-like workspaces on bases; Notion: docs and wikis with databases | Governed home for business data, plus the apps that run on it |
 | Who builds | You, the business user; AI features assist | A business person with the AI assistant; custom apps through AI tools or the SDK |
 | Data ownership & portability | The vendor's cloud. Airtable exports CSV one table at a time; Notion exports the workspace (HTML, Markdown, CSV) | Your own PostgreSQL; domain export/import, API, webhooks |
-| Hosting & data residency | Cloud only. Choice of region on the top tier: Airtable Enterprise Scale (US by default); Notion Enterprise (US by default; EU, Tokyo, Seoul) | Self-host anywhere, or managed hosting with your choice of location. Available from day one, not a plan upgrade |
+| Hosting & data residency | Cloud only. Choice of region on the top tier: Airtable Enterprise Scale (US by default); Notion Enterprise (US by default; EU, Tokyo, Seoul) | Self-host anywhere. Your data location is your choice from day one, not a plan upgrade |
 | Scale | Airtable caps records per base by plan: 1,000 on Free, 50,000 on Team, 125,000 on Business | No plan-based record caps; capacity is your server's |
-| Permissions | Roles at workspace, base or page level. Notion's row-level rules (Business and up) key on an assigned person. Airtable field-level restriction needs workarounds below the top tier | Roles with row scopes and field tags, enforced in the data layer on every access path: portal, API, apps and AI |
-| Audit & history | Airtable record history: 2 weeks on Free, 1 year on Team and Business; audit log on Enterprise Scale only, 180 days. Notion page history: 7 / 30 / 90 days by plan; audit log on Enterprise | Full change log by default: who changed what, and when; roll any document back to a prior state. You set the retention, globally or per document: keep everything forever, or compact old history into snapshots |
+| Permissions | Roles at workspace, base or page level. Notion's row-level rules (Business and up) key on an assigned person. Airtable field-level restriction needs workarounds below the top tier | Roles with row scopes and field tags; Facet checks them on every access path: workspace, API, apps and AI |
+| Audit & history | Airtable record history: 2 weeks on Free, 1 year on Team and Business; audit log on Enterprise Scale only, 180 days. Notion page history: 7 / 30 / 90 days by plan; audit log on Enterprise | Full change log by default: who changed what, and when; roll any document back to a prior state. You set the retention, globally or per doctype: keep everything forever, or keep snapshots of older history |
 | File storage | Attachments with per-plan caps (Airtable: 1–100 GB per base; Notion: 5 MB per file on Free, 5 GB on paid plans) | Built-in, on S3-compatible storage, under the same grants as the records. Total volume is limited only by your storage; uploads default to 50 MB per file, configurable |
 | Custom apps on top | Airtable interfaces and extensions; Notion API and automations | Any app your AI tool builds, on the SDK, signed in over OAuth. Facet hosts it: the person who built it can publish it and roll it back, with no server to run |
 | AI | Airtable Omni with monthly AI credits per seat; Notion AI bundled on Business and Enterprise, trial below | In-app assistant and builder on your own API key (any provider); embeddable assistant for your apps; MCP for coding agents. Every AI acts within the user's role |
 | Logic & automation | Automations with monthly run caps (Airtable); automation rules (Notion) | Lua lifecycle hooks on document events inside a domain; real-time updates; webhooks to drive external automation tools |
 | Reporting & analytics | Airtable extensions (charts, pivots, Gantt); Notion charts and dashboards | No built-in charts; BI reads data through export or the API, so the role rules still apply. Direct database access is an admin privilege, outside the role model |
-| Ready-made business modules | Large template libraries | None prebuilt; the assistant models your domain with you, or our team designs it |
+| Ready-made business modules | Large template libraries | None prebuilt; the assistant models your domain with you |
 | Pricing model | Per seat: every editor and member is billed, readers are free; AI credits on top | Free to use and self-host (source-available, BSL 1.1), for any number of users; paid services only if you want them |
 | Maturity | Airtable since 2012, large ecosystem; Notion very widely adopted | Young product in beta, small ecosystem, built on proven foundations: PostgreSQL, Redis, an event log |
 
@@ -63,7 +63,7 @@ One more fact worth knowing: in August 2026, Bending Spoons agreed to acquire Ai
 - **The records must outlive the tool.** A customer, a machine or a contract stays a record, whatever app edits it next year.
 - **Nearly everyone in the company works with the data**, and paying for every editor means the bill grows with each hire.
 - **Files must follow the rules of their records**: contracts, photos and identity documents get the same access rules as the record they belong to.
-- **You want tailored screens, not just views.** Your team builds the exact tool it needs with AI, and Facet hosts it, governs it and keeps every version.
+- **You want tailored screens, not only the standard views.** Your team builds the exact tool it needs with AI, and Facet hosts it, governs it and keeps every version.
 
 ## Using both
 
@@ -87,16 +87,16 @@ We would rather you hear this from us:
 ## FAQ
 
 **Is Facet a self-hosted Airtable?**
-No. Airtable is a collaborative workspace that keeps your data in its cloud, with governance features gated by plan. Facet is a data platform you run yourself, or that we run for you, in the location you choose. Permissions, history and hosting come with the software at no licence cost, and the data lives in your PostgreSQL.
+No. Airtable is a collaborative workspace that keeps your data in its cloud, with governance features gated by plan. Facet is a data platform you run yourself, in the location you choose. Permissions, history and hosting come with the software at no licence cost, and the data lives in your PostgreSQL.
 
 **Can I import my Airtable or Notion data?**
-Yes. Airtable exports tables as CSV; Notion exports a workspace as HTML, Markdown or CSV. Facet imports documents and domains, and its API supports ongoing syncs. Plan the mapping first: field types and links need decisions, not just a file copy. The assistant can help you design the target model, or our team can run the migration.
+Yes. Airtable exports tables as CSV; Notion exports a workspace as HTML, Markdown or CSV. Facet imports documents and domains, and its API supports ongoing syncs. Plan the mapping first: field types and links need decisions, and a file copy does not make them. The assistant can help you design the target model.
 
 **Do I lose the spreadsheet feel?**
-You lose free-form cells; you keep the views. Facet's portal gives list, calendar and kanban views plus an edit page per document, and the assistant sets them up for you. Formulas and cell-level improvisation are not the model; structure is. When a team needs a screen shaped exactly to its work, it can build one with an AI tool and publish it on Facet.
+You lose free-form cells; you keep the views. Facet's workspace gives list, calendar and kanban views plus an edit page per document, and the assistant sets them up for you. Formulas and cell-level improvisation are not the model; structure is. When a team needs a screen shaped exactly to its work, it can build one with an AI tool and publish it on Facet.
 
 **What does Facet cost as the team grows?**
-There is no per-seat licence. The software is free to use and self-host, for any number of users. You pay for your servers, the AI usage on your own key, and, if you want them, our managed hosting or design services.
+There is no per-seat licence. The software is free to use and self-host, for any number of users. You pay for your servers and the AI usage on your own key.
 
 **We already pay for Notion. Why add Facet?**
 Because they do different jobs. Notion holds what your team writes; Facet holds what your business must account for. See [Facet vs "just let the AI build it"](/discover/compare/vs-ai-built-apps/) for what happens when tools multiply.
@@ -105,7 +105,7 @@ Because they do different jobs. Notion holds what your team writes; Facet holds 
 
 - [Compare](/discover/compare/): all comparison pages.
 - [Facet vs "just let the AI build it"](/discover/compare/vs-ai-built-apps/)
-- [Security & governance overview](/discover/security/)
+- [Security and governance](/discover/security/)
 - [Row scopes](/admin/people/row-scopes/): how per-record permissions work in Facet.
 - [Auditing activity](/admin/history/audit/): the change history in practice.
 
@@ -120,4 +120,4 @@ Because they do different jobs. Notion holds what your team writes; Facet holds 
 - Notion data residency: Enterprise only; US default; EU, Tokyo and Seoul regions — https://www.notion.com/help/data-residency — checked 2026-11-13
 - Simone Smerilli, on how Notion's database access rules key on a Person or Created-by property — https://simonesmerilli.com/writing/notion-database-access-rules — checked 2026-11-13
 - Reworked, "Bending Spoons Acquires Airtable" (August 4, 2026; deal pending close when checked) — https://www.reworked.co/digital-workplace/bending-spoons-acquires-airtable-for-1285b/ — checked 2026-11-13
-- Facet's own claims come from this site: the [Security & governance overview](/discover/security/).
+- Facet's own claims come from this site: the [Security and governance](/discover/security/) page.

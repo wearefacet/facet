@@ -6,12 +6,11 @@ audience: [author, developer]
 features: [DOM-22, DOM-23]
 sidebar:
   order: 13
-verified_at: 008dd880
+verified_at: eee55a2
 ---
 
-Use this page to write a template and check which variables and filters you can use.
-
-Facet renders Jinja2 templates in three places: the `display_name` label
+You write a template and need to know which variables and filters the engine
+binds. Facet renders Jinja2 templates in three places: the `display_name` label
 and the `search` text of a doctype, both on the server, and the calendar
 chip title of a collection view, in the browser.
 
@@ -112,6 +111,7 @@ arguments, for example `{{ tags | join(', ') }}` or
 | `selectattr` | — | Keeps the items whose attribute a test accepts. |
 | `slice` | `slices`, `fill_with` | Slices an array into `slices` roughly even parts. |
 | `sort` | `reverse`, `case_sensitive`, `attribute` | Sorts an array, optionally by an attribute. |
+| `string` | — | Converts any value to its string form. Useful before `upper` or `length` on a non-string value. |
 | `striptags` | — | Removes HTML tags and collapses whitespace. |
 | `sum` | `attribute`, `start` | Sums the items, or their `attribute`. |
 | `title` | — | Title-cases each word. |
@@ -195,4 +195,5 @@ stored label; the two templates above do not use it.
 
 - [Display names and search text (Jinja2)](/build/model/views/names-and-search/) — write the two doctype templates.
 - [View templates](/build/model/views/document-pages/) — the structured view templates, a separate format.
+- [View template schema](/reference/dvt-schema/) — the full variable list a view template binds.
 - [Computed fields](/build/model/data/computed-fields/) — Lua functions, not templates.

@@ -1,25 +1,25 @@
 ---
+title: Search from an app
+description: Find documents across doctypes with one ranked, label-only search call.
 type: how-to
-title: Search
-description: Find documents across doctypes with the search endpoint.
 audience: [developer]
 features: [DOC-06]
+verified_at: eee55a2
 sidebar:
   order: 2
-verified_at: a77c6171
 ---
 
 Search answers one term with one ranked response. It reads every searchable
 doctype the credential can read, inside one domain or across the whole
-application. It returns labels only, never document content. The application's
-command palette calls this endpoint.
+application. It returns labels only, never document content. The Facet
+command palette calls this endpoint; your app can call it too.
 
-> **For agents:** `GET /Api/<domain>/search?q=<term>` (one domain) or `GET /Api/search?q=<term>` (whole
-> application). One parameter `q`; a term shorter than 2 characters answers `200` with an empty result,
-> never an error. Hits arrive in per-doctype groups in rank order; each hit carries `id`, `display_name`,
-> `rank`, `root_doctype`, `root_id`, `root_display_name`, `child_label` — labels only, no content. Fetch
-> the document by `root_id` (or `id`) to read content. QUERY form: `-X QUERY` with `{"q": "<term>"}` in a
-> JSON body; any query-string parameter answers `422`.
+> **For agents:** `GET /Api/<domain>/search?q=<term>` (one domain) or `GET /Api/search?q=<term>`
+> (whole application). One parameter `q`; a term shorter than 2 characters answers `200` with an
+> empty result, never an error. Hits arrive in per-doctype groups in rank order; each hit carries
+> `id`, `display_name`, `rank`, `root_doctype`, `root_id`, `root_display_name`, `child_label` —
+> labels only, no content. Fetch the document by `root_id` (or `id`) to read content. QUERY form:
+> `-X QUERY` with `{"q": "<term>"}` in a JSON body; any query-string parameter answers `422`.
 
 ## When to use this
 
@@ -42,8 +42,9 @@ To filter one known doctype, use the list filters instead — see
   through the bare `search` filter — see
   [Use the REST API](/build/apps/data/rest-api/).
 
-  The examples use `https://facet.example.com` and the `crm` domain. Replace
-  both with your values.
+The examples run against a dev instance at `https://facet.localhost:3443`
+with the Brightwater Rentals data loaded. Sign in first — see
+[Use the REST API](/build/apps/data/rest-api/) for the login call.
 
 ## Steps
 
@@ -53,34 +54,33 @@ Two routes exist, each with a GET and a QUERY form:
 
 | Route | Scope |
 | --- | --- |
-| `GET /Api/crm/search` | One domain. |
+| `GET /Api/clients/search` | One domain. |
 | `GET /Api/search` | The whole application. |
 
-The app-wide route runs one query per storage group and merges the results by
-rank. An unknown domain answers `404`. A draft domain answers `200` with an
-empty result and is excluded from the app-wide route:
+The app-wide route runs one query per storage group and merges the results
+by rank. An unknown domain answers `404`. A draft domain answers `200` with
+an empty result and is excluded from the app-wide route:
 
 ```sh
-curl "https://facet.example.com/Api/crm/search?q=acme" \
-  -H "Authorization: Bearer $FACET_API_KEY"
+curl -sk -b facet-cookies.txt \
+  'https://facet.localhost:3443/Api/clients/search?q=Lumière'
 
-curl "https://facet.example.com/Api/search?q=acme" \
-  -H "Authorization: Bearer $FACET_API_KEY"
+curl -sk -b facet-cookies.txt \
+  'https://facet.localhost:3443/Api/search?q=Lumière'
 ```
 
 ### 2. Send the term
 
-One parameter exists: `q`. A term shorter than 2 characters after strip, or a
-missing term, answers `200` with an empty result — never an error. Gate the
-same way in the client before you call.
+One parameter exists: `q`. A term shorter than 2 characters after strip, or
+a missing term, answers `200` with an empty result — never an error. Gate
+the same way in the client before you call.
 
 The `QUERY` form carries `q` in a JSON body only:
 
 ```sh
-curl -X QUERY "https://facet.example.com/Api/crm/search" \
-  -H "Authorization: Bearer $FACET_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{ "q": "acme" }'
+curl -sk -b facet-cookies.txt -X QUERY 'https://facet.localhost:3443/Api/clients/search' \
+  -H 'Content-Type: application/json' -H 'X-Requested-With: XMLHttpRequest' \
+  -d '{ "q": "Lumière" }'
 ```
 
 Any query-string parameter on a `QUERY` request answers `422`. A body with a
@@ -88,30 +88,67 @@ non-JSON `Content-Type` answers `415`.
 
 ### 3. Read the response
 
-The response is the standard envelope. `data` holds per-doctype groups in
-rank order. Every group carries `domain` and `doctype`; the hits inherit
-these values:
+The app-wide search for `Lumière` over the Brightwater data answers:
 
 ```json
 {
   "data": [
     {
-      "domain": "crm",
+      "domain": "clients",
       "doctype": "Company",
       "hits": [
         {
-          "id": "01JD8W2G7Q5M2X9K4T6VBNR8D",
-          "display_name": "Acme",
-          "rank": 0.83,
+          "id": "06H1FM1B3MXBPS0JYVM3BDD154",
+          "display_name": "Maison Lumière",
+          "rank": 0.4444444477558136,
           "root_doctype": "Company",
-          "root_id": "01JD8W2G7Q5M2X9K4T6VBNR8D",
-          "root_display_name": "Acme",
+          "root_id": "06H1FM1B3MXBPS0JYVM3BDD154",
+          "root_display_name": "Maison Lumière",
+          "child_label": null
+        }
+      ]
+    },
+    {
+      "domain": "clients",
+      "doctype": "Contact",
+      "hits": [
+        {
+          "id": "06H1FM1C1MN3MMVH7KH5H8THSA",
+          "display_name": "Marc Dubois",
+          "rank": 0.24242424964904785,
+          "root_doctype": "Company",
+          "root_id": "06H1FM1B3MXBPS0JYVM3BDD154",
+          "root_display_name": "Maison Lumière",
+          "child_label": "Marc Dubois"
+        },
+        {
+          "id": "06H1FM1BZW99TG47BEJ2H1D73T",
+          "display_name": "Claire Fontaine",
+          "rank": 0.24242424964904785,
+          "root_doctype": "Company",
+          "root_id": "06H1FM1B3MXBPS0JYVM3BDD154",
+          "root_display_name": "Maison Lumière",
+          "child_label": "Claire Fontaine"
+        }
+      ]
+    },
+    {
+      "domain": "rentals",
+      "doctype": "Booking",
+      "hits": [
+        {
+          "id": "BK-2026-0001",
+          "display_name": "Maison Lumière",
+          "rank": 0.190476194024086,
+          "root_doctype": "Booking",
+          "root_id": "BK-2026-0001",
+          "root_display_name": "Maison Lumière",
           "child_label": null
         }
       ]
     }
   ],
-  "meta": { "q": "acme", "count": 1, "scope": "domain" }
+  "meta": { "q": "Maison", "count": 5, "domain": null }
 }
 ```
 
@@ -127,12 +164,14 @@ these values:
 
 Every hit anchors to a root document. A hit on a root doctype anchors to
 itself. A hit on a composition child anchors to the aggregate root, so the
-app can always open the page behind the hit. Collapse one entry per root in
-the client, with the top-ranked child as the subtitle.
+app can always open the page behind the hit. The two Contact hits above both
+anchor to Maison Lumière — collapse them in the client, with the top-ranked
+child as the subtitle.
 
 Only doctypes with a read grant contribute. A child hit drops when its root
 is unreadable, deleted, or the chain breaks. Nothing reaches the client that
-the credential cannot open.
+the credential cannot open. Tom sees only his five companies; a search that
+would match another company answers without it.
 
 Caps are server constants, not request parameters:
 
@@ -145,12 +184,12 @@ Caps are server constants, not request parameters:
 
 ### 4. Fetch the documents
 
-Hits carry labels only, never content. Fetch the content with a document read
-on `root_id`, or on `id` when the hit is the root:
+Hits carry labels only, never content. Fetch the content with a document
+read on `root_id`, or on `id` when the hit is the root:
 
 ```sh
-curl "https://facet.example.com/Api/crm/Company/01JD8W2G7Q5M2X9K4T6VBNR8D" \
-  -H "Authorization: Bearer $FACET_API_KEY"
+curl -sk -b facet-cookies.txt \
+  'https://facet.localhost:3443/Api/clients/Company/06H1FM1B3MXBPS0JYVM3BDD154'
 ```
 
 See [Use the REST API](/build/apps/data/rest-api/) for the document envelope.
@@ -160,7 +199,7 @@ See [Use the REST API](/build/apps/data/rest-api/) for the document envelope.
 One fetch renders the labels for a find box:
 
 ```ts
-const response = await fetch("https://facet.example.com/Api/search?q=acme", {
+const response = await fetch('https://facet.localhost:3443/Api/search?q=Lumière', {
 	headers: { Authorization: `Bearer ${process.env.FACET_API_KEY}` }
 });
 if (!response.ok) throw new Error(`search failed: ${response.status}`);
@@ -183,8 +222,8 @@ deleted; or the credential holds no read grant on the doctype.
 
 **The app-wide search misses a whole domain.**
 
-A draft domain is excluded from the app-wide route. A domain-scoped call on a
-draft domain also answers empty.
+A draft domain is excluded from the app-wide route. A domain-scoped call on
+a draft domain also answers empty.
 
 **An unknown domain answers `404`.**
 
@@ -197,5 +236,6 @@ By design: labels only. Fetch each document by `root_id` or `id` (step 4).
 ## Related
 
 - [Use the REST API](/build/apps/data/rest-api/) — the list filters behind one doctype.
-- [Agent tools](/build/apps/agents/agent-tools/) — the `search_documents` tool for agents.
-- Internals on GitHub: [search.md](https://github.com/wearefacet/facet/blob/main/doc/backend/search.md).
+- [What agents can do](/build/apps/agents/agent-tools/) — the `search_documents` tool for agents.
+- Internals on GitHub:
+  [search.md](https://github.com/wearefacet/facet/blob/main/doc/backend/search.md).

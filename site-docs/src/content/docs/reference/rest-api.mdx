@@ -6,14 +6,14 @@ audience: [developer, operator]
 features: [PLT-12]
 sidebar:
   order: 3
-verified_at: 008dd880
+verified_at: eee55a2
 ---
 
-Use this page to look up a route: its methods, parameters, and status codes.
+A client developer looks up a route — its methods, parameters, and status codes — or checks one error shape against the code. The embedded reference below covers the document, audit, IAM, platform, import/export, and secret routes.
 
-This page embeds the interactive REST API reference for the document, audit, and IAM routes.
+This page embeds the interactive REST API reference rendered from the OpenAPI specification.
 The site vendors a copy of `doc/api/openapi.json` at `/api/openapi.json`.
-`make gen-docs-rest-api` refreshes the copy.
+`make gen-docs-rest-api` refreshes the copy from the committed artifact, which a CI job keeps in sync with the routes.
 
 The how-to pages under `/build/apps/` teach the same routes with worked examples.
 

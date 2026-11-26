@@ -1,105 +1,62 @@
 ---
 type: explanation
-title: Domains and isolation
-description: A domain groups doctypes and bounds their data; no data crosses a domain boundary without explicit consent.
+title: Domains: where your data lives
+description: See how Facet keeps each business area separate, and how data crosses between areas only by agreement.
 audience: [evaluator, author]
-features: [DOM-01, DOM-14]
+features: [DOM-01, DOM-02, DOM-14]
+verified_at: eee55a2
 sidebar:
   order: 1
-verified_at: 7a6cb462
 ---
 
-A domain holds one business area, such as `hr` or `sales`. Doctypes, hooks,
-and grants all live inside it. Nothing crosses the boundary on its own.
-Every cross-domain flow needs an explicit consent.
+Brightwater rents out tents, stages, and sound systems. The company tracks three different things: its stock, its clients, and its bookings. In Facet, each of those lives in its own **domain** — one business area, kept separate from the others.
 
-## Explanation
+*A domain keeps its records inside. Crossing to a neighbour is a door someone opens on purpose.*
 
-<!-- d2
-domain: Domain {class: external}
-boundary: "Read crosses a\ndomain boundary?" {class: decision}
-free: No grant needed {class: ok}
-grant: "Active domain grant?" {class: decision}
-flow: Granted fields flow {class: ok}
-refused: Read refused {class: danger}
+```d2
+direction: down
+clients: "clients — companies and contacts" {class: store}
+rentals: "rentals — bookings" {class: store}
+equipment: "equipment — items and repairs" {class: store}
+clients -> rentals: "a granted door: the client's name rides onto the booking"
+rentals -> equipment: "a granted door: bookings drive stock"
+```
 
-domain -> boundary
-boundary -> free: "no — same domain"
-boundary -> grant: "yes — foreign domain"
-grant -> flow: "field tags covered"
-grant -> refused: "missing or inactive"
--->
-<div class="d2-diagram">
-<img class="d2-diagram__img d2-diagram__light" src="/diagrams/57f6d8f8-light.svg" alt="Read crosses a domain boundary?" loading="lazy" />
-<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/57f6d8f8-dark.svg" alt="Read crosses a domain boundary?" loading="lazy" />
-</div>
+## What a domain holds
 
-**What a domain holds.** A domain is a `core.Domain` document, and its id
-is the domain name. Every doctype id is therefore qualified, like
-`hr.Employee`. The domain must exist before you register doctypes inside
-it; registration answers `422` when it does not.
+Each domain says which kinds of records exist, and what each kind holds. A kind of record is a **doctype**; the things a record holds are its **fields**.
 
-The domain owns its doctypes and their view templates. It owns the hooks
-declared on the domain document, and the grants it issues to other domains.
-It also owns its draft state: a draft domain has an id that starts with
-`_`. You publish a draft into a fresh, live domain. Grants never involve
-drafts — both sides must be live domains.
+Brightwater's *equipment* domain holds the *Item* doctype: name, category, status, serial number, purchase price. It also holds *MaintenanceTicket*, so a broken generator becomes a tracked job, not a sticky note. The *clients* domain holds *Company* and their *Contact* people. The *rentals* domain holds *Booking* and its lines.
 
-**A domain moves as one unit.** A domain is also the unit of portability.
-Export and import move one domain with its definitions and its data.
+Fields carry types — a date, a price, a choice from a list — so a booking's dates stay dates, and a price stays a number. One domain, one tidy model of one part of the business.
 
-**Isolation is the default.** Data does not leave a domain on its own. A
-cross-domain read needs one of two explicit consents:
+## Kept apart, crossed on purpose
 
-- **The document API.** Reads follow role permissions. The role must hold
-  a permission line that names the foreign doctype.
-- **The automation surfaces.** Replication fields, hooks with a foreign
-  source, and Lua reads of a foreign doctype need an active domain grant.
-  Without coverage, the read is refused.
+Nothing leaves a domain on its own. That is the point: your client list cannot quietly leak into another area, and a mistake in one model cannot corrupt another.
 
-  Same-domain edges skip every gate. A domain reading itself is not a sharing
-  decision.
+Records still reach each other when it makes sense. A booking names its client: the *Booking* record points at a *Company* record in the *clients* domain. Your role decides whether you may follow that pointer.
 
-  **What a grant shares.** A grant is a document under the producer domain,
-  and one grant covers one consumer domain. It carries a resources list: one
-  entry per producer doctype, and each entry names field tags. Grants give
-  read access only — no write access exists.
+Copying is a different story. The booking keeps its own copy of the client's name, so it stays readable even years later. That copy flows through a **grant**: a written agreement between the two domains, naming which records and which fields may cross. The domain that owns the data signs the agreement; the other side only reads. Brightwater runs two: the client's name rides onto bookings, and bookings drive the stock board in *equipment*.
 
-  **A field is shared when its tags match.** Untagged fields count as
-  `default`, so an entry that names `default` reaches every untagged field.
-  The consumer receives the covered fields only; the server removes the rest
-  before delivery.
+## Start in a draft
 
-  **The producer decides activation.** Activation is the producer's right, and
-  it is all-or-nothing per grant. A publish that widens the shared resources
-  drops an active grant back to inactive. The producer must accept it again.
+You never edit a live domain's structure while people work in it. You work in a private copy, try the fields, break them, fix them. When it behaves, one step moves it into a real domain — that step is **publish**. Publishing copies the structure; the practice records you typed while experimenting stay behind unless you choose to bring them along.
 
-  **One hop only.** Replication is one hop. A replica field may not feed
-  another replica; the authoring gate rejects the chain with `422`.
+## What this means for you
 
-:::caution
-A grant works at tag grain, not at role grain. A consumer domain that
-holds a grant on a tag can read those fields from Lua scripts. The human
-caller who triggers the script may not read the same field through the
-document API. Grant a tag to a domain, never to a role.
-:::
+- Give each part of the business its own domain, and each domain stays simple enough to explain on one page.
+- A security question has a short answer: data crosses only where someone signed a grant.
+- New kinds of records arrive in a draft, so a mistake never reaches your team.
 
-### The trade-off
+## For the technical detail
 
-**Grants couple domains.** The consumer reads live data, so it depends on the
-producer's contract. Deactivate the grant, and the copies stop updating.
-Narrow the tags, and the values already copied stay where they are. No job
-sweeps them out. Activate the grant again, and the next source event
-re-pushes the value.
-
-**Hard isolation costs duplication.** Both options are first-class. When the
-coupling costs more than the copy, duplicate the field and keep the domains
-fully independent.
+- [How domains stay isolated](/build/deeper/domain-isolation/) — the boundary rules, in full.
+- [How drafts work](/build/model/in-app/how-drafts-work/) — the draft state and the publish gate.
+- [Share data across domains](/build/model/relations/across-domains/) — how to set up a grant.
+- [How copied fields stay in sync](/build/deeper/cross-domain-replication/) — the mechanics behind a copy.
 
 ## Related
 
-- [Architecture at a glance](/discover/how-it-works/) — where domains sit in the request path.
-- [Domains, drafts and domain editors](/build/model/in-app/drafts-and-publishing/) — create a domain and register doctypes in it.
-- [Cross-domain replication](/build/deeper/cross-domain-replication/) — the copy mechanism a grant gates.
-- [Authorization enforcement](/admin/under-the-hood/how-access-is-enforced/) — the role checks behind the document API.
-- Internals on GitHub: [doctype-system.md](https://github.com/wearefacet/facet/blob/main/doc/backend/doctype-system.md), [domain-grants.md](https://github.com/wearefacet/facet/blob/main/doc/backend/domain-grants.md), [replication.md](https://github.com/wearefacet/facet/blob/main/doc/backend/replication.md).
+- [The big picture](/discover/how-it-works/) — where domains sit among the five ideas.
+- [Documents: records with a memory](/discover/how-it-works/documents/) — the records a domain holds.
+- [Domains, drafts and domain editors](/build/model/in-app/drafts-and-publishing/) — create and publish a domain, step by step.

@@ -16,13 +16,13 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 | ID | Fonctionnalité | Pages |
 | --- | --- | --- |
 | AI-01 | Workspace assistant | [L’IA sous les droits de l’appelant](/fr/discover/how-it-works/assistant/), [Utiliser l’assistant](/fr/use/assistant/) |
-| AI-02 | Domain-builder assistant | [L’assistant de construction de domaines](/fr/build/model/in-app/build-with-assistant/) |
-| AI-03 | Per-app assistant | [Intégrer l’assistant](/fr/build/apps/host/embed-assistant/) |
-| AI-04 | Agent tool catalogue | [Outils pour agents](/fr/build/apps/agents/agent-tools/), [L’IA sous les droits de l’appelant](/fr/discover/how-it-works/assistant/), [Outils d’agent](/fr/reference/agent-tools/) |
-| AI-05 | MCP resource server | [MCP : connecter des agents](/fr/build/apps/agents/mcp/) |
-| AI-06 | Skill corpus | [Outils pour agents](/fr/build/apps/agents/agent-tools/), [Bâtir des apps avec un agent de code](/fr/build/apps/agents/coding-agents/), [L’assistant de construction de domaines](/fr/build/model/in-app/build-with-assistant/) |
-| AI-07 | Usage ledger and limits | [Configurer l’assistant](/fr/admin/assistant/connect-a-model/), [Gouverner l’assistant](/fr/admin/assistant/govern/) |
-| AI-08 | Assistant configuration | [Configurer l’assistant](/fr/admin/assistant/connect-a-model/), [Gouverner l’assistant](/fr/admin/assistant/govern/) |
+| AI-02 | Domain-builder assistant | [L’assistant de construction de domaines](/fr/build/model/in-app/build-with-assistant/), [L’IA sous les droits de l’appelant](/fr/discover/how-it-works/assistant/) |
+| AI-03 | Per-app assistant | [Intégrer l’assistant](/fr/build/apps/host/embed-assistant/), [L’IA sous les droits de l’appelant](/fr/discover/how-it-works/assistant/) |
+| AI-04 | Agent tool catalogue | [Outils pour agents](/fr/build/apps/agents/agent-tools/), [Outils d’agent](/fr/reference/agent-tools/) |
+| AI-05 | MCP resource server | [MCP : connecter des agents](/fr/build/apps/agents/mcp/), [L’IA sous les droits de l’appelant](/fr/discover/how-it-works/assistant/) |
+| AI-06 | Skill corpus | [Outils pour agents](/fr/build/apps/agents/agent-tools/), [Bâtir des apps avec un agent de code](/fr/build/apps/agents/coding-agents/), [L’assistant de construction de domaines](/fr/build/model/in-app/build-with-assistant/), [Build domains with a coding agent](/build/model/in-files/with-a-coding-agent/) |
+| AI-07 | Usage ledger and limits | [Configurer l’assistant](/fr/admin/assistant/connect-a-model/), [Gouverner l’assistant](/fr/admin/assistant/govern/), [L’IA sous les droits de l’appelant](/fr/discover/how-it-works/assistant/) |
+| AI-08 | Assistant configuration | [Configurer l’assistant](/fr/admin/assistant/connect-a-model/), [Gouverner l’assistant](/fr/admin/assistant/govern/), [L’IA sous les droits de l’appelant](/fr/discover/how-it-works/assistant/) |
 | AI-09 | Stale-turn sweep | [Configurer l’assistant](/fr/admin/assistant/connect-a-model/) |
 | AI-10 | Conversation titles | — |
 | AI-11 | Reply-language directive | — |
@@ -31,12 +31,12 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 
 | ID | Fonctionnalité | Pages |
 | --- | --- | --- |
-| APP-01 | App registry | [Enregistrer une app](/fr/build/apps/connect/register/), [Comment fonctionnent les apps sur Facet](/fr/build/apps/how-apps-work/) |
+| APP-01 | App registry | [Enregistrer une app](/fr/build/apps/connect/register/), [Comment fonctionnent les apps sur Facet](/fr/build/apps/how-apps-work/), [Apps: built fast, replaced freely](/discover/how-it-works/apps/) |
 | APP-02 | OAuth 2.1 authorization server | [Connexion utilisateur : OAuth 2.1 + PKCE](/fr/build/apps/connect/user-login/) |
 | APP-03 | DPoP proof binding | [Liaison DPoP des tokens](/fr/build/apps/connect/dpop/) |
 | APP-04 | Dynamic client registration | [MCP : connecter des agents](/fr/build/apps/agents/mcp/) |
 | APP-05 | Consent screen | [Connexion utilisateur : OAuth 2.1 + PKCE](/fr/build/apps/connect/user-login/) |
-| APP-06 | App hosting | [Déployer avec des conteneurs](/fr/admin/install/containers/), [Déployer en production](/fr/admin/install/production/), [Déployer votre frontend](/fr/build/apps/host/deploy/) |
+| APP-06 | App hosting | [Déployer avec des conteneurs](/fr/admin/install/containers/), [Déployer en production](/fr/admin/install/production/), [Déployer votre frontend](/fr/build/apps/host/deploy/), [Apps: built fast, replaced freely](/discover/how-it-works/apps/) |
 | APP-07 | App API keys and service accounts | [Comptes de service pour les apps backend](/fr/build/apps/connect/backend-apps/) |
 | APP-08 | CORS for registered origins | [CORS et origines autorisées](/fr/build/apps/connect/cors/) |
 | APP-09 | Developer CLI | [Déployer votre frontend](/fr/build/apps/host/deploy/), [Démarrage rapide avec la CLI dev](/fr/build/apps/quickstart/), [CLI des apps Facet](/fr/reference/cli-npm/) |
@@ -48,10 +48,10 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 
 | ID | Fonctionnalité | Pages |
 | --- | --- | --- |
-| AUD-01 | Append-only mutation log | [Le journal des mutations](/fr/admin/under-the-hood/change-log/), [Architecture en un coup d’œil](/fr/discover/how-it-works/), [Sécurité et gouvernance](/fr/discover/security/) |
+| AUD-01 | Append-only mutation log | [Le journal des mutations](/fr/admin/under-the-hood/change-log/), [Documents: records with a memory](/discover/how-it-works/documents/), [Sécurité et gouvernance](/fr/discover/security/) |
 | AUD-02 | Audit reading | [Auditer l’activité](/fr/admin/history/audit/), [Sécurité et gouvernance](/fr/discover/security/), [Historique et retour arrière](/fr/use/documents/history-undo/) |
 | AUD-03 | Audit redaction | [Visibilité des champs par étiquettes](/fr/admin/people/hidden-fields/), [Sécurité et gouvernance](/fr/discover/security/) |
-| AUD-04 | Rollback | [Revenir en arrière](/fr/admin/history/roll-back/), [Sécurité et gouvernance](/fr/discover/security/), [Historique et retour arrière](/fr/use/documents/history-undo/) |
+| AUD-04 | Rollback | [Revenir en arrière](/fr/admin/history/roll-back/), [Documents: records with a memory](/discover/how-it-works/documents/), [Sécurité et gouvernance](/fr/discover/security/), [Historique et retour arrière](/fr/use/documents/history-undo/) |
 | AUD-05 | Write-time coalescing | [La rétention : quoi et combien de temps](/fr/admin/history/retention/), [Le journal des mutations](/fr/admin/under-the-hood/change-log/), [Sécurité et gouvernance](/fr/discover/security/) |
 | AUD-06 | Retention compaction | [La rétention : quoi et combien de temps](/fr/admin/history/retention/), [Sécurité et gouvernance](/fr/discover/security/) |
 | AUD-07 | Tombstone retention | [La rétention : quoi et combien de temps](/fr/admin/history/retention/), [Sécurité et gouvernance](/fr/discover/security/) |
@@ -62,7 +62,7 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 
 | ID | Fonctionnalité | Pages |
 | --- | --- | --- |
-| AUT-01 | Event bus | [Health checks, métriques, tracing, logs](/fr/admin/keep-running/monitoring/), [Événements et garanties de livraison](/fr/admin/under-the-hood/events-and-delivery/), [Architecture en un coup d’œil](/fr/discover/how-it-works/) |
+| AUT-01 | Event bus | [Health checks, métriques, tracing, logs](/fr/admin/keep-running/monitoring/), [Événements et garanties de livraison](/fr/admin/under-the-hood/events-and-delivery/) |
 | AUT-02 | Domain event hooks | [Hooks d’événement et planifiés](/fr/build/model/automation/event-hooks/) |
 | AUT-03 | Outbound webhooks | [Webhooks sortants](/fr/build/model/automation/webhooks/), [Payloads des webhooks](/fr/reference/webhook-payloads/) |
 | AUT-04 | Background jobs | [Jobs en arrière-plan et cron](/fr/admin/keep-running/jobs-cron/) |
@@ -77,7 +77,7 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 
 | ID | Fonctionnalité | Pages |
 | --- | --- | --- |
-| DOC-01 | Document CRUD | [Utiliser l’API REST](/fr/build/apps/data/rest-api/), [Documents, doctypes et projections](/fr/build/deeper/documents-and-projections/) |
+| DOC-01 | Document CRUD | [Utiliser l’API REST](/fr/build/apps/data/rest-api/), [Documents, doctypes et projections](/fr/build/deeper/documents-and-projections/), [Documents: records with a memory](/discover/how-it-works/documents/) |
 | DOC-02 | List and filter grammar | [Utiliser l’API REST](/fr/build/apps/data/rest-api/), [Opérateurs de filtre](/fr/reference/filter-operators/), [Listes, filtres et vues enregistrées](/fr/use/finding/lists-and-views/) |
 | DOC-03 | Aggregates | [Utiliser l’API REST](/fr/build/apps/data/rest-api/) |
 | DOC-04 | ETag caching | [Utiliser l’API REST](/fr/build/apps/data/rest-api/) |
@@ -97,12 +97,12 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 
 | ID | Fonctionnalité | Pages |
 | --- | --- | --- |
-| DOM-01 | Domains | [Build your first domain](/build/first-hour/first-domain/), [Domaines, brouillons et éditeurs](/fr/build/model/in-app/drafts-and-publishing/), [Domaines et isolement](/fr/discover/how-it-works/domains/) |
-| DOM-02 | Draft and publish lifecycle | [Build your first domain](/build/first-hour/first-domain/), [Domaines, brouillons et éditeurs](/fr/build/model/in-app/drafts-and-publishing/), [Brouillon → publication](/fr/build/model/in-app/how-drafts-work/) |
+| DOM-01 | Domains | [How domains stay isolated](/build/deeper/domain-isolation/), [Build your first domain](/build/first-hour/first-domain/), [Domaines, brouillons et éditeurs](/fr/build/model/in-app/drafts-and-publishing/), [Domaines et isolement](/fr/discover/how-it-works/domains/) |
+| DOM-02 | Draft and publish lifecycle | [Build your first domain](/build/first-hour/first-domain/), [From dev to production](/build/model/dev-to-production/), [Domaines, brouillons et éditeurs](/fr/build/model/in-app/drafts-and-publishing/), [Brouillon → publication](/fr/build/model/in-app/how-drafts-work/), [Choose how you build](/build/model/), [Domaines et isolement](/fr/discover/how-it-works/domains/) |
 | DOM-03 | Doctypes | [Documents, doctypes et projections](/fr/build/deeper/documents-and-projections/), [Build your first domain](/build/first-hour/first-domain/), [Concevoir des doctypes](/fr/build/model/data/design-doctypes/), [Schéma de définition de doctype](/fr/reference/doctype-schema/) |
 | DOM-04 | Field type system | [Build your first domain](/build/first-hour/first-domain/), [Types de champs (guide)](/fr/build/model/data/field-types/), [Types de champs](/fr/reference/field-types/) |
 | DOM-05 | Composition (parent and children) | [Composition parent/enfant](/fr/build/model/relations/parent-child/) |
-| DOM-06 | Sidecars | [Sidecars (commentaires, pièces jointes)](/fr/build/model/relations/comments-attachments/), [Commentaires et pièces jointes](/fr/use/documents/comments-attachments/) |
+| DOM-06 | Sidecars | [Sidecars (commentaires, pièces jointes)](/fr/build/model/relations/comments-attachments/), [Documents: records with a memory](/discover/how-it-works/documents/), [Commentaires et pièces jointes](/fr/use/documents/comments-attachments/) |
 | DOM-07 | Named actions | [Actions nommées](/fr/build/model/behaviour/named-actions/) |
 | DOM-08 | Lifecycle scripts | [Scripts de cycle de vie et garde-fous](/fr/build/model/behaviour/scripts-and-guards/), [API Lua](/fr/reference/lua-api/) |
 | DOM-09 | Computed fields | [Champs calculés](/fr/build/model/data/computed-fields/) |
@@ -110,12 +110,12 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 | DOM-11 | Unique constraints | [Identifiants et contraintes d’unicité](/fr/build/model/data/identifiers-uniqueness/) |
 | DOM-12 | Named scopes | [Les périmètres de lignes](/fr/admin/people/row-scopes/), [Les périmètres nommés](/fr/build/model/access/named-scopes/) |
 | DOM-13 | Domain editors | [Domaines, brouillons et éditeurs](/fr/build/model/in-app/drafts-and-publishing/) |
-| DOM-14 | Domain grants | [Réplication entre domaines](/fr/build/deeper/cross-domain-replication/), [Partager des données entre domaines](/fr/build/model/relations/across-domains/), [Domaines et isolement](/fr/discover/how-it-works/domains/) |
-| DOM-15 | Portable domain bundles | [Déplacer des domaines avec des bundles](/fr/build/model/bundles/) |
-| DOM-16 | Definition diagnostics | [Build your first domain](/build/first-hour/first-domain/), [Vérifier un domaine avant publication](/fr/build/model/in-app/check-before-publish/) |
+| DOM-14 | Domain grants | [Réplication entre domaines](/fr/build/deeper/cross-domain-replication/), [How domains stay isolated](/build/deeper/domain-isolation/), [Partager des données entre domaines](/fr/build/model/relations/across-domains/), [Domaines et isolement](/fr/discover/how-it-works/domains/) |
+| DOM-15 | Portable domain bundles | [Déplacer des domaines avec des bundles](/fr/build/model/bundles/), [From dev to production](/build/model/dev-to-production/), [The domain file layout](/build/model/in-files/domain-files/) |
+| DOM-16 | Definition diagnostics | [Build your first domain](/build/first-hour/first-domain/), [Vérifier un domaine avant publication](/fr/build/model/in-app/check-before-publish/), [Brouillon → publication](/fr/build/model/in-app/how-drafts-work/) |
 | DOM-17 | Lazy document migration | [Évolution du schéma](/fr/build/deeper/schema-evolution/), [Faire évoluer un schéma](/fr/build/model/change-a-live-domain/) |
 | DOM-18 | Re-projection CLI | [Faire évoluer un schéma](/fr/build/model/change-a-live-domain/), [CLI facet](/fr/reference/cli-facet/) |
-| DOM-19 | Dev domain watcher | [Le watcher de domaines en dev](/fr/build/model/in-files/domain-watcher/) |
+| DOM-19 | Dev domain watcher | [From dev to production](/build/model/dev-to-production/), [Vérifier un domaine avant publication](/fr/build/model/in-app/check-before-publish/), [The domain file layout](/build/model/in-files/domain-files/), [Le watcher de domaines en dev](/fr/build/model/in-files/domain-watcher/), [Build domains with a coding agent](/build/model/in-files/with-a-coding-agent/), [Choose how you build](/build/model/) |
 | DOM-20 | Domain schematic | [La vue schématique](/fr/build/model/views/schematic/) |
 | DOM-21 | CollectionView | [Build your first domain](/build/first-hour/first-domain/), [Vues de collection](/fr/build/model/views/lists-boards-calendars/), [Listes, filtres et vues enregistrées](/fr/use/finding/lists-and-views/) |
 | DOM-22 | DocumentView templates | [Modèles de vue](/fr/build/model/views/document-pages/), [Schéma du modèle DVT](/fr/reference/dvt-schema/), [Contexte des modèles Jinja2](/fr/reference/jinja2-context/) |
@@ -143,7 +143,7 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 | FE-07 | Command palette | [Recherche et palette de commandes](/fr/use/finding/search/) |
 | FE-08 | Keyboard shortcuts | [Raccourcis clavier](/fr/use/finding/keyboard-shortcuts/) |
 | FE-09 | Notifications UI | [Notifications](/fr/use/notifications/) |
-| FE-10 | Builder | [Build your first domain](/build/first-hour/first-domain/) |
+| FE-10 | Builder | [Build your first domain](/build/first-hour/first-domain/), [Domaines, brouillons et éditeurs](/fr/build/model/in-app/drafts-and-publishing/) |
 | FE-11 | Configure access | [Gérer les comptes](/fr/admin/people/accounts/), [Give your team access](/build/first-hour/team-access/) |
 | FE-12 | Configure apps | [La portée des apps (attributions)](/fr/admin/apps-access/app-grants/), [Enregistrer une app](/fr/build/apps/connect/register/) |
 | FE-13 | Configure domains | [Domaines, brouillons et éditeurs](/fr/build/model/in-app/drafts-and-publishing/) |
@@ -195,7 +195,7 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 | PLT-09 | Structured logging | [Health checks, métriques, tracing, logs](/fr/admin/keep-running/monitoring/) |
 | PLT-10 | Database topology | [Prérequis système et topologie](/fr/admin/install/requirements/) |
 | PLT-11 | Migrations | [Déployer en production](/fr/admin/install/production/), [Migrations de base de données](/fr/admin/keep-running/migrations/), [Mises à niveau et arrêt propre](/fr/admin/keep-running/upgrades/), [CLI facet](/fr/reference/cli-facet/) |
-| PLT-12 | OpenAPI specification | [Facet est-il fait pour vous ?](/fr/discover/is-it-right-for-you/), [API REST](/fr/reference/rest-api/) |
+| PLT-12 | OpenAPI specification | [API REST](/fr/reference/rest-api/) |
 | PLT-13 | HTTP admission gates | [Utiliser l’API REST](/fr/build/apps/data/rest-api/), [Réponses d’erreur](/fr/reference/error-responses/) |
 | PLT-14 | Currency registry and money math | [Devises et montants](/fr/admin/configure/currencies/) |
 | PLT-15 | Graceful shutdown | [Mises à niveau et arrêt propre](/fr/admin/keep-running/upgrades/) |
@@ -206,16 +206,16 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 
 | ID | Fonctionnalité | Pages |
 | --- | --- | --- |
-| RBC-01 | Roles | [Rôles et lignes de permission](/fr/admin/people/roles-and-permissions/), [Rôles, niveaux et garde-fou](/fr/admin/people/who-can-change-roles/), [Give your team access](/build/first-hour/team-access/), [Sécurité et gouvernance](/fr/discover/security/), [Syntaxe des lignes de permission](/fr/reference/permission-syntax/) |
-| RBC-02 | Role assignment and election | [Affecter les rôles et l’élection](/fr/admin/people/assign-roles/), [Give your team access](/build/first-hour/team-access/), [Sécurité et gouvernance](/fr/discover/security/) |
+| RBC-01 | Roles | [Rôles et lignes de permission](/fr/admin/people/roles-and-permissions/), [Rôles, niveaux et garde-fou](/fr/admin/people/who-can-change-roles/), [Give your team access](/build/first-hour/team-access/), [Roles: who sees and does what](/discover/how-it-works/roles/), [Sécurité et gouvernance](/fr/discover/security/), [Syntaxe des lignes de permission](/fr/reference/permission-syntax/) |
+| RBC-02 | Role assignment and election | [Affecter les rôles et l’élection](/fr/admin/people/assign-roles/), [Give your team access](/build/first-hour/team-access/), [Roles: who sees and does what](/discover/how-it-works/roles/), [Sécurité et gouvernance](/fr/discover/security/) |
 | RBC-03 | Read enforcement | [Application des autorisations](/fr/admin/under-the-hood/how-access-is-enforced/), [Sécurité et gouvernance](/fr/discover/security/), [Syntaxe des lignes de permission](/fr/reference/permission-syntax/) |
-| RBC-04 | Field visibility tags | [Visibilité des champs par étiquettes](/fr/admin/people/hidden-fields/), [Give your team access](/build/first-hour/team-access/), [Sécurité et gouvernance](/fr/discover/security/) |
-| RBC-05 | Row scopes | [Les périmètres de lignes](/fr/admin/people/row-scopes/), [Give your team access](/build/first-hour/team-access/), [Sécurité et gouvernance](/fr/discover/security/) |
+| RBC-04 | Field visibility tags | [Visibilité des champs par étiquettes](/fr/admin/people/hidden-fields/), [Give your team access](/build/first-hour/team-access/), [Roles: who sees and does what](/discover/how-it-works/roles/), [Sécurité et gouvernance](/fr/discover/security/) |
+| RBC-05 | Row scopes | [Les périmètres de lignes](/fr/admin/people/row-scopes/), [Give your team access](/build/first-hour/team-access/), [Roles: who sees and does what](/discover/how-it-works/roles/), [Sécurité et gouvernance](/fr/discover/security/) |
 | RBC-06 | Write enforcement | [Application des autorisations](/fr/admin/under-the-hood/how-access-is-enforced/), [Sécurité et gouvernance](/fr/discover/security/), [Syntaxe des lignes de permission](/fr/reference/permission-syntax/) |
 | RBC-07 | Role authority guard | [Rôles et lignes de permission](/fr/admin/people/roles-and-permissions/), [Rôles, niveaux et garde-fou](/fr/admin/people/who-can-change-roles/), [Sécurité et gouvernance](/fr/discover/security/) |
-| RBC-08 | App grants | [La portée des apps (attributions)](/fr/admin/apps-access/app-grants/), [Apps : attributions ∩ rôles](/fr/build/apps/connect/what-an-app-can-do/), [Comment fonctionnent les apps sur Facet](/fr/build/apps/how-apps-work/), [Sécurité et gouvernance](/fr/discover/security/) |
+| RBC-08 | App grants | [La portée des apps (attributions)](/fr/admin/apps-access/app-grants/), [Apps : attributions ∩ rôles](/fr/build/apps/connect/what-an-app-can-do/), [Comment fonctionnent les apps sur Facet](/fr/build/apps/how-apps-work/), [Apps: built fast, replaced freely](/discover/how-it-works/apps/), [Sécurité et gouvernance](/fr/discover/security/) |
 | RBC-09 | Metadata gate | [Application des autorisations](/fr/admin/under-the-hood/how-access-is-enforced/), [Sécurité et gouvernance](/fr/discover/security/) |
-| RBC-10 | Auth contexts | [Contextes d’authentification](/fr/admin/under-the-hood/one-role-at-a-time/), [Architecture en un coup d’œil](/fr/discover/how-it-works/), [Sécurité et gouvernance](/fr/discover/security/) |
+| RBC-10 | Auth contexts | [Contextes d’authentification](/fr/admin/under-the-hood/one-role-at-a-time/), [Sécurité et gouvernance](/fr/discover/security/) |
 | RBC-11 | Permission manifest | [Dimensionner l’UI avec le manifeste](/fr/build/apps/connect/permission-manifest/), [Sécurité et gouvernance](/fr/discover/security/) |
 | RBC-12 | Role connectivity channels | [Sécurité et gouvernance](/fr/discover/security/) |
 

@@ -1,23 +1,28 @@
 ---
+title: What agents can do
+description: The shared document tool catalogue that serves MCP clients and the assistant — families, rights, caps, and errors.
 type: how-to
-title: Agent tools
-description: Use the shared document tool catalogue that serves MCP clients and the assistant.
 audience: [developer]
 features: [AI-04, AI-06]
+verified_at: eee55a2
 sidebar:
   order: 2
-verified_at: a77c6171
 ---
 
-One catalogue of document tools serves every agent surface. The MCP server and
-the in-app assistant mount the same entries. Whichever surface calls, the
-capabilities, the RBAC, the caps, and the error mapping are the same.
+One catalogue of document tools serves every agent surface. The MCP server
+and the in-app assistant mount the same entries. Whichever surface calls,
+the capabilities, the RBAC, the caps, and the error mapping are the same.
+The full generated list — every tool with its parameters — lives in
+[the agent tools reference](/reference/agent-tools/); this page explains
+how the catalogue behaves.
 
-> **For agents:** Call tools with `tools/call` — connect per [MCP: connecting agents](/build/apps/agents/mcp/). Sequence:
-> `tools/list` → `whoami` → `get_schema` before any write → `list_documents` with `field__op` filters →
-> `create_document` / `update_document` (JSON merge patch; `null` removes a key) → `batch` (25 ops max). A filter
-> key the doctype does not declare raises `InvalidParams` — never a silent empty result. Errors carry `data.reason`;
-> caps: 200 rows, 1 MiB envelope, 25 batch ops. Files move over HTTP: `request_artifact_upload` mints a signed URL.
+> **For agents:** Call tools with `tools/call` — connect per
+> [Connect agents over MCP](/build/apps/agents/mcp/). Sequence: `tools/list` → `whoami` →
+> `get_schema` before any write → `list_documents` with `field__op` filters → `create_document` /
+> `update_document` (JSON merge patch; `null` removes a key) → `batch` (25 ops max). A filter key
+> the doctype does not declare raises `-32602` — never a silent empty result. Errors carry
+> `data.reason`; caps: 200 rows, 1 MiB envelope, 25 batch ops. Files move over HTTP:
+> `request_artifact_upload` mints a signed URL.
 
 :::note[Document tools only]
 The catalogue carries no schema authoring: no domain or doctype create or
@@ -36,54 +41,45 @@ Use this page when:
 
 ## Before you start
 
-- Connect first — see [MCP: connecting agents](/build/apps/agents/mcp/). This page
-  speaks MCP; the assistant mounts the same entries.
-- Call `whoami` first: it returns the role, the permission lines, the scopes,
-  and the visible tags. Fields whose tags fall outside `visible_tags` are
-  absent from every result.
+- Connect first — see
+  [Connect agents over MCP](/build/apps/agents/mcp/). This page speaks
+  MCP; the assistant mounts the same entries.
+- Call `whoami` first: it returns the role, the permission lines, the
+  scopes, and the visible tags. Fields whose tags fall outside
+  `visible_tags` are absent from every result.
 
-## The catalogue
+## The catalogue by family
 
-`requires` is the permission line the role must hold for the tool to appear
-in `tools/list`:
+The registry holds 23 tools; the MCP mount adds `read_skill`, for 24 on
+`tools/list`. They fall into six families:
 
-| Tool | `requires` | Purpose |
+| Family | Tools | Rights class |
 | --- | --- | --- |
-| `ping` | none | Server identity and the mounted role. |
-| `list_domains` | read | Live domains; drafts excluded. |
-| `list_doctypes` | read | Doctypes of one domain. |
-| `get_schema` | read | Full doctype definition: fields, actions, scopes, `member_of`, sidecars. |
-| `whoami` | none | Identity, permissions, scopes, visible tags. |
-| `list_documents` | read | Filtered, sorted, paginated list. |
-| `aggregate_documents` | read | `count`, or `sum`/`avg`/`min`/`max` over an integer, duration, or money field. |
-| `get_document` | read | One document by id; optional `expand` and `fields`. |
-| `create_document` | write | Full-content create; `parent_id` creates a child. |
-| `update_document` | write | JSON merge patch (RFC 7386); `null` removes a key. |
-| `delete_document` | write | Soft delete — a tombstone. |
-| `batch` | write | Ordered atomic ops in one transaction. |
-| `call_action` | action | Named doctype action with typed args. |
-| `create_sidecar` | write | Sidecar create on a host document's segment. |
-| `list_sidecars` | read | One host's sidecar segment, paged. |
-| `list_mutations` | read | Document history — or the whole log, for a wildcard reader. |
-| `resolve_refs` | read | A batch of URNs resolved to stub rows. |
-| `get_links` | read | The outbound document links of one document. |
-| `get_backrefs` | read | The live documents that link to one document. |
-| `search_documents` | read | Cross-doctype search; 5 matches per doctype. |
-| `request_artifact_upload` | write | A one-time signed upload URL for a file. |
-| `get_artifact` | read | A short-lived signed download URL. |
-| `list_artifact_refs` | read | The live documents that reference one artifact. |
+| Surface | `ping`, `whoami` | none |
+| Discovery | `list_domains`, `list_doctypes`, `get_schema`, `read_skill` | read |
+| Read | `list_documents`, `aggregate_documents`, `get_document`, `resolve_refs`, `get_links`, `get_backrefs`, `search_documents`, `list_mutations`, `list_sidecars`, `list_artifact_refs` | read |
+| Write | `create_document`, `update_document`, `delete_document`, `batch`, `create_sidecar` | write |
+| Actions | `call_action` | action |
+| Files | `request_artifact_upload`, `get_artifact` | write / read |
 
-`read_skill` is not a catalogue entry. Each surface mounts its own loader; the
-MCP mount serves short markdown references for these tools.
+`read_skill` is not a catalogue entry. Each surface mounts its own loader;
+the MCP mount serves short markdown references for these tools.
+
+A tool's `requires` line gates its appearance in `tools/list`: `read`
+appears for a role that reads the target, `write` for one that writes,
+`action` for one that may run the doctype's non-CRUD actions. Visibility is
+a convenience for the agent, never a boundary: enforcement runs at call
+time, exactly as on REST.
 
 ## Steps
 
 ### 1. List the tools and read the schema
 
-`tools/list` returns the role-filtered listing. Visibility is a convenience
-for the agent, never a boundary: enforcement runs at call time, exactly as on
-REST. Read `get_schema` before any write. It carries the fields, the actions,
-the scopes, the `member_of` parent link, and the host's sidecar segments.
+`tools/list` returns the role-filtered listing. Read `get_schema` before
+any write. It carries the fields, the actions, the scopes, the `member_of`
+parent link, and the host's sidecar segments. On the Brightwater instance,
+`get_schema` on `clients.Company` names the filterable fields before any
+call is made.
 
 ### 2. List and read documents
 
@@ -91,7 +87,7 @@ the scopes, the `member_of` parent link, and the host's sidecar segments.
 
 | Argument | Purpose |
 | --- | --- |
-| `filters` | `field__op` keys — `status__eq`, `salary__gte`, `name__match` |
+| `filters` | `field__op` keys — `status__eq`, `name__match`, `city__starts_with` |
 | `sort` | field names; a `-` prefix sorts descending |
 | `page`, `items` | pagination |
 | `fields` | project each row's content to the named fields |
@@ -99,8 +95,22 @@ the scopes, the `member_of` parent link, and the host's sidecar segments.
 | `scope` | apply a named row scope as a query-time filter |
 | `parent_id` | list one parent's children; child doctypes only |
 
-Filter keys validate against the doctype. An unknown key, or an operator the
-field does not serve, raises `InvalidParams` — never a silent empty result.
+Filter keys validate against the doctype. An unknown key, or an operator
+the field does not serve, raises an error — never a silent empty result.
+From a live session on the Brightwater instance:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 6,
+  "error": {
+    "code": -32602,
+    "message": "Filter operator 'bogus' is not supported for field 'name' on clients.Company (supported: eq, in, match, ne, starts_with)",
+    "data": { "reason": "unsupported_operator", "field": "name", "operator": "bogus" }
+  }
+}
+```
+
 `parent_id` gates through the parent's read scope, the same gate as the
 nested REST route. An oversized result sets `meta.truncated: true` and
 carries `next_cursor`; fetch that page next. Every row's `meta` carries
@@ -108,19 +118,20 @@ carries `next_cursor`; fetch that page next. Every row's `meta` carries
 
 ### 3. Write documents
 
-`create_document` takes the full content. A child doctype needs `parent_id`; a
-child without it is refused. `update_document` takes a JSON merge patch: new
-keys are set, and a `null` value removes the key. `delete_document`
+`create_document` takes the full content. A child doctype needs `parent_id`;
+a child without it is refused. `update_document` takes a JSON merge patch:
+new keys are set, and a `null` value removes the key. `delete_document`
 tombstones the document. `batch` runs ordered `create`, `update`, `delete`,
-and `action` ops in one transaction; a failure rolls the batch back and names
-the op index.
+and `action` ops in one transaction; a failure rolls the batch back and
+names the op index.
 
 ### 4. Act, extend, and inspect
 
-`call_action` runs a named action with typed args. `create_sidecar` and
-`list_sidecars` work on one segment of one host document. `list_mutations`
-answers a document's history; without a `doc_id`, it serves the whole log to
-a wildcard reader. `resolve_refs`, `get_links`, and `get_backrefs` walk the
+`call_action` runs a named action with typed args — on Brightwater, the
+`confirm` action on `rentals.Booking`. `create_sidecar` and `list_sidecars`
+work on one segment of one host document. `list_mutations` answers a
+document's history; without a `doc_id`, it serves the whole log to a
+wildcard reader. `resolve_refs`, `get_links`, and `get_backrefs` walk the
 reference graph. `search_documents` fans a search term over every readable
 doctype.
 
@@ -134,14 +145,14 @@ No file bytes ride the tool channel:
 4. Call `get_artifact` for a download URL, or `list_artifact_refs` to see
    where an artifact is used.
 
-  See [Uploading and serving files](/build/apps/data/files/) for the HTTP side.
+  See [Upload and serve files](/build/apps/data/files/) for the HTTP side.
 
 ## Caps and errors
 
-The caps come from the `mcp:` block: 200 rows, 1 MiB envelope, 25 batch ops —
-see [MCP: connecting agents](/build/apps/agents/mcp/). An oversized result is cut,
-not failed: it sets `meta.truncated` and `next_cursor`. Failures are JSON-RPC
-errors:
+The caps come from the `mcp:` block: 200 rows, 1 MiB envelope, 25 batch ops
+— see [Connect agents over MCP](/build/apps/agents/mcp/). An oversized
+result is cut, not failed: it sets `meta.truncated` and `next_cursor`.
+Failures are JSON-RPC errors:
 
 | Error class | JSON-RPC code | Meaning |
 | --- | --- | --- |
@@ -164,7 +175,25 @@ Every failure carries a machine-readable `data.reason`:
 | `rbac_denied` | `RbacDenied` | — |
 | `capped` | `Capped` | `cap` |
 
-A validation failure on a write carries the per-field errors in `data.details`.
+Live examples of three reasons:
+
+```json
+{ "code": -32602, "message": "Unknown tool: no_such_tool",
+  "data": { "reason": "unknown_tool", "tool": "no_such_tool" } }
+```
+
+```json
+{ "code": -32602, "message": "Unknown argument 'aggregate' for tool 'list_documents' (accepted: doctype, domain, expand, fields, filters, items, page, parent_id, scope, sort)",
+  "data": { "reason": "unknown_argument", "argument": "aggregate", "tool": "list_documents" } }
+```
+
+```json
+{ "code": -32603, "message": "Argument 'ops' must hold between 1 and 25 entries (got 26)",
+  "data": { "reason": "capped", "cap": 25 } }
+```
+
+A validation failure on a write carries the per-field errors in
+`data.details`.
 
 ## Example
 
@@ -178,9 +207,9 @@ The request:
   "params": {
     "name": "list_documents",
     "arguments": {
-      "domain": "crm",
-      "doctype": "Contact",
-      "filters": { "status__eq": "active" },
+      "domain": "clients",
+      "doctype": "Company",
+      "filters": { "city__eq": "Lyon" },
       "sort": ["-created_at"],
       "page": 1
     }
@@ -188,23 +217,23 @@ The request:
 }
 ```
 
-The payload rides in `result.structuredContent`; the same payload also rides as
-a JSON string in `result.content[0].text`:
+The payload rides in `result.structuredContent`; the same payload also rides
+as a JSON string in `result.content[0].text`:
 
 ```json
 {
   "data": [
     {
-      "data": { "name": "Ada Lovelace", "status": "active" },
+      "data": { "name": "Maison Lumière", "city": "Lyon" },
       "meta": {
-        "id": "01JE2W4G7Q2M8X3K5P9R2T4V6W",
-        "domain": "crm",
-        "doc_type": "Contact",
-        "mid": "01JE2W4G7Q2M8X3K5P9R2T4V6X",
+        "id": "06H1FM1B3MXBPS0JYVM3BDD154",
+        "domain": "clients",
+        "doc_type": "Company",
+        "mid": "06H1FM1B3MWR784V64VP6QFM94",
         "version": 1,
-        "created_at": "2026-11-13T09:12:44Z",
-        "updated_at": "2026-11-13T09:12:44Z",
-        "display_name": "Ada Lovelace"
+        "created_at": "2026-11-26T12:24:08Z",
+        "updated_at": "2026-11-26T12:24:08Z",
+        "display_name": "Maison Lumière"
       }
     }
   ],
@@ -216,26 +245,22 @@ a JSON string in `result.content[0].text`:
 the row or byte cap sets `truncated: true` and `next_cursor` to the next
 page number.
 
-A create:
+A tombstone read names the deletion without revealing anything else:
 
 ```json
 {
   "jsonrpc": "2.0",
-  "id": 8,
-  "method": "tools/call",
-  "params": {
-    "name": "create_document",
-    "arguments": {
-      "domain": "crm",
-      "doctype": "Contact",
-      "content": { "name": "Grace Hopper", "email": "grace@example.com", "status": "active" }
-    }
+  "id": 7,
+  "error": {
+    "code": -32602,
+    "message": "Document clients.Company#06H1FRV45MM80SVH32K5JCA6BH not found (deleted)",
+    "data": { "reason": "not_found", "deleted": true }
   }
 }
 ```
 
-The result carries the created content and the same meta shape, with a fresh
-`id` and `mid`.
+The full generated list of tools, parameters, and access classes lives in
+[the agent tools reference](/reference/agent-tools/).
 
 ## Troubleshooting
 
@@ -245,8 +270,8 @@ A key no handler reads — check the tool's `inputSchema` from `tools/list`.
 
 **A listed tool answers `rbac_denied`.**
 
-Listing is visibility; the role still gates the call. Check `whoami` for the
-permission lines.
+Listing is visibility; the role still gates the call. Check `whoami` for
+the permission lines.
 
 **Results stop with `truncated: true`.**
 
@@ -259,8 +284,8 @@ documents give the same answer.
 
 ## Related
 
-- [MCP: connecting agents](/build/apps/agents/mcp/) — the surface that serves this catalogue.
+- [Connect agents over MCP](/build/apps/agents/mcp/) — the surface that serves this catalogue.
 - [Use the REST API](/build/apps/data/rest-api/) — the same filters and errors over HTTP.
-- [Search](/build/apps/data/search/) — the corpus `search_documents` fans out over.
+- [Search from an app](/build/apps/data/search/) — the corpus `search_documents` fans out over.
+- [Agent tools reference](/reference/agent-tools/) — the full generated list.
 - [AI under the caller's rights](/discover/how-it-works/assistant/) — the rights model.
-- Internals on GitHub: [agent-tools.md](https://github.com/wearefacet/facet/blob/main/doc/backend/agent-tools.md).

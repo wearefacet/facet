@@ -1,61 +1,93 @@
 ---
-type: explanation
 title: Is Facet right for you?
-description: Check where Facet helps, where it does not, and whether it matches your business.
+description: Check where Facet fits, where it does not, and what you need to run it.
+type: explanation
 audience: [evaluator]
-features: [PLT-12]
+features: []
+verified_at: eee55a2
 sidebar:
   order: 4
-verified_at: 7a6cb462
 ---
 
-Decide before you install. This page gives you the fits, the misfits, and the
-business cases where Facet is the answer.
+Facet is opinionated software: one model of domains, roles and history,
+applied to every write. That model is what makes it safe to depend on — and
+it is the wrong tool for some jobs. This page tells you which is which, so
+you can decide before you install.
 
-## Good fits
+## Facet fits well when
 
-Facet works well when most of these hold:
+Most of these hold for you:
 
-| Fit | What it gives you |
-| --- | --- |
-| **The business side builds its own apps** | No waiting on a development queue. A business person can describe the app to Claude Code, Claude Opus, or another coding agent, and ship it in hours. |
-| **You want agentic speed without losing control** | Facet gives the agent a governed surface: it acts under one role you pin, and the platform checks every call, whatever wrote the code. |
-| **The records must outlive the apps** | A customer stays a customer, whatever tool edits it. |
-| **People see different rows and fields** | An auditor may ask who changed what. |
-| **You are a small or mid-sized organization and want to self-host** | The data stays in your PostgreSQL, on your machines. |
+- **The business side builds its own tools.** A person who knows the work
+  describes the tool to an AI coding agent and ships it. Facet carries
+  accounts, permissions, history and hosting, so the app stays small.
+- **The records must outlive the apps.** A customer stays a customer, whatever
+  tool edits it next. Delete an app; the data, the rules and the history stay.
+- **People must see different rows and fields.** A salesperson sees their own
+  clients; the warehouse does not see purchase prices. When an auditor asks
+  who changed what, you have an answer.
+- **The data must stay on your infrastructure.** Facet is self-hosted. Your
+  data lives in your PostgreSQL and your file store, wherever you run it.
+- **Access to developers is limited.** The platform carries sign-in, rights
+  and audit once, for every app. A small team can ship many tools.
+- **Your processes are your own.** You describe a domain — its record types,
+  fields and rules — in a draft, check it, and publish it. There is no module
+  to bend your work into.
+- **Accountability is part of the job.** Facet records every change: who made
+  it, when, and through which app. You set how long the history is kept.
 
 Facet replaces the classical stack under the app — the bespoke backend, the
-auth plumbing, the audit scripts. It does not replace the app; it makes the app
-small enough to throw away.
+auth plumbing, the audit scripts. It does not replace the app; it makes the
+app small enough to throw away.
 
-## On the business side, the answer is yes
+## Facet is not the right tool when
 
-Facet pays back best in these five situations:
-
-| Situation | What it gives you |
-| --- | --- |
-| **Sovereignty of your data** | The data stays in your PostgreSQL, on your machines. Nothing leaves unless you send it. |
-| **Auditability and accountability is mandatory** | Every write lands in an append-only event log, with who, when, and what. This covers regulated industries such as healthcare and food. |
-| **Free code you can deploy or adapt** | You hold the code. Deploy it, fork it, or change it to fit your organization. |
-| **Limited access to software developers** | Business people describe the app to a coding agent and ship it. The platform carries auth, rights, and audit, so the app stays small. |
-| **A business needing custom-made domains and applications** | Describe the domain in a draft, and Facet gives you the records, lists, rights, and history for it. |
-
-## Poor fits
-
-Facet is opinionated on purpose: one model of domains, doctypes, roles, and
-history, applied to every write. These workloads need a lower level of control.
-Use custom-made, less opinionated software for them — a plain database and
-hand-built services:
+These workloads need a lower level of control. Use a plain database and
+hand-built services for them:
 
 | Workload | Why it does not fit | Use instead |
 | --- | --- | --- |
-| **Heavy data load** | Every write is validated, logged, and projected. That costs time and storage per row. | A plain PostgreSQL schema, tuned for the load |
+| **Heavy data load** | Every write is checked, recorded, and kept with its history. That costs time and storage per row. | A plain PostgreSQL schema, tuned for the load |
 | **Statistics and analytics** | Lists and filters serve daily operations, not aggregate scans over very large row counts. | An analytics engine, fed by exports |
 | **B2C products** | Facet serves the people of one organization. Accounts come from invites and SSO — there is no public self-service sign-up. | A custom-built consumer stack |
 | **Multi-tenancy** | One deployment serves one organization. Facet has no walls between separate customer companies. | A purpose-built multi-tenant design |
 | **Time-series entries** | High-frequency timestamped rows want append-only storage with retention pruning, not per-row history. | A time-series database |
-| **A business-specific IT architecture** | Facet imposes its model as-is: domains, doctypes, roles, and the event log. It does not reshape around a house architecture. | Custom services around your own architecture |
+| **A house IT architecture** | Facet applies its model as-is: domains, record types, roles, and the change log. It does not reshape around your own architecture. | Custom services around your architecture |
 | **Wanting a hosted service** | Facet is self-hosted software; you run the servers. | A hosted platform |
+
+## What Facet does not have
+
+We would rather you hear this from us. Each line is checkable in the source:
+
+- No built-in reports or charts. Export the data or read it through the API;
+  a BI tool connects there, under the same role rules.
+- No workflow engine. Event hooks and webhooks react to single events; there
+  is no engine for multi-step flows or approval chains across domains.
+- No prebuilt business modules: no CRM, accounting, inventory or HR to
+  install. You model your domains; the assistant helps.
+- No public sign-up. Accounts come from invites or SSO.
+- No mobile app and no hosted version. You run Facet on your servers.
+- No passkeys. Sign-in is password with MFA, SSO, or API keys.
+- No role templates. You define each role's permissions yourself.
+
+## What you need to run it
+
+- **A server you control.** PostgreSQL 14 or newer, and Redis — one of each
+  is enough for most installs. The full list sits on [System
+  requirements](/admin/install/requirements/).
+- **Docker with Compose** for the container path. The release stack is five
+  services behind a TLS edge; you can also build from source.
+- **One config file per environment.** Secret values can come from
+  environment variables instead of the file.
+- **An administrator account**, created on first start.
+- **Someone who models the first domain.** No code is needed: you work in the
+  **Builder**, with the assistant.
+- **About an hour** to try it: [Your first hour](/build/first-hour/).
+
+Facet is a young product: releases carry 0.x versions, and the ecosystem
+around it is small. What balances that is on the [licensing
+page](/discover/licensing-and-services/): you hold the source, and every
+release converts to Apache 2.0 after four years.
 
 ## Decide in one afternoon
 
@@ -68,17 +100,24 @@ Run the stack, click through it, and build one small domain of your own:
    cd facet
    cp docker/.env.example docker/.env   # fill in hostname, SMTP, secrets
    docker compose -f docker/compose.prod.yml up -d --build
-   docker compose -f docker/compose.prod.yml exec backend facet seed:admin ops@your-company.tld
+   docker compose -f docker/compose.prod.yml run --rm backend seed:admin ops@your-company.tld
    ```
 
-2. Sign in with the printed one-time password.
+2. Sign in with the printed one-time password and set a real password.
 3. Click through the workspace: lists, filters, document history.
-4. Build one small domain of your own — [Domains, drafts and domain editors](/build/model/in-app/drafts-and-publishing/).
+4. Build one small domain of your own — see
+   [Drafts, editors and publishing](/build/model/in-app/drafts-and-publishing/).
 
-If step 4 took an hour and most of the good fits hold for you, Facet fits.
+If step 4 took an hour and most of the fits above hold for you, Facet fits.
 
 ## Related
 
-- [What is Facet](/discover/why-facet/) — the product in one page.
-- [Security & governance overview](/discover/security/) — the enforcement details behind the promises.
-- [Deploy to production](/admin/install/production/) — the full install runbook.
+- [Why Facet](/discover/why-facet/) — the problems behind the model.
+- [A day at Brightwater](/discover/a-day-at-brightwater/) — the product in
+  one story.
+- [Security and governance](/discover/security/) — the model a security
+  review will ask about.
+- [Licensing and services](/discover/licensing-and-services/) — what the
+  licence lets you do.
+- [Deploy to production](/admin/install/production/) — the full install
+  walkthrough.

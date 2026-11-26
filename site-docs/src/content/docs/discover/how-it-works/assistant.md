@@ -1,98 +1,70 @@
 ---
 type: explanation
-title: "AI under the caller's rights"
-description: The assistant and external agents act with the caller's own rights and leave the same audit rows.
-audience: [admin, developer]
-features: [AI-01, AI-04]
+title: The assistant: AI with your rights
+description: See how the assistant answers under your own rights, where it appears, and what an administrator controls.
+audience: [evaluator, admin]
+features: [AI-01, AI-02, AI-03, AI-05, AI-07, AI-08]
+verified_at: eee55a2
 sidebar:
   order: 5
-verified_at: 7a6cb462
 ---
 
-The workspace assistant has no permissions of its own. It acts inside the
-auth context of the account that opened the conversation. The assistant sees
-and changes only what that account may see and change. External agents connect
-through MCP (Model Context Protocol) and follow the same rule.
+Nadia asks, "Which tents are free on 14 June?" The assistant reads the stock and answers — exactly the tents Nadia may see, no more. That is the rule the whole page hangs on: **the assistant has no rights of its own.**
 
-## Explanation
+*It works as you, under your role. Its changes are yours, in the history, marked as assistant work.*
 
-<!-- d2
-message: "Account sends a chat message" {class: external}
-tool: "Assistant picks a tool"
-check: "Enforcers check the caller's role" {class: decision}
-denied: "Tool returns a denial" {class: danger}
-write: "Write service runs the change"
-audit: "Mutation row lands in the audit log" {class: store}
+```d2
+direction: down
+nadia: "Nadia asks a question" {class: external}
+assistant: "The assistant"
+check: "Every step runs as Nadia, under her role" {class: accent}
+records: "Records" {class: store}
+history: "History: the change is hers, marked as assistant work" {class: store}
+nadia -> assistant
+assistant -> check
+check -> records
+check -> history
+```
 
-message -> tool
-check -> denied: denied
-check -> write: allowed
-write -> audit
-tool -> check
--->
-<div class="d2-diagram">
-<img class="d2-diagram__img d2-diagram__light" src="/diagrams/e7f20cd9-light.svg" alt="Account sends a chat message" loading="lazy" />
-<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/e7f20cd9-dark.svg" alt="Account sends a chat message" loading="lazy" />
-</div>
+## It acts as you
 
-### One enforcement path
+The assistant sees and changes only what your role allows. What you cannot read, it cannot read; what you may not change, it cannot change. When it does change something — a date, a status, a note — the history records it under your name. A mark says the assistant did the typing. You can open **History** on any record and see every such change, like any other.
 
-The workspace assistant is the chat surface of the main application. It reads
-and writes live documents, runs named actions, computes aggregates, and opens
-pages for the signed-in user. Every tool call runs with the caller's own auth
-context. Row scopes, field visibility, and denials behave exactly as on a
-direct request by that account. The assistant cannot see a document the
-account cannot see. A denial is final, and the system prompt tells the model
-so.
+## Where you meet it
 
-**The role gates availability.** A role must list `assistant` in its
-connectivity array before an account can open the chat. The backend re-checks
-the gate on every streamed message, so a role change applies on the next
-message.
+The assistant appears in three places:
 
-### One tool catalogue
+- **The workspace.** A chat panel rides along on every page. Ask about your data, and it can open the record it found.
+- **The Builder.** A second assistant helps you shape the record kinds themselves: describe a *MaintenanceTicket*, and it drafts the fields and screens in your working copy.
+- **Inside apps.** An app can include the same chat, so the check-out screen answers questions too — still under the signed-in person's rights.
 
-Artificial intelligence (AI) surfaces share one catalogue of document tools.
-The workspace assistant mounts it, and every MCP client sees the same entries.
-The listing an agent sees is filtered to the rights of the role pinned in the
-MCP URL. Filtering is a convenience, not a boundary. Enforcement runs again at
-call time, in the same enforcers as any direct request.
+## Agents connect too
 
-The catalogue carries document tools only. An agent can create, read, update,
-and delete documents, run actions, and search. It cannot register doctypes,
-publish domains, or edit grants.
+Your AI coding agent, or Claude Desktop, can connect to Facet directly — through a standard connector called MCP. An agent always connects under one fixed role you choose for it, and the same checks apply to every call it makes. Its toolkit holds document tools only — read, change, act, search. It has no tools to reshape your record kinds.
 
-### Same audit trail
+## Your model, your rules
 
-Every write a tool makes goes through the ordinary write services. It lands as
-a mutation row in the audit log, attributed to the caller's account. Writes
-made by the workspace assistant carry an `assistant` cause, so the log marks
-them as model-driven. Writes over MCP carry the same `request` cause as a
-direct request. Nothing an agent does is invisible to the audit.
+Facet brings no AI service of its own. An administrator connects the language model — any service that speaks the common OpenAI format — with an endpoint, a key, and a model name. The model never touches your database. It reads what the assistant's tools fetch for it, under your rights, and nothing more.
 
-**Why not a separate AI service account?** Such an account would need broad
-rights to serve every caller. Its permissions would drift from the role
-model. Its audit rows would name the service, not the person who
-asked. Under the caller's rights, revoking a role also cuts the assistant.
-Every action traces to the account that caused it. The same model serves
-apps: the per-app assistant runs under the calling app's auth context,
-capped by the app's grant.
+## You stay in control
 
-:::note
-The domain-builder assistant is the exception. It edits doctype definitions
-inside a draft domain under a system-tier principal, with each write tool
-scoped to that draft. Its reads reach further; its writes stay in the draft.
-:::
+A running answer stops with **Stop**. An administrator can turn the assistant off for a role, and can cap what each account may spend. The cap is a token budget over a rolling 30 days; the panel shows the meter. When the budget is spent, the panel says so, and the cap lifts as old usage ages out of the window.
 
-**The cost is symmetry.** The same prompt returns different results for
-different accounts, because each answer is scoped to the caller's rights. The
-assistant cannot help with what the caller cannot see. It cannot act for an
-account with broader rights, and it cannot raise its own access.
+## What this means for you
+
+- Ask questions in your own words; the answers respect the same rules as your own screen.
+- The audit trail stays complete: assistant work is visible, attributable, and undoable.
+- Adopting AI does not mean opening the doors — it means issuing one more badge.
+
+## For the technical detail
+
+- [AI and permissions, in detail](/admin/under-the-hood/ai-and-permissions/) — how a tool call is checked and recorded.
+- [Connect agents over MCP](/build/apps/agents/mcp/) — set up an agent connection.
+- [Connect a language model](/admin/assistant/connect-a-model/) — the administrator's setup.
+- [Ask the assistant](/use/assistant/) — the day-to-day how-to.
 
 ## Related
 
-- [Auth contexts](/admin/under-the-hood/one-role-at-a-time/) — the identity and role model behind every channel.
-- [Authorization enforcement](/admin/under-the-hood/how-access-is-enforced/) — the enforcers each tool call passes.
-- [Apps](/build/apps/) — apps embed the assistant under their own grant.
-- [Security & governance overview](/discover/security/) — roles, grants and audit in one picture.
-- Internals on GitHub: [agent-tools.md](https://github.com/wearefacet/facet/blob/main/doc/backend/agent-tools.md), [workspace-assistant.md](https://github.com/wearefacet/facet/blob/main/doc/backend/workspace-assistant.md).
+- [The big picture](/discover/how-it-works/) — where the assistant sits among the five ideas.
+- [Roles: who sees and does what](/discover/how-it-works/roles/) — the rights it borrows.
+- [Embed the assistant in your app](/build/apps/host/embed-assistant/) — the chat inside your own app.

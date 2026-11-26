@@ -1,26 +1,24 @@
 ---
+title: Bulk import and export
+description: Move a doctype's documents in and out as CSV or JSON through the export and import job routes.
 type: how-to
-title: Bulk import/export via API
-description: Move a doctype's documents in and out as CSV or JSON through the import/export routes.
 audience: [developer]
 features: [DOC-11]
+verified_at: eee55a2
 sidebar:
   order: 5
-verified_at: a77c6171
 ---
 
-These routes move one doctype's documents out of Facet and back in as CSV
-or JSON. An export runs in a snapshot: it reads one point in time. An
-import runs in one transaction: every row lands, or none does.
+These routes move one doctype's documents out of Facet and back in as CSV or
+JSON. An export runs in a snapshot: it reads one point in time. An import
+runs in one transaction: every row lands, or none does.
 
-> **For agents:** Export: `POST /Api/<domain>/<doctype>/export?format=csv`
-> answers `202 {job_id, status_url}`. Poll `GET
-> /Api/<domain>/<doctype>/import_export/<job_id>`, then download from `GET
-> /Api/<domain>/<doctype>/import_export/<job_id>/download`; `wait=true`
-> returns the file directly. Import: `POST /Api/<domain>/<doctype>/import`
-> with the CSV or JSON body; a `422` names the row and the problem. Upsert
-> keys on the `id` column; one transaction; the first failing row aborts
-> all. POSTs need `X-Requested-With` for cookie sessions.
+> **For agents:** Export: `POST /Api/<domain>/<doctype>/export?format=csv` answers `202
+> {job_id, status_url}` (wait=true returns the file directly). Import: `POST
+> /Api/<domain>/<doctype>/import` with the CSV or JSON body answers `202 {job_id, row_count,
+> status_url}`; poll `GET /Api/<domain>/<doctype>/import_export/<job_id>` for
+> `{id, status, error, result}`. One transaction: the first failing row aborts all. Upsert keys on
+> the `id` column. POSTs need `X-Requested-With: XMLHttpRequest` for cookie sessions.
 
 ## When to use this
 
@@ -36,8 +34,11 @@ Use the import/export routes when:
   `update` rights, because an upsert can do either.
 - The routes refuse child doctypes (`member_of`) and sidecar doctypes in
   both directions.
-- Cookie sessions must send `X-Requested-With: XMLHttpRequest` on the
-  POSTs. A bearer credential without a cookie is exempt.
+- Cookie sessions must send `X-Requested-With: XMLHttpRequest` on the POSTs.
+  A bearer credential without a cookie is exempt.
+
+The live calls on this page ran against a dev instance at
+`https://facet.localhost:3443` with the Brightwater Rentals data loaded.
 
 ## Routes
 
@@ -53,38 +54,53 @@ Use the import/export routes when:
 
 ### 1. Export a doctype
 
+A `wait=true` call blocks until the job ends and returns the file itself.
+This session exported the Brightwater companies:
+
 ```sh
-curl -s -X POST "https://facet.company.tld/Api/crm/Company/export?format=csv" \
-  -H "Authorization: Bearer $FACET_TOKEN" \
-  -H "X-Requested-With: XMLHttpRequest"
+curl -sk -b facet-cookies.txt -H 'X-Requested-With: XMLHttpRequest' \
+  -X POST 'https://facet.localhost:3443/Api/clients/Company/export?format=csv&wait=true' \
+  -o companies.csv
 ```
 
-The answer is `202`:
+`companies.csv` holds:
+
+```csv
+id,city,name,account_manager
+06H1FM1B3MXBPS0JYVM3BDD154,Lyon,Maison Lumière,iam.Account.06H1FKYQFRDS3FBJ6HTX6FNQAE
+06H1FM1B68KB1PJVVAM92B38YS,Annecy,Festival des Collines,iam.Account.06H1FKYQFRDS3FBJ6HTX6FNQAE
+```
+
+Without `wait=true`, the call answers `202`:
 
 ```json
 {
   "job_id": "01JBK2M4N6P8R0T2V4X6Z8B2D4",
-  "status_url": "/Api/crm/Company/import_export/01JBK2M4N6P8R0T2V4X6Z8B2D4"
+  "status_url": "/Api/clients/Company/import_export/01JBK2M4N6P8R0T2V4X6Z8B2D4"
 }
 ```
 
-Poll the status route until `status` is `succeeded` or `failed`. Then
-download the file from the download route. With `wait=true` the call
-blocks until the job ends: on success the answer is the file itself, on
-failure it is `500` with `{"job_id", "error"}`.
+Poll the status route until `status` is `succeeded` or `failed`, then
+download the file from the download route. On a failed job the download
+route is not the file: read `error` from the status answer.
 
-Filters ride the list grammar, for example `filters[status__eq]=active`.
-`sort`, `page`, `per_page`, and `items` answer `422`: the export is fixed
-to id order.
+`format=csv|json` picks the output. An unknown format answers `422`:
+
+```json
+{ "error": "Unknown or missing format: xlsx (supported: csv, json)" }
+```
+
+Filters ride the list grammar, for example
+`filters[status__eq]=confirmed`. `sort`, `page`, `per_page`, and `items`
+answer `422`: the export is fixed to id order.
 
 ### 2. Export the current table view
 
 ```sh
-curl -s -X POST "https://facet.company.tld/Api/crm/Company/export_view" \
-  -H "Authorization: Bearer $FACET_TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
-  -d '{"columns": ["name", "status", "amount"], "sort": ["-created_at", "id"], "filters": {"status__eq": "active"}, "timezone": "Europe/Paris"}'
+curl -sk -b facet-cookies.txt -X POST \
+  'https://facet.localhost:3443/Api/clients/Company/export_view' \
+  -H 'Content-Type: application/json' -H 'X-Requested-With: XMLHttpRequest' \
+  -d '{"columns": ["name", "city"], "sort": ["-created_at", "id"], "filters": {"city__eq": "Lyon"}, "timezone": "Europe/Paris"}'
 ```
 
 - `columns` is required. Each key must be a doctype field or a system
@@ -102,17 +118,40 @@ fails on the zone-less cells.
 ### 3. Import a file
 
 The route takes the format from a `format=` param, else from the
-`Content-Type`, else from the body shape: a leading `[` reads as JSON.
+`Content-Type`, else from the body shape: a leading `[` reads as JSON. This
+session imported one Brightwater-shaped row:
 
 ```sh
-curl -s -X POST "https://facet.company.tld/Api/crm/Company/import" \
-  -H "Authorization: Bearer $FACET_TOKEN" \
-  -H "Content-Type: text/csv" \
-  -H "X-Requested-With: XMLHttpRequest" \
-  --data-binary @companies.csv
+cat > probe.json <<'EOF'
+[{"content":{"name":"Import Probe Co","city":"Bastia"}}]
+EOF
+
+curl -sk -b facet-cookies.txt -X POST \
+  'https://facet.localhost:3443/Api/clients/Company/import' \
+  -H 'Content-Type: application/json' -H 'X-Requested-With: XMLHttpRequest' \
+  --data-binary @probe.json
 ```
 
-The answer is `202` with `{"job_id", "row_count", "status_url"}`.
+The answer is `202`:
+
+```json
+{
+  "job_id": "06H1FSDH1016A18QYX19T1YB79",
+  "row_count": 1,
+  "status_url": "/Api/clients/Company/import_export/06H1FSDH1016A18QYX19T1YB79"
+}
+```
+
+Poll the status route:
+
+```json
+{
+  "id": "06H1FSDH1016A18QYX19T1YB79",
+  "status": "succeeded",
+  "error": null,
+  "result": { "created": 1, "skipped": 0, "updated": 0, "row_count": 1 }
+}
+```
 
 The structural parse runs before the job. A malformed file answers `422`
 and names the row:
@@ -121,9 +160,9 @@ and names the row:
 { "error": "row 2: has 3 cells but the header declares 2 columns" }
 ```
 
-Bad quoting, an unknown header column, and a cell count that does not
-match the header all fail here. A cell-level problem, for example a bad
-money value in row 900, surfaces in the job result instead.
+Bad quoting, an unknown header column, and a cell count that does not match
+the header all fail here. A cell-level problem, for example a bad money
+value in row 900, surfaces in the job result instead.
 
 ## Example
 
@@ -131,33 +170,20 @@ An end-to-end round trip: export with `wait=true`, import the file back,
 poll the job:
 
 ```sh
+BASE=https://facet.localhost:3443
+X='X-Requested-With: XMLHttpRequest'
+
 # 1. Export and wait: the call returns the CSV file directly.
-curl -s -X POST "https://facet.company.tld/Api/crm/Company/export?format=csv&wait=true" \
-  -H "Authorization: Bearer $FACET_TOKEN" \
-  -H "X-Requested-With: XMLHttpRequest" \
-  -o companies.csv
+curl -sk -b facet-cookies.txt -H "$X" \
+  -X POST "$BASE/Api/clients/Company/export?format=csv&wait=true" -o companies.csv
 
 # 2. Import the file back.
-curl -s -X POST "https://facet.company.tld/Api/crm/Company/import" \
-  -H "Authorization: Bearer $FACET_TOKEN" \
-  -H "Content-Type: text/csv" \
-  -H "X-Requested-With: XMLHttpRequest" \
-  --data-binary @companies.csv
+curl -sk -b facet-cookies.txt -H "$X" -H 'Content-Type: text/csv' \
+  -X POST "$BASE/Api/clients/Company/import" --data-binary @companies.csv
 
 # 3. Poll the job status (the job_id from the import answer).
-curl -s "https://facet.company.tld/Api/crm/Company/import_export/01JBK2M4N6P8R0T2V4X6Z8B2D4" \
-  -H "Authorization: Bearer $FACET_TOKEN"
-```
-
-A succeeded export job reports:
-
-```json
-{
-  "id": "01JBK2M4N6P8R0T2V4X6Z8B2D4",
-  "status": "succeeded",
-  "error": null,
-  "result": { "artifact_id": "01JARQ5G7X9K2M3N4P5Q6R7S8T", "row_count": 128, "format": "csv" }
-}
+curl -sk -b facet-cookies.txt \
+  "$BASE/Api/clients/Company/import_export/01JBK2M4N6P8R0T2V4X6Z8B2D4"
 ```
 
 ## The import contract
@@ -170,9 +196,7 @@ A succeeded export job reports:
   An absent id creates one.
 - **Both rights are needed.** The first row your role may not write fails
   the file.
-- **Attribution.** Every row records `actioner_id: "import"` in the audit.
-- **`genonly` doctypes refuse supplied ids.** A doctype whose identifier is
-  system-generated never creates a document from a supplied id.
+- **Attribution.** Every row records the import as its cause in the audit.
 
   A wait-mode import answers `200` with `{row_count, created, updated,
   skipped}`. An expected row failure answers `422` with the failing row.
@@ -191,9 +215,9 @@ A succeeded export job reports:
 | --- | --- |
 | Scalar text | As stored. |
 | Structured types | JSON in the cell. |
-| Money | `USD 1.0` — the currency prefix is required on import. |
+| Money | `EUR 4800.00` — the currency prefix is required on import. |
 | Boolean | `true` / `false`. |
-| Reference | Qualified id, for example `crm.Company.abc`. |
+| Reference | Qualified id, for example `clients.Company.<id>`. |
 | File | The artifact id only; bytes do not move. |
 | Empty cell | Decodes to `null`; it clears the field on update. |
 | Missing column | Leaves the field untouched. |
@@ -212,7 +236,7 @@ cell count that does not match the header. Fix that row and submit again.
 
 **The job fails on a `money` field.**
 
-A money cell needs the currency prefix: `USD 1.0`, not `1.0`.
+A money cell needs the currency prefix: `EUR 4800.00`, not `4800.00`.
 
 **Some rows are `skipped`.**
 
@@ -227,7 +251,7 @@ The result file was pruned after the retention window — see
 ## Related
 
 - [Use the REST API](/build/apps/data/rest-api/) — the list filter grammar the export filters reuse.
-- [Uploading and serving files](/build/apps/data/files/) — how the result file is stored and read back.
+- [Upload and serve files](/build/apps/data/files/) — how the result file is stored and read back.
 - [Retention](/admin/history/retention/) — the window that bounds a download link.
 - Internals on GitHub:
   [import-export.md](https://github.com/wearefacet/facet/blob/main/doc/backend/import-export.md).

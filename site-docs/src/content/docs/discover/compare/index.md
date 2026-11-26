@@ -14,7 +14,7 @@ This section compares Facet with the tools small and mid-sized organizations act
 
 The idea behind every page: **apps are disposable now; your data is not.** AI can build a business tool in hours. What stays hard is everything around the tool: who can see what, who changed what, backups, files, hosting, deployment. That is the part Facet takes on, once, for every app you build. Start with [Facet vs "just let the AI build it"](/discover/compare/vs-ai-built-apps/); the other pages are versions of the same question.
 
-Adoption follows the same shape. You start with one domain (one slice of the business, such as clients, equipment or hiring) and get value from that first piece alone. The next domain costs less than the first: the accounts, roles, audit log, files and hosting are already in place, and every app and access path shares them. Domain by domain, one governed home replaces a spread of tools and spreadsheets. The name is the model: each domain is one facet of your business, and Facet holds them together.
+Adoption follows the same shape. You start with one domain (one slice of the business, such as clients, equipment or hiring) and get value from that first piece alone. The next domain costs less than the first. The accounts, roles, audit log, files and hosting already exist, and every app and access path shares them. Domain by domain, one governed home replaces a spread of tools and spreadsheets. The name is the model: each domain is one facet of your business, and Facet holds them together.
 
 ## The pages
 
@@ -26,7 +26,7 @@ Adoption follows the same shape. You start with one domain (one slice of the bus
 
 ## What 50 users cost, at list prices
 
-Per-seat licences and free software are hard to compare in the abstract, so here is one concrete anchor. The figures use each vendor's published list prices, checked on the vendor's own pricing page on 2026-11-13 (Odoo's on 2026-11-20), and show a monthly cost with no discounts, taxes or usage overages.
+Per-seat licences and free software are hard to compare in the abstract, so here is one concrete anchor. The figures use each vendor's published list prices, checked on the vendor's own pricing page on 2026-11-13 (Odoo's on 2026-11-20). They show a monthly cost with no discounts, taxes or usage overages.
 
 | Option | Pricing model | 50 users (USD / month) | Not included at this tier |
 | --- | --- | --- | --- |
@@ -38,9 +38,15 @@ Per-seat licences and free software are hard to compare in the abstract, so here
 | Firebase, Blaze plan | Per operation | Varies with usage; budget alerts notify you but do not stop usage | No self-hosting option |
 | **Facet, self-hosted** | **No licence fee** | **$0 in licences**, at 50 users or 500. You pay for the server (about $20–60/month for a small team), file storage, and your own AI usage. One small server (2 vCPU and 2–4 GB RAM) fits a small deployment; a few hundred users need a bigger server or separate workers | Built-in charts, a cross-domain workflow engine and prebuilt modules are not there yet; domains take design time to model. Facet is in beta |
 
-At Facet's line, nothing is held back for a higher tier. The audit log, row- and field-level permissions, your choice of data location, the portal and app hosting come with the software, for every user.
+At Facet's line, nothing is held back for a higher tier. The audit log, row- and field-level permissions, your choice of data location, the workspace and app hosting come with the software, for every user.
 
 Prices change, so re-check them before you budget. Odoo sets its list prices by the location you browse from, not your billing address, so check from the country you bill in. The pricing *model* outlasts the numbers: per-seat costs grow with every hire, and Facet's do not.
 
 - Every comparison page ends with a Sources list, so you can check each claim yourself.
-- Facet's side of the ledger: source-available software (BSL 1.1), free to use and self-host. If you would rather not run it yourself, we offer managed hosting, with your choice of location, and domain design and migration services.
+- Facet's side of the ledger: source-available software (BSL 1.1), free to use and self-host. You pay for your servers, your file storage, and your own AI usage. See [Licensing and services](/discover/licensing-and-services/).
+
+## Related
+
+- [Why Facet](/discover/why-facet/): the product in one page.
+- [Is Facet right for you?](/discover/is-it-right-for-you/): the honest limits.
+- [A day at Brightwater](/discover/a-day-at-brightwater/): the product in one story.

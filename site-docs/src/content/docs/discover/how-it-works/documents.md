@@ -1,13 +1,62 @@
 ---
-title: "Documents: records with a memory"
-description: TODO
 type: explanation
-audience: []
-features: []
-pagefind: false
-pager: false
+title: Documents: records with a memory
+description: See what a record is in Facet, how every change is remembered, and how you undo a mistake.
+audience: [evaluator, author]
+features: [DOC-01, AUD-01, AUD-04, DOM-06]
+verified_at: eee55a2
 sidebar:
   order: 2
 ---
 
-This page is being written.
+One client, one tent, one booking — in Facet, each is a **document**: one record, the real thing your team works on. And each one remembers its past.
+
+*Every change lands on the record's timeline, with a name and a time. Undo included.*
+
+```d2
+direction: down
+doc: "A booking" {class: store}
+c1: "9:14 · Nadia created it" {class: node}
+c2: "11:02 · Tom moved the date" {class: node}
+c3: "11:05 · Tom rolled it back" {class: ok}
+doc -> c1
+c1 -> c2
+c2 -> c3
+```
+
+## A record you can shape
+
+A document holds its fields: text, numbers, dates, prices, choices from a list. Records point at each other, so a booking names its client and lists the tents it reserves. Open any record and you see its fields, its links, and its place in the lists your team already uses — tables, boards, calendars.
+
+## Every change is remembered
+
+When someone creates, changes, or deletes a document, Facet writes down who did it, when, and through which door. The door is the workspace, an app, a key, or an agent. Open **History** on any record to read that timeline. Made a mistake? Choose **Roll back to this version**, and the record returns to an earlier state. Rolling back a deletion brings the record back.
+
+The memory answers the questions an auditor asks later: not only *what* changed, but *who* changed it, *as which role*, and *what caused it*. The cause says what triggered it: a direct edit, an action, or an automation.
+
+## Kept for as long as you say
+
+Facet records every change and keeps the full history for the period your retention settings say — 180 days by default. An administrator can set another period per kind of record. When history passes that age, Facet folds it into one snapshot so the record stays, but the old detail retires. [Retention: what is kept](/admin/history/retention/) has the whole story.
+
+## Talk where the work is
+
+A record is also a place to talk. Comments sit beside the data, with answers threaded under each one. Attachments ride along too: the photo of the damaged tent lives on its maintenance ticket, not in somebody's downloads folder. Both follow the same rules as the record they belong to — if you may read the ticket, you may read its photos.
+
+## What this means for you
+
+- Nobody has to keep a changelog by hand, and nobody can quietly rewrite one.
+- A mistake costs seconds, not a support ticket.
+- The conversation and the paperwork live in the same place your team already works.
+
+## For the technical detail
+
+- [How a document is stored](/build/deeper/documents-and-projections/) — definitions, documents, and how reads stay fast.
+- [The change log, in detail](/admin/under-the-hood/change-log/) — what one recorded change contains.
+- [Roll back a change](/admin/history/roll-back/) — the how-to, for administrators.
+- [Add comments and attachments](/build/model/relations/comments-attachments/) — put them on your own record kinds.
+
+## Related
+
+- [The big picture](/discover/how-it-works/) — where the memory sits among the five ideas.
+- [Roles: who sees and does what](/discover/how-it-works/roles/) — who may open and change a record.
+- [History and undo](/use/documents/history-undo/) — the day-to-day how-to.
