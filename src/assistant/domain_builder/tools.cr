@@ -149,6 +149,26 @@ module Facet
           "Doctype '#{doctype_id}' belongs to domain '#{row}', not the draft '#{context.draft_domain}'"
         end
 
+        # Refuses an edit of a `core` doctype unless the caller passed
+        # `unsafe_core_edit: true`. Core doctypes define the schema system
+        # itself (`core.DocType`, `core.Comment`, …): a wrong edit can brick
+        # the application or block future migrations, and the seed corpus
+        # reverts it on the next boot. Returns `nil` on success (non-core
+        # doctype, or the flag is `true`), an error string otherwise.
+        private def self.ensure_core_edit_allowed!(db : DB::Connection, doctype_id : String, flag : JSON::Any?) : String?
+          return nil if flag.try(&.as_bool?) == true
+
+          domain = db.query_one?(
+            "SELECT content->>'domain' FROM projections WHERE domain='core' AND doc_type='DocType' AND id=$1 AND deleted_at IS NULL",
+            doctype_id,
+            as: String?,
+          )
+          return nil unless domain == "core"
+
+          "Doctype '#{doctype_id}' is a core doctype. Editing it can brick the application or block future migrations. " \
+          "Re-emit the call with `unsafe_core_edit: true` only if the user explicitly asked for this core change."
+        end
+
         # Verifies a `core.DocumentView` row belongs to a doctype whose
         # `content.domain` matches the draft. Returns `nil` on success,
         # an error string otherwise.

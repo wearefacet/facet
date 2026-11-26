@@ -337,7 +337,7 @@ All tool callbacks return a JSON string in the shared `Facet::Assistant::Tools` 
 | `check_domain` | read | `Domain::Check.call` on the conversation's draft domain — no arguments. Returns `{domain, domain_issues, doctypes}`: domain-level issues (no doctypes, invalid hooks), per-doctype issues and notices, and publish-gate diagnostics (including the schema-version bump warning) for drafts with a `source_domain`. |
 | `read_skill` | read | Returns a skill `.md` body by name. |
 | `create_doctype` | draft | `Doctype::Create.call` with draft guard on `definition.domain`. |
-| `update_doctype` | draft | `Doctype::Update.call` with draft guard on existing projection. |
+| `update_doctype` | draft | `Doctype::Update.call` with draft guard on existing projection. A `core` doctype (domain `core`) is refused unless `unsafe_core_edit: true` is passed — such an edit can brick the application or block future migrations, and the seed corpus reverts it on the next boot. |
 | `delete_doctype` | draft | `Document::Delete.call` on `core.DocType`. |
 | `create_document_view` | draft | `Document::Create.call` on `core.DocumentView` with `parent_id` meta override. The template tree is validated by `Doctype::ViewTemplateValidator` — structural errors and binding errors (unknown/dotted input field paths, container-bound inputs) reject with a `details` array; warnings return in `data.warnings`. The auto `input` node is the preferred form binding — it renders the control from the field's declared type; specialized `input-*` nodes force overrides. |
 | `update_document_view` | draft | `Document::Update.call` on `core.DocumentView`. The replacement template tree is validated the same way against the parent doctype definition. |

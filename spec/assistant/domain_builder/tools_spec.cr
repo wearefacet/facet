@@ -126,6 +126,19 @@ def seed_child_doctype_in_draft(db : DB::Connection, domain : String, doctype : 
   doc_id
 end
 
+# Builds a domain-builder `Context` whose `draft_domain` is `core`, and
+# marks the seeded `core.Domain` row `draft: true` so
+# `Context#verify_draft_domain?` passes and the write tools register. This
+# is the only path that can reach a core doctype through the builder; the
+# `unsafe_core_edit` gate lives there.
+def seed_core_draft_context(db : DB::Connection) : Facet::Assistant::DomainBuilder::Context
+  db.exec(
+    "UPDATE projections SET content = content || '{\"draft\": true}'::jsonb " \
+    "WHERE domain='core' AND doc_type='Domain' AND id='core'",
+  )
+  Facet::Assistant::DomainBuilder::Context.new(draft_domain: "core", created_by: "system:test")
+end
+
 module Facet::Assistant::DomainBuilder
   describe Registrar do
     before_each do
@@ -199,6 +212,68 @@ module Facet::Assistant::DomainBuilder
 
           result["ok"].as_bool.should be_false
           result["error"].as_s.should contain("not the draft")
+        end
+      end
+
+      # A draft domain is `_`-prefixed, so a core doctype never matches it —
+      # the draft guard refuses it. The `unsafe_core_edit` gate is the second
+      # line for a context whose draft domain IS `core`. See
+      # `seed_core_draft_context` (top-level helper) for the setup.
+      it "update_doctype refuses a core doctype without unsafe_core_edit" do
+        with_db do |db|
+          core_context = seed_core_draft_context(db)
+          agent = build_domain_builder_agent(db, core_context)
+
+          seed_doctype_in_draft(db, "core", "Comment")
+
+          result = call_domain_builder_tool(agent, "update_doctype",
+            {"doctype_id" => JSON::Any.new("core.Comment"),
+             "definition" => doctype_definition_json("Comment", "core")})
+
+          result["ok"].as_bool.should be_false
+          result["error"].as_s.should contain("core doctype")
+          result["error"].as_s.should contain("unsafe_core_edit")
+        end
+      end
+
+      it "update_doctype refuses a core doctype when unsafe_core_edit is false" do
+        with_db do |db|
+          core_context = seed_core_draft_context(db)
+          agent = build_domain_builder_agent(db, core_context)
+
+          seed_doctype_in_draft(db, "core", "Comment")
+
+          result = call_domain_builder_tool(agent, "update_doctype",
+            {"doctype_id" => JSON::Any.new("core.Comment"),
+             "definition" => doctype_definition_json("Comment", "core"),
+             "unsafe_core_edit" => JSON::Any.new(false)})
+
+          result["ok"].as_bool.should be_false
+          result["error"].as_s.should contain("core doctype")
+        end
+      end
+
+      it "update_doctype allows a core doctype when unsafe_core_edit is true" do
+        with_db do |db|
+          core_context = seed_core_draft_context(db)
+          agent = build_domain_builder_agent(db, core_context)
+
+          seed_doctype_in_draft(db, "core", "Comment")
+
+          # Change the definition so the update is not an idempotent re-save.
+          new_defn = JSON.parse(%({
+            "doctype": "Comment",
+            "domain": "core",
+            "schema_version": 1,
+            "fields": {"body": {"type": "string", "required": true}}
+          }))
+          result = call_domain_builder_tool(agent, "update_doctype",
+            {"doctype_id" => JSON::Any.new("core.Comment"),
+             "definition" => new_defn,
+             "unsafe_core_edit" => JSON::Any.new(true)})
+
+          result["ok"].as_bool.should be_true
+          result["data"]["doctype_id"].as_s.should eq("core.Comment")
         end
       end
 

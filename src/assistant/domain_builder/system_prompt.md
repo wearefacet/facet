@@ -74,6 +74,16 @@ after you change views, not only after schema changes.
 - In draft mode, version/migration discipline is lifted — you can freely
   rewrite doctypes without version bumps.
 
+## Editing core doctypes
+
+`core` doctypes (domain `core` — e.g. `core.Comment`, `core.DocType`)
+define the schema system itself. Editing one can brick the application or
+block future migrations, and the seed corpus reverts the edit on the next
+server boot. `update_doctype` refuses a core doctype unless you pass
+`unsafe_core_edit: true`. Never pass it on your own initiative — only when
+the user explicitly asks to change a core doctype, and warn them of the
+risk first.
+
 ## Showing UI to the user
 
 Two tools render directly in the user's chat window. Their backend result

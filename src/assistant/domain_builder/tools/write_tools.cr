@@ -52,15 +52,17 @@ module Facet
         end
 
         # Replaces an existing doctype definition. Fetches the current
-        # projection first to enforce the draft guard.
+        # projection first to enforce the draft guard, then refuses a
+        # `core` doctype unless the caller passes `unsafe_core_edit: true`.
         private def self.register_update_doctype(agent : Agent, db : DB::Connection, context : Context) : Nil
           agent.register_tool(
             "update_doctype",
-            "Replace an existing doctype definition with a new version. `definition.domain` MUST match the draft domain '#{context.draft_domain}'. `doctype_id` AND `definition.domain`/`definition.doctype` cannot change. Returns {doctype_id, mutation_id} on success.",
+            "Replace an existing doctype definition with a new version. `definition.domain` MUST match the draft domain '#{context.draft_domain}'. `doctype_id` AND `definition.domain`/`definition.doctype` cannot change. Editing a `core` doctype (domain 'core', e.g. core.Comment, core.DocType) is refused unless you pass `unsafe_core_edit: true` — such an edit can brick the application or block future migrations. Only pass it when the user explicitly asked for the core change. Returns {doctype_id, mutation_id} on success.",
             schema_object(
               properties: {
-                "doctype_id" => {"type" => "string"},
-                "definition" => {"type" => "object"},
+                "doctype_id"       => {"type" => "string"},
+                "definition"       => {"type" => "object"},
+                "unsafe_core_edit" => {"type" => "boolean", "description" => "Must be true to edit a 'core' doctype. Such an edit can brick the application or block future migrations. Defaults to false."},
               },
               required: ["doctype_id", "definition"],
             ),
@@ -69,6 +71,10 @@ module Facet
             defn_arg = req_any("definition")
 
             if err = ensure_doctype_in_draft!(db, context, doctype_id)
+              next Tools.error(err)
+            end
+
+            if err = ensure_core_edit_allowed!(db, doctype_id, args["unsafe_core_edit"]?)
               next Tools.error(err)
             end
 
