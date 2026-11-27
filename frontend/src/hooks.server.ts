@@ -125,7 +125,7 @@ const handleParaglide: Handle = ({ event, resolve }) =>
  * and `src/app.html` carries the pre-paint theme script; both need the
  * nonce, and SvelteKit's own `csp` option cannot supply one alongside a
  * `script-src` directive. See `$lib/csp.ts` for why the policy lives here.
- * The page chunk is streamed, so the placeholder may straddle two chunks;
+ * The page chunk is streamed, so an inline tag may straddle two chunks;
  * `carry` holds the unfinished tail until the next chunk. A response with
  * no page chunk (a JSON API reply, a redirect, an asset) is untouched.
  */
@@ -134,6 +134,14 @@ const handleCsp: Handle = async ({ event, resolve }) => {
 	let carry = '';
 	let transformed = false;
 
+	// The theme script carries the `%facet.nonce%` placeholder; SvelteKit's
+	// own start shim is emitted at render time with no attributes — a bare
+	// `<script>` tag. Both are inline and need the nonce; `src` scripts must
+	// not be touched. The shim tag is shorter than the carry tail, so a tag
+	// split across two chunks is still stamped.
+	const stamp = (html: string): string =>
+		html.split(CSP_NONCE_PLACEHOLDER).join(nonce).split('<script>').join(`<script nonce="${nonce}">`);
+
 	const response = await resolve(event, {
 		transformPageChunk: ({ html, done }: { html: string; done: boolean }) => {
 			transformed = true;
@@ -141,10 +149,10 @@ const handleCsp: Handle = async ({ event, resolve }) => {
 			if (!done) {
 				const keep = Math.min(CSP_NONCE_PLACEHOLDER.length - 1, chunk.length);
 				carry = chunk.slice(chunk.length - keep);
-				return chunk.slice(0, chunk.length - keep).split(CSP_NONCE_PLACEHOLDER).join(nonce);
+				return stamp(chunk.slice(0, chunk.length - keep));
 			}
 			carry = '';
-			return chunk.split(CSP_NONCE_PLACEHOLDER).join(nonce);
+			return stamp(chunk);
 		}
 	});
 
