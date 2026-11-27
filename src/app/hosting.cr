@@ -167,8 +167,9 @@ module Facet
 
       # Registered **before** the main router (see `HTTP::Server.routes`).
       # Facet's own hosts fall through; a registered app host is served
-      # here; everything else gets a bare 404 (with a routing hint when the
-      # missed name is `localhost`).
+      # here; everything else gets a 404 whose `hint` names the rejected
+      # Host and the configured set (`localhost` keeps its own routing
+      # hint that names a working URL).
       class Handler < Kemal::Handler
         def call(env)
           hostname = env.request.hostname.try(&.downcase)
@@ -178,7 +179,7 @@ module Facet
           return call_next(env) if hostname.nil? || Hosting.facet_host?(hostname)
 
           app_id = HostCache.app_for_host(hostname)
-          return not_found(env, localhost_hint(hostname, env)) unless app_id
+          return unknown_host(env, hostname) unless app_id
 
           Hosting.serve(env, app_id)
         rescue ex : Exception
@@ -213,6 +214,23 @@ module Facet
           else
             env.response.print({error: "Not found"}.to_json)
           end
+        end
+
+        # The 404 for a Host outside the configured facet host set. The
+        # bare body reads as "the API is missing" — a reverse proxy whose
+        # Host header does not match `host` / `base_url` gets this answer
+        # for every path, and nothing in the body says the header was
+        # rejected. The hint names the host and where the set comes from;
+        # the habitual `localhost` miss keeps its own routing hint, which
+        # names a URL that answers on the same listener.
+        private def unknown_host(env, hostname : String) : Nil
+          env.response.status_code = 404
+          env.response.content_type = "application/json"
+          Facet::HTTP::Helpers.no_store(env)
+          hint = localhost_hint(hostname, env) ||
+                 "host '#{hostname}' is not in the configured host set " \
+                 "(host, base_url, artifact_base_url; see Facet::Util::ScriptHelpers.facet_hosts)"
+          env.response.print({error: "Not found", hint: hint}.to_json)
         end
       end
 

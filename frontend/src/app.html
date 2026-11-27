@@ -7,7 +7,10 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 		<meta name="text-scale" content="scale" />
-		<script>
+		<!-- The pre-paint theme script carries the per-request CSP nonce
+		     placeholder; hooks.server.ts replaces it and sends the matching
+		     Content-Security-Policy header. See src/lib/csp.ts. -->
+		<script nonce="%facet.nonce%">
 			(function () {
 				try {
 					var t = localStorage.getItem('facet:theme');

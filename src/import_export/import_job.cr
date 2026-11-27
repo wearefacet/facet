@@ -51,6 +51,17 @@ module Facet
         1
       end
 
+      # One import decodes a whole file and buffers one event per row, so
+      # concurrent imports are the dominant term of the process footprint:
+      # four default-size (100 k-row) files took an instance from 24 MB to
+      # 11 GB. Two imports at once keep the peak bounded while still using
+      # both sides of the write path. The cap rides the enqueue; a worker
+      # honours it from its next start.
+      def self.max_concurrent : Int32?
+        2
+      end
+
+      # Executes one claimed import row.
       # The completion events are opt-in for webhooks: a binding fires only
       # when its `events` list names the event. A match-all webhook never
       # receives them. The names live on `Facet::Event` beside the other

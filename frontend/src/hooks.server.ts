@@ -9,6 +9,7 @@ import { paraglideMiddleware } from '$lib/paraglide/server';
 import * as m from '$lib/paraglide/messages';
 import { apiFetch } from '$lib/session.svelte';
 import { applySetCookies } from '$lib/ssrCookies';
+import { CSP_NONCE_PLACEHOLDER, contentSecurityPolicy, mintNonce } from '$lib/csp';
 import { buildLoginRedirect } from '$lib/loginRedirect';
 import { DataSourceError } from '$lib/datasource/types';
 import type { PermissionManifest, ScopeManifest } from '$lib/navModel';
@@ -117,6 +118,41 @@ const handleParaglide: Handle = ({ event, resolve }) =>
 					.replace('%paraglide.dir%', getTextDirection(locale))
 		});
 	});
+
+/**
+ * Sends the Content-Security-Policy and renders the per-request nonce into
+ * every inline script. SvelteKit emits one inline script (its start shim)
+ * and `src/app.html` carries the pre-paint theme script; both need the
+ * nonce, and SvelteKit's own `csp` option cannot supply one alongside a
+ * `script-src` directive. See `$lib/csp.ts` for why the policy lives here.
+ * The page chunk is streamed, so the placeholder may straddle two chunks;
+ * `carry` holds the unfinished tail until the next chunk. A response with
+ * no page chunk (a JSON API reply, a redirect, an asset) is untouched.
+ */
+const handleCsp: Handle = async ({ event, resolve }) => {
+	const nonce = mintNonce();
+	let carry = '';
+	let transformed = false;
+
+	const response = await resolve(event, {
+		transformPageChunk: ({ html, done }: { html: string; done: boolean }) => {
+			transformed = true;
+			const chunk = carry + html;
+			if (!done) {
+				const keep = Math.min(CSP_NONCE_PLACEHOLDER.length - 1, chunk.length);
+				carry = chunk.slice(chunk.length - keep);
+				return chunk.slice(0, chunk.length - keep).split(CSP_NONCE_PLACEHOLDER).join(nonce);
+			}
+			carry = '';
+			return chunk.split(CSP_NONCE_PLACEHOLDER).join(nonce);
+		}
+	});
+
+	if (transformed) {
+		response.headers.set('Content-Security-Policy', contentSecurityPolicy(nonce));
+	}
+	return response;
+};
 
 interface MeResponse {
 	account: { id: string; display_name: string; email?: string };
@@ -274,7 +310,7 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 	}
 };
 
-export const handle = sequence(handleAuth, handleParaglide);
+export const handle = sequence(handleCsp, handleAuth, handleParaglide);
 
 export { handleFetch };
 

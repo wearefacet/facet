@@ -209,6 +209,10 @@ jobs:
   poll_interval_s: 5.0
   lease_ttl_s: 60
   batch: 32
+  # Max job fibers running at once. A claim pass holds while this many run.
+  # Import enqueues its own tighter cap (two imports at once), so this
+  # global value bounds the light kinds only.
+  max_concurrent: 4
   sweep_interval_s: 30.0
   retention_days: 30
   enabled: true

@@ -157,7 +157,10 @@ Each tick runs in this order:
    guarantee that.
 2. **Claim** — one `Queries.claim` batch. One handler instance per claimed
    row; the hooks and `execute` run on the same object, so a handler may
-   keep per-attempt state.
+   keep per-attempt state. The pass first holds while `max_concurrent`
+   job fibers already run, so a heavy kind (an import decodes a whole
+   file and buffers one event per row) cannot run more copies at once
+   than the cap allows. A pass that claims nothing returns its slot.
 3. **Dispatch** — one fiber per claimed job. The worker writes the outcome
    from the returned `Result` and fires `attempt_finished`. A `Failed`
    result logs one warn line (`job id`, `kind`, `error`) per failed attempt
@@ -231,7 +234,7 @@ manager is installed, and callers use `try` to skip safely.
 | `#handler_for(kind)`                    | The registered handler class for `kind`, or `nil`. Read-only view.        |
 | `#start`                                | Starts the worker when `jobs.enabled` is true. Idempotent; a no-op when disabled. |
 | `#stop`                                 | Stops the worker. Idempotent; safe when disabled.                          |
-| `#enqueue(kind, payload, max_attempts: nil, backoff: nil, run_after: nil, lease_ttl_s: nil)` | Inserts one `pending` row and returns the row id. Delegates to the running worker. |
+| `#enqueue(kind, payload, max_attempts: nil, backoff: nil, run_after: nil, lease_ttl_s: nil, max_concurrent: nil)` | Inserts one `pending` row and returns the row id. Delegates to the running worker. `max_concurrent` is the kind's own fiber cap; the tightest value seen lowers the next `start`'s cap. |
 | `#worker`                               | The running `Worker`, or `nil`.                                           |
 
 ### Enqueue-only mode
@@ -281,6 +284,7 @@ The handler kinds registered from `main.cr` → `job_handler_entries`:
 | `lease_ttl_s`      | `60`    | How long a claimed row stays `running` before the sweep requeues it. |
 | `long_lease_ttl_s` | `3600`  | The per-row lease horizon long job kinds (document and domain import/export) pass at enqueue. |
 | `batch`            | `32`    | Max rows claimed per pass.                                      |
+| `max_concurrent`   | `4`     | Max job fibers running at once. A claim pass holds while this many run, so a burst of heavy jobs cannot multiply the process footprint without bound. A kind's own `Handler.max_concurrent` (the import declares `2`) lowers the cap of the next worker start to the tightest enqueue seen. |
 | `sweep_interval_s` | `30.0`  | Cadence of the lease sweep; also the cadence of the instance liveness refresh. |
 | `retention_days`   | `30`    | Terminal rows older than this are pruned.                       |
 | `enabled`          | `true`  | When false, the worker never starts; enqueue-only mode.         |

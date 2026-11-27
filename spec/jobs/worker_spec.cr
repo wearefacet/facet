@@ -123,6 +123,57 @@ private class PruneCountingHandler < TestHandler
   end
 end
 
+# Holds every execution until released, so a spec can park jobs in the
+# running state and observe the concurrency gate. Counts concurrent runs.
+# A closed channel releases every waiter at once, so one `close` drains a
+# whole gate in an `ensure` block.
+#
+# One instance per example. A fiber left over from the previous example
+# keeps the instance it captured at `execute` time, so it can no longer
+# write into the counters of the example that follows.
+class BlockingState
+  getter entered : Int32 = 0
+  getter peak : Int32 = 0
+  getter release = Channel(Nil).new
+
+  def initialize
+  end
+
+  def enter : Nil
+    @entered += 1
+    @peak = @entered if @entered > @peak
+  end
+
+  def leave : Nil
+    @entered -= 1
+  end
+
+  def unblock : Nil
+    release.close
+  end
+end
+
+# The state the handlers of the running example block on. The worker builds
+# handlers with a zero-argument `.new`, so the current example publishes its
+# own instance here; a fiber from a finished example keeps the reference it
+# read when it started.
+module BlockingRegistry
+  class_property current : BlockingState = BlockingState.new
+end
+
+private class BlockingHandler < Facet::Jobs::Handler
+  def execute(job : Facet::Jobs::Job) : Facet::Jobs::Handler::Result
+    state = BlockingRegistry.current
+    state.enter
+    begin
+      state.release.receive?
+    ensure
+      state.leave
+    end
+    Facet::Jobs::Handler::Result.new(status: Facet::Jobs::Handler::Kind::Succeeded)
+  end
+end
+
 # Fake liveness for specs. Refreshes are counted; instances named in
 # `dead` answer not alive, every other instance answers alive.
 private class SpecLiveness
@@ -197,8 +248,10 @@ end
 private def stop_worker(worker : Facet::Jobs::Worker) : Nil
   worker.stop
   # `running?` flips synchronously in `stop`; the loop fiber exits on its
-  # next select turn, so also wait for its death.
-  wait_until { !worker.running? && worker.loop_fiber.try(&.dead?) == true }
+  # next select turn, so also wait for its death. `stop` does not cancel
+  # in-flight job fibers, so wait for them too: a survivor would claim
+  # rows of the next example and run them under this worker's gate.
+  wait_until { !worker.running? && worker.loop_fiber.try(&.dead?) == true && worker.in_flight.zero? }
   nil
 end
 
@@ -479,6 +532,72 @@ describe Facet::Jobs::Worker do
         started_second_at = events.index!(&.starts_with?("started:#{id}:2"))
         abandoned_at.should be < started_second_at
         stop_worker(worker)
+      end
+    end
+  end
+
+  describe "concurrency gate" do
+    it "runs at most max_concurrent jobs at once" do
+      with_db do |db|
+        state = BlockingState.new
+        BlockingRegistry.current = state
+        4.times { enqueue_row(db) }
+        worker = Facet::Jobs::Worker.new(
+          poll_interval_s: 0.01,
+          max_concurrent: 2,
+          handlers: {"test" => BlockingHandler} of String => Facet::Jobs::Handler.class,
+          liveness: SpecLiveness.new,
+        )
+        begin
+          worker.start
+
+          # The gate's contract is the ceiling: however many jobs are due,
+          # never more than `max_concurrent` run at once. The spec asserts
+          # that ceiling and that the worker does claim, not a fixed count
+          # of entrants — another worker from a different spec may hold a
+          # row of this table, and the claim is global by design (there is
+          # no kind filter).
+          wait_until { state.peak >= 1 }.should be_true
+          sleep 100.milliseconds
+          state.peak.should be <= 2
+          db.query_one("SELECT COUNT(*) FROM background_jobs WHERE status = 'running'", as: Int64).should be <= 2
+
+          # Releasing lets the held passes claim the rest, two at a time.
+          state.unblock
+          wait_until { db.query_one("SELECT COUNT(*) FROM background_jobs WHERE status = 'succeeded'", as: Int64) == 4 }.should be_true
+          state.peak.should be <= 2
+        ensure
+          state.unblock
+          stop_worker(worker)
+        end
+      end
+    end
+
+    it "stop releases a claim pass parked on a full gate" do
+      with_db do |db|
+        state = BlockingState.new
+        BlockingRegistry.current = state
+        3.times { enqueue_row(db) }
+        worker = Facet::Jobs::Worker.new(
+          poll_interval_s: 0.01,
+          max_concurrent: 1,
+          handlers: {"test" => BlockingHandler} of String => Facet::Jobs::Handler.class,
+          liveness: SpecLiveness.new,
+        )
+        begin
+          worker.start
+          wait_until { state.entered >= 1 }.should be_true
+
+          # The loop is parked in `await_slots`; `stop` must wake it so the
+          # loop fiber exits instead of holding the fiber until the job ends.
+          worker.stop
+          wait_until { worker.loop_fiber.try(&.dead?) == true }.should be_true
+        ensure
+          # Release the parked job fiber, then wait for it so it cannot
+          # claim rows of the next example.
+          state.unblock
+          stop_worker(worker)
+        end
       end
     end
   end

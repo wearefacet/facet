@@ -57,6 +57,15 @@ module Facet
         [10, 60, 300, 1800, 7200]
       end
 
+      # The kind's own concurrency cap, or `nil` for none. A worker that
+      # runs this kind holds at most this many job fibers at once, so a
+      # kind whose single execution allocates a whole file (the import)
+      # cannot multiply the process footprint by the queue batch size. The
+      # cap rides the enqueue and applies from the next worker start.
+      def self.max_concurrent : Int32?
+        nil
+      end
+
       # ── Attempt lifecycle hooks ──────────────────────────────────────
 
       # One callback per attempt: `attempt_started` right after the worker

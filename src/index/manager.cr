@@ -262,7 +262,7 @@ module Facet
 
           unless to_remove.empty?
             run_batch(BatchKind::Remove, definition.domain, definition.doctype, to_remove,
-              concurrent: !synchronous?, async: !synchronous?)
+              concurrent: !synchronous?, async: !synchronous?, remaining: desired)
           end
 
           unless to_add.empty?
@@ -357,11 +357,12 @@ module Facet
         *,
         concurrent : Bool,
         async : Bool,
+        remaining : Set(DesiredIndex) = Set(DesiredIndex).new,
       ) : Nil
         if async
-          track_fiber { run_batch_once(kind, domain, doc_type, indexes, concurrent, async) }
+          track_fiber { run_batch_once(kind, domain, doc_type, indexes, concurrent, async, remaining) }
         else
-          run_batch_once(kind, domain, doc_type, indexes, concurrent, async)
+          run_batch_once(kind, domain, doc_type, indexes, concurrent, async, remaining)
         end
       end
 
@@ -382,6 +383,7 @@ module Facet
         indexes : Set(DesiredIndex),
         concurrent : Bool,
         async : Bool,
+        remaining : Set(DesiredIndex) = Set(DesiredIndex).new,
       ) : Nil
         begin
           Database.with_db(:read_write) do |db|
@@ -390,7 +392,7 @@ module Facet
               in BatchKind::Create
                 create_one_index(db, idx, concurrent: concurrent)
               in BatchKind::Remove
-                drop_one_index(db, idx, concurrent: concurrent)
+                drop_one_index(db, idx, concurrent: concurrent, remaining: remaining)
               end
             end
           end
@@ -425,6 +427,7 @@ module Facet
           with_ddl_gate(db, concurrent: concurrent) do
             begin
               exec_ddl_with_deadlock_retry(db, sql, drop_sql)
+              create_field_statistics(db, idx)
               db.exec(
                 "UPDATE doctype_indexes SET status = 'active', updated_at = now() WHERE index_name = $1",
                 index_name
@@ -484,6 +487,57 @@ module Facet
         )
       end
 
+      # Creates the field's extended statistics object, if the index type
+      # has one (see `Naming.create_statistics_sql`). Best effort: the
+      # index is the contract, and the statistics object only steers the
+      # planner towards it, so a failure logs and leaves the index active.
+      #
+      # The object is created under the same DDL gate and with the same
+      # concurrency as the index. `CREATE STATISTICS` has no
+      # `CONCURRENTLY` form, so it takes the same `SHARE UPDATE EXCLUSIVE`
+      # lock a plain `CREATE INDEX` does — writes keep flowing. A newly
+      # created object has no collected data until the next `ANALYZE` on
+      # `projections` (autovacuum reaches the table, or an operator runs
+      # `ANALYZE projections` after a bulk load).
+      private def self.create_field_statistics(
+        db : DB::Connection,
+        idx : DesiredIndex,
+      ) : Nil
+        sql = Naming.create_statistics_sql(idx.domain, idx.doc_type, idx.field_name, idx.index_type)
+        return if sql.nil?
+
+        exec_ddl_with_deadlock_retry(db, sql)
+      rescue ex
+        Log.warn(exception: ex) do
+          "Statistics creation failed for #{idx.domain}.#{idx.doc_type}.#{idx.field_name} " \
+          "(#{idx.index_type}): #{ex.class}: #{ex.message || "(no message)"}"
+        end
+      end
+
+      # Drops the field's statistics object. The object is shared by every
+      # btree variant of a field, so it goes only when no remaining
+      # desired index for that field needs it. Best effort, like the
+      # create path.
+      private def self.drop_field_statistics(
+        db : DB::Connection,
+        idx : DesiredIndex,
+        remaining : Set(DesiredIndex),
+      ) : Nil
+        still_needed = remaining.any? do |other|
+          other.field_name == idx.field_name &&
+            !Naming.create_statistics_sql(other.domain, other.doc_type, other.field_name, other.index_type).nil?
+        end
+        return if still_needed
+        return if Naming.create_statistics_sql(idx.domain, idx.doc_type, idx.field_name, idx.index_type).nil?
+
+        exec_ddl_with_deadlock_retry(db, Naming.drop_statistics_sql(idx.domain, idx.doc_type, idx.field_name))
+      rescue ex
+        Log.warn(exception: ex) do
+          "Statistics removal failed for #{idx.domain}.#{idx.doc_type}.#{idx.field_name} " \
+          "(#{idx.index_type}): #{ex.class}: #{ex.message || "(no message)"}"
+        end
+      end
+
       # Runs one DDL statement with a bounded retry on PG deadlock
       # (SQLSTATE 40P01). `CREATE INDEX CONCURRENTLY` cannot run inside a
       # transaction block (it manages its own internal transactions), so
@@ -528,7 +582,9 @@ module Facet
       # Runs one `DROP INDEX` (concurrent or not, per the `concurrent` flag)
       # against `db`, then updates `doctype_indexes` to `dropped`. On
       # failure the row is still marked `dropped` (a leftover PG index may
-      # need manual cleanup) with an `error_message` for visibility.
+      # need manual cleanup) with an `error_message` for visibility. The
+      # field's statistics object goes with the last btree variant of the
+      # field (see `drop_field_statistics`).
       #
       # Shared by the async remove batch (`concurrent: true`) and the
       # inline remove batch (`concurrent: false`) through `run_batch`.
@@ -537,6 +593,7 @@ module Facet
         idx : DesiredIndex,
         *,
         concurrent : Bool,
+        remaining : Set(DesiredIndex) = Set(DesiredIndex).new,
       ) : Nil
         index_name = Naming.index_name(idx.domain, idx.doc_type, idx.field_name, idx.index_type)
         sql = Naming.drop_index_sql(idx.domain, idx.doc_type, idx.field_name, idx.index_type, concurrent: concurrent)
@@ -545,6 +602,7 @@ module Facet
           with_ddl_gate(db, concurrent: concurrent) do
             begin
               exec_ddl_with_deadlock_retry(db, sql)
+              drop_field_statistics(db, idx, remaining)
               db.exec(
                 "UPDATE doctype_indexes SET status = 'dropped', updated_at = now() WHERE index_name = $1",
                 index_name

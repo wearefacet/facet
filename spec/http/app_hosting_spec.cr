@@ -260,10 +260,22 @@ describe "app hosting dispatch" do
     end
   end
 
-  it "keeps the bare 404 body for other unknown hosts" do
+  it "keeps the error field bare for other unknown hosts" do
     resp = get_with_host("/", "random-#{unique_suffix}.example.com")
     assert_http_status(resp, 404)
-    JSON.parse(resp.body)["hint"]?.should be_nil
+    JSON.parse(resp.body)["error"].as_s.should eq("Not found")
+  end
+
+  it "hints at the rejected host on an unknown-host miss" do
+    host = "random-#{unique_suffix}.example.com"
+    resp = get_with_host("/Api/bench/Invoice", host)
+    assert_http_status(resp, 404)
+    body = JSON.parse(resp.body)
+    body["error"].as_s.should eq("Not found")
+    # A bare 404 reads as "the API is missing"; the hint names the rejected
+    # Host header and the config keys the set comes from.
+    body["hint"].as_s.should contain(host)
+    body["hint"].as_s.should contain("configured host set")
   end
 
   it "404s unknown hosts, unregistered paths, and inactive apps" do

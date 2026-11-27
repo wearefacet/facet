@@ -292,6 +292,14 @@ CREATE INDEX idx_projections_links_gin
 CREATE INDEX idx_projections_doctype_updated_at
     ON projections (domain, doc_type, updated_at);
 
+-- Doctype-wide listing in creation order. `created_at` is a documented
+-- sortable system column ("newest first" is the natural register order),
+-- and without this index `sort=-created_at` plans to a parallel seq scan
+-- over the whole doctype plus a top-N sort. The `updated_at` twin above
+-- serves the default order; this one serves the creation order.
+CREATE INDEX idx_projections_doctype_created_at
+    ON projections (domain, doc_type, created_at);
+
 -- Index supporting the parent-scoped ETag computation for nested child
 -- collection reads. `Facet::Document::List.child_collection_version` runs
 -- `SELECT max(updated_at) FROM projections
@@ -948,6 +956,7 @@ DROP FUNCTION IF EXISTS jsonb_ensure_path(jsonb, text[]);
 
 -- 2. Core tables
 DROP INDEX IF EXISTS idx_projections_parent_updated_at;
+DROP INDEX IF EXISTS idx_projections_doctype_created_at;
 DROP INDEX IF EXISTS idx_projections_doctype_updated_at;
 DROP INDEX IF EXISTS idx_projections_links_gin;
 DROP INDEX IF EXISTS idx_projections_search_trgm;

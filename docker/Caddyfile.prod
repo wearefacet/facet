@@ -108,13 +108,17 @@ https://{$FACET_HOSTNAME:facet.localhost}:{$HTTPS_PORT:3443} {
 	}
 
 	# The SvelteKit node server: SSR pages and static assets. This is the
-	# HTML surface, so the anti-framing and CSP headers live here, not on the
-	# JSON API namespaces above. `frame-ancestors 'self'` and the legacy
-	# X-Frame-Options stop another site from framing the workspace. The CSP
-	# bounds a future script-injection bug; `'unsafe-inline'` stays in
-	# `style-src` because the UI sets inline styles.
+	# HTML surface, so the anti-framing header lives here, not on the JSON
+	# API namespaces above. `X-Frame-Options` stops another site from framing
+	# the workspace.
+	#
+	# The Content-Security-Policy is NOT set here. SvelteKit emits an inline
+	# start shim (`__sveltekit_*` + `start()`) and the app template carries
+	# an inline theme script; a `script-src 'self'` header with no nonce
+	# blocks both, and the UI renders without booting (the login form goes
+	# inert). The frontend mints a per-request nonce and sends the policy
+	# itself (`frontend/src/lib/csp.ts`), so the header and the markup agree.
 	handle {
-		header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' wss:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
 		header X-Frame-Options SAMEORIGIN
 		reverse_proxy {$FRONTEND_URL:http://frontend:3000}
 	}

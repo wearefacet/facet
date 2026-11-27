@@ -93,6 +93,40 @@ end
 
 describe Facet::Document::Coalesce do
   describe "write-time coalescing" do
+    it "deletes the folded row by its primary key (domain, doc_type, id)" do
+      with_coalesce_window(3) do
+        with_db do |db|
+          doctype = register_coalesce_doctype(db)
+          doc_id = coalesce_create_doc(db, doctype)
+
+          res1 = coalesce_update(db, doctype, doc_id, %({"title": "First"}))
+          mut1 = res1.as(Facet::Document::Update::Result).mutation_id
+          res2 = coalesce_update(db, doctype, doc_id, %({"title": "Second"}))
+          mut2 = res2.as(Facet::Document::Update::Result).mutation_id
+
+          # `mutations_pkey` is `(domain, doc_type, id)`; a bare `WHERE id`
+          # cannot use it and plans to a full index scan (254 ms for one row
+          # on a 2.6 M-row log). The predicate names the leading columns, so
+          # the delete is a bounded index lookup, never a scan of the log.
+          plan = db.query_all(
+            "EXPLAIN DELETE FROM mutations WHERE domain = $1 AND doc_type = $2 AND id = $3",
+            COALESCE_DOMAIN, doctype, mut1,
+            as: String,
+          ).join("\n")
+          plan.should contain("Index Scan using")
+          plan.should contain("domain")
+          plan.should_not contain("Seq Scan")
+          plan.should_not contain("Rows Removed by Filter")
+
+          # The fold still removed the previous row: one create plus the
+          # merged update.
+          rows = coalesce_rows(db, doctype, doc_id)
+          rows.size.should eq 2
+          rows[1][0].should eq mut2
+        end
+      end
+    end
+
     it "merges consecutive same-actor updates into one row with an idx gap" do
       with_coalesce_window(3) do
         with_db do |db|

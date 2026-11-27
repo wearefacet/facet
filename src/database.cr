@@ -483,12 +483,28 @@ module Facet
       conn.auto_release = false
       pin = Pin.new(conn, slot.database, slot.role)
       set_pin(fiber, mode, pin)
+      healthy = false
       begin
-        yield conn, pin
+        value = yield conn, pin
+        healthy = true
+        value
       ensure
         clear_pin(fiber, mode, conn)
         Fiber.current.txn_depths.try(&.delete(conn))
-        conn.release
+        # A block that raised may have abandoned a result set mid-read (a
+        # statement cancelled by `statement_timeout`, an exception inside a
+        # `db.query` block). Such a connection still has frames pending on
+        # the wire, so returning it to the pool makes the next user read
+        # them as its own result — the driver then reports a column type
+        # mismatch on a column it never selected. Discard it instead: the
+        # pool drops it and opens a clean one on demand.
+        if healthy
+          conn.release
+        else
+          # `close` runs the driver's `do_close`, which discards the
+          # connection from the pool and drops its prepared-statement cache.
+          conn.close
+        end
       end
     end
 

@@ -71,6 +71,7 @@ class Facet::Jobs::Worker
   @poll_interval_s : Float64
   @lease_ttl_s : Int32
   @batch : Int32
+  @max_concurrent : Int32
   @sweep_interval_s : Float64
   @retention_days : Int32
   @next_sweep_at : Time
@@ -81,15 +82,23 @@ class Facet::Jobs::Worker
   @generation = 0
   @loop_fiber : Fiber?
   @tick_count : Int64 = 0
+  # The running-job gate. `@in_flight` counts the job fibers spawned by
+  # this worker; `@idle` is signalled once when one of them finishes, so a
+  # held claim pass resumes without polling. Both are guarded by `@mutex`.
+  @in_flight = 0
+  @idle = Channel(Nil).new(1)
 
   # Stores configuration. No I/O. The `handlers` map fills the flat
   # `kind` → `Handler` dispatch table; each handler carries its own
   # attempt hooks. `liveness` is injectable so specs run without Redis;
   # the default answers from a Redis liveness key (`Liveness::Redis`).
-  def initialize(@clock : Proc(Time) = -> { Time.utc }, *, poll_interval_s : Float64 = 5.0, lease_ttl_s : Int32 = 60, batch : Int32 = 32, sweep_interval_s : Float64 = 30.0, retention_days : Int32 = 30, handlers : Hash(String, Handler.class) = {} of String => Handler.class, liveness : Liveness? = nil)
+  # `max_concurrent` caps the job fibers running at once (see
+  # `await_slots`); it is clamped to at least 1.
+  def initialize(@clock : Proc(Time) = -> { Time.utc }, *, poll_interval_s : Float64 = 5.0, lease_ttl_s : Int32 = 60, batch : Int32 = 32, max_concurrent : Int32 = 4, sweep_interval_s : Float64 = 30.0, retention_days : Int32 = 30, handlers : Hash(String, Handler.class) = {} of String => Handler.class, liveness : Liveness? = nil)
     @poll_interval_s = poll_interval_s
     @lease_ttl_s = lease_ttl_s
     @batch = batch
+    @max_concurrent = Math.max(1, max_concurrent)
     @sweep_interval_s = sweep_interval_s
     @retention_days = retention_days
     @handlers = handlers
@@ -117,6 +126,13 @@ class Facet::Jobs::Worker
   # One full loop pass completed. Written only by the loop fiber; tests
   # read it to prove a tick ran after a wake.
   getter tick_count : Int64
+
+  # Job fibers this worker currently runs. Tests wait on it so a stopped
+  # worker leaves no fiber that could claim rows belonging to the next
+  # example.
+  def in_flight : Int32
+    @mutex.synchronize { @in_flight }
+  end
 
   # Returns `true` while the loop fiber is running.
   def running? : Bool
@@ -150,6 +166,9 @@ class Facet::Jobs::Worker
       @wake
     end
     wake.try(&.close)
+    # Release a claim pass parked on a full concurrency gate: the loop
+    # exits on its next turn instead of holding a fiber until a job ends.
+    signal_idle
   end
 
   # Sends to the wake channel. Tests call this after enqueuing; the loop
@@ -197,12 +216,48 @@ class Facet::Jobs::Worker
 
   # One maintenance + claim pass. Returns `true` when nothing was claimed
   # (the loop may then sleep a full poll interval).
+  #
+  # A claim pass holds while `@max_concurrent` job fibers run: the cap is
+  # what bounds the aggregate footprint of heavy kinds (an import decodes
+  # a whole file and buffers one event per row), so the row is not claimed
+  # until a slot is free. Maintenance keeps running while held, and the
+  # lease of a row claimed after a hold starts at that claim.
   private def tick : Bool
     now = @clock.call
     run_maintenance(now)
 
-    claims = Database.with_db(:read_write) do |db|
-      jobs = Queries.claim(db, @locked_by, @lease_ttl_s, @batch)
+    slots = await_slots
+    return true if slots.zero?
+    claim_into_slots(slots)
+  rescue e : Exception
+    Log.error { "Worker tick failed: #{e.message}" }
+    Metrics.inc("facet_fiber_loop_errors_total", {"fiber" => "Jobs Worker"})
+    true
+  end
+
+  # Claims and spawns one batch into the reservations `await_slots` took.
+  # Returns `true` when the queue held nothing due.
+  #
+  # The reservation moves to the spawned fibers when the pass claims rows.
+  # A failed pass returns it instead, so an error never leaks a slot.
+  private def claim_into_slots(slots : Int32) : Bool
+    claims = claim_batch(slots)
+    # `each` (not a bare `spawn_process(claim)` block): a block call passes
+    # the whole array as its single argument, which would spawn one fiber
+    # for the array itself and leave every claimed row unexecuted.
+    claims.each { |claim| spawn_process(claim) }
+    # Unused slots (a batch smaller than the free-slot count) go back.
+    (slots - claims.size).times { release_claim_slot }
+    claims.empty?
+  rescue e
+    release_claim_slot
+    raise e
+  end
+
+  # Claims up to *slots* due rows and notifies each attempt's start hook.
+  private def claim_batch(slots : Int32) : Array({Job, Handler?})
+    Database.with_db(:read_write) do |db|
+      jobs = Queries.claim(db, @locked_by, @lease_ttl_s, slots)
       # One handler instance per attempt: the hooks and `execute` run on
       # the same object, so a handler may keep per-attempt state.
       jobs.each { |job| Metrics.inc("facet_jobs_claimed_total", {"kind" => job.kind}) }
@@ -212,12 +267,72 @@ class Facet::Jobs::Worker
         {job, handler}
       end
     end
-    claims.each { |claim| spawn_process(claim) }
-    claims.empty?
-  rescue e : Exception
-    Log.error { "Worker tick failed: #{e.message}" }
-    Metrics.inc("facet_fiber_loop_errors_total", {"fiber" => "Jobs Worker"})
-    true
+  end
+
+  # Blocks until at least one job slot is free, then reserves every free
+  # slot (at least one) and returns the count. The claim pass keeps one
+  # reservation per spawned fiber — every job fiber gives its own slot back
+  # on exit — and returns the rest in `release_claim_slot` when the table
+  # had nothing due, so a held worker never leaks a slot on an idle queue.
+  #
+  # `stop` wakes the waiter too: a stopped worker's loop exits, so the
+  # claim pass must not stay parked on a full gate. A zero answer means the
+  # worker stopped; the caller returns without claiming.
+  private def await_slots : Int32
+    loop do
+      reserved = @mutex.synchronize do
+        next 0 if @stopped || @in_flight >= @max_concurrent
+        free = @max_concurrent - @in_flight
+        @in_flight = @max_concurrent
+        free
+      end
+      return reserved if reserved > 0
+      return 0 if @mutex.synchronize { @stopped }
+      @idle.receive
+    end
+  end
+
+  # Returns the slot `await_slots` took when the claim pass claimed no row
+  # (nothing was spawned to release it).
+  private def release_claim_slot : Nil
+    release_slot
+  end
+
+  # Returns the slot one finished job fiber held.
+  private def release_job_slot : Nil
+    release_slot
+  end
+
+  private def release_slot : Nil
+    free = @mutex.synchronize do
+      # A release must never drive the counter negative: that would make
+      # `await_slots` compute a `free` count above the cap and let a claim
+      # pass spawn more fibers than `@max_concurrent`. Guarding here keeps
+      # a double release harmless instead of silently widening the gate.
+      if @in_flight > 0
+        @in_flight -= 1
+      else
+        Log.warn { "Job slot released with no slot held" }
+      end
+      @in_flight < @max_concurrent
+    end
+    # The channel is buffered at 1 and the signal must never block the
+    # job fiber: a full buffer already holds a pending signal, which is as
+    # good as this one — the waiter re-checks the counter either way.
+    signal_idle if free
+  end
+
+  # Non-blocking signal on `@idle`. The buffer is 1, so a send blocks once
+  # it is full — and a full buffer holds a signal no waiter consumed yet,
+  # which is exactly as good as this one. So a full channel skips the
+  # send: neither a job fiber nor `stop` can park on it.
+  private def signal_idle : Nil
+    select
+    when @idle.send(nil)
+      nil
+    else
+      nil
+    end
   end
 
   # Runs the lease sweep and the terminal prune when due. A sweep that
@@ -275,7 +390,14 @@ class Facet::Jobs::Worker
 
   private def spawn_process(claim : {Job, Handler?}) : Nil
     job, handler = claim
-    spawn { process(job, handler) }
+    # The claim pass took one slot; the fiber gives it back on exit.
+    spawn do
+      begin
+        process(job, handler)
+      ensure
+        release_job_slot
+      end
+    end
   end
 
   # Runs one claimed job on its handler instance. The handler never
