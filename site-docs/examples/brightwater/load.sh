@@ -131,6 +131,7 @@ ensure_role sales '{
     {"on": "rentals.BookingLine", "action": "*"},
     {"on": "equipment.Item", "action": "read"},
     {"on": "equipment.Category", "action": "read"},
+    {"on": "iam.Account", "action": "read"},
     {"on": "core.Comment", "action": "*"},
     {"on": "core.Attachment", "action": "read"}
   ],

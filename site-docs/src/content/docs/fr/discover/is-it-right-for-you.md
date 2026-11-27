@@ -59,22 +59,22 @@ directif, taillé sur mesure — une base de données simple et des services
 
 ## Trancher en un après-midi
 
-Lancez la pile, cliquez partout, et construisez un petit domaine à vous :
+Lancez la pile, cliquez partout, et construisez un petit domaine à vous.
+[Les tutoriels](/fr/build/first-hour/) donnent le parcours complet ; forme
+courte :
 
-1. Lancez la pile :
+1. Lancez la pile d’une commande, dans un dossier vide. Elle écrit les
+   fichiers de la pile, démarre les cinq conteneurs et crée l’administrateur :
 
    ```sh
-   git clone https://github.com/wearefacet/facet.git
-   cd facet
-   cp docker/.env.example docker/.env   # fill in hostname, SMTP, secrets
-   docker compose -f docker/compose.prod.yml up -d --build
-   docker compose -f docker/compose.prod.yml exec backend facet seed:admin ops@your-company.tld
+   pnpx @facetapp/cli setup-dev
    ```
 
-2. Connectez-vous avec le mot de passe à usage unique affiché.
-3. Parcourez l’espace de travail : listes, filtres, historique des documents.
-4. Construisez un petit domaine à vous —
-   [Domaines, brouillons et éditeurs de domaines](/fr/build/model/in-app/drafts-and-publishing/).
+2. Connectez-vous sur `https://facet.localhost:3443` avec
+   `admin@example.tld` / `admin`, et suivez la visite de bienvenue.
+3. Parcourez l’espace de travail : listes, filtres, historique des documents.
+4. Construisez un petit domaine à vous — [Domaines, brouillons et éditeurs de
+   domaines](/fr/build/model/in-app/drafts-and-publishing/).
 
 Si l’étape 4 a pris une heure et que la plupart des bons cas vous
 correspondent, Facet est fait pour vous.
