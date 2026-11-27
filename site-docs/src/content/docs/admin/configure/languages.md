@@ -59,10 +59,10 @@ The same save works through the API. The body nests one object level per
 path segment:
 
 ```sh
-curl -k -X PATCH -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X PATCH -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{"localization": {"default_timezone": "Europe/Paris"}}' \
-  "https://facet.localhost:3443/Api/core/SystemSettings/settings"
+  "$(facet-cli host)/Api/core/SystemSettings/settings"
 ```
 
 ### 3. Know the chain
@@ -115,10 +115,10 @@ localization:
 Or pin the same values at runtime without a restart:
 
 ```sh
-curl -k -X PATCH -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X PATCH -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{"localization": {"default_timezone": "Europe/Paris", "default_language": "fr"}}' \
-  "https://facet.localhost:3443/Api/core/SystemSettings/settings"
+  "$(facet-cli host)/Api/core/SystemSettings/settings"
 ```
 
 Accounts that picked their own values keep them. Accounts on

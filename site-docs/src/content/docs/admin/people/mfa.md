@@ -92,10 +92,10 @@ select shows only while the factor type is `totp`. Select **Save**.
 The page sends a sparse update through the standard document route:
 
 ```sh
-curl -k -X PATCH -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X PATCH -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{"iam": {"mfa": {"type": "totp", "enforcement": "always"}}}' \
-  "https://facet.localhost:3443/Api/core/SystemSettings/settings"
+  "$(facet-cli host)/Api/core/SystemSettings/settings"
 ```
 
 The write gate accepts only `none` or `totp` for the type and only
@@ -106,8 +106,8 @@ document; only the seeded `settings` row exists.
 ### 2. Read the effective values
 
 ```sh
-curl -k -H "Authorization: Bearer $FACET_API_KEY" \
-  "https://facet.localhost:3443/Api/SystemSettings"
+curl -k -H "Authorization: Bearer $(facet-cli apikey)" \
+  "$(facet-cli host)/Api/SystemSettings"
 ```
 
 The `values` map carries the effective, non-secret values keyed by path, for
@@ -130,10 +130,10 @@ Each account enrolls at sign-in:
 The verify call returns the backup codes once:
 
 ```sh
-curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X POST -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{"code": "123456"}' \
-  "https://facet.localhost:3443/Api/iam/mfa/totp/verify"
+  "$(facet-cli host)/Api/iam/mfa/totp/verify"
 ```
 
 The answer carries `"backup_codes": [...]` and `"mfa_enabled": true`. On the
@@ -157,10 +157,10 @@ When an account loses its authenticator and its backup codes, an
 administrator clears its MFA:
 
 ```sh
-curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X POST -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{"account_id": "01J8Z0A7G3Q5M2X9K4T6VBNR8D"}' \
-  "https://facet.localhost:3443/Api/iam/mfa/disable"
+  "$(facet-cli host)/Api/iam/mfa/disable"
 ```
 
 The route requires the `mfa_disable` permission on `iam.Account`. The seeded

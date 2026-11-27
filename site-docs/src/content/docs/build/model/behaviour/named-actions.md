@@ -119,8 +119,8 @@ the arguments, runs the script, and shows the result. The same call works
 over the API:
 
 ```sh
-curl -k -X POST "https://facet.localhost:3443/Api/equipment/Item/EQ-2026-0001/send_to_repair" \
-  -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X POST "$(facet-cli host)/Api/equipment/Item/EQ-2026-0001/send_to_repair" \
+  -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{}'
 ```

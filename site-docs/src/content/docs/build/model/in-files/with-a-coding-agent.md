@@ -88,7 +88,7 @@ qualified equipment.Supplier form.
 
 After each save, read the watcher's log line and
 GET /Api/dev/check-report?domain=equipment (Authorization header from
-$FACET_API_KEY). Fix every issue before you finish. Commit with a message
+`facet-cli apikey`). Fix every issue before you finish. Commit with a message
 that says what you modelled.
 ````
 

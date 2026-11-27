@@ -19,6 +19,7 @@ Le paquet npm `@facetapp/cli` déploie un dossier de build statique comme nouvel
 | `setup-dev` | `--dir <path>`, `--hostname <name>`, `--port <n>`, `--watch <dir>`, `--no-watch`, `--no-start`, `--no-key`, `--force`, `--yes` | Scaffold, start, and seed a local dev instance, then fetch an API key. |
 | `connect` | `--target <name>`, `--role <name>` | Sign in to a Facet instance and optionally store a project API key. |
 | `apikey` | `--target <name>` | Print the stored API key for this project (for Authorization: Bearer). |
+| `host` | `--target <name>` | Print the instance URL for this project (for building request URLs). |
 | `login` | `--target <name>` | Sign in to a Facet instance and store the session. |
 | `logout` | `--target <name>` | Remove the stored session for a Facet instance. |
 | `whoami` | `--target <name>` | Show the stored account, role, instance, and active revision. |
@@ -50,6 +51,8 @@ Commands:
                                  store a project API key.
   apikey [options]               Print the stored API key for this project (for
                                  Authorization: Bearer).
+  host [options]                 Print the instance URL for this project (for
+                                 building request URLs).
   login [options]                Sign in to a Facet instance and store the
                                  session.
   logout [options]               Remove the stored session for a Facet instance.
@@ -116,6 +119,17 @@ Print the stored API key for this project (for Authorization: Bearer).
 
 Options:
   --target <name>  Named target from facet.config.json to read the key for.
+  -h, --help       display help for command
+```
+
+### `facet-cli host`
+```text
+Usage: facet-cli host [options]
+
+Print the instance URL for this project (for building request URLs).
+
+Options:
+  --target <name>  Named target from facet.config.json to read the URL for.
   -h, --help       display help for command
 ```
 

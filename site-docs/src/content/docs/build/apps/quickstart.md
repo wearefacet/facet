@@ -55,17 +55,18 @@ pnpx @facetapp/cli connect
 The command signs you in (the same OAuth flow as `login`), asks whether to
 store an API key, and writes the key to `.facet.local.json`. It needs a
 `facet.config.json` for the target — `init` writes one, or `connect` asks for
-the URL once. Keep the key in a variable:
+the URL once. Keep the key and the URL in variables:
 
 ```sh
 RAVI_KEY=$(pnpx @facetapp/cli apikey)
+HOST=$(pnpx @facetapp/cli host)
 ```
 
 Then create the app document. The grants name concrete doctypes — a
 wildcard target is refused:
 
 ```sh
-curl -sk -X POST https://facet.localhost:3443/Api/app/App \
+curl -sk -X POST "$HOST/Api/app/App" \
   -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -128,7 +129,7 @@ A new app is a `draft`. Sign-ins and keys work only when the status is
 
 ```sh
 curl -sk -X PATCH \
-  https://facet.localhost:3443/Api/app/App/06H1FQF7NGDJJKSNHXPYT6627M \
+  "$HOST/Api/app/App/06H1FQF7NGDJJKSNHXPYT6627M" \
   -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
   -d '{"status": "active"}'
@@ -156,7 +157,7 @@ ask the authorize endpoint what the consent screen would show:
 
 ```sh
 curl -sk -H "Authorization: Bearer $RAVI_KEY" \
-  'https://facet.localhost:3443/OAuth/authorize?response_type=code&client_id=06H1FQF7NG357EQ0P348Z2BEV5&redirect_uri=http%3A%2F%2Flocalhost%3A5173%2Fauth%2Fcallback&code_challenge=JNVgr1Czh8QJ1zYgaq6fQFQT5bbfH90Snk4IEaRPQAc&code_challenge_method=S256&state=winter-fair-43' \
+  "$HOST/OAuth/authorize?response_type=code&client_id=06H1FQF7NG357EQ0P348Z2BEV5&redirect_uri=http%3A%2F%2Flocalhost%3A5173%2Fauth%2Fcallback&code_challenge=JNVgr1Czh8QJ1zYgaq6fQFQT5bbfH90Snk4IEaRPQAc&code_challenge_method=S256&state=winter-fair-43' \
   -H 'Accept: application/json'
 ```
 
@@ -189,7 +190,7 @@ The user elects one role. Post the election with the same parameters plus
 `role`; the answer carries the one-time code:
 
 ```sh
-curl -sk -X POST https://facet.localhost:3443/OAuth/authorize \
+curl -sk -X POST "$HOST/OAuth/authorize?response_type=code&client_id=06H1FQF7NG357EQ0P348Z2BEV5&redirect_uri=http%3A%2F%2Flocalhost%3A5173%2Fauth%2Fcallback&code_challenge=JNVgr1Czh8QJ1zYgaq6fQFQT5bbfH90Snk4IEaRPQAc&code_challenge_method=S256&state=winter-fair-43" \
   -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -217,7 +218,7 @@ curl -sk -X POST https://facet.localhost:3443/OAuth/authorize \
 The code lives for 60 seconds and works once. Exchange it now:
 
 ```sh
-curl -sk -X POST https://facet.localhost:3443/OAuth/token \
+curl -sk -X POST "$HOST/OAuth/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   --data-urlencode 'grant_type=authorization_code' \
   --data-urlencode 'code=5mmwDDXn58mmruIfJ_4INhGxmYgMXYupVqhH_AqToac' \
@@ -238,7 +239,7 @@ curl -sk -X POST https://facet.localhost:3443/OAuth/token \
 Keep the access token in a variable for the calls below:
 
 ```sh
-export TOKEN=$(curl -sk -X POST https://facet.localhost:3443/OAuth/token \
+export TOKEN=$(curl -sk -X POST "$HOST/OAuth/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   --data-urlencode 'grant_type=authorization_code' \
   --data-urlencode 'code=5mmwDDXn58mmruIfJ_4INhGxmYgMXYupVqhH_AqToac' \
@@ -260,7 +261,7 @@ is [Sign users in](/build/apps/connect/user-login/).
 Call the API with the access token. The app reads bookings:
 
 ```sh
-curl -sk 'https://facet.localhost:3443/Api/rentals/Booking?items=2&sort=-created_at' \
+curl -sk "$HOST/Api/rentals/Booking?items=2&sort=-created_at" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -297,7 +298,7 @@ curl -sk 'https://facet.localhost:3443/Api/rentals/Booking?items=2&sort=-created
 The same token on a doctype outside the grant is refused:
 
 ```sh
-curl -sk 'https://facet.localhost:3443/Api/clients/Company?items=1' \
+curl -sk "$HOST/Api/clients/Company?items=1" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -315,7 +316,7 @@ The token can also read its own bounds. `GET /Api/iam/me` answers with the
 effective manifest — the exact rights this credential carries:
 
 ```sh
-curl -sk https://facet.localhost:3443/Api/iam/me \
+curl -sk "$HOST/Api/iam/me" \
   -H "Authorization: Bearer $TOKEN"
 ```
 

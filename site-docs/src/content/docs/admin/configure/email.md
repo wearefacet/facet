@@ -89,10 +89,10 @@ The `mail.*` keys are hot. Pin them on the
 **Configure → Platform → Settings** page, or save the settings document:
 
 ```sh
-curl -k -X PATCH -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X PATCH -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{"mail": {"from_address": "no-reply@your-company.tld"}}' \
-  "https://facet.localhost:3443/Api/core/SystemSettings/settings"
+  "$(facet-cli host)/Api/core/SystemSettings/settings"
 ```
 
 A settings save rebuilds the adapter, so the next email uses the new values.

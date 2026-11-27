@@ -103,10 +103,10 @@ nothing.
 Create a currency with the API, then declare a money field that uses it:
 
 ```sh
-curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X POST -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{"ticker":"CRD","symbol":"Cr","name":"House credit","digits":2,"active":true,"favorite":false,"grouping":"standard"}' \
-  "https://facet.localhost:3443/Api/core/Currency"
+  "$(facet-cli host)/Api/core/Currency"
 ```
 
 The `ticker` field is unique across the doctype, so a ticker that a live
@@ -125,8 +125,8 @@ omits the currency member is backfilled with it. The stored value still
 carries its own ticker. Filter the doctype by amount:
 
 ```sh
-curl -s -H "Authorization: Bearer $FACET_API_KEY" \
-  "https://facet.localhost:3443/Api/hr/Employee?filters[salary__gte]=USD%201000"
+curl -s -H "Authorization: Bearer $(facet-cli apikey)" \
+  "$(facet-cli host)/Api/hr/Employee?filters[salary__gte]=USD%201000"
 ```
 
 On the Brightwater example, the two filter forms behave differently. The

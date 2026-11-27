@@ -132,8 +132,8 @@ only when you mean to replace the live structure. Through the API, send
 the flag yourself:
 
 ```sh
-curl -k -X POST "https://facet.localhost:3443/Api/core/Domain/<draft-id>/publish" \
-  -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X POST "$(facet-cli host)/Api/core/Domain/<draft-id>/publish" \
+  -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{"target_name": "rentals", "overwrite": true}'
 ```

@@ -208,9 +208,9 @@ Revoke every session of one account from the API, as the account holder or
 with their credential:
 
 ```sh
-curl -k -X DELETE -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X DELETE -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "X-Requested-With: XMLHttpRequest" \
-  "https://facet.localhost:3443/Api/iam/sessions"
+  "$(facet-cli host)/Api/iam/sessions"
 ```
 
 The answer names the count: `{"ok": true, "revoked": 3}`. Each revoked session

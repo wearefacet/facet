@@ -85,10 +85,10 @@ Open **Configure → Platform → Settings** and set:
 Or set both through the API:
 
 ```sh
-curl -k -X PATCH -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X PATCH -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{"assistant": {"name": "Atlas", "system_prompt": "Answer in short sentences. Name the document you base each answer on."}}' \
-  "https://facet.localhost:3443/Api/core/SystemSettings/settings"
+  "$(facet-cli host)/Api/core/SystemSettings/settings"
 ```
 
 :::note[Instructions reach new conversations]

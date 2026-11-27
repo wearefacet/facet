@@ -11,6 +11,7 @@ import { runInit, type InitOptions } from './commands/init.js';
 import { runSetupDev } from './commands/setup-dev.js';
 import { runConnect } from './commands/connect.js';
 import { runApikey } from './commands/apikey.js';
+import { runHost } from './commands/host.js';
 import { runLogin } from './commands/login.js';
 import { runLogout } from './commands/logout.js';
 import { runWhoami } from './commands/whoami.js';
@@ -99,13 +100,23 @@ export function createProgram(): Command {
 		.description('Sign in to a Facet instance and optionally store a project API key.')
 		.option('--target <name>', 'Named target from facet.config.json to connect to.')
 		.option('--role <name>', 'Role to pin the key to (id or name; default: your active role).')
-		.action(action((opts: TargetOptions & { role?: string }) => runConnect(process.cwd(), opts.target, { role: opts.role })));
+		.action(
+			action((opts: TargetOptions & { role?: string }) =>
+				runConnect(process.cwd(), opts.target, { role: opts.role })
+			)
+		);
 
 	program
 		.command('apikey')
 		.description('Print the stored API key for this project (for Authorization: Bearer).')
 		.option('--target <name>', 'Named target from facet.config.json to read the key for.')
 		.action(action((opts: TargetOptions) => runApikey(process.cwd(), opts.target)));
+
+	program
+		.command('host')
+		.description('Print the instance URL for this project (for building request URLs).')
+		.option('--target <name>', 'Named target from facet.config.json to read the URL for.')
+		.action(action((opts: TargetOptions) => runHost(process.cwd(), opts.target)));
 
 	program
 		.command('login')

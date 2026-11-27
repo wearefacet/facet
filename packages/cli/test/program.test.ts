@@ -14,6 +14,7 @@ vi.mock('../src/commands/init.js', () => ({ runInit: vi.fn() }));
 vi.mock('../src/commands/setup-dev.js', () => ({ runSetupDev: vi.fn() }));
 vi.mock('../src/commands/connect.js', () => ({ runConnect: vi.fn() }));
 vi.mock('../src/commands/apikey.js', () => ({ runApikey: vi.fn() }));
+vi.mock('../src/commands/host.js', () => ({ runHost: vi.fn() }));
 vi.mock('../src/commands/login.js', () => ({ runLogin: vi.fn() }));
 vi.mock('../src/commands/logout.js', () => ({ runLogout: vi.fn() }));
 vi.mock('../src/commands/whoami.js', () => ({ runWhoami: vi.fn() }));
@@ -25,6 +26,7 @@ import { runInit } from '../src/commands/init.js';
 import { runSetupDev } from '../src/commands/setup-dev.js';
 import { runConnect } from '../src/commands/connect.js';
 import { runApikey } from '../src/commands/apikey.js';
+import { runHost } from '../src/commands/host.js';
 import { runLogin } from '../src/commands/login.js';
 import { runLogout } from '../src/commands/logout.js';
 import { runWhoami } from '../src/commands/whoami.js';
@@ -37,6 +39,7 @@ const COMMANDS = [
 	'setup-dev',
 	'connect',
 	'apikey',
+	'host',
 	'login',
 	'logout',
 	'whoami',
@@ -118,6 +121,7 @@ describe('cli program', () => {
 		for (const name of [
 			'connect',
 			'apikey',
+			'host',
 			'login',
 			'logout',
 			'whoami',
@@ -193,11 +197,13 @@ describe('cli program', () => {
 			expect(runWhoami).toHaveBeenCalledWith(process.cwd(), undefined);
 		});
 
-		it('routes connect and apikey to their runners', async () => {
+		it('routes connect, apikey and host to their runners', async () => {
 			await run('connect', '--target', 'prod');
 			await run('apikey');
+			await run('host', '--target', 'prod');
 			expect(runConnect).toHaveBeenCalledWith(process.cwd(), 'prod', { role: undefined });
 			expect(runApikey).toHaveBeenCalledWith(process.cwd(), undefined);
+			expect(runHost).toHaveBeenCalledWith(process.cwd(), 'prod');
 		});
 
 		it('routes the connect --role flag to its runner', async () => {

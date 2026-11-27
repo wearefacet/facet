@@ -123,8 +123,8 @@ full report is one endpoint away:
 ```
 
 ```sh
-curl -k -H "Authorization: Bearer $FACET_API_KEY" \
-  "http://127.0.0.1:3000/Api/dev/check-report?domain=acme"
+curl -k -H "Authorization: Bearer $(facet-cli apikey)" \
+  "$(facet-cli host)/Api/dev/check-report?domain=acme"
 ```
 
 The route exists only on a dev server; in production it answers `404`. See

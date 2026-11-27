@@ -10,12 +10,13 @@ All paths are relative to `packages/cli/`:
 
 | File | Role |
 | ---- | ---- |
-| `src/index.ts` | Commander program: the nine commands, one error boundary per action |
+| `src/index.ts` | Commander program: the ten commands, one error boundary per action |
 | `src/commands/context.ts` | Config + target resolution into a `CommandContext`; readline prompts |
 | `src/commands/init.ts` | `facet.config.json` writer; flag, piped-stdin, and interactive answers; app lookup + create offer |
 | `src/commands/setup-dev.ts` | `setup-dev`: scaffold the GHCR dev stack, start it, seed the dev admin, fetch an API key |
 | `src/commands/connect.ts` | `connect`: sign in, then optionally issue and store a project API key (pinned to the active role, or `--role`) |
 | `src/commands/apikey.ts` | `apikey`: print the stored project API key for shell substitution |
+| `src/commands/host.ts` | `host`: print the resolved target's instance URL for shell substitution |
 | `src/commands/login.ts` | Command wrapper around the OAuth flow in `src/login.ts` |
 | `src/commands/logout.ts` | Stored-session removal |
 | `src/commands/whoami.ts` | Session profile + active revision readout |
@@ -80,6 +81,8 @@ Stored keys live in `.facet.local.json` at the project root, next to `facet.conf
 ```
 
 `apikey` prints the raw token for the resolved target on stdout and nothing else, so a shell can inline it: `curl -H "Authorization: Bearer $(facet-cli apikey)" …`. It fails (stderr, non-zero exit) when no key is stored or the stored key's `expires_at` has passed.
+
+`host` prints the resolved target's instance URL the same way — no trailing slash — so a request URL stays in one piece: `curl "$(facet-cli host)/Api/core/Domain/equipment" …`. It reads `facet.config.json` only and never contacts the instance; an unknown target raises `ConfigError`.
 
 ## Non-interactive init
 

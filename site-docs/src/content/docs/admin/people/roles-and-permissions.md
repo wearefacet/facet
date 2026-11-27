@@ -214,7 +214,7 @@ role.
 Create a regional read role for the `fin` domain:
 
 ```sh
-curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X POST -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "regional_reader",
@@ -225,7 +225,7 @@ curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
       {"action": "read", "on": "hr.Employee", "scope": ["$mine"]}
     ]
   }' \
-  "https://facet.localhost:3443/Api/iam/Roles"
+  "$(facet-cli host)/Api/iam/Roles"
 ```
 
 The new role reads every invoice and lets each member read their own employee

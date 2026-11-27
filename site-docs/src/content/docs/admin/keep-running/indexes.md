@@ -58,8 +58,8 @@ their retained payloads never surface in search or link lookups.
 Open the index status page under **Configure → Platform**, or call the route:
 
 ```sh
-curl -s -g -H "Authorization: Bearer $FACET_API_KEY" \
-  "https://facet.localhost:3443/Api/Indexes?filters[status__eq]=error&filters[domain__eq]=hr"
+curl -s -g -H "Authorization: Bearer $(facet-cli apikey)" \
+  "$(facet-cli host)/Api/Indexes?filters[status__eq]=error&filters[domain__eq]=hr"
 ```
 
 One row per managed index carries: `id`, `domain`, `doc_type`, `field_name`,
@@ -164,8 +164,8 @@ After a large domain import, one index failed. Recover it:
 
 ```sh
 # What failed?
-curl -s -g -H "Authorization: Bearer $FACET_API_KEY" \
-  "https://facet.localhost:3443/Api/Indexes?filters[status__eq]=error"
+curl -s -g -H "Authorization: Bearer $(facet-cli apikey)" \
+  "$(facet-cli host)/Api/Indexes?filters[status__eq]=error"
 
 # Read error_message on the row, then plan the retry:
 facet index:retry --domain crm --dry-run

@@ -43,8 +43,8 @@ Use the manifest when:
 Call the endpoint with your credential. A static key rides the bearer scheme:
 
 ```sh
-curl -sk https://facet.localhost:3443/Api/iam/me \
-  -H "Authorization: Bearer $FACET_API_KEY"
+curl -sk $(facet-cli host)/Api/iam/me \
+  -H "Authorization: Bearer $(facet-cli apikey)"
 ```
 
 An app token rides the DPoP scheme with a proof on every call — see

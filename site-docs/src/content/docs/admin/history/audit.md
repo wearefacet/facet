@@ -37,8 +37,8 @@ sign-in events.
 Every document answers for its own past on the history route:
 
 ```sh
-curl -k -H "Authorization: Bearer $FACET_API_KEY" \
-  "https://facet.localhost:3443/Api/equipment/Item/EQ-2026-0004/history"
+curl -k -H "Authorization: Bearer $(facet-cli apikey)" \
+  "$(facet-cli host)/Api/equipment/Item/EQ-2026-0004/history"
 ```
 
 The answer lists the document's changes, newest first. The Pagoda tent at
@@ -87,8 +87,8 @@ Add `?include=children` to fold the history of composition children into the
 parent timeline:
 
 ```sh
-curl -k -H "Authorization: Bearer $FACET_API_KEY" \
-  "https://facet.localhost:3443/Api/equipment/Item/EQ-2026-0004/history?include=children"
+curl -k -H "Authorization: Bearer $(facet-cli apikey)" \
+  "$(facet-cli host)/Api/equipment/Item/EQ-2026-0004/history?include=children"
 ```
 
 Each child branch is filtered by the child's own row scope. A child you
@@ -99,8 +99,8 @@ cannot read does not answer `403` — its branch drops out of the timeline.
 The global log lists every change. Filters ride the bracket form:
 
 ```sh
-curl -k -H "Authorization: Bearer $FACET_API_KEY" \
-  "https://facet.localhost:3443/Api/Audit?filters[action__eq]=delete&filters[domain__eq]=iam"
+curl -k -H "Authorization: Bearer $(facet-cli apikey)" \
+  "$(facet-cli host)/Api/Audit?filters[action__eq]=delete&filters[domain__eq]=iam"
 ```
 
 The answer lists every delete in the `iam` domain, with a capped count and a
@@ -130,8 +130,8 @@ Sign-in events are documents of doctype `iam.LoginEvent`. A role with read
 rights on it lists them through the standard document API:
 
 ```sh
-curl -k -H "Authorization: Bearer $FACET_API_KEY" \
-  "https://facet.localhost:3443/Api/iam/LoginEvent?items=20&sort=-created_at"
+curl -k -H "Authorization: Bearer $(facet-cli apikey)" \
+  "$(facet-cli host)/Api/iam/LoginEvent?items=20&sort=-created_at"
 ```
 
 Each row carries the event type, the account id, and details such as the

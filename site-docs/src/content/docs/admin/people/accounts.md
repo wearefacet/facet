@@ -186,9 +186,9 @@ Open **Configure → Access → Accounts**, switch to the deleted list, and sele
 **Restore**. The API route is:
 
 ```sh
-curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X POST -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" -d '{}' \
-  "https://facet.localhost:3443/Api/iam/Account/01J8Z0A7G3Q5M2X9K4T6VBNR8D/restore"
+  "$(facet-cli host)/Api/iam/Account/01J8Z0A7G3Q5M2X9K4T6VBNR8D/restore"
 ```
 
 Replace `01J8Z0A7G3Q5M2X9K4T6VBNR8D` with the account id. The call needs no

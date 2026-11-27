@@ -131,12 +131,12 @@ publish -> live
 
 ## Example
 
-The call below publishes a draft to a fresh domain named `orders`. Read the
-API key from the `FACET_API_KEY` environment variable.
+The call below publishes a draft to a fresh domain named `orders`. The
+`Authorization` header carries the key stored by `facet-cli connect`:
 
 ```sh
-curl -k -X POST "https://facet.localhost:3443/Api/core/Domain/_3fjqk2m8p1xz/publish" \
-  -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X POST "$(facet-cli host)/Api/core/Domain/_3fjqk2m8p1xz/publish" \
+  -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{"target_name": "orders", "overwrite": false}'
 ```

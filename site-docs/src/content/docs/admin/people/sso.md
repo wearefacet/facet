@@ -60,7 +60,7 @@ Open **Configure → Platform → OIDC** and select **New**. Fill the fields:
 You can also create the provider through the document API:
 
 ```sh
-curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X POST -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "corp-idp",

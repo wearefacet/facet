@@ -41,8 +41,8 @@ Edit system settings when:
 Open **Configure → Platform → Settings**, or call the read route:
 
 ```sh
-curl -s -H "Authorization: Bearer $FACET_API_KEY" \
-  "https://facet.localhost:3443/Api/SystemSettings"
+curl -s -H "Authorization: Bearer $(facet-cli apikey)" \
+  "$(facet-cli host)/Api/SystemSettings"
 ```
 
 The response carries two lists:
@@ -65,10 +65,10 @@ The write path is the standard document route, so the same save works from
 an API call. The body nests one object level per path segment:
 
 ```sh
-curl -k -X PATCH -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X PATCH -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{"assistant": {"model": "gpt-4o"}}' \
-  "https://facet.localhost:3443/Api/core/SystemSettings/settings"
+  "$(facet-cli host)/Api/core/SystemSettings/settings"
 ```
 
 A flat key fails shape validation. A body of
@@ -145,18 +145,18 @@ give it back to the file:
 
 ```sh
 # Pin the window to 7 days.
-curl -k -X PATCH -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X PATCH -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{"tombstone": {"content_retention_days": 7}}' \
   "https://facet.localhost:3443/Api/core/SystemSettings/settings"
 
 # Show the pin.
-curl -s -H "Authorization: Bearer $FACET_API_KEY" \
+curl -s -H "Authorization: Bearer $(facet-cli apikey)" \
   "https://facet.localhost:3443/Api/SystemSettings"
 # "pinned" now lists "tombstone.content_retention_days".
 
 # Reset the pin — the field follows the config file again.
-curl -k -X PATCH -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X PATCH -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{"tombstone": {"content_retention_days": null}}' \
   "https://facet.localhost:3443/Api/core/SystemSettings/settings"

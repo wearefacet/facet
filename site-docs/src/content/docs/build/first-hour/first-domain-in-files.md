@@ -145,13 +145,14 @@ credential, and the CLI stores one for you. From the folder where you ran
 
 ```sh
 AUTH="Authorization: Bearer $(pnpx @facetapp/cli apikey)"
+HOST=$(pnpx @facetapp/cli host)
 ```
 
 Read the definition:
 
 ```sh
 curl -skg -H "$AUTH" \
-  https://facet.localhost:3443/Api/core/DocType/equipment.ScratchNote
+  "$HOST/Api/core/DocType/equipment.ScratchNote"
 ```
 
 ```json
@@ -164,7 +165,7 @@ Create a document in it, as you would in the workspace:
 curl -skg -H "$AUTH" -X POST \
   -H "Content-Type: application/json" \
   -d '{"name":"Winch check","note":"Tutorial test note"}' \
-  https://facet.localhost:3443/Api/equipment/ScratchNote
+  "$HOST/Api/equipment/ScratchNote"
 ```
 
 ```json
@@ -247,7 +248,7 @@ tombstone, not a never-existed row:
 
 ```sh
 curl -skg -o /dev/null -w "%{http_code}\n" -H "$AUTH" \
-  https://facet.localhost:3443/Api/core/DocType/equipment.ScratchNote
+  "$HOST/Api/core/DocType/equipment.ScratchNote"
 ```
 
 ```text

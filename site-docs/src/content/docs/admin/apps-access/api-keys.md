@@ -35,10 +35,10 @@ its next use the moment its conditions change.
 ### 1. Create the key
 
 ```sh
-curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X POST -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{"name": "ci-pipeline", "role": "iam.Roles.editor"}' \
-  "https://facet.localhost:3443/Api/iam/keys"
+  "$(facet-cli host)/Api/iam/keys"
 ```
 
 The body carries:
@@ -64,6 +64,11 @@ The answer shows the raw key exactly once:
 including the prefix. Copy it now. Storage keeps only its SHA-256 hash and a
 display prefix; no read path can return it.
 
+A runner that holds this exact key sends it in the header directly. A shell
+in your project folder reads the key from `.facet.local.json` with
+`facet-cli apikey` — `facet-cli connect` writes that file and issues the key
+it holds.
+
 The create answers `422` when the role is not assigned to you or when the
 role's `connectivity` excludes `api`:
 
@@ -74,9 +79,8 @@ role's `connectivity` excludes `api`:
 ### 2. Call the API with the key
 
 ```sh
-export FACET_API_KEY="fct_the-value-from-step-1"
-curl -k -H "Authorization: Bearer $FACET_API_KEY" \
-  "https://facet.localhost:3443/Api/hr/Employee?items=5"
+curl -k -H "Authorization: Bearer $(facet-cli apikey)" \
+  "$(facet-cli host)/Api/hr/Employee?items=5"
 ```
 
 The requests run with the pinned account and the pinned role. The permission
@@ -86,8 +90,8 @@ every request.
 ### 3. List your keys
 
 ```sh
-curl -k -H "Authorization: Bearer $FACET_API_KEY" \
-  "https://facet.localhost:3443/Api/iam/keys"
+curl -k -H "Authorization: Bearer $(facet-cli apikey)" \
+  "$(facet-cli host)/Api/iam/keys"
 ```
 
 The list shows `id`, `name`, `display_prefix`, `role_id`, `created_at`,
@@ -109,9 +113,9 @@ The list shows `id`, `name`, `display_prefix`, `role_id`, `created_at`,
 ### 4. Revoke a key
 
 ```sh
-curl -k -X DELETE -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X DELETE -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "X-Requested-With: XMLHttpRequest" \
-  "https://facet.localhost:3443/Api/iam/keys/06H1G3VT6CC3J5WVRTEBGGWYQ5"
+  "$(facet-cli host)/Api/iam/keys/06H1G3VT6CC3J5WVRTEBGGWYQ5"
 ```
 
 The revoke answers `{"ok": true}` and is soft and idempotent. A repeated

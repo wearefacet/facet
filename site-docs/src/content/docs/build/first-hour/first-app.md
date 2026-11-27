@@ -44,6 +44,7 @@ you ran `setup-dev`:
 
 ```sh
 RAVI_KEY=$(pnpx @facetapp/cli apikey)
+HOST=$(pnpx @facetapp/cli host)
 ```
 
 The key is pinned to `iam.Roles.admin`, which holds `update` on `app.App`.
@@ -51,7 +52,7 @@ Create the app document. The grants name the doctypes the app touches — each
 target concrete, each action marked `required`:
 
 ```sh
-curl -sk -X POST https://facet.localhost:3443/Api/app/App \
+curl -sk -X POST "$HOST/Api/app/App" \
   -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -100,7 +101,7 @@ A new app is a `draft`. Sign-ins work only when the status is `active`:
 
 ```sh
 curl -sk -X PATCH \
-  https://facet.localhost:3443/Api/app/App/06H1FQF7NGDJJKSNHXPYT6627M \
+  "$HOST/Api/app/App/06H1FQF7NGDJJKSNHXPYT6627M" \
   -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
   -d '{"status": "active"}'
@@ -130,7 +131,7 @@ The fix is one concrete line on the role. Patch the role with its lines plus
 
 ```sh
 curl -sk -X PATCH \
-  https://facet.localhost:3443/Api/iam/Roles/iam.Roles.warehouse \
+  "$HOST/Api/iam/Roles/iam.Roles.warehouse" \
   -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -162,7 +163,8 @@ mkdir brightwater-checkout && cd brightwater-checkout
 pnpm init
 pnpm add @facetapp/sdk
 pnpm add -D typescript vite
-pnpx @facetapp/cli init --app brw-checkout --build dist --server https://facet.localhost:3443
+HOST=$(pnpx @facetapp/cli host)
+pnpx @facetapp/cli init --app brw-checkout --build dist --server "$HOST"
 ```
 
 `init` writes the deploy config, `facet.config.json`, and then looks the app
@@ -267,6 +269,7 @@ step misbehaves. Pin it first (sign in as the admin in your browser):
 
 ```sh
 LUCIA_KEY=$(pnpx @facetapp/cli connect --role warehouse >/dev/null && pnpx @facetapp/cli apikey)
+HOST=$(pnpx @facetapp/cli host)
 
 # A PKCE pair for this sign-in.
 VERIFIER=$(openssl rand -base64 48 | tr '+/' '-_' | tr -d '=\n')
@@ -275,7 +278,7 @@ CHALLENGE=$(printf '%s' "$VERIFIER" | openssl dgst -sha256 -binary \
 
 # The consent screen, as JSON: which roles may elect, and the reach each keeps.
 curl -sk -H "Authorization: Bearer $LUCIA_KEY" -H "Accept: application/json" \
-  "https://facet.localhost:3443/OAuth/authorize?response_type=code&client_id=06H1FQF7NG357EQ0P348Z2BEV5&redirect_uri=http%3A%2F%2Flocalhost%3A5173%2Fauth%2Fcallback&code_challenge=$CHALLENGE&code_challenge_method=S256&state=winter-fair-43"
+  "$HOST/OAuth/authorize?response_type=code&client_id=06H1FQF7NG357EQ0P348Z2BEV5&redirect_uri=http%3A%2F%2Flocalhost%3A5173%2Fauth%2Fcallback&code_challenge=$CHALLENGE&code_challenge_method=S256&state=winter-fair-43"
 ```
 
 ```json
@@ -297,7 +300,7 @@ curl -sk -H "Authorization: Bearer $LUCIA_KEY" -H "Accept: application/json" \
 
 ```sh
 # Lucía elects the role; the answer carries the one-time code.
-CODE=$(curl -sk -X POST https://facet.localhost:3443/OAuth/authorize \
+CODE=$(curl -sk -X POST "$HOST/OAuth/authorize" \
   -H "Authorization: Bearer $LUCIA_KEY" \
   -H "Content-Type: application/json" \
   -d '{"response_type": "code", "client_id": "06H1FQF7NG357EQ0P348Z2BEV5", "redirect_uri": "http://localhost:5173/auth/callback", "code_challenge": "'"$CHALLENGE"'", "code_challenge_method": "S256", "state": "winter-fair-43", "role": "iam.Roles.warehouse"}' \
@@ -305,7 +308,7 @@ CODE=$(curl -sk -X POST https://facet.localhost:3443/OAuth/authorize \
 echo "$CODE"
 
 # The app exchanges the code for tokens (60 seconds to use the code).
-TOKEN=$(curl -sk -X POST https://facet.localhost:3443/OAuth/token \
+TOKEN=$(curl -sk -X POST "$HOST/OAuth/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   --data-urlencode "grant_type=authorization_code" \
   --data-urlencode "code=$CODE" \
@@ -329,7 +332,7 @@ With that token, the app reads exactly what the consent screen promised — the
 confirmed bookings, six of them on the example data:
 
 ```sh
-curl -sk "https://facet.localhost:3443/Api/rentals/Booking?filters%5Bstatus__eq%5D=confirmed&items=3" \
+curl -sk "$HOST/Api/rentals/Booking?filters%5Bstatus__eq%5D=confirmed&items=3" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -347,7 +350,7 @@ curl -sk "https://facet.localhost:3443/Api/rentals/Booking?filters%5Bstatus__eq%
 And nothing more. The same token on a doctype outside the grant is refused:
 
 ```sh
-curl -sk "https://facet.localhost:3443/Api/clients/Company?items=1" \
+curl -sk "$HOST/Api/clients/Company?items=1" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -367,7 +370,7 @@ CORS entries first:
 
 ```sh
 curl -sk -X PATCH \
-  https://facet.localhost:3443/Api/app/App/06H1FQF7NGDJJKSNHXPYT6627M \
+  "$HOST/Api/app/App/06H1FQF7NGDJJKSNHXPYT6627M" \
   -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
   -d '{

@@ -57,10 +57,10 @@ Each save issues one update on the account document, the same as a manual
 PATCH:
 
 ```sh
-curl -k -X PATCH -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X PATCH -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{"roles": ["iam.Roles.editor", "iam.Roles.comment_author"], "default_role": "iam.Roles.editor"}' \
-  "https://facet.localhost:3443/Api/iam/Account/01J8Z0A7G3Q5M2X9K4T6VBNR8D"
+  "$(facet-cli host)/Api/iam/Account/01J8Z0A7G3Q5M2X9K4T6VBNR8D"
 ```
 
 Replace the role ids and the account id with your values. The answer is the
@@ -90,8 +90,8 @@ level — the target-protection rule blocks the write.
 Re-read the account:
 
 ```sh
-curl -k -H "Authorization: Bearer $FACET_API_KEY" \
-  "https://facet.localhost:3443/Api/iam/Account/01J8Z0A7G3Q5M2X9K4T6VBNR8D"
+curl -k -H "Authorization: Bearer $(facet-cli apikey)" \
+  "$(facet-cli host)/Api/iam/Account/01J8Z0A7G3Q5M2X9K4T6VBNR8D"
 ```
 
 The `roles` array shows the assigned ids. The member sees the new role at
@@ -115,7 +115,7 @@ id:
 curl -k -X POST -H "Content-Type: application/json" \
   -H "X-Requested-With: XMLHttpRequest" \
   -d '{"email": "ana@example.tld", "password": "PASTE-THE-PASSWORD", "role": "iam.Roles.editor"}' \
-  "https://facet.localhost:3443/Api/iam/login"
+  "$(facet-cli host)/Api/iam/login"
 ```
 
 The resolution order: the explicit election, then `default_role`, then the
@@ -147,7 +147,7 @@ the new election:
 curl -k -X POST -H "Content-Type: application/json" \
   -H "X-Requested-With: XMLHttpRequest" \
   -d '{"role": "iam.Roles.viewer"}' \
-  "https://facet.localhost:3443/Api/iam/refresh"
+  "$(facet-cli host)/Api/iam/refresh"
 ```
 
 Two refusals exist, and they mean different things:

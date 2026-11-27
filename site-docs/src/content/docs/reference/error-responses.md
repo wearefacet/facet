@@ -124,10 +124,10 @@ Branch on `code`, never on the text of `message`.
 A create that sends an enum value the doctype does not declare:
 
 ```sh
-curl -X POST -H "Authorization: Bearer $FACET_API_KEY" \
+curl -X POST -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{"title": "Fix login", "status": "archived"}' \
-  "https://facet.example.com/Api/helpdesk/Ticket"
+  "$(facet-cli host)/Api/helpdesk/Ticket"
 ```
 
 The answer is:

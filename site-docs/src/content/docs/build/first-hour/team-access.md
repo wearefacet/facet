@@ -116,6 +116,7 @@ credential is per role, not per person:
 cd /path/to/your/setup-dev/folder
 AP_ADMIN_KEY=$(pnpx @facetapp/cli apikey)
 PAT_KEY=$(pnpx @facetapp/cli connect --role warehouse >/dev/null && pnpx @facetapp/cli apikey)
+HOST=$(pnpx @facetapp/cli host)
 ```
 
 `connect` signs in as the admin in your browser — choose the admin role on the
@@ -124,7 +125,7 @@ request carries no cookie, so it needs no `X-Requested-With` header. As Pat:
 
 ```sh
 curl -skg -H "Authorization: Bearer $PAT_KEY" \
-  https://facet.localhost:3443/Api/equipment/Item/EQ-2026-0001
+  "$HOST/Api/equipment/Item/EQ-2026-0001"
 ```
 
 ```json
@@ -138,7 +139,7 @@ As Nadia (the `manager` role, which holds the `finance` tag) — pin a
 NADIA_KEY=$(pnpx @facetapp/cli connect --role manager >/dev/null && pnpx @facetapp/cli apikey)
 
 curl -skg -H "Authorization: Bearer $NADIA_KEY" \
-  https://facet.localhost:3443/Api/equipment/Item/EQ-2026-0001
+  "$HOST/Api/equipment/Item/EQ-2026-0001"
 ```
 
 ```json

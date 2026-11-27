@@ -36,8 +36,8 @@ one read on the domain:
 <!-- screenshot: builder-check-tab -->
 
 ```sh
-curl -k -H "Authorization: Bearer $FACET_API_KEY" \
-  "https://facet.localhost:3443/Api/core/Domain/_a1b2c3/check"
+curl -k -H "Authorization: Bearer $(facet-cli apikey)" \
+  "$(facet-cli host)/Api/core/Domain/_a1b2c3/check"
 ```
 
 ### 2. Read issues and notices
@@ -110,7 +110,7 @@ The full report of the last completed check is one endpoint away, so an
 agent or a script can read it:
 
 ```sh
-curl -k -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -H "Authorization: Bearer $(facet-cli apikey)" \
   "http://127.0.0.1:3000/Api/dev/check-report?domain=equipment"
 ```
 

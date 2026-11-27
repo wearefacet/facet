@@ -70,9 +70,12 @@ elect the manager role on the consent screen):
 
 ```sh
 NADIA_KEY=$(pnpx @facetapp/cli connect --role manager >/dev/null && pnpx @facetapp/cli apikey)
+HOST=$(pnpx @facetapp/cli host)
+```
 
+```sh
 curl -sk -H "Authorization: Bearer $NADIA_KEY" \
-  https://facet.localhost:3443/Api/_mcp/endpoints
+  "$HOST/Api/_mcp/endpoints"
 ```
 
 ```json
@@ -371,7 +374,7 @@ The API answers the same rows. Take the admin key back and read them:
 RAVI_KEY=$(pnpx @facetapp/cli connect >/dev/null && pnpx @facetapp/cli apikey)
 
 curl -skg -H "Authorization: Bearer $RAVI_KEY" \
-  "https://facet.localhost:3443/Api/Audit?filters%5Bchannel__eq%5D=mcp&items=5"
+  "$HOST/Api/Audit?filters%5Bchannel__eq%5D=mcp&items=5"
 ```
 
 ```json
@@ -413,7 +416,7 @@ one call:
 
 ```sh
 curl -skg -H "Authorization: Bearer $RAVI_KEY" \
-  -X DELETE https://facet.localhost:3443/Api/rentals/Booking/BK-2026-0017
+  -X DELETE "$HOST/Api/rentals/Booking/BK-2026-0017"
 ```
 
 The delete lands in the same audit, and the document history keeps both rows.

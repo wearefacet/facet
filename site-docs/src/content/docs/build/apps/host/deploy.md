@@ -154,8 +154,8 @@ The list is newest revision first. The active release carries a `*`:
 Over the API:
 
 ```sh
-curl -skg -H "Authorization: Bearer $RAVI_KEY" \
-  'https://facet.localhost:3443/Api/app/Deployment?filters[app_id__eq]=app.App.<id>&sort=-revision'
+curl -skg -H "Authorization: Bearer $(facet-cli apikey)" \
+  '$(facet-cli host)/Api/app/Deployment?filters[app_id__eq]=app.App.<id>&sort=-revision'
 ```
 
 The filter value carries the qualified form, `app.App.<id>`: reference
@@ -179,8 +179,8 @@ token, `app.Deployment.<id>`:
 
 ```sh
 curl -sk -X PATCH \
-  'https://facet.localhost:3443/Api/app/App/<app id>' \
-  -H "Authorization: Bearer $RAVI_KEY" \
+  '$(facet-cli host)/Api/app/App/<app id>' \
+  -H "Authorization: Bearer $(facet-cli apikey)" \
   -H 'Content-Type: application/json' \
   -d '{"active_deployment": "app.Deployment.<deployment id>"}'
 ```
@@ -235,8 +235,8 @@ This call deploys a build from CI. The `files` parts follow the order of the
 paths:
 
 ```sh
-curl -sk -X POST 'https://facet.localhost:3443/Api/app/app.App.<app id>/deploy' \
-  -H "Authorization: Bearer $FACET_TOKEN" \
+curl -sk -X POST '$(facet-cli host)/Api/app/app.App.<app id>/deploy' \
+  -H "Authorization: Bearer $(facet-cli apikey)" \
   -F '$content={"spa": true, "activate": true, "note": "ci build 42", "files": [{"path": "index.html"}, {"path": "assets/app.js"}]};type=application/json' \
   -F "files[0].file=@dist/index.html;filename=index.html" \
   -F "files[1].file=@dist/assets/app.js;filename=assets/app.js"

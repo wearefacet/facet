@@ -130,8 +130,8 @@ Any reader can pass a declared scope as a parameter on the list route. It
 only narrows what the caller may already see:
 
 ```sh
-curl -k -H "Authorization: Bearer $FACET_API_KEY" \
-  "https://facet.localhost:3443/Api/clients/Company?scope=my_clients"
+curl -k -H "Authorization: Bearer $(facet-cli apikey)" \
+  "$(facet-cli host)/Api/clients/Company?scope=my_clients"
 ```
 
 An unknown name answers `422` with `Unknown scope`.

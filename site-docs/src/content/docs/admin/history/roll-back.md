@@ -47,10 +47,10 @@ Lumière's create row is `06H1FM1B3MWR784V64VP6QFM94`. A malformed id answers
 The document route takes the target in the body:
 
 ```sh
-curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X POST -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{"mutation_id": "06H1FM1B3MWR784V64VP6QFM94"}' \
-  "https://facet.localhost:3443/Api/clients/Company/06H1FM1B3MXBPS0JYVM3BDD154/rollback"
+  "$(facet-cli host)/Api/clients/Company/06H1FM1B3MXBPS0JYVM3BDD154/rollback"
 ```
 
 The body carries `mutation_id`, the id of the target change; the URL carries
@@ -90,9 +90,9 @@ route does not know the target doctype.
 The restore route resolves the target by itself. The body is empty:
 
 ```sh
-curl -k -X POST -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X POST -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" -d '{}' \
-  "https://facet.localhost:3443/Api/clients/Company/06H1FM1B3MXBPS0JYVM3BDD154/restore"
+  "$(facet-cli host)/Api/clients/Company/06H1FM1B3MXBPS0JYVM3BDD154/restore"
 ```
 
 | Answer | Meaning |

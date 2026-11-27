@@ -130,6 +130,21 @@ curl -H "Authorization: Bearer $(pnpx @facetapp/cli apikey)" https://facet.examp
 
 Fails (non-zero exit) when no key is stored or the stored key has expired. Run `connect` again to issue a fresh one.
 
+### host
+
+```
+pnpx @facetapp/cli host [--target <name>]
+```
+
+Prints the instance URL for the resolved target on stdout — nothing else, no trailing slash — so a shell can inline it next to `apikey`:
+
+```sh
+curl "$(pnpx @facetapp/cli host)/Api/hr/Employee" \
+  -H "Authorization: Bearer $(pnpx @facetapp/cli apikey)"
+```
+
+Reads `facet.config.json` only; it does not contact the instance.
+
 ### login
 
 ```
