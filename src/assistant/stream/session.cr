@@ -917,7 +917,7 @@ module Facet
         # the guarded write path makes concurrent use safe.
         private def start_heartbeat(io : IO) : Nil
           @heartbeat_stop.replace { false }
-          spawn do
+          spawn(name: "assistant-session-heartbeat") do
             elapsed = 0
             loop do
               if @heartbeat_stop.lock { |s| s }

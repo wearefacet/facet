@@ -273,6 +273,76 @@ module Facet
         end
       end
 
+      # ── Domain disposal ────────────────────────────────────────────────
+
+      # Drops every physical index (and its field statistics object) that
+      # `doctype_indexes` tracks for `domain`, then leaves the tracking rows
+      # to the caller. Used by `Domain::Scratch.dispose_definitions!` when a
+      # draft or dropped domain goes away: the managed indexes live on the
+      # shared `projections` table (they are partial indexes scoped by
+      # `domain = '<d>'`), so deleting the tracking rows alone leaves the
+      # real indexes behind. Nothing would ever drop them again — every
+      # write and every query plan would keep paying for a domain that no
+      # longer exists.
+      #
+      # Runs each `DROP INDEX` through `exec_ddl_with_deadlock_retry` under
+      # the DDL gate, the same path `sync` uses for a removal. Failures log
+      # and continue: a leftover index is a performance problem, never a
+      # correctness one, and must not abort the domain disposal.
+      #
+      # `concurrent` defaults to `true` (production). The spec suite runs in
+      # synchronous mode and passes `concurrent: false` so the drop can run
+      # on the caller's transaction/stack.
+      def self.dispose_domain_indexes(
+        db : DB::Connection,
+        domain : String,
+        *,
+        concurrent : Bool = true,
+      ) : Nil
+        rows = db.query_all(
+          "SELECT doc_type, field_name, index_type FROM doctype_indexes WHERE domain = $1",
+          domain,
+          as: {String, String, String},
+        )
+        return if rows.empty?
+
+        # One statistics object per (domain, doctype, field) — a field's
+        # btree variants share it. Collect the distinct fields so the object
+        # is dropped once, not once per variant.
+        statistics_fields = Set({String, String}).new
+
+        rows.each do |doc_type, field_name, index_type|
+          drop_sql = Naming.drop_index_sql(domain, doc_type, field_name, index_type, concurrent: concurrent)
+          begin
+            with_ddl_gate(db, concurrent: concurrent) do
+              exec_ddl_with_deadlock_retry(db, drop_sql)
+            end
+          rescue ex
+            Log.warn(exception: ex) do
+              "Domain index disposal failed for #{domain}.#{doc_type}.#{field_name} " \
+              "(#{index_type}): #{ex.class}: #{ex.message || "(no message)"}"
+            end
+          end
+
+          unless Naming.create_statistics_sql(domain, doc_type, field_name, index_type).nil?
+            statistics_fields << {doc_type, field_name}
+          end
+        end
+
+        statistics_fields.each do |doc_type, field_name|
+          begin
+            with_ddl_gate(db, concurrent: concurrent) do
+              exec_ddl_with_deadlock_retry(db, Naming.drop_statistics_sql(domain, doc_type, field_name))
+            end
+          rescue ex
+            Log.warn(exception: ex) do
+              "Domain statistics disposal failed for #{domain}.#{doc_type}.#{field_name}: " \
+              "#{ex.class}: #{ex.message || "(no message)"}"
+            end
+          end
+        end
+      end
+
       # ── Current state queries ──────────────────────────────────────────
 
       # Fetches all non-dropped index records for a given domain/doctype.

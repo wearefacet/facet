@@ -45,16 +45,26 @@ module Facet
       # owner tag `{instance_id}:{worker_id}` — the boot's `Facet::Service`
       # instance id, then the worker's own ULID — so the sweep can check
       # the owner instance's liveness.
+      #
+      # ## Why `MATERIALIZED`
+      #
+      # The locked set is picked in a `MATERIALIZED` CTE and joined, not via
+      # `WHERE id IN (SELECT ... LIMIT $3 FOR UPDATE SKIP LOCKED)`. With the
+      # subquery form PostgreSQL may run the inner `LIMIT` subquery once per
+      # outer row (a nested-loop semi-join with the subquery on the inner
+      # side). Each rescan skips the rows this same statement already locked
+      # and updated, so the `LIMIT` picks a fresh batch every time and the
+      # claim returns more rows than `batch` — observed as `claim(2)`
+      # returning 4, and in the worst case the whole queue. It depends only
+      # on the chosen plan (generic vs custom, table statistics), which is
+      # why it surfaced only after many prior claims on a pooled connection.
+      # `MATERIALIZED` forces the locking subquery to run exactly once, so
+      # `LIMIT` is a hard upper bound — the `max_concurrent` ceiling the
+      # worker and the import memory cap rely on.
       def self.claim(db : DB::Connection, locked_by : String, lease_ttl_s : Int32, batch : Int32) : Array(Job)
         claimed = [] of {job: Job, run_after: Time}
         db.query(<<-SQL, locked_by, lease_ttl_s, batch) do |rs|
-          UPDATE background_jobs SET
-            status       = 'running',
-            attempts     = attempts + 1,
-            locked_by    = $1,
-            locked_until = now() + (COALESCE(lease_ttl_s, $2::int) * interval '1 second'),
-            updated_at   = now()
-          WHERE id IN (
+          WITH picked AS MATERIALIZED (
             SELECT id FROM background_jobs
             WHERE status = 'pending'
               AND run_after <= now()
@@ -62,7 +72,15 @@ module Facet
             LIMIT $3
             FOR UPDATE SKIP LOCKED
           )
-          RETURNING id, kind, payload, attempts, max_attempts, backoff_seconds, run_after
+          UPDATE background_jobs j SET
+            status       = 'running',
+            attempts     = j.attempts + 1,
+            locked_by    = $1,
+            locked_until = now() + (COALESCE(j.lease_ttl_s, $2::int) * interval '1 second'),
+            updated_at   = now()
+          FROM picked
+          WHERE j.id = picked.id
+          RETURNING j.id, j.kind, j.payload, j.attempts, j.max_attempts, j.backoff_seconds, j.run_after
         SQL
           rs.each do
             job = read_job(rs)

@@ -57,13 +57,13 @@ flowchart LR
 
 6. **Test all changes** — Run the existing specs. Add new specs for new code paths. Verify both happy and sad paths. Use the project's existing test infrastructure (Crystal `spec/` for backend; Vitest `server` project for frontend pure logic and Storybook play functions for frontend component behaviour).
 
-   **Run the full suite only at finalization.** The full backend suite takes 10 minutes or more. While you write code, run only the isolated specs that cover your change: `crystal spec spec/<dir>/<file>_spec.cr` (one file) or `crystal spec spec/<dir>/<file>_spec.cr:LINE` (one example). Start the test database first with `make test_db_up` (see [`doc/backend/workflow.md`](doc/backend/workflow.md) → Testing). Run `make test` once, when you finish the task, as the final gate.
+   **Run the full suite only at finalization.** The full backend suite takes about 5 minutes. While you write code, run only the isolated specs that cover your change: `crystal spec spec/<dir>/<file>_spec.cr` (one file) or `crystal spec spec/<dir>/<file>_spec.cr:LINE` (one example). Start the test database first with `make test_db_up` (see [`doc/backend/workflow.md`](doc/backend/workflow.md) → Testing). Run `make test` once, when you finish the task, as the final gate.
 
    **Build / test / run commands** — The backend exposes a Makefile at the repo root. **Prefer these targets over calling `crystal` directly** (they pin the entry point and canonical flags):
 
    | Target                | Purpose                                                              |
    | --------------------- | ------------------------------------------------------------------- |
-   | `make test`           | Header gate, then the full suite (10+ min — finalization only)      |
+   | `make test`           | Header gate, then the full suite (about 5 min — finalization only)      |
    | `make check`          | Type-check / build without emitting a binary (fastest compile gate)  |
    | `make build`          | Build the dev server binary into `build/`                            |
    | `make build_release`  | Release-optimized build into `build/`                                |

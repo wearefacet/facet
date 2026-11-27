@@ -131,7 +131,7 @@ private def with_export_worker(& : Facet::Jobs::Worker -> Nil) : Nil
   begin
     yield worker
   ensure
-    worker.stop
+    stop_worker_draining(worker)
   end
 end
 
@@ -155,7 +155,7 @@ private def with_failing_export_worker(& : Facet::Jobs::Worker -> Nil) : Nil
   begin
     yield worker
   ensure
-    worker.stop
+    stop_worker_draining(worker)
   end
 end
 

@@ -483,27 +483,35 @@ module Facet
       conn.auto_release = false
       pin = Pin.new(conn, slot.database, slot.role)
       set_pin(fiber, mode, pin)
-      healthy = false
+      # A block that raises may have abandoned a result set mid-read (a
+      # statement cancelled by `statement_timeout`, an exception inside a
+      # `db.query` block). Such a connection still has frames pending on the
+      # wire, so returning it to the pool makes the next user read them as its
+      # own result — the driver then reports a column type mismatch on a
+      # column it never selected. Discard it instead: the pool drops it and
+      # opens a clean one on demand.
+      #
+      # `failed` is set only on a real exception, never after the `yield`. A
+      # `return` (or `break`) inside the block leaves `with_pinned` directly,
+      # so anything assigned after the `yield` is skipped — keying the discard
+      # on that assignment closed a perfectly healthy connection on every
+      # early-return miss path (auth rejections, not-found branches), paying a
+      # fresh connect plus the session `SET`s each time.
+      failed = false
       begin
-        value = yield conn, pin
-        healthy = true
-        value
+        yield conn, pin
+      rescue ex
+        failed = true
+        raise ex
       ensure
         clear_pin(fiber, mode, conn)
         Fiber.current.txn_depths.try(&.delete(conn))
-        # A block that raised may have abandoned a result set mid-read (a
-        # statement cancelled by `statement_timeout`, an exception inside a
-        # `db.query` block). Such a connection still has frames pending on
-        # the wire, so returning it to the pool makes the next user read
-        # them as its own result — the driver then reports a column type
-        # mismatch on a column it never selected. Discard it instead: the
-        # pool drops it and opens a clean one on demand.
-        if healthy
-          conn.release
-        else
+        if failed
           # `close` runs the driver's `do_close`, which discards the
           # connection from the pool and drops its prepared-statement cache.
           conn.close
+        else
+          conn.release
         end
       end
     end
