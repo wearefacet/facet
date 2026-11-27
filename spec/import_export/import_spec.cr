@@ -302,6 +302,35 @@ describe Facet::Document::Import do
         event_manager.events_for("FACET:RESOURCE:#{domain}:#{dt}").size.should eq(0)
       end
     end
+
+    it "rolls the whole file back on a manifest row-count mismatch" do
+      with_temp_doctype("impmismatch", "Contact") do |db, domain, dt|
+        create_import_doctype(db, domain, dt, %({"name": {"type": "string"}}))
+
+        a = Facet::Util::ScriptHelpers.ulid
+        b = Facet::Util::ScriptHelpers.ulid
+        file = %([
+          {"id": "#{a}", "content": {"name": "a"}},
+          {"id": "#{b}", "content": {"name": "b"}}
+        ])
+
+        # The file carries two rows but the manifest lists one id: the
+        # mismatch must roll the whole file back, not commit the first row.
+        Facet::Event::Publisher.flush
+        event_manager.clear!
+        mutations_before = db.query_one("SELECT COUNT(*) FROM mutations", as: Int64)
+
+        expect_raises(Facet::Document::Import::MalformedInput) do
+          Facet::Document::Import.call(db, domain, dt,
+            Facet::Doctype::DefinitionStore.fetch(db, "#{domain}.#{dt}").not_nil!,
+            "json", file, [a], [true], Facet::RBAC::AuthContext.system)
+        end
+
+        import_doc_exists(db, domain, dt, a).should be_false
+        db.query_one("SELECT COUNT(*) FROM mutations", as: Int64).should eq(mutations_before)
+        event_manager.events_for("FACET:RESOURCE:#{domain}:#{dt}").size.should eq(0)
+      end
+    end
   end
 
   describe "update-permission failure" do
@@ -391,6 +420,12 @@ describe Facet::Document::Import do
         events[1].headers["event"].as_s.should eq("created")
         events[0].content["id"].as_s.should eq(a)
         events[1].content["id"].as_s.should eq(b)
+
+        # The buffered event carries its cause as a struct and serializes it
+        # only at flush — the header must still land the resolved trace.
+        cause = events[0].headers["cause"]
+        cause["kind"].as_s.should eq("request")
+        cause["trace"].as_s.should_not be_empty
       end
     end
 

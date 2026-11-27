@@ -855,7 +855,7 @@ module Facet
         Event::Publisher.enqueue(
           domain: domain, doc_type: doc_type, doc_id: doc_id,
           event: "created", mutation_id: mut_id, actioner_id: actioner_id,
-          cause: (cause || Mutation::Cause.root(Mutation::CauseKind::Request)).resolve(mut_id).to_json_any,
+          cause_struct: (cause || Mutation::Cause.root(Mutation::CauseKind::Request)).resolve(mut_id),
           reentrant: reentrant,
         )
 

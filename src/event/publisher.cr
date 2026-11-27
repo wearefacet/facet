@@ -45,6 +45,14 @@ module Facet
       # (`fanout:{domain}.{doc_type}:{doc_id}`); `nil` keeps the default,
       # an explicit list replaces it — the `notified` event uses this to
       # publish only to the recipient's own channel.
+      #
+      # `cause` carries a pre-serialized cause object (the common path).
+      # `cause_struct` carries the cause as a `Mutation::Cause` value that
+      # serializes only at flush time. Bulk writers (the import loop) use
+      # `cause_struct` so a large buffered batch does not hold one parsed
+      # `JSON::Any` tree per row until the single post-commit flush — the
+      # struct is a handful of small string refs, serialized once per event
+      # in `publish_pending`. At most one of the two is set.
       record PendingEvent,
         domain : String,
         doc_type : String,
@@ -55,7 +63,8 @@ module Facet
         cause : ::JSON::Any? = nil,
         reentrant : Bool = false,
         payload : Hash(String, ::JSON::Any)? = nil,
-        fanout_channels : Array(String)? = nil
+        fanout_channels : Array(String)? = nil,
+        cause_struct : Mutation::Cause? = nil
 
       # ── Configuration ────────────────────────────────────────────────────────
 
@@ -94,6 +103,7 @@ module Facet
         reentrant : Bool = false,
         payload : Hash(String, ::JSON::Any)? = nil,
         fanout_channels : Array(String)? = nil,
+        cause_struct : Mutation::Cause? = nil,
       ) : Nil
         queue = Fiber.current.event_publish_queue ||= [] of PendingEvent
         queue << PendingEvent.new(
@@ -107,6 +117,7 @@ module Facet
           reentrant: reentrant,
           payload: payload,
           fanout_channels: fanout_channels,
+          cause_struct: cause_struct,
         )
       end
 
@@ -172,6 +183,8 @@ module Facet
           end
           if cause = pe.cause
             headers["cause"] = cause
+          elsif cause_struct = pe.cause_struct
+            headers["cause"] = cause_struct.to_json_any
           end
           if pe.reentrant
             headers["reentrant"] = ::JSON::Any.new(true)
