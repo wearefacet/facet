@@ -722,6 +722,20 @@ exact issuance error. Intent is unknown — if domain-wide coverage is meant
 to work, this is a product bug; if the strict rule is meant, the consent
 screen should say why a role is absent. Maintainer triage.
 
+**Resolved 2026-11-28 — maintainer call: domain-wide coverage is meant to
+work; the strict rule was a product bug.** Fixed in `Grant`: the resolver
+now intersects reaches (`Grant#intersects_reach?`, prefix in either
+direction) instead of requiring the grant path to prefix the permission
+path. A bare-domain line, any ancestor line, and wildcard lines all back a
+concrete grant target; the entry collapses onto the grant's de-wildcarded
+target (`GrantResolver.entry_coordinates`), so the grant stays the ceiling.
+`Grant#covers?` keeps its point-in-reach reading for `Artifact::Access`.
+Consent, launcher, token issuance, refresh, and key issuance all follow
+automatically (they share `GrantResolver`). Observable change on deployed
+instances: roles that previously vanished from consent screens or refused
+key issuance now qualify. The first-app tutorial's step 3 ("widen the
+warehouse role") is removed — the shipped `load.sh` role consents as-is.
+
 ## #36 — Builder qualifies reference targets to the draft id, not the publish-target name
 
 Where: the doctype editor's reference target input

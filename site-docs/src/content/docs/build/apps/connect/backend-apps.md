@@ -272,14 +272,14 @@ which revokes the old key.
 **Issuance answers `422`: "The app's grants do not intersect the service role's permissions".**
 
 ```json
-{"error": "The app's grants do not intersect the service role iam.Roles.warehouse's permissions — the key would be refused at every request. Repeat each grant target as a concrete role permission line (e.g. {\"on\": \"equipment.Item\", \"action\": \"*\"}) or widen the role."}
+{"error": "The app's grants do not intersect the service role iam.Roles.stock_sync's permissions — the key would be refused at every request. Add a role permission line whose reach covers each grant target (for each grant: {\"on\": \"fin\", \"action\": \"*\"} or {\"on\": \"fin.Invoice\", \"action\": \"*\"}) or widen the role."}
 ```
 
-The pinned role's lines do not reach the grant targets. This bites when the
-role carries domain-wide lines such as `{"on": "equipment", "action": "*"}`:
-a domain-wide line covers the domain for a person, but an app channel needs
-the concrete target on the role. Write the line the message suggests —
-`{"on": "equipment.Item", "action": "*"}` — and issue again.
+The pinned role's lines do not reach any grant target. A domain-wide line —
+`{"on": "fin", "action": "*"}` — and a concrete line both qualify, so this
+failure means the role's lines sit in other domains, or every line that
+reaches a grant target carves it out with `except`. Write the line the
+message suggests and issue again.
 
 **Every route answers `401` with a valid key.**
 

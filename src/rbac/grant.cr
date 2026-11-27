@@ -150,26 +150,29 @@ module Facet
 
       # ── Path matching ──────────────────────────────────────────────────
 
-      # True if this grant covers the given `(domain, path)`.
+      # True if this grant's reach contains the point `(other_domain,
+      # other_path)` — the grant authorising semantics (`Artifact::Access`
+      # asks whether a grant reaches an artifact's owner doctype).
       #
-      # Wildcard rules — the grant → permission direction (the inverse of
-      # `Permission#matches_path?`):
+      # Wildcard rules:
       #
       # - A grant on `domain.*` covers every doctype in `domain`.
-      # - A grant on `domain.Doctype` covers a permission on exactly that
-      #   doctype, OR a permission on a descendant path
-      #   (e.g. grant `crm.Contact` covers permission `crm.Contact.Comment`).
+      # - A grant on `domain.Doctype` covers exactly that doctype and its
+      #   descendant paths (e.g. grant `crm.Contact` covers `crm.Contact.Comment`).
       # - A grant's path may not be the global `*.*` form (rejected at parse).
+      # - A point under the wildcard domain `*` (the `*.*` admin permission
+      #   reading) is covered by every grant — the grant is strictly a
+      #   ceiling, never an escape.
       #
-      # Inverse-direction wildcard: a permission whose `domain` is `*` (the
-      # `*.*` admin permission) matches every grant target. The admin role
-      # reaches every doctype; the grant is strictly a ceiling, so an app
-      # binding that combines an admin role with a `crm.Contact` grant still
-      # emits entries for `crm.Contact` (and only `crm.Contact`).
+      # The match is one-way: a `crm.Contact` grant does NOT cover a point
+      # on `crm.Other`, and a grant on `crm.Contact.Comment` does not cover
+      # a point on `crm.Contact` — a grant never reaches above its target.
       #
-      # The match is one-way: a `crm.Contact` grant does NOT cover a
-      # permission on `crm.Other`, even though a `crm.Other` permission with
-      # `*` action would cover operations on `crm.Contact`.
+      # For the grant ∩ role intersection — where the argument is a
+      # permission line whose path is a *reach*, not a point — use
+      # `#intersects_reach?` instead: a domain-wide role line (bare
+      # `crm`, empty path) has a reach that contains the grant target,
+      # and the two must intersect.
       def covers?(other_domain : String, other_path : Array(String)) : Bool
         # A permission with a wildcard domain (`*.*` admin) matches every
         # grant target — regardless of this grant's domain. Only the path
@@ -186,9 +189,51 @@ module Facet
         # `*.*` admin permission) matches any concrete grant path.
         return true if other_path == [Permission::WILDCARD_DOCTYPE]
 
-        # Otherwise the grant path must be a prefix of the role's path
-        # (a grant on `crm.Contact` covers a permission on `crm.Contact.Comment`).
+        # Otherwise the grant path must be a prefix of the point's path
+        # (a grant on `crm.Contact` covers a point on `crm.Contact.Comment`).
         @path.size <= other_path.size && @path.zip(other_path).all? { |a, b| a == b }
+      end
+
+      # True if this grant's reach and a permission line's reach overlap —
+      # the grant ∩ role intersection (`GrantResolver`).
+      #
+      # A permission line's path is a reach: the line grants its action on
+      # every doctype at or below the path (`Permission#matches_path?`
+      # prefix rule). The intersection is therefore reach overlap, not
+      # point containment:
+      #
+      # - A domain-wide line (`{"on": "crm"}` — empty path) reaches every
+      #   doctype in `crm`, so it intersects any `crm.X` grant target.
+      # - A line above the grant target (`{"on": "crm.Contact"}` vs grant
+      #   `crm.Contact.Comment`) intersects for the same reason.
+      # - A line at or below the grant target intersects when the grant's
+      #   reach contains the line's path (the `#covers?` rule).
+      #
+      # Wildcard rules mirror `#covers?`: a `domain.*` grant intersects
+      # every line in the domain; a `*.*` line intersects every grant.
+      # Carve-outs are NOT tested here — the resolver checks the line's
+      # `except` entries against the grant target separately
+      # (`GrantResolver.line_reaches_grant_target?`), because a wildcard
+      # grant target keeps a lenient reading that a pure reach test
+      # cannot express.
+      def intersects_reach?(perm_domain : String, perm_path : Array(String)) : Bool
+        domains_match = @domain == perm_domain || perm_domain == Permission::WILDCARD_DOMAIN
+        return false unless domains_match
+
+        # Domain wildcard grant: `domain.*` overlaps every reach in the domain.
+        return true if @path == [DOMAIN_WILDCARD_DOCTYPE]
+
+        # A `*.*` admin line reaches every grant target.
+        return true if perm_path == [Permission::WILDCARD_DOCTYPE]
+
+        # Prefix in either direction — the narrower reach is never empty:
+        # the permission may sit at or below the grant target, or above it
+        # (the bare-domain line included).
+        permission_within_grant = @path.size <= perm_path.size &&
+                                  @path.zip(perm_path).all? { |a, b| a == b }
+        grant_within_permission = perm_path.size <= @path.size &&
+                                  perm_path.zip(@path).all? { |a, b| a == b }
+        permission_within_grant || grant_within_permission
       end
 
       # ── Parsing internals ──────────────────────────────────────────────

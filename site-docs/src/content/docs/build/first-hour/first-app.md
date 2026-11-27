@@ -112,50 +112,15 @@ curl -sk -X PATCH "$HOST/Api/app/App/$APP_ID" \
 
 Your ids differ — every instance mints its own.
 
-### 3. Widen the warehouse role
-
-Lucía Ferrer runs the warehouse; the app is for her. One rule governs what
-she can hand the app: the app acts with the overlap of its grants and her
-role — never more than either allows. The consent screen lists only the
-roles that cover every required grant action.
-
-The warehouse role reaches equipment through one domain-wide line,
-`{"on": "equipment", "action": "*"}`. That line covers the whole domain for
-a person in the workspace — but an app's grants name concrete doctypes, and
-a domain-wide line never covers one. Add the concrete line now. The patch
-replaces the whole permission list, so send the lines the example's
-`load.sh` wrote plus the new one:
-
-```sh
-curl -sk -X PATCH \
-  "$HOST/Api/iam/Roles/iam.Roles.warehouse" \
-  -H "Authorization: Bearer $FACET_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "permissions": [
-      { "on": "equipment", "action": "*" },
-      { "on": "equipment.Item", "action": "*" },
-      { "on": "rentals.Booking", "action": "read" },
-      { "on": "rentals.BookingLine", "action": "read" },
-      { "on": "clients.Company", "action": "read" },
-      { "on": "clients.Contact", "action": "read" },
-      { "on": "core.Comment", "action": "*" },
-      { "on": "core.Attachment", "action": "*" }
-    ]
-  }'
-```
-
-The consent screen in Part 3 now lists **Warehouse**. Why the overlap
-behaves this way, and what an administrator sees on the dashboard, is
-[Apps, grants and roles](/build/apps/connect/what-an-app-can-do/).
-
-That is every API call in this tutorial. Prefer clicking? The dashboard
-wizard does the same — see
-[Register an app](/build/apps/connect/register/).
+That is every API call in this tutorial. The seeded Warehouse role already
+reaches the app: the consent screen counts a role's domain-wide lines, and
+the role's `{"on": "equipment", "action": "*"}` covers the `equipment.Item`
+grant. No role change is needed. Prefer clicking? The dashboard wizard does
+the same — see [Register an app](/build/apps/connect/register/).
 
 ## Part 2 — Build it with your coding agent
 
-### 4. Scaffold the project
+### 3. Scaffold the project
 
 Install the SDK and the build tools, and write the deploy config:
 
@@ -177,7 +142,7 @@ No stored session for https://facet.localhost:3443. Run "pnpx @facetapp/cli logi
 
 You sign the CLI in when you deploy, in Part 3.
 
-### 5. Hand the build to your agent
+### 4. Hand the build to your agent
 
 Open your coding-agent harness in the project folder and paste this prompt:
 
@@ -242,7 +207,7 @@ source from
 
 ## Part 3 — Try it and ship it
 
-### 6. Sign in as Lucía
+### 5. Sign in as Lucía
 
 Lucía Ferrer runs the warehouse; the app is for her. Start the dev server:
 
@@ -277,7 +242,7 @@ To watch each sign-in call with `curl`, see
 [Sign users in](/build/apps/connect/user-login/).
 :::
 
-### 7. Deploy on Facet
+### 6. Deploy on Facet
 
 The app runs on your machine; now let Facet host it. The registration
 already carries the hosted address, its redirect, and its CORS origin — you
@@ -314,8 +279,8 @@ sign-in. Releases, rollback, and custom domains are
 - An app is a document: it holds the app's identity, its grants, and where
   sign-ins may return. Setting it `active` switches sign-ins on.
 - The consent screen lists only roles that cover every required grant
-  action — a domain-wide role line needs a concrete line per doctype the
-  app names.
+  action. The overlap counts a role's domain-wide lines too — the seeded
+  Warehouse role qualifies with no extra lines.
 - A coding agent can build a Facet app from the docs alone, as long as you
   point it at the pages and give it the project facts.
 - The app's reach is the overlap of its grants and the user's role — a call
