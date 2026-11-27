@@ -208,22 +208,21 @@ html {
  * public/diagrams/ and replaces the fence with a pair of <img> elements. CSS
  * shows the light or the dark file, so a theme switch needs no script.
  *
- * The diagram keeps its natural size and scrolls sideways when it is wider
- * than the column. Shrinking it to fit would scale the text and the arrowheads
- * down with it, which is exactly what makes a diagram unreadable. */
+ * The SVG is rendered at scale 1 (diagram-theme.mjs → RENDER_OPTIONS), so it
+ * carries its natural pixel size and its text stays at the size the house style
+ * asks for. A diagram wider than the column is capped at the column width; a
+ * narrower one keeps its size and sits in the middle. */
 .d2-diagram {
 	margin-block: 1.5rem;
-	overflow-x: auto;
-	/* Keeps a vertical scrollbar off a tall diagram; the page scrolls. */
-	overflow-y: hidden;
+	text-align: center;
 }
 
 .d2-diagram__img {
 	display: block;
 	margin-inline: auto;
-	/* The SVG carries its own pixel size; this stops a wide one from being
-	 * squashed by the flex/grid parent. */
-	max-width: none;
+	/* Shrinks a wide diagram to the column; `height: auto` keeps its aspect
+	 * ratio. A diagram under the column width is never enlarged. */
+	max-width: 100%;
 	height: auto;
 }
 

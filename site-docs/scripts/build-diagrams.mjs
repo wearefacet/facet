@@ -7,9 +7,9 @@
 // D2 engine stays a build dependency and readers download only the finished
 // diagrams.
 //
-// Source pages are edited in place. The script is idempotent: it renders a
-// diagram only when its SVG files are missing, and it deletes an SVG that no
-// page references any more.
+// Source pages are edited in place. The script is idempotent: it re-renders a
+// diagram only when its SVG files are missing or older than the house style
+// (diagram-theme.mjs), and it deletes an SVG that no page references any more.
 //
 // A fence that does not compile fails the build, with the page and the line,
 // so a typo never ships as a raw code block.
@@ -18,7 +18,7 @@
 
 import { D2 } from '@terrastruct/d2';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DARK_TOKENS, EDGE_LABEL_COLOR, LIGHT_TOKENS, RENDER_OPTIONS, styleSource } from './diagram-theme.mjs';
@@ -34,6 +34,10 @@ const FENCE_CLOSE = /^```\s*$/;
 const CAPTION = /^\*([^*].*)\*$/;
 // `--force` re-renders every diagram, for a change to the house style.
 const FORCE = process.argv.includes('--force');
+// The house style lives in diagram-theme.mjs. A diagram whose SVG predates the
+// last edit to that file was rendered with an older style, so the build must
+// re-render it rather than keep a stale file.
+const THEME_MTIME = statSync(fileURLToPath(new URL('diagram-theme.mjs', import.meta.url))).mtimeMs;
 
 const d2 = new D2();
 
@@ -135,10 +139,14 @@ async function renderPair(source, page) {
 	}
 }
 
+function isFresh(path) {
+	return existsSync(path) && statSync(path).mtimeMs >= THEME_MTIME;
+}
+
 async function ensureRendered(id, source, page, counters) {
 	const lightPath = join(OUTPUT_DIR, `${id}-light.svg`);
 	const darkPath = join(OUTPUT_DIR, `${id}-dark.svg`);
-	if (!FORCE && existsSync(lightPath) && existsSync(darkPath)) return;
+	if (!FORCE && isFresh(lightPath) && isFresh(darkPath)) return;
 	const pair = await renderPair(source, page);
 	writeFileSync(lightPath, pair.light);
 	writeFileSync(darkPath, pair.dark);

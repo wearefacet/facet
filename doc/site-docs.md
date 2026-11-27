@@ -186,10 +186,19 @@ Pages write **D2**, not mermaid. A <code>```d2</code> fence is rendered at build
 
 1. Finds every <code>```d2</code> fence under `src/content/docs/`.
 2. Compiles it with the house style from `scripts/diagram-theme.mjs`, once per theme.
-3. Writes `public/diagrams/<hash>-light.svg` and `<hash>-dark.svg`. The hash is the source's SHA-256 prefix, so an unchanged diagram keeps its file.
+3. Writes `public/diagrams/<hash>-light.svg` and `<hash>-dark.svg`. The hash is the source's SHA-256 prefix, so an unchanged diagram keeps its file. A diagram whose SVG predates the last edit of `scripts/diagram-theme.mjs` is re-rendered, so a style change never leaves a stale file behind.
 4. Replaces the fence with an HTML comment holding the D2 source, then the `<img>` pair. The comment keeps the source copyable for readers and agents, and lets the build re-render an existing diagram without a separate source file.
 
 A fence that does not compile **fails the build**, with the page and line. `scripts/check-diagrams.mjs` fails the build when a mermaid fence survives.
+
+### Size and placement
+
+The SVG is rendered at `scale: 1` with `center: true` (`RENDER_OPTIONS` in `scripts/diagram-theme.mjs`), so it carries its natural pixel size and its text stays at the 15px the house style asks for. Without `scale: 1`, D2 sizes the SVG to fit its own viewbox, which blows a small diagram up to the full column and renders the labels far larger than intended.
+
+CSS then sets the final size:
+
+- A diagram narrower than the content column keeps its natural size and sits in the middle.
+- A diagram wider than the column is capped at the column width and scaled down. Its text shrinks with it, which is why labels stay short.
 
 ### The house style
 
@@ -207,7 +216,7 @@ Rules for authors:
 
 - **Keep nodes flat.** One label, no children. A node with children is a D2 container: D2 paints it with the accent fill and draws a large title on top, which no theme override makes look right.
 - **Pick the direction.** A branching flow reads left to right; a linear chain of more than four steps reads top to bottom. Write `direction: down` as the first line for the latter; the default is `right`.
-- **Keep labels short.** A wide diagram is scaled down to fit the content column, and the text shrinks with it. Prefer `Permission` over `The permission record that names an action`.
+- **Keep labels short.** A diagram wider than the content column is scaled down to it, and the text shrinks with it. Prefer `Permission` over `The permission record that names an action`.
 
 Each theme is its own compile, with its palette as the base override. D2 emits `dark-theme-overrides` inside a `prefers-color-scheme` media block, and the site switches theme with a `data-theme` attribute, so a single compile with both palettes would never apply the dark one.
 
@@ -219,13 +228,14 @@ Playwright captures the UI screenshots the tutorial pages embed. One script, one
 | --- | --- |
 | `scripts/screens/capture.mjs` | The capture script. Reads a YAML shot file (`--shots`, default `scripts/screens/shots.yml`), accepts `--base` and `--only <id,...>`. One browser context per persona, signed in once through the real sign-in form (`/Login`, placeholder-driven, "Skip for now" on the MFA enrollment interstitial). Per shot: goto (networkidle, 30 s), optional `wait` selector, `settle` ms, optional `highlight` (2 px `#2563eb` outline), screenshot of the `crop` element or full page, `animations: disabled`, `caret: hide`, written to `src/assets/screens/<out>`. A `login: true` shot runs unauthenticated in a throwaway context. Run: `cd site-docs && NODE_PATH=$(pwd)/../frontend/node_modules node scripts/screens/capture.mjs`. |
 | `scripts/screens/shots.yml` | The shot list: defaults (base `https://facet.localhost:3443`, viewport 1280×800, light theme), five personas (nadia, tom, lucia, ravi, admin), and one entry per shot with its output path under `src/assets/screens/`. |
+| `scripts/copy-screens.mjs` | Copies `src/assets/screens/` to `public/assets/screens/` before `astro build` and `astro dev`. Pages embed `/assets/screens/<out>`; Astro serves `public/` at the site root, so the copy makes the URLs resolve. The source PNGs stay the single committed copy under `src/assets/screens/`; `public/assets/` is gitignored. |
 
 Two classes of shot live in the list:
 
 - **Standard shots** — reproducible on any instance with the Brightwater example loaded. They read live data, so views that show today-relative content (kanban boards, dashboard panels) differ on every run; the shots.yml header names them.
 - **Captured-once shots** — listed in the shots.yml comment block. They depend on one-off UI states (an OTP sign-in screen, a filled New Account form, a generated temporary password) and were taken against scratch flows outside the standard run; recapture them by replaying those flows.
 
-Pages embed the PNGs with markdown image syntax and a descriptive alt text; the alt text says what the shot shows, not "screenshot".
+Pages embed the PNGs with markdown image syntax and a descriptive alt text; the alt text says what the shot shows, not "screenshot". The URL is absolute (`/assets/screens/<out>`), and `scripts/copy-screens.mjs` places the PNGs under `public/assets/screens/` so both `astro dev` and `astro build` serve them.
 
 ## Tailwind
 
