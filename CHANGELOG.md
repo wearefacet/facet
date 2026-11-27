@@ -2,6 +2,55 @@
 
 Notable changes to Facet. The project is pre-1.0: a release can contain breaking changes.
 
+## 0.2.3 — beta (2026-11-28)
+
+The new documentation site, a performance pass on the paths the 2026-11-27 load review flagged, and a developer-focused CLI. The grid gains an inline create line, filter bounds accept relative dates, and the domain-builder assistant no longer edits core doctypes without an explicit opt-in.
+
+**Deployment notes**
+
+- No new migration file. Migration `0001` gained the `idx_projections_doctype_created_at` index in its `-- UP` section, so a fresh database creates it. An upgraded instance does not re-run `0001` — the index is missing there and a doctype-wide `sort=-created_at` list keeps the slow plan. Create it once by hand:
+
+  ```sql
+  CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_projections_doctype_created_at
+      ON projections (domain, doc_type, created_at);
+  ```
+
+- The per-field extended statistics objects (see Performance) ride the index lifecycle: created with a field index, dropped with its last btree variant. Indexes that already exist keep running without one until the index is rebuilt or a new variant is added.
+
+### Workspace UI
+
+- **Create from the grid.** The grid surface gains a ghost line under the rows (the `allow_create` view flag AND the viewer's flat `create` grant): a `+` gutter, a "type to create" prompt on the first writable column, and the declared defaults previewing in the cells. Excel keyboard flow: typing opens the per-type editor from the create grant, Tab walks right, Enter commits; booleans stay inert until the row exists. The draft holds only committed values and the create body drops empty keys, so the server defaults apply; the create fires once the exposed required fields are filled, and the server re-checks everything on the POST. A `422` keeps the draft under error frames on the cells the details name; a `403` reverts, toasts, and locks the line off for the session. On success the row appends, a refetch restores the canonical order, and the fresh ghost line below takes the selection.
+- The `/check` report — and the domain-builder agent's check tools — carries a warning when a show or form view template omits fields of the doctype. The show view requires every field except write-only ones; the form requires every editable field. Views without a template are skipped. The warning catches a doctype edit that left the views behind.
+
+### HTTP API
+
+- **Relative dates in filter bounds.** Every datetime-like bound accepts a relative value in place of an ISO-8601 one: `datetime` and `date` fields, the `created_at` / `updated_at` / `deleted_at` system columns, `period` / `dateperiod` range bounds, audit `emitted_at`, and assistant conversation timestamps. Grammar: `[+|-]<n><unit>` with units `y mo w d h m s` — `m` is a minute, `mo` a month, a leading `-` is the past. Months and years are calendar steps with a day clamp (`-1mo` from Mar 31 is Feb 28); weeks and below are fixed-length. On a date field the bound truncates to the UTC calendar day: `__lte` widens to the end of that day and `__gt` narrows to its start, the other operators stay exact, and a time-of-day unit against a date field answers `422`.
+
+### Assistant
+
+- `update_doctype` refuses a `core`-domain doctype unless the call passes `unsafe_core_edit: true`. The tool description and the system prompt warn that such an edit can break the application or block a future migration. The seed corpus reverts the tool change on the next boot.
+
+### CLI
+
+- **`setup-dev`** scaffolds, starts, and seeds a local dev instance from the GHCR images — no repository clone. It writes `compose.yml`, `config.dev.yml`, `.env` (mode 600), `Caddyfile.prod`, `facet.config.json`, and a `.gitignore`, then fetches the user's API key.
+- **`connect`** signs in over OAuth and can issue a user-owned API key pinned to the active role, stored per folder (mode 600, gitignored). **`apikey`** prints the stored token for shell substitution. **`host`** prints the resolved instance URL with no trailing slash, so a request URL stays in one piece next to `$(facet-cli apikey)`.
+- A new image-only compose stack (`docker/compose.ghcr.yml` + `docker/.env.ghcr.example`) pulls the published GHCR images and never builds. A `v*` release attaches `compose.yml`, `Caddyfile.prod`, and `.env.example` to the GitHub release, so an install needs no clone.
+
+### Performance
+
+- The 2026-11-27 load review closes three hot spots. Mutation coalescing deletes the folded row through its full primary key — the predicate named only `id`, could not use the key, and scanned the whole index (254 ms on a 2.6 M-row log). Doctype-wide `sort=-created_at` lists plan to the new `created_at` index instead of a parallel seq scan over the whole doctype. Equality filters on indexed fields use extended statistics objects created alongside each per-field btree index, so the planner stops preferring the primary-key walk of the default order.
+- Import decodes and applies one row at a time inside the transaction instead of buffering every row's JSON tree — a 100k-row import peaked near 2.8 GB RSS and never released it between jobs. Each event's cause is buffered as a struct and serialized at flush, and one GC pass per job settles the high-water mark. Atomicity is unchanged: the whole file lands or nothing does.
+
+### Fixed
+
+- **Grant intersection.** A domain-wide role line (`{"on": "equipment", "action": "*"}`) or any ancestor line now intersects an app's grants. `Grant#covers?` compared paths as points and required the grant path to prefix the permission path, so the consent screen silently dropped such roles and key issuance refused them, while the same line worked on person channels. Observable on deployed instances: roles that previously vanished from consent screens or refused key issuance now qualify.
+- **The sign-in form responds again under the 0.2.2 CSP.** The SvelteKit start shim is emitted at render time as a bare `<script>` tag, so the `script-src 'nonce-…'` policy blocked it: hydration never ran and every control was inert — the form fell back to a native submit that only reloaded the page. The shim now carries the nonce like the theme script.
+- A connection whose statement was cancelled no longer returns to the pool with pending frames. The next user of the connection read them as its own answer and the driver reported a column type mismatch on a column it never selected. The pool discards such a connection and opens a clean one.
+
+### Documentation
+
+- The documentation site is rebuilt: five top tabs (Discover, Use, Build, Admin, Reference), the Brightwater Rentals running example carried through the pages, screenshots and theme-aware illustrations, a CLI-first quick start, and French translations beside the English pages. Every old URL answers a redirect — 288 of them. Request examples authenticate through the CLI (`$(facet-cli host)`, `$(facet-cli apikey)`) instead of placeholder credentials.
+
 ## 0.2.2 — beta (2026-11-26)
 
 Workspace authoring and a security sweep. A new doctype starts with zero collection views, kanban boards gain per-view lane control and card moves, forms edit multi-reference fields as chips, and the 13 confirmed findings of the 2026-11-25 external security review are closed.

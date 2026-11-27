@@ -12,7 +12,7 @@
 # The repository copy (docker/compose.prod.yml) builds the images from a
 # checkout; this one never builds. Same services, same network, same edge.
 #
-# Pin FACET_VERSION in .env to a release tag (for example 0.2.2). `latest`
+# Pin FACET_VERSION in .env to a release tag (for example 0.2.3). `latest`
 # follows the newest release; `sha-<sha>` reproduces one build exactly.
 
 name: facet
