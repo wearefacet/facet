@@ -9,6 +9,7 @@ import starlightLlmsTxt from 'starlight-llms-txt';
 import starlightSidebarTopics from 'starlight-sidebar-topics';
 import starlightLinksValidator from 'starlight-links-validator';
 import redirects from './redirects.mjs';
+import screensImages from './src/plugins/screens-images.mjs';
 import { SITE_URL } from './scripts/site-url.mjs';
 
 // The Google tag (GTM container GTM-T2PQ3L7L) loads on every page of the
@@ -387,6 +388,6 @@ export default defineConfig({
 		mdx(),
 	],
 	vite: {
-		plugins: [tailwindcss()],
+		plugins: [screensImages(), tailwindcss()],
 	},
 });

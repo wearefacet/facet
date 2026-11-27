@@ -77,3 +77,4 @@ frontend/README.md
 site-docs/node_modules
 site-docs/dist
 site-docs/.astro
+site-docs/public/screens

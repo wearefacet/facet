@@ -6,9 +6,9 @@
     "prebuild": "node scripts/check-coverage.mjs --strict",
     "diagrams": "node scripts/build-diagrams.mjs",
     "predev": "node scripts/build-diagrams.mjs",
-    "dev": "node scripts/copy-screens.mjs && astro dev",
+    "dev": "astro dev",
     "start": "astro dev",
-    "build": "node scripts/build-diagrams.mjs && node scripts/check-diagrams.mjs && node scripts/copy-screens.mjs && astro build && node scripts/emit-md.mjs && node scripts/emit-robots.mjs",
+    "build": "node scripts/build-diagrams.mjs && node scripts/check-diagrams.mjs && astro build && node scripts/emit-md.mjs && node scripts/emit-robots.mjs",
     "preview": "astro preview",
     "astro": "astro"
   },

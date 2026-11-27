@@ -2,8 +2,6 @@
 dist/
 # generated diagram SVGs (scripts/build-diagrams.mjs)
 public/diagrams/
-# generated screenshot copies (scripts/copy-screens.mjs)
-public/screens/
 # generated types
 .astro/
 

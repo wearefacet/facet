@@ -39,6 +39,10 @@ RUN npm ci
 # the sitemap/robots emitters run inside `npm run build`. The build mutates
 # pages in place (D2 fences become image blocks) — all inside this layer.
 COPY site-docs/ ./
+# Pages embed shots as /screens/<path>; nginx serves public/ verbatim, so the
+# committed PNGs are copied there for the build. `astro dev` serves them from
+# src/assets/screens/ directly (src/plugins/screens-images.mjs).
+RUN mkdir -p public/screens && cp -R src/assets/screens/. public/screens/
 RUN npm run build
 
 # ── Runtime stage ───────────────────────────────────────────────────────────
