@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" class="fct-asst" role="img" aria-labelledby="fct-asst-t fct-asst-d">
+<title id="fct-asst-t">The assistant works as you, under your role</title>
+<desc id="fct-asst-d">Nadia asks the assistant which tents are free on 14 June. The assistant reads the equipment list with Nadia's role: it sees four tents, while two others are outside her role and stay locked. It answers with the three free tents she may see. Nadia then asks it to add a note to booking BK-0412. The note is saved, and the booking's history shows the change under Nadia's name, marked as assistant work, next to the earlier changes by Nadia and Tom.</desc>
+<style>
+.fct-asst{--c-bg:var(--surface);--c-deep:var(--sunken);--c-card:var(--surface);--c-line:var(--border-strong);--c-hair:var(--border);--c-ink:var(--text);--c-muted:var(--text-2);--c-accent:var(--accent);--c-accent-ink:var(--accent-ink);--c-on-accent:var(--on-accent);--c-gold:var(--accent-ink);--c-soft:var(--accent-weak);--c-ok:var(--ok);--c-ok-soft:var(--ok-weak);--c-alert:var(--danger);}
+.fct-asst text{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;fill:var(--c-ink);}
+.fct-asst .card{fill:var(--c-card);stroke:var(--c-line);stroke-width:1.5;}
+@keyframes fct-asst-m1{0%,2.50%{opacity:0;transform:translateY(6px)}4.69%,95.62%{opacity:1;transform:translateY(0)}97.81%,100%{opacity:0;transform:translateY(6px)}}
+@keyframes fct-asst-m2{0%,25.62%{opacity:0;transform:translateY(6px)}27.81%,95.62%{opacity:1;transform:translateY(0)}97.81%,100%{opacity:0;transform:translateY(6px)}}
+@keyframes fct-asst-m3{0%,45.00%{opacity:0;transform:translateY(6px)}47.19%,95.62%{opacity:1;transform:translateY(0)}97.81%,100%{opacity:0;transform:translateY(6px)}}
+@keyframes fct-asst-m4{0%,59.38%{opacity:0;transform:translateY(6px)}61.56%,95.62%{opacity:1;transform:translateY(0)}97.81%,100%{opacity:0;transform:translateY(6px)}}
+@keyframes fct-asst-ty1{0%,9.38%{opacity:0;transform:translateY(6px)}11.56%,25.00%{opacity:1;transform:translateY(0)}27.19%,100%{opacity:0;transform:translateY(6px)}}
+@keyframes fct-asst-ty2{0%,49.38%{opacity:0;transform:translateY(6px)}51.56%,58.75%{opacity:1;transform:translateY(0)}60.94%,100%{opacity:0;transform:translateY(6px)}}
+@keyframes fct-asst-pA{0%,4.38%{opacity:0}6.56%,47.50%{opacity:1}49.69%,100%{opacity:0}}
+@keyframes fct-asst-hl0{0%,23.12%{opacity:0}25.31%,46.88%{opacity:1}49.06%,100%{opacity:0}}
+@keyframes fct-asst-ck0{0%,10.13%{opacity:0}11.07%,46.88%{opacity:1}47.81%,100%{opacity:0}}
+@keyframes fct-asst-hl1{0%,23.12%{opacity:0}25.31%,46.88%{opacity:1}49.06%,100%{opacity:0}}
+@keyframes fct-asst-ck1{0%,12.05%{opacity:0}12.99%,46.88%{opacity:1}47.81%,100%{opacity:0}}
+@keyframes fct-asst-ck2{0%,13.97%{opacity:0}14.91%,46.88%{opacity:1}47.81%,100%{opacity:0}}
+@keyframes fct-asst-lk3{0%,15.90%{opacity:0}16.83%,46.88%{opacity:1}47.81%,100%{opacity:0}}
+@keyframes fct-asst-hl4{0%,23.12%{opacity:0}25.31%,46.88%{opacity:1}49.06%,100%{opacity:0}}
+@keyframes fct-asst-ck4{0%,17.82%{opacity:0}18.76%,46.88%{opacity:1}47.81%,100%{opacity:0}}
+@keyframes fct-asst-lk5{0%,19.74%{opacity:0}20.68%,46.88%{opacity:1}47.81%,100%{opacity:0}}
+@keyframes fct-asst-scan{0%,9.38%{transform:translateY(0);opacity:0}10.00%{opacity:1}21.25%{transform:translateY(346px);opacity:1}22.50%,100%{transform:translateY(346px);opacity:0}}
+@keyframes fct-asst-pB{0%,49.38%{opacity:0}51.56%,95.62%{opacity:1}97.81%,100%{opacity:0}}
+@keyframes fct-asst-note{0%,53.12%{opacity:0}55.31%,95.62%{opacity:1}97.81%,100%{opacity:0}}
+@keyframes fct-asst-ne{0%,55.00%{opacity:0;transform:translateX(-10px)}57.19%,95.62%{opacity:1;transform:translateX(0)}97.81%,100%{opacity:0;transform:translateX(-10px)}}
+@media (prefers-reduced-motion:reduce){.fct-asst *{animation:none!important}.fct-asst .smil{display:none}}
+</style>
+<rect class="card" x="40" y="40" width="400" height="460" rx="16"/>
+<circle cx="72" cy="74" r="16" fill="var(--c-soft)"/><path transform="translate(72,74) scale(1.05)" d="M0 -8 C1 -2 2 -1 8 0 C2 1 1 2 0 8 C-1 2 -2 1 -8 0 C-2 -1 -1 -2 0 -8 Z" fill="var(--c-accent)"/>
+<text x="98" y="71" font-size="15.5" font-weight="700">Assistant</text>
+<text x="98" y="89" font-size="12" style="fill:var(--c-muted)">acting as Nadia</text>
+<rect x="300" y="60" width="120" height="28" rx="14" fill="var(--c-soft)" stroke="var(--c-accent)" stroke-width="1.2"/>
+<g transform="translate(316,74)"><circle cx="-1.5" cy="-1.5" r="3.2" fill="none" stroke="var(--c-accent-ink)" stroke-width="1.6"/><path d="M1 1 L6 6 M4 4 L5.5 2.5" fill="none" stroke="var(--c-accent-ink)" stroke-width="1.6" stroke-linecap="round"/></g>
+<text x="366" y="78.5" text-anchor="middle" font-size="12.5" font-weight="700" style="fill:var(--c-accent-ink)">Nadia's role</text>
+<line x1="40" y1="110" x2="440" y2="110" stroke="var(--c-hair)"/>
+<g style="animation:fct-asst-m1 16.0s ease-out infinite;opacity:0;transform:translateY(6px)"><rect x="156" y="128" width="264" height="35" rx="14" fill="var(--c-deep)" stroke="var(--c-line)"/><text x="171" y="153" font-size="13.5" font-weight="600">Which tents are free on 14 June?</text><circle cx="434" cy="153" r="0"/></g>
+<g style="animation:fct-asst-m2 16.0s ease-out infinite;opacity:0;transform:translateY(6px)"><rect x="90" y="178" width="271" height="73" rx="14" fill="var(--c-soft)" stroke="var(--c-accent)" stroke-opacity=".5"/><text x="105" y="203" font-size="13.5" font-weight="500">Three are free on 14 June:</text><text x="105" y="222" font-size="13.5" font-weight="500">Marquee 6 × 12 m, Marquee 4 × 8 m</text><text x="105" y="241" font-size="13.5" font-weight="500">and Pagoda 5 × 5 m.</text><circle cx="68" cy="192" r="12" fill="var(--c-soft)"/><path transform="translate(68,192) scale(0.75)" d="M0 -8 C1 -2 2 -1 8 0 C2 1 1 2 0 8 C-1 2 -2 1 -8 0 C-2 -1 -1 -2 0 -8 Z" fill="var(--c-accent)"/></g>
+<g style="animation:fct-asst-m3 16.0s ease-out infinite;opacity:0;transform:translateY(6px)"><rect x="229" y="268" width="191" height="54" rx="14" fill="var(--c-deep)" stroke="var(--c-line)"/><text x="244" y="293" font-size="13.5" font-weight="600">Add a note to BK-0412:</text><text x="244" y="312" font-size="13.5" font-weight="600">“deliver by 9 am”.</text><circle cx="434" cy="312" r="0"/></g>
+<g style="animation:fct-asst-m4 16.0s ease-out infinite;opacity:0;transform:translateY(6px)"><rect x="90" y="338" width="293" height="35" rx="14" fill="var(--c-soft)" stroke="var(--c-accent)" stroke-opacity=".5"/><text x="105" y="363" font-size="13.5" font-weight="500">Done. It’s in the booking’s history.</text><circle cx="68" cy="352" r="12" fill="var(--c-soft)"/><path transform="translate(68,352) scale(0.75)" d="M0 -8 C1 -2 2 -1 8 0 C2 1 1 2 0 8 C-1 2 -2 1 -8 0 C-2 -1 -1 -2 0 -8 Z" fill="var(--c-accent)"/></g>
+<g style="animation:fct-asst-ty1 16.0s ease-out infinite;opacity:0;transform:translateY(6px)"><rect x="90" y="178" width="58" height="30" rx="15" fill="var(--c-soft)"/><circle cx="106" cy="193" r="3.2" fill="var(--c-accent-ink)" opacity=".7"/><circle cx="119" cy="193" r="3.2" fill="var(--c-accent-ink)" opacity=".7"/><circle cx="132" cy="193" r="3.2" fill="var(--c-accent-ink)" opacity=".7"/></g>
+<g style="animation:fct-asst-ty2 16.0s ease-out infinite;opacity:0;transform:translateY(6px)"><rect x="90" y="338" width="58" height="30" rx="15" fill="var(--c-soft)"/><circle cx="106" cy="353" r="3.2" fill="var(--c-accent-ink)" opacity=".7"/><circle cx="119" cy="353" r="3.2" fill="var(--c-accent-ink)" opacity=".7"/><circle cx="132" cy="353" r="3.2" fill="var(--c-accent-ink)" opacity=".7"/></g>
+<rect x="56" y="444" width="368" height="40" rx="20" fill="var(--c-deep)" stroke="var(--c-line)"/>
+<text x="76" y="469" font-size="13" style="fill:var(--c-muted)">Ask about your data…</text>
+<g style="animation:fct-asst-pA 16.0s ease-out infinite;opacity:0">
+<rect class="card" x="480" y="40" width="440" height="460" rx="16"/>
+<text x="504" y="71" font-size="15.5" font-weight="700">Equipment · tents</text>
+<text x="504" y="89" font-size="12" style="fill:var(--c-muted)">read with Nadia's role · 14 June</text>
+<line x1="480" y1="110" x2="920" y2="110" stroke="var(--c-hair)"/>
+<rect x="498" y="124" width="404" height="44" rx="10" fill="var(--c-deep)"/>
+<text x="518" y="151" font-size="14" font-weight="650">Marquee 6 × 12 m</text>
+<rect x="828" y="135" width="56" height="22" rx="11" fill="var(--c-ok-soft)" stroke="var(--c-ok)"/><text x="856" y="150" text-anchor="middle" font-size="11.5" font-weight="700" style="fill:var(--c-ok)">free</text>
+<rect x="498" y="124" width="404" height="44" rx="10" fill="none" stroke="var(--c-accent)" stroke-width="2" style="animation:fct-asst-hl0 16.0s ease-out infinite;opacity:0"/>
+<g style="animation:fct-asst-ck0 16.0s ease-out infinite;opacity:0"><circle cx="498" cy="146" r="8" fill="var(--c-accent)"/><path d="M494.5 146 L497 148.5 L501.5 143.5" fill="none" stroke="var(--c-on-accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<rect x="498" y="180" width="404" height="44" rx="10" fill="var(--c-deep)"/>
+<text x="518" y="207" font-size="14" font-weight="650">Marquee 4 × 8 m</text>
+<rect x="828" y="191" width="56" height="22" rx="11" fill="var(--c-ok-soft)" stroke="var(--c-ok)"/><text x="856" y="206" text-anchor="middle" font-size="11.5" font-weight="700" style="fill:var(--c-ok)">free</text>
+<rect x="498" y="180" width="404" height="44" rx="10" fill="none" stroke="var(--c-accent)" stroke-width="2" style="animation:fct-asst-hl1 16.0s ease-out infinite;opacity:0"/>
+<g style="animation:fct-asst-ck1 16.0s ease-out infinite;opacity:0"><circle cx="498" cy="202" r="8" fill="var(--c-accent)"/><path d="M494.5 202 L497 204.5 L501.5 199.5" fill="none" stroke="var(--c-on-accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<rect x="498" y="236" width="404" height="44" rx="10" fill="var(--c-deep)"/>
+<text x="518" y="263" font-size="14" font-weight="650">Stretch tent 10 × 15 m</text>
+<rect x="816" y="247" width="68" height="22" rx="11" fill="none" stroke="var(--c-line)"/><text x="850" y="262" text-anchor="middle" font-size="11.5" font-weight="700" style="fill:var(--c-muted)">booked</text>
+<g style="animation:fct-asst-ck2 16.0s ease-out infinite;opacity:0"><circle cx="498" cy="258" r="8" fill="var(--c-accent)"/><path d="M494.5 258 L497 260.5 L501.5 255.5" fill="none" stroke="var(--c-on-accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<rect x="498" y="292" width="404" height="44" rx="10" fill="none" stroke="var(--c-line)" stroke-dasharray="4 4"/>
+<rect x="518" y="310" width="150" height="8" rx="4" fill="var(--c-line)" opacity=".6"/>
+<g transform="translate(742,313)"><rect x="-6" y="-2" width="12" height="9" rx="2" fill="var(--c-muted)"/><path d="M-3.5 -2 V-4.5 a3.5 3.5 0 0 1 7 0 V-2" fill="none" stroke="var(--c-muted)" stroke-width="1.7"/></g>
+<text x="884" y="318" text-anchor="end" font-size="11.5" font-style="italic" style="fill:var(--c-muted)">outside Nadia's role</text>
+<g style="animation:fct-asst-lk3 16.0s ease-out infinite;opacity:0"><rect x="498" y="292" width="404" height="44" rx="10" fill="none" stroke="var(--c-alert)" stroke-opacity=".7" stroke-width="1.5"/></g>
+<rect x="498" y="348" width="404" height="44" rx="10" fill="var(--c-deep)"/>
+<text x="518" y="375" font-size="14" font-weight="650">Pagoda 5 × 5 m</text>
+<rect x="828" y="359" width="56" height="22" rx="11" fill="var(--c-ok-soft)" stroke="var(--c-ok)"/><text x="856" y="374" text-anchor="middle" font-size="11.5" font-weight="700" style="fill:var(--c-ok)">free</text>
+<rect x="498" y="348" width="404" height="44" rx="10" fill="none" stroke="var(--c-accent)" stroke-width="2" style="animation:fct-asst-hl4 16.0s ease-out infinite;opacity:0"/>
+<g style="animation:fct-asst-ck4 16.0s ease-out infinite;opacity:0"><circle cx="498" cy="370" r="8" fill="var(--c-accent)"/><path d="M494.5 370 L497 372.5 L501.5 367.5" fill="none" stroke="var(--c-on-accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<rect x="498" y="404" width="404" height="44" rx="10" fill="none" stroke="var(--c-line)" stroke-dasharray="4 4"/>
+<rect x="518" y="422" width="150" height="8" rx="4" fill="var(--c-line)" opacity=".6"/>
+<g transform="translate(742,425)"><rect x="-6" y="-2" width="12" height="9" rx="2" fill="var(--c-muted)"/><path d="M-3.5 -2 V-4.5 a3.5 3.5 0 0 1 7 0 V-2" fill="none" stroke="var(--c-muted)" stroke-width="1.7"/></g>
+<text x="884" y="430" text-anchor="end" font-size="11.5" font-style="italic" style="fill:var(--c-muted)">outside Nadia's role</text>
+<g style="animation:fct-asst-lk5 16.0s ease-out infinite;opacity:0"><rect x="498" y="404" width="404" height="44" rx="10" fill="none" stroke="var(--c-alert)" stroke-opacity=".7" stroke-width="1.5"/></g>
+<g style="animation:fct-asst-scan 16.0s linear infinite;opacity:0"><line x1="488" y1="124" x2="912" y2="124" stroke="var(--c-accent)" stroke-width="2" stroke-opacity=".8"/><rect x="488" y="110" width="424" height="14" fill="var(--c-accent)" opacity=".08"/><path transform="translate(906,124) scale(0.8)" d="M0 -8 C1 -2 2 -1 8 0 C2 1 1 2 0 8 C-1 2 -2 1 -8 0 C-2 -1 -1 -2 0 -8 Z" fill="var(--c-accent)"/></g>
+</g>
+<g style="animation:fct-asst-pB 16.0s ease-out infinite;opacity:0">
+<rect class="card" x="480" y="40" width="440" height="460" rx="16"/>
+<text x="504" y="71" font-size="15.5" font-weight="700">Booking · BK-0412</text>
+<text x="504" y="89" font-size="12" style="fill:var(--c-muted)">Domaine des Pins · 14 June</text>
+<line x1="480" y1="110" x2="920" y2="110" stroke="var(--c-hair)"/>
+<text x="504" y="140" font-size="11.5" style="fill:var(--c-muted)">Note</text>
+<rect x="498" y="150" width="404" height="36" rx="9" fill="none" stroke="var(--c-line)" stroke-dasharray="4 4"/>
+<g style="animation:fct-asst-note 16.0s ease-out infinite;opacity:0"><rect x="498" y="150" width="404" height="36" rx="9" fill="var(--c-soft)" stroke="var(--c-accent)"/><text x="514" y="173" font-size="14" font-weight="650">Deliver by 9 am</text></g>
+<text x="504" y="222" font-size="12" font-weight="700" letter-spacing="1" style="fill:var(--c-muted)">HISTORY</text>
+<line x1="514" y1="242" x2="514" y2="470" stroke="var(--c-line)" stroke-width="2.5"/>
+<g><circle cx="514" cy="270" r="7" fill="var(--c-card)" stroke="var(--c-line)" stroke-width="2.5"/><rect x="536" y="242" width="366" height="56" rx="11" fill="var(--c-deep)" stroke="var(--c-line)"/><circle cx="562" cy="270" r="15" fill="var(--c-card)"/><circle cx="562" cy="266" r="5" fill="var(--c-gold)"/><path d="M553 280 a9 7 0 0 1 18 0" fill="var(--c-gold)"/><text x="588" y="266" font-size="12" font-weight="700" style="fill:var(--c-accent-ink)">9:14</text><text x="588" y="284" font-size="13.5" font-weight="650">Nadia <tspan font-weight="400">created it</tspan></text></g>
+<g><circle cx="514" cy="338" r="7" fill="var(--c-card)" stroke="var(--c-line)" stroke-width="2.5"/><rect x="536" y="310" width="366" height="56" rx="11" fill="var(--c-deep)" stroke="var(--c-line)"/><circle cx="562" cy="338" r="15" fill="var(--c-card)"/><circle cx="562" cy="334" r="5" fill="var(--c-accent)"/><path d="M553 348 a9 7 0 0 1 18 0" fill="var(--c-accent)"/><text x="588" y="334" font-size="12" font-weight="700" style="fill:var(--c-accent-ink)">11:02</text><text x="588" y="352" font-size="13.5" font-weight="650">Tom <tspan font-weight="400">moved the date</tspan></text></g>
+<g style="animation:fct-asst-ne 16.0s ease-out infinite;opacity:0;transform:translateX(-10px)"><circle cx="514" cy="406" r="7" fill="var(--c-card)" stroke="var(--c-accent)" stroke-width="2.5"/><rect x="536" y="378" width="366" height="56" rx="11" fill="var(--c-deep)" stroke="var(--c-accent)" stroke-width="1.8"/><circle cx="562" cy="406" r="15" fill="var(--c-card)"/><circle cx="562" cy="402" r="5" fill="var(--c-gold)"/><path d="M553 416 a9 7 0 0 1 18 0" fill="var(--c-gold)"/><circle cx="574" cy="417" r="8" fill="var(--c-accent)" stroke="var(--c-deep)" stroke-width="2"/><path transform="translate(574,417) scale(0.55)" d="M0 -8 C1 -2 2 -1 8 0 C2 1 1 2 0 8 C-1 2 -2 1 -8 0 C-2 -1 -1 -2 0 -8 Z" fill="var(--c-on-accent)"/><text x="588" y="402" font-size="12" font-weight="700" style="fill:var(--c-accent-ink)">11:20</text><text x="588" y="420" font-size="13.5" font-weight="650">Nadia <tspan font-weight="400">added a note</tspan></text><rect x="792" y="394" width="98" height="24" rx="12" fill="var(--c-soft)" stroke="var(--c-accent)"/><path transform="translate(805,406) scale(0.55)" d="M0 -8 C1 -2 2 -1 8 0 C2 1 1 2 0 8 C-1 2 -2 1 -8 0 C-2 -1 -1 -2 0 -8 Z" fill="var(--c-accent-ink)"/><text x="850" y="410.5" text-anchor="middle" font-size="11.5" font-weight="700" style="fill:var(--c-accent-ink)">via assistant</text></g>
+</g>
+</svg>
