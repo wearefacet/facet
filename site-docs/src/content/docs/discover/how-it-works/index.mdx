@@ -9,30 +9,13 @@ sidebar:
   order: 0
 ---
 
+import Illustration from '../../../../components/Illustration.astro';
+
 Before the details, one picture. Here is what happens every time someone at Brightwater looks at, or changes, a record.
 
 *One door. One set of checks. One memory.*
 
-<!-- d2
-direction: down
-people: "People" {class: external}
-apps: "Apps" {class: external}
-agents: "AI agents" {class: external}
-door: "Sign in once. Facet knows who you are and which role you act as" {class: decision}
-checks: "Every read and write passes the role's checks"
-domains: "Domains: equipment, clients, rentals" {class: store}
-history: "Every change, remembered" {class: store}
-people -> door
-apps -> door
-agents -> door
-door -> checks
-checks -> domains
-checks -> history
--->
-<div class="d2-diagram">
-<img class="d2-diagram__img d2-diagram__light" src="/diagrams/b4865c1b-light.svg" alt="People" loading="lazy" />
-<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/b4865c1b-dark.svg" alt="People" loading="lazy" />
-</div>
+<Illustration name="how-it-works-one-door" />
 
 ## Five ideas, five short pages
 

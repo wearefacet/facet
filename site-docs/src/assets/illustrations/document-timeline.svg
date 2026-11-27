@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 470" class="fct-doc" role="img" aria-labelledby="fct-doc-t fct-doc-d">
+<title id="fct-doc-t">A document remembers its past</title>
+<desc id="fct-doc-d">A booking document for a marquee tent. At 9:14 Nadia creates it. At 11:02 Tom moves the date from 14 June to 21 June. At 11:05 Tom rolls that change back: the date returns to 14 June and his earlier change is marked as reverted. Every change stays on the record's timeline with a name and a time.</desc>
+<style>
+.fct-doc{--bg:var(--surface);--card:var(--surface);--ink:var(--text);--muted:var(--text-2);--line:var(--border-strong);--amber:var(--accent);--gold:var(--accent-ink);--light:var(--accent-press);--soft:var(--accent-weak);--alert:var(--danger);--slab:var(--text);--slabline:var(--text);}
+[data-theme='dark'] .fct-doc{--slab:var(--surface-2);--slabline:var(--border-strong);}
+.fct-doc text{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;fill:var(--ink);}
+.fct-doc .card{fill:var(--card);stroke:var(--line);stroke-width:1.5;}
+.fct-doc .bob,.fct-doc .pulse,.fct-doc .flow,.fct-doc .fade{transform-box:fill-box;transform-origin:center;}
+@keyframes fct-doc-bob{0%,100%{transform:translateY(0) rotate(var(--r,0deg))}50%{transform:translateY(-6px) rotate(calc(var(--r,0deg) * -1))}}
+@keyframes fct-doc-pulse{0%,100%{opacity:.25}50%{opacity:1}}
+@keyframes fct-doc-flow{to{stroke-dashoffset:-24}}
+@keyframes fct-doc-ck1{0%{opacity:0}3.33%{opacity:0}6.25%{opacity:1}27.50%{opacity:1}30.42%{opacity:0}100%{opacity:0}}
+@keyframes fct-doc-ck2{0%{opacity:0}28.33%{opacity:0}31.25%{opacity:1}57.50%{opacity:1}60.42%{opacity:0}100%{opacity:0}}
+@keyframes fct-doc-ck3{0%{opacity:0}58.33%{opacity:0}61.25%{opacity:1}94.17%{opacity:1}97.08%{opacity:0}100%{opacity:0}}
+@keyframes fct-doc-r0{0%{opacity:0;transform:translateY(6px)}5.00%{opacity:0;transform:translateY(6px)}7.92%{opacity:1;transform:translateY(0)}95.00%{opacity:1;transform:translateY(0)}97.92%{opacity:0;transform:translateY(6px)}100%{opacity:0;transform:translateY(6px)}}
+@keyframes fct-doc-r1{0%{opacity:0;transform:translateY(6px)}6.25%{opacity:0;transform:translateY(6px)}9.17%{opacity:1;transform:translateY(0)}95.00%{opacity:1;transform:translateY(0)}97.92%{opacity:0;transform:translateY(6px)}100%{opacity:0;transform:translateY(6px)}}
+@keyframes fct-doc-hl{0%,28.33%{opacity:0}30.00%{opacity:1}40.00%{opacity:0}58.33%{opacity:0}60.00%{opacity:1}70.00%,100%{opacity:0}}
+@keyframes fct-doc-d14{0%{opacity:0;transform:translateY(-8px)}7.50%{opacity:0;transform:translateY(-8px)}10.42%{opacity:1;transform:translateY(0)}28.33%{opacity:1;transform:translateY(0)}31.25%{opacity:0;transform:translateY(-8px)}59.17%{opacity:0;transform:translateY(-8px)}62.08%{opacity:1;transform:translateY(0)}95.00%{opacity:1;transform:translateY(0)}97.92%{opacity:0;transform:translateY(-8px)}100%{opacity:0;transform:translateY(-8px)}}
+@keyframes fct-doc-d21{0%{opacity:0;transform:translateY(8px)}29.17%{opacity:0;transform:translateY(8px)}32.08%{opacity:1;transform:translateY(0)}58.33%{opacity:1;transform:translateY(0)}61.25%{opacity:0;transform:translateY(8px)}100%{opacity:0;transform:translateY(8px)}}
+@keyframes fct-doc-st{0%{opacity:0;transform:translateY(6px)}8.75%{opacity:0;transform:translateY(6px)}11.67%{opacity:1;transform:translateY(0)}95.00%{opacity:1;transform:translateY(0)}97.92%{opacity:0;transform:translateY(6px)}100%{opacity:0;transform:translateY(6px)}}
+@keyframes fct-doc-grow{0%,3.33%{transform:scaleY(0)}8.33%{transform:scaleY(.2)}28.33%{transform:scaleY(.2)}33.33%{transform:scaleY(.6)}58.33%{transform:scaleY(.6)}63.33%,95.00%{transform:scaleY(1);opacity:1}97.92%,100%{transform:scaleY(1);opacity:0}}
+@keyframes fct-doc-e1{0%{opacity:0;transform:translateX(-10px)}5.83%{opacity:0;transform:translateX(-10px)}8.75%{opacity:1;transform:translateX(0)}95.00%{opacity:1;transform:translateX(0)}97.92%{opacity:0;transform:translateX(-10px)}100%{opacity:0;transform:translateX(-10px)}}
+@keyframes fct-doc-e2{0%{opacity:0;transform:translateX(-10px)}30.83%{opacity:0;transform:translateX(-10px)}33.75%{opacity:1;transform:translateX(0)}95.00%{opacity:1;transform:translateX(0)}97.92%{opacity:0;transform:translateX(-10px)}100%{opacity:0;transform:translateX(-10px)}}
+@keyframes fct-doc-e2box{0%,60.83%{stroke-dasharray:none;opacity:1}63.33%,100%{stroke-dasharray:5 4;opacity:.75}}
+@keyframes fct-doc-e3{0%{opacity:0;transform:translateX(-10px)}60.83%{opacity:0;transform:translateX(-10px)}63.75%{opacity:1;transform:translateX(0)}95.00%{opacity:1;transform:translateX(0)}97.92%{opacity:0;transform:translateX(-10px)}100%{opacity:0;transform:translateX(-10px)}}
+@keyframes fct-doc-rev{0%{opacity:0;transform:scale(.8)}65.83%{opacity:0;transform:scale(.8)}68.75%{opacity:1;transform:scale(1)}95.00%{opacity:1;transform:scale(1)}97.92%{opacity:0;transform:scale(.8)}100%{opacity:0;transform:scale(.8)}}
+@keyframes fct-doc-undo{0%,60.00%{stroke-dashoffset:220;opacity:1}65.83%{stroke-dashoffset:0}95.00%{stroke-dashoffset:0;opacity:1}97.92%,100%{stroke-dashoffset:0;opacity:0}}
+@keyframes fct-doc-head{0%{opacity:0}65.42%{opacity:0}68.33%{opacity:1}95.00%{opacity:1}97.92%{opacity:0}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.fct-doc *{animation:none!important}.fct-doc .smil{display:none}}
+</style>
+<rect class="card" x="60" y="70" width="350" height="330" rx="16"/>
+<path d="M76 70 H394 A16 16 0 0 1 410 86 V134 H60 V86 A16 16 0 0 1 76 70 Z" fill="var(--soft)"/>
+<line x1="60" y1="134" x2="410" y2="134" stroke="var(--line)" stroke-width="1.5"/>
+<g transform="translate(92,102)"><path d="M-8 -11 H3 L9 -5 V11 H-8 Z M3 -11 V-5 H9 M-4 1 H5 M-4 5 H3" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="114" y="99" font-size="17" font-weight="700">Booking</text>
+<text x="114" y="117" font-size="12" style="fill:var(--muted)">Rentals · BK-0412</text>
+<g transform="translate(372,102)"><circle r="8" fill="none" stroke="var(--gold)" stroke-width="1.8"/><path d="M0 -4.5 V0 L3 2" fill="none" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round"/></g>
+<text x="356" y="107" text-anchor="end" font-size="14" font-weight="700" style="fill:var(--gold);animation:fct-doc-ck1 12.0s ease-out infinite;opacity:0">9:14</text>
+<text x="356" y="107" text-anchor="end" font-size="14" font-weight="700" style="fill:var(--gold);animation:fct-doc-ck2 12.0s ease-out infinite;opacity:0">11:02</text>
+<text x="356" y="107" text-anchor="end" font-size="14" font-weight="700" style="fill:var(--gold);animation:fct-doc-ck3 12.0s ease-out infinite;opacity:0">11:05</text>
+<text x="88" y="172" font-size="12" style="fill:var(--muted)">Client</text>
+<text x="88" y="198" font-size="15.5" font-weight="650" style="animation:fct-doc-r0 12.0s ease-out infinite;opacity:0">Domaine des Pins</text>
+<text x="88" y="228" font-size="12" style="fill:var(--muted)">Item</text>
+<text x="88" y="254" font-size="15.5" font-weight="650" style="animation:fct-doc-r1 12.0s ease-out infinite;opacity:0">Marquee tent, 6 × 12 m</text>
+<text x="88" y="284" font-size="12" style="fill:var(--muted)">Date</text>
+<rect x="76" y="288" width="318" height="32" rx="8" fill="var(--soft)" stroke="var(--amber)" stroke-width="1.5" style="animation:fct-doc-hl 12.0s ease-out infinite;opacity:0"/>
+<g transform="translate(95,305)"><rect x="-7" y="-6" width="14" height="13" rx="2" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M-7 -1.5 H7 M-3.5 -9 V-4 M3.5 -9 V-4" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="110" y="310" font-size="15.5" font-weight="650" style="animation:fct-doc-d14 12.0s ease-out infinite;opacity:0">14 June</text>
+<text x="110" y="310" font-size="15.5" font-weight="650" style="fill:var(--gold);animation:fct-doc-d21 12.0s ease-out infinite;opacity:0">21 June</text>
+<text x="88" y="340" font-size="12" style="fill:var(--muted)">Status</text>
+<g style="animation:fct-doc-st 12.0s ease-out infinite;opacity:0"><rect x="88" y="350" width="104" height="24" rx="12" fill="var(--soft)"/><circle cx="102" cy="362" r="4" fill="var(--gold)"/><text x="112" y="367" font-size="13" font-weight="600">Confirmed</text></g>
+<path d="M410 235 C 450 235, 450 235, 488 235" fill="none" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="3 5"/>
+<line x1="510" y1="96" x2="510" y2="384" stroke="var(--line)" stroke-width="3" stroke-linecap="round"/>
+<line x1="510" y1="96" x2="510" y2="384" stroke="var(--amber)" stroke-width="3" stroke-linecap="round" style="transform-box:fill-box;transform-origin:top;animation:fct-doc-grow 12.0s ease-out infinite"/>
+<g style="animation:fct-doc-e1 12.0s ease-out infinite;opacity:0">
+<circle cx="510" cy="120" r="8" fill="var(--bg)" stroke="var(--gold)" stroke-width="3"/>
+<rect x="536" y="86" width="340" height="68" rx="12" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/>
+<circle cx="570" cy="120" r="18" fill="var(--soft)"/><circle cx="570" cy="115" r="6" fill="var(--gold)"/><path d="M559 132 a11 8 0 0 1 22 0" fill="var(--gold)"/>
+<text x="600" y="115" font-size="13" font-weight="700" style="fill:var(--gold)">9:14</text>
+<text x="600" y="135" font-size="15.5" font-weight="650">Nadia <tspan font-weight="400">created it</tspan></text>
+</g>
+<g style="animation:fct-doc-e2 12.0s ease-out infinite;opacity:0">
+<circle cx="510" cy="240" r="8" fill="var(--bg)" stroke="var(--gold)" stroke-width="3"/>
+<rect x="536" y="206" width="340" height="68" rx="12" fill="var(--card)" stroke="var(--line)" stroke-width="1.5" style="animation:fct-doc-e2box 12.0s linear infinite"/>
+<circle cx="570" cy="240" r="18" fill="var(--soft)"/><circle cx="570" cy="235" r="6" fill="var(--amber)"/><path d="M559 252 a11 8 0 0 1 22 0" fill="var(--amber)"/>
+<text x="600" y="235" font-size="13" font-weight="700" style="fill:var(--gold)">11:02</text>
+<text x="600" y="255" font-size="15.5" font-weight="650">Tom <tspan font-weight="400">moved the date</tspan></text>
+</g>
+<g style="animation:fct-doc-e3 12.0s ease-out infinite;opacity:0">
+<circle cx="510" cy="360" r="8" fill="var(--bg)" stroke="var(--gold)" stroke-width="3"/>
+<rect x="536" y="326" width="340" height="68" rx="12" fill="var(--card)" stroke="var(--amber)" stroke-width="2"/>
+<circle cx="570" cy="360" r="18" fill="var(--soft)"/><circle cx="570" cy="355" r="6" fill="var(--amber)"/><path d="M559 372 a11 8 0 0 1 22 0" fill="var(--amber)"/>
+<text x="600" y="355" font-size="13" font-weight="700" style="fill:var(--gold)">11:05</text>
+<text x="600" y="375" font-size="15.5" font-weight="650">Tom <tspan font-weight="400">rolled it back</tspan></text>
+<g transform="translate(850,360)"><path d="M-6 -5 A7 7 0 1 1 -7 3 M-6 -5 V-11 M-6 -5 H0" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+</g>
+<g style="animation:fct-doc-rev 12.0s ease-out infinite;opacity:0;transform-box:fill-box;transform-origin:center"><rect x="792" y="226" width="72" height="22" rx="11" fill="var(--bg)" stroke="var(--line)"/><text x="828" y="241" text-anchor="middle" font-size="11.5" font-weight="600" style="fill:var(--muted)">reverted</text></g>
+<path d="M876 352 C 930 340, 930 262, 880 250" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="220" stroke-dashoffset="220" style="animation:fct-doc-undo 12.0s ease-out infinite"/>
+<path d="M890 244 L879 250 L888 259" fill="none" stroke="var(--gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="animation:fct-doc-head 12.0s ease-out infinite;opacity:0"/>
+</svg>

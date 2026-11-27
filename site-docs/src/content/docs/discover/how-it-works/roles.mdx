@@ -9,23 +9,13 @@ sidebar:
   order: 3
 ---
 
+import Illustration from '../../../../components/Illustration.astro';
+
 Who may see which clients? Who may change a price, and who may not even see one? In Facet the answer attaches to a **role**: a named bundle of rules you give to a person's account.
 
 *A role decides the rows you may reach and the fields you may read. The checks run every time, on every surface.*
 
-<!-- d2
-direction: down
-tom: "Tom · sales" {class: external}
-tomrows: "His list shows only his five clients" {class: ok}
-lucia: "Lucía · warehouse" {class: external}
-luciafields: "She opens an item: no purchase price on the page" {class: ok}
-tom -> tomrows: "row rule"
-lucia -> luciafields: "field rule"
--->
-<div class="d2-diagram">
-<img class="d2-diagram__img d2-diagram__light" src="/diagrams/f572c5cd-light.svg" alt="Tom · sales" loading="lazy" />
-<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/f572c5cd-dark.svg" alt="Tom · sales" loading="lazy" />
-</div>
+<Illustration name="roles-rows-and-fields" />
 
 ## One role at a time
 

@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" class="fct-apps" role="img" aria-labelledby="fct-apps-t fct-apps-d">
+<title id="fct-apps-t">An app asks for rights; the person's role must have them</title>
+<desc id="fct-apps-d">The check-out app asks for four rights: see equipment items, mark an item checked out and read today's bookings are required; change booking dates is optional. When Lucía (warehouse role) signs in, her role has all three required rights, so the app opens; she lacks the optional one, so changing dates is switched off for her. Her other rights, logging repairs and seeing client addresses, are not asked for and never reach the app. When Tom (sales role) signs in, his role lacks the required right to mark items checked out, so the app does not open for him.</desc>
+<style>
+.fct-apps{--c-bg:var(--surface);--c-deep:var(--sunken);--c-card:var(--surface);--c-line:var(--border-strong);--c-hair:var(--border);--c-ink:var(--text);--c-muted:var(--text-2);--c-accent:var(--accent);--c-accent-ink:var(--accent-ink);--c-on-accent:var(--on-accent);--c-soft:var(--accent-weak);--c-ok:var(--ok);--c-ok-soft:var(--ok-weak);--c-alert:var(--danger);}
+.fct-apps text{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;fill:var(--c-ink);}
+.fct-apps .card{fill:var(--c-card);stroke:var(--c-line);stroke-width:1.5;}
+@keyframes fct-apps-lucard{0%,0.00%{opacity:0}1.88%,46.88%{opacity:1}48.75%,100%{opacity:0}}
+@keyframes fct-apps-lul0{0%,5.62%{stroke-dashoffset:200;opacity:1}8.44%,46.88%{stroke-dashoffset:0;opacity:1}48.75%,100%{stroke-dashoffset:0;opacity:0}}
+@keyframes fct-apps-lui0{0%,7.81%{opacity:0}9.69%,46.88%{opacity:1}48.75%,100%{opacity:0}}
+@keyframes fct-apps-lul1{0%,9.69%{stroke-dashoffset:200;opacity:1}12.50%,46.88%{stroke-dashoffset:0;opacity:1}48.75%,100%{stroke-dashoffset:0;opacity:0}}
+@keyframes fct-apps-lui1{0%,11.88%{opacity:0}13.75%,46.88%{opacity:1}48.75%,100%{opacity:0}}
+@keyframes fct-apps-lul2{0%,13.75%{stroke-dashoffset:200;opacity:1}16.56%,46.88%{stroke-dashoffset:0;opacity:1}48.75%,100%{stroke-dashoffset:0;opacity:0}}
+@keyframes fct-apps-lui2{0%,15.94%{opacity:0}17.81%,46.88%{opacity:1}48.75%,100%{opacity:0}}
+@keyframes fct-apps-lui3{0%,19.06%{opacity:0}20.94%,46.88%{opacity:1}48.75%,100%{opacity:0}}
+@keyframes fct-apps-luout{0%,24.38%{opacity:0}26.25%,46.88%{opacity:1}48.75%,100%{opacity:0}}
+@keyframes fct-apps-tocard{0%,50.00%{opacity:0}51.88%,96.88%{opacity:1}98.75%,100%{opacity:0}}
+@keyframes fct-apps-tol0{0%,55.62%{stroke-dashoffset:200;opacity:1}58.44%,96.88%{stroke-dashoffset:0;opacity:1}98.75%,100%{stroke-dashoffset:0;opacity:0}}
+@keyframes fct-apps-toi0{0%,57.81%{opacity:0}59.69%,96.88%{opacity:1}98.75%,100%{opacity:0}}
+@keyframes fct-apps-toi1{0%,60.94%{opacity:0}62.81%,96.88%{opacity:1}98.75%,100%{opacity:0}}
+@keyframes fct-apps-tol2{0%,63.75%{stroke-dashoffset:200;opacity:1}66.56%,96.88%{stroke-dashoffset:0;opacity:1}98.75%,100%{stroke-dashoffset:0;opacity:0}}
+@keyframes fct-apps-toi2{0%,65.94%{opacity:0}67.81%,96.88%{opacity:1}98.75%,100%{opacity:0}}
+@keyframes fct-apps-tol3{0%,67.81%{stroke-dashoffset:200;opacity:1}70.62%,96.88%{stroke-dashoffset:0;opacity:1}98.75%,100%{stroke-dashoffset:0;opacity:0}}
+@keyframes fct-apps-toi3{0%,70.00%{opacity:0}71.88%,96.88%{opacity:1}98.75%,100%{opacity:0}}
+@keyframes fct-apps-toout{0%,74.38%{opacity:0}76.25%,96.88%{opacity:1}98.75%,100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.fct-apps *{animation:none!important}.fct-apps .smil{display:none}}
+</style>
+<rect class="card" x="40" y="40" width="380" height="330" rx="14"/>
+<g transform="translate(70,74)"><rect x="-15" y="-15" width="30" height="30" rx="7" fill="var(--c-deep)" stroke="var(--c-line)"/><g transform="scale(.85)"><path d="M-8 -8 H2 V8 H-8 Z M5 -4 L9 0 L5 4 M-1 0 H9" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g></g>
+<text x="96" y="71" font-size="15.5" font-weight="700">Check-out app</text>
+<text x="96" y="89" font-size="12" style="fill:var(--c-muted)">asks Facet for</text>
+<line x1="40" y1="110" x2="420" y2="110" stroke="var(--c-hair)"/>
+<rect x="54" y="138" width="352" height="40" rx="10" fill="var(--c-deep)"/>
+<g transform="translate(76,158) scale(.75)"><path d="M-10 0 C-6 -7 6 -7 10 0 C6 7 -6 7 -10 0 Z" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle r="3" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="94" y="163" font-size="13.5" font-weight="650">See equipment items</text>
+<rect x="289.2" y="148" width="70.8" height="20" rx="10" fill="var(--c-soft)" stroke="var(--c-accent)"/><text x="324.6" y="162" text-anchor="middle" font-size="10.5" font-weight="700" letter-spacing=".6" style="fill:var(--c-accent-ink)">REQUIRED</text>
+<rect x="54" y="190" width="352" height="40" rx="10" fill="var(--c-deep)"/>
+<g transform="translate(76,210) scale(.75)"><path d="M-8 -8 H2 V8 H-8 Z M5 -4 L9 0 L5 4 M-1 0 H9" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="94" y="215" font-size="13.5" font-weight="650">Mark an item checked out</text>
+<rect x="289.2" y="200" width="70.8" height="20" rx="10" fill="var(--c-soft)" stroke="var(--c-accent)"/><text x="324.6" y="214" text-anchor="middle" font-size="10.5" font-weight="700" letter-spacing=".6" style="fill:var(--c-accent-ink)">REQUIRED</text>
+<rect x="54" y="242" width="352" height="40" rx="10" fill="var(--c-deep)"/>
+<g transform="translate(76,262) scale(.75)"><rect x="-8" y="-7" width="16" height="15" rx="2" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M-8 -2 H8 M-4 -10 V-5 M4 -10 V-5" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="94" y="267" font-size="13.5" font-weight="650">Read today's bookings</text>
+<rect x="289.2" y="252" width="70.8" height="20" rx="10" fill="var(--c-soft)" stroke="var(--c-accent)"/><text x="324.6" y="266" text-anchor="middle" font-size="10.5" font-weight="700" letter-spacing=".6" style="fill:var(--c-accent-ink)">REQUIRED</text>
+<rect x="54" y="294" width="352" height="40" rx="10" fill="var(--c-deep)"/>
+<g transform="translate(76,314) scale(.75)"><path d="M-7 7 L-6 2 L4 -8 L8 -4 L-2 6 Z" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="94" y="319" font-size="13.5" font-weight="650">Change booking dates</text>
+<rect x="289.2" y="304" width="70.8" height="20" rx="10" fill="none" stroke="var(--c-muted)" stroke-dasharray="3 2"/><text x="324.6" y="318" text-anchor="middle" font-size="10.5" font-weight="700" letter-spacing=".6" style="fill:var(--c-muted)">OPTIONAL</text>
+<g style="animation:fct-apps-lucard 16.0s ease-out infinite;opacity:0">
+<rect class="card" x="560" y="40" width="360" height="330" rx="14"/>
+<g transform="translate(590,74)"><circle r="16" fill="var(--c-deep)" stroke="var(--c-line)"/><circle cy="-4" r="5" fill="var(--c-muted)"/><path d="M-9 9 a9 7 0 0 1 18 0" fill="var(--c-muted)"/></g>
+<text x="616" y="71" font-size="15.5" font-weight="700">Lucía signs in</text>
+<text x="616" y="89" font-size="12" style="fill:var(--c-muted)">warehouse role allows</text>
+<line x1="560" y1="110" x2="920" y2="110" stroke="var(--c-hair)"/>
+<g opacity="1"><rect x="574" y="133" width="332" height="34" rx="9" fill="var(--c-deep)"/><g transform="translate(594,150) scale(.7)"><path d="M-10 0 C-6 -7 6 -7 10 0 C6 7 -6 7 -10 0 Z" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle r="3" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g><text x="610" y="154.5" font-size="13" font-weight="600">See equipment items</text></g>
+<g opacity="1"><rect x="574" y="177" width="332" height="34" rx="9" fill="var(--c-deep)"/><g transform="translate(594,194) scale(.7)"><path d="M-8 -8 H2 V8 H-8 Z M5 -4 L9 0 L5 4 M-1 0 H9" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g><text x="610" y="198.5" font-size="13" font-weight="600">Mark an item checked out</text></g>
+<g opacity="1"><rect x="574" y="221" width="332" height="34" rx="9" fill="var(--c-deep)"/><g transform="translate(594,238) scale(.7)"><rect x="-8" y="-7" width="16" height="15" rx="2" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M-8 -2 H8 M-4 -10 V-5 M4 -10 V-5" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g><text x="610" y="242.5" font-size="13" font-weight="600">Read today's bookings</text></g>
+<g opacity=".5"><rect x="574" y="265" width="332" height="34" rx="9" fill="var(--c-deep)"/><g transform="translate(594,282) scale(.7)"><path d="M-7 7 L2 -2 M1 -8 a5 5 0 0 0 7 7 L5 2 L-1 -4 Z" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g><text x="610" y="286.5" font-size="13" font-weight="600">Log a repair</text></g>
+<text x="896" y="286" text-anchor="end" font-size="11" font-style="italic" style="fill:var(--c-muted)">not asked, not shared</text>
+<g opacity=".5"><rect x="574" y="309" width="332" height="34" rx="9" fill="var(--c-deep)"/><g transform="translate(594,326) scale(.7)"><path d="M0 9 C-6 2 -7 -1 -7 -3 a7 7 0 0 1 14 0 C7 -1 6 2 0 9 Z" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cy="-3" r="2.2" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g><text x="610" y="330.5" font-size="13" font-weight="600">See client addresses</text></g>
+<text x="896" y="330" text-anchor="end" font-size="11" font-style="italic" style="fill:var(--c-muted)">not asked, not shared</text>
+</g>
+<path d="M420 158 C 490 158, 490 150, 560 150" fill="none" stroke="var(--c-ok)" stroke-width="2" stroke-dasharray="200" stroke-dashoffset="200" style="animation:fct-apps-lul0 16.0s ease-out infinite"/>
+<g style="animation:fct-apps-lui0 16.0s ease-out infinite;opacity:0"><circle cx="420" cy="158" r="11" fill="var(--c-ok)"/><path d="M415.5 158 L419 161.5 L425 154.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<path d="M420 210 C 490 210, 490 194, 560 194" fill="none" stroke="var(--c-ok)" stroke-width="2" stroke-dasharray="200" stroke-dashoffset="200" style="animation:fct-apps-lul1 16.0s ease-out infinite"/>
+<g style="animation:fct-apps-lui1 16.0s ease-out infinite;opacity:0"><circle cx="420" cy="210" r="11" fill="var(--c-ok)"/><path d="M415.5 210 L419 213.5 L425 206.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<path d="M420 262 C 490 262, 490 238, 560 238" fill="none" stroke="var(--c-ok)" stroke-width="2" stroke-dasharray="200" stroke-dashoffset="200" style="animation:fct-apps-lul2 16.0s ease-out infinite"/>
+<g style="animation:fct-apps-lui2 16.0s ease-out infinite;opacity:0"><circle cx="420" cy="262" r="11" fill="var(--c-ok)"/><path d="M415.5 262 L419 265.5 L425 258.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g style="animation:fct-apps-lui3 16.0s ease-out infinite;opacity:0"><rect x="54" y="294" width="352" height="40" rx="10" fill="var(--c-bg)" fill-opacity=".6" stroke="var(--c-muted)" stroke-dasharray="4 3"/><circle cx="420" cy="314" r="11" fill="var(--c-muted)"/><path d="M416 314 H424" stroke="#fff" stroke-width="2" stroke-linecap="round"/><text x="438" y="318" font-size="11.5" font-weight="700" style="fill:var(--c-muted)">switched off</text></g>
+<g style="animation:fct-apps-luout 16.0s ease-out infinite;opacity:0">
+<rect x="40" y="398" width="880" height="126" rx="14" fill="var(--c-ok-soft)" stroke="var(--c-ok)" stroke-width="1.5"/>
+<circle cx="74" cy="430" r="13" fill="var(--c-ok)"/><path d="M68 430 L72 434 L80 426" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="98" y="428" font-size="15" font-weight="700">The app opens for Lucía</text>
+<text x="98" y="448" font-size="12.5" style="fill:var(--c-muted)">Every required right is in her role. The optional one is not, so that button is off.</text>
+<rect x="98" y="470" width="89" height="34" rx="9" fill="var(--c-accent)"/><text x="142.3" y="492" text-anchor="middle" font-size="13" font-weight="700" style="fill:var(--c-on-accent)">Check out</text>
+<rect x="198.60000000000002" y="470" width="140" height="34" rx="9" fill="var(--c-accent)"/><text x="268.8" y="492" text-anchor="middle" font-size="13" font-weight="700" style="fill:var(--c-on-accent)">Today's bookings</text>
+<rect x="351.0" y="470" width="103" height="34" rx="9" fill="none" stroke="var(--c-muted)" stroke-dasharray="4 3"/><text x="402.7" y="492" text-anchor="middle" font-size="13" font-weight="700" style="fill:var(--c-muted)">Change date</text>
+<g transform="translate(468,487)"><rect x="-5" y="-2" width="10" height="8" rx="1.5" fill="var(--c-muted)"/><path d="M-3 -2 V-4.5 a3 3 0 0 1 6 0 V-2" fill="none" stroke="var(--c-muted)" stroke-width="1.6"/></g>
+</g>
+<g style="animation:fct-apps-tocard 16.0s ease-out infinite;opacity:0">
+<rect class="card" x="560" y="40" width="360" height="330" rx="14"/>
+<g transform="translate(590,74)"><circle r="16" fill="var(--c-deep)" stroke="var(--c-line)"/><circle cy="-4" r="5" fill="var(--c-accent)"/><path d="M-9 9 a9 7 0 0 1 18 0" fill="var(--c-accent)"/></g>
+<text x="616" y="71" font-size="15.5" font-weight="700">Tom signs in</text>
+<text x="616" y="89" font-size="12" style="fill:var(--c-muted)">sales role allows</text>
+<line x1="560" y1="110" x2="920" y2="110" stroke="var(--c-hair)"/>
+<g opacity="1"><rect x="574" y="133" width="332" height="34" rx="9" fill="var(--c-deep)"/><g transform="translate(594,150) scale(.7)"><path d="M-10 0 C-6 -7 6 -7 10 0 C6 7 -6 7 -10 0 Z" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle r="3" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g><text x="610" y="154.5" font-size="13" font-weight="600">See equipment items</text></g>
+<g opacity="1"><rect x="574" y="177" width="332" height="34" rx="9" fill="var(--c-deep)"/><g transform="translate(594,194) scale(.7)"><rect x="-8" y="-7" width="16" height="15" rx="2" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M-8 -2 H8 M-4 -10 V-5 M4 -10 V-5" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g><text x="610" y="198.5" font-size="13" font-weight="600">Read today's bookings</text></g>
+<g opacity="1"><rect x="574" y="221" width="332" height="34" rx="9" fill="var(--c-deep)"/><g transform="translate(594,238) scale(.7)"><path d="M-7 7 L-6 2 L4 -8 L8 -4 L-2 6 Z" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g><text x="610" y="242.5" font-size="13" font-weight="600">Change booking dates</text></g>
+<g opacity=".5"><rect x="574" y="265" width="332" height="34" rx="9" fill="var(--c-deep)"/><g transform="translate(594,282) scale(.7)"><path d="M0 9 C-6 2 -7 -1 -7 -3 a7 7 0 0 1 14 0 C7 -1 6 2 0 9 Z" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cy="-3" r="2.2" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g><text x="610" y="286.5" font-size="13" font-weight="600">See client addresses</text></g>
+<text x="896" y="286" text-anchor="end" font-size="11" font-style="italic" style="fill:var(--c-muted)">not asked, not shared</text>
+<g opacity=".5"><rect x="574" y="309" width="332" height="34" rx="9" fill="var(--c-deep)"/><g transform="translate(594,326) scale(.7)"><path d="M-6 -8 H6 V8 H-6 Z M-3 -3 H3 M-3 1 H3 M-3 5 H1" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g><text x="610" y="330.5" font-size="13" font-weight="600">Edit quotes</text></g>
+<text x="896" y="330" text-anchor="end" font-size="11" font-style="italic" style="fill:var(--c-muted)">not asked, not shared</text>
+</g>
+<path d="M420 158 C 490 158, 490 150, 560 150" fill="none" stroke="var(--c-ok)" stroke-width="2" stroke-dasharray="200" stroke-dashoffset="200" style="animation:fct-apps-tol0 16.0s ease-out infinite"/>
+<g style="animation:fct-apps-toi0 16.0s ease-out infinite;opacity:0"><circle cx="420" cy="158" r="11" fill="var(--c-ok)"/><path d="M415.5 158 L419 161.5 L425 154.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g style="animation:fct-apps-toi1 16.0s ease-out infinite;opacity:0"><rect x="54" y="190" width="352" height="40" rx="10" fill="none" stroke="var(--c-alert)" stroke-width="2"/><circle cx="420" cy="210" r="11" fill="var(--c-alert)"/><path d="M416.5 206.5 L423.5 213.5 M423.5 206.5 L416.5 213.5" stroke="#fff" stroke-width="2" stroke-linecap="round"/><text x="438" y="214" font-size="11.5" font-weight="700" style="fill:var(--c-alert)">missing</text></g>
+<path d="M420 262 C 490 262, 490 194, 560 194" fill="none" stroke="var(--c-ok)" stroke-width="2" stroke-dasharray="200" stroke-dashoffset="200" style="animation:fct-apps-tol2 16.0s ease-out infinite"/>
+<g style="animation:fct-apps-toi2 16.0s ease-out infinite;opacity:0"><circle cx="420" cy="262" r="11" fill="var(--c-ok)"/><path d="M415.5 262 L419 265.5 L425 258.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<path d="M420 314 C 490 314, 490 238, 560 238" fill="none" stroke="var(--c-ok)" stroke-width="2" stroke-dasharray="200" stroke-dashoffset="200" style="animation:fct-apps-tol3 16.0s ease-out infinite"/>
+<g style="animation:fct-apps-toi3 16.0s ease-out infinite;opacity:0"><circle cx="420" cy="314" r="11" fill="var(--c-ok)"/><path d="M415.5 314 L419 317.5 L425 310.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g style="animation:fct-apps-toout 16.0s ease-out infinite;opacity:0">
+<rect x="40" y="398" width="880" height="126" rx="14" fill="var(--c-alert)" fill-opacity=".1" stroke="var(--c-alert)" stroke-width="1.5"/>
+<circle cx="74" cy="430" r="13" fill="var(--c-alert)"/><path d="M69 425 L79 435 M79 425 L69 435" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+<text x="98" y="428" font-size="15" font-weight="700">The app does not open for Tom</text>
+<text x="98" y="448" font-size="12.5" style="fill:var(--c-muted)">His role is missing a required right: mark an item checked out. Facet stops at the door.</text>
+<rect x="98" y="470" width="300" height="34" rx="9" fill="var(--c-deep)" stroke="var(--c-line)"/>
+<text x="114" y="492" font-size="13" style="fill:var(--c-muted)">This app needs rights your role doesn't have.</text>
+</g>
+</svg>

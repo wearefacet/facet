@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 640" class="fct-flow" role="img" aria-labelledby="fct-flow-t fct-flow-d">
+<title id="fct-flow-t">One door, one set of checks, one memory</title>
+<desc id="fct-flow-d">People, apps and AI agents all reach Facet through the same door: sign in once and Facet knows who you are and which role you act as. Every read and write then passes that role's checks. Allowed requests reach the domains (equipment, clients, rentals); every change is also remembered. A request the role does not allow is refused at the checks.</desc>
+<style>
+.fct-flow{--bg:var(--surface);--card:var(--surface);--ink:var(--text);--muted:var(--text-2);--line:var(--border-strong);--amber:var(--accent);--gold:var(--accent-ink);--light:var(--accent-press);--soft:var(--accent-weak);--alert:var(--danger);--slab:var(--text);--slabline:var(--text);}
+[data-theme='dark'] .fct-flow{--slab:var(--surface-2);--slabline:var(--border-strong);}
+.fct-flow text{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;fill:var(--ink);}
+.fct-flow .card{fill:var(--card);stroke:var(--line);stroke-width:1.5;}
+.fct-flow .bob,.fct-flow .pulse,.fct-flow .flow,.fct-flow .fade{transform-box:fill-box;transform-origin:center;}
+@keyframes fct-flow-bob{0%,100%{transform:translateY(0) rotate(var(--r,0deg))}50%{transform:translateY(-6px) rotate(calc(var(--r,0deg) * -1))}}
+@keyframes fct-flow-pulse{0%,100%{opacity:.25}50%{opacity:1}}
+@keyframes fct-flow-flow{to{stroke-dashoffset:-24}}
+@keyframes fct-flow-door{0%{stroke:var(--line)}5.84%{stroke:var(--line)}6.25%{stroke:var(--amber)}10.42%{stroke:var(--amber)}13.75%{stroke:var(--line)}27.01%{stroke:var(--line)}27.42%{stroke:var(--amber)}31.59%{stroke:var(--amber)}34.92%{stroke:var(--line)}55.84%{stroke:var(--line)}56.25%{stroke:var(--amber)}60.42%{stroke:var(--amber)}63.75%{stroke:var(--line)}85.17%{stroke:var(--line)}85.59%{stroke:var(--amber)}89.76%{stroke:var(--amber)}93.09%{stroke:var(--line)}100%{stroke:var(--line)}}
+@keyframes fct-flow-chk{0%{stroke:var(--line)}10.26%{stroke:var(--line)}10.67%{stroke:var(--amber)}14.84%{stroke:var(--amber)}18.17%{stroke:var(--line)}32.66%{stroke:var(--line)}33.07%{stroke:var(--amber)}37.24%{stroke:var(--amber)}40.57%{stroke:var(--line)}60.26%{stroke:var(--line)}60.67%{stroke:var(--amber)}64.84%{stroke:var(--amber)}68.17%{stroke:var(--line)}100%{stroke:var(--line)}}
+@keyframes fct-flow-deny{0%{stroke:transparent}94.58%{stroke:transparent}95.00%{stroke:var(--alert)}1.67%{stroke:var(--alert)}5.00%{stroke:transparent}100%{stroke:transparent}}
+@keyframes fct-flow-x{0%{opacity:0}94.58%{opacity:0}95.00%{opacity:1}1.67%{opacity:1}5.00%{opacity:0}100%{opacity:0}}
+@keyframes fct-flow-tick{0%{opacity:0}11.51%{opacity:0}11.92%{opacity:1}15.26%{opacity:1}18.59%{opacity:0}33.91%{opacity:0}34.32%{opacity:1}37.66%{opacity:1}40.99%{opacity:0}61.51%{opacity:0}61.92%{opacity:1}65.26%{opacity:1}68.59%{opacity:0}100%{opacity:0}}
+@keyframes fct-flow-c0{0%{fill:var(--bg);stroke:var(--line)}44.58%{fill:var(--bg);stroke:var(--line)}45.00%{fill:var(--soft);stroke:var(--amber)}50.83%{fill:var(--soft);stroke:var(--amber)}54.17%{fill:var(--bg);stroke:var(--line)}100%{fill:var(--bg);stroke:var(--line)}}
+@keyframes fct-flow-c1{0%{fill:var(--bg);stroke:var(--line)}69.58%{fill:var(--bg);stroke:var(--line)}70.00%{fill:var(--soft);stroke:var(--amber)}75.83%{fill:var(--soft);stroke:var(--amber)}79.17%{fill:var(--bg);stroke:var(--line)}100%{fill:var(--bg);stroke:var(--line)}}
+@keyframes fct-flow-c2{0%{fill:var(--bg);stroke:var(--line)}19.58%{fill:var(--bg);stroke:var(--line)}20.00%{fill:var(--soft);stroke:var(--amber)}25.83%{fill:var(--soft);stroke:var(--amber)}29.17%{fill:var(--bg);stroke:var(--line)}100%{fill:var(--bg);stroke:var(--line)}}
+@keyframes fct-flow-log{0%,19.58%{transform:translateY(0)}22.92%,69.58%{transform:translateY(22px)}72.92%,96%{transform:translateY(44px);opacity:1}98%{transform:translateY(44px);opacity:0}99%{transform:translateY(0);opacity:0}100%{transform:translateY(0);opacity:1}}
+@keyframes fct-flow-new1{0%{fill:var(--muted)}19.58%{fill:var(--muted)}20.00%{fill:var(--amber)}30.00%{fill:var(--amber)}33.33%{fill:var(--muted)}100%{fill:var(--muted)}}
+@keyframes fct-flow-new2{0%{fill:var(--muted)}69.58%{fill:var(--muted)}70.00%{fill:var(--amber)}80.00%{fill:var(--amber)}83.33%{fill:var(--muted)}100%{fill:var(--muted)}}
+@media (prefers-reduced-motion:reduce){.fct-flow *{animation:none!important}.fct-flow .smil{display:none}}
+</style>
+<path d="M300 100 C 300 135, 480 125, 480 160" fill="none" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="3 5"/>
+<path d="M480 100 C 480 135, 480 125, 480 160" fill="none" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="3 5"/>
+<path d="M660 100 C 660 135, 480 125, 480 160" fill="none" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="3 5"/>
+<path d="M480 240 V300" fill="none" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="3 5"/>
+<path d="M480 372 C 480 410, 280 410, 280 450" fill="none" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="3 5"/>
+<path d="M480 372 C 480 410, 680 410, 680 450" fill="none" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="3 5"/>
+<g class="smil" opacity="0"><rect x="-13" y="-7" width="26" height="14" rx="7" stroke-width="2.5" fill="var(--muted)" stroke="var(--muted)"><animate attributeName="opacity" dur="12.0s" begin="0.0s" repeatCount="indefinite" values="1;0;0" keyTimes="0;0.0878;1" calcMode="discrete"/></rect><rect x="-13" y="-7" width="26" height="14" rx="7" stroke-width="2.5" fill="var(--amber)" stroke="var(--gold)" opacity="0"><animate attributeName="opacity" dur="12.0s" begin="0.0s" repeatCount="indefinite" values="0;1;1" keyTimes="0;0.0878;1" calcMode="discrete"/></rect><animateMotion dur="12.0s" begin="0.0s" repeatCount="indefinite" path="M300 100 C 300 135, 480 125, 480 160 V372 C 480 410, 280 410, 280 450" keyPoints="0;1;1" keyTimes="0;0.2000;1" calcMode="linear"/><animate attributeName="opacity" dur="12.0s" begin="0.0s" repeatCount="indefinite" values="0;1;1;0;0" keyTimes="0;.01;0.1950;0.2100;1"/></g>
+<g class="smil" opacity="0"><path d="M0 -8 L7 0 L0 8 L-7 0 Z" fill="var(--gold)"/><animateMotion dur="12.0s" begin="1.554s" repeatCount="indefinite" path="M480 372 C 480 410, 680 410, 680 450" keyPoints="0;1;1" keyTimes="0;0.0705;1" calcMode="linear"/><animate attributeName="opacity" dur="12.0s" begin="1.554s" repeatCount="indefinite" values="0;1;1;0;0" keyTimes="0;.01;0.0655;0.0805;1"/></g>
+<g class="smil" opacity="0"><rect x="-13" y="-7" width="26" height="14" rx="7" stroke-width="2.5" fill="var(--muted)" stroke="var(--muted)"><animate attributeName="opacity" dur="12.0s" begin="3.0s" repeatCount="indefinite" values="1;0;0" keyTimes="0;0.0565;1" calcMode="discrete"/></rect><rect x="-13" y="-7" width="26" height="14" rx="7" stroke-width="2.5" fill="none" stroke="var(--gold)" opacity="0"><animate attributeName="opacity" dur="12.0s" begin="3.0s" repeatCount="indefinite" values="0;1;1" keyTimes="0;0.0565;1" calcMode="discrete"/></rect><animateMotion dur="12.0s" begin="3.0s" repeatCount="indefinite" path="M480 100 C 480 135, 480 125, 480 160 V372 C 480 410, 280 410, 280 450" keyPoints="0;1;1" keyTimes="0;0.2000;1" calcMode="linear"/><animate attributeName="opacity" dur="12.0s" begin="3.0s" repeatCount="indefinite" values="0;1;1;0;0" keyTimes="0;.01;0.1950;0.2100;1"/></g>
+<g class="smil" opacity="0"><rect x="-13" y="-7" width="26" height="14" rx="7" stroke-width="2.5" fill="var(--muted)" stroke="var(--muted)"><animate attributeName="opacity" dur="12.0s" begin="6.0s" repeatCount="indefinite" values="1;0;0" keyTimes="0;0.0878;1" calcMode="discrete"/></rect><rect x="-13" y="-7" width="26" height="14" rx="7" stroke-width="2.5" fill="var(--amber)" stroke="var(--gold)" opacity="0"><animate attributeName="opacity" dur="12.0s" begin="6.0s" repeatCount="indefinite" values="0;1;1" keyTimes="0;0.0878;1" calcMode="discrete"/></rect><animateMotion dur="12.0s" begin="6.0s" repeatCount="indefinite" path="M660 100 C 660 135, 480 125, 480 160 V372 C 480 410, 280 410, 280 450" keyPoints="0;1;1" keyTimes="0;0.2000;1" calcMode="linear"/><animate attributeName="opacity" dur="12.0s" begin="6.0s" repeatCount="indefinite" values="0;1;1;0;0" keyTimes="0;.01;0.1950;0.2100;1"/></g>
+<g class="smil" opacity="0"><path d="M0 -8 L7 0 L0 8 L-7 0 Z" fill="var(--gold)"/><animateMotion dur="12.0s" begin="7.554s" repeatCount="indefinite" path="M480 372 C 480 410, 680 410, 680 450" keyPoints="0;1;1" keyTimes="0;0.0705;1" calcMode="linear"/><animate attributeName="opacity" dur="12.0s" begin="7.554s" repeatCount="indefinite" values="0;1;1;0;0" keyTimes="0;.01;0.0655;0.0805;1"/></g>
+<g class="smil" opacity="0"><rect x="-13" y="-7" width="26" height="14" rx="7" stroke-width="2.5" fill="var(--muted)" stroke="var(--muted)"><animate attributeName="opacity" dur="12.0s" begin="9.0s" repeatCount="indefinite" values="1;0;0" keyTimes="0;0.1487;1" calcMode="discrete"/></rect><rect x="-13" y="-7" width="26" height="14" rx="7" stroke-width="2.5" fill="var(--amber)" stroke="var(--gold)" opacity="0"><animate attributeName="opacity" dur="12.0s" begin="9.0s" repeatCount="indefinite" values="0;1;1" keyTimes="0;0.1487;1" calcMode="discrete"/></rect><animateMotion dur="12.0s" begin="9.0s" repeatCount="indefinite" path="M300 100 C 300 135, 480 125, 480 160 V336" keyPoints="0;1;1" keyTimes="0;0.2000;1" calcMode="linear"/><animate attributeName="opacity" dur="12.0s" begin="9.0s" repeatCount="indefinite" values="0;1;1;0;0" keyTimes="0;.01;0.1950;0.2100;1"/></g>
+<rect class="card" x="228" y="36" width="144" height="64" rx="12"/>
+<g transform="translate(300,58)"><circle cx="0" cy="-4" r="4.5" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M-8 9 a8 7 0 0 1 16 0" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="300" y="88" text-anchor="middle" font-size="14.5" font-weight="600">People</text>
+<rect class="card" x="408" y="36" width="144" height="64" rx="12"/>
+<g transform="translate(480,58)"><rect x="-9" y="-8" width="18" height="16" rx="2.5" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M-9 -3 H9" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="480" y="88" text-anchor="middle" font-size="14.5" font-weight="600">Apps</text>
+<rect class="card" x="588" y="36" width="144" height="64" rx="12"/>
+<g transform="translate(660,58)"><path d="M0 -9 C1 -3 3 -1 9 0 C3 1 1 3 0 9 C-1 3 -3 1 -9 0 C-3 -1 -1 -3 0 -9 Z" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="660" y="88" text-anchor="middle" font-size="14.5" font-weight="600">AI agents</text>
+<text x="196" y="150" font-size="11.5" font-weight="700" letter-spacing="1.4" style="fill:var(--gold)">ONE DOOR</text>
+<rect x="190" y="160" width="580" height="80" rx="40" stroke-width="2" style="fill:var(--card);stroke:var(--line);animation:fct-flow-door 12.0s linear infinite"/>
+<circle cx="238" cy="200" r="24" fill="var(--soft)"/>
+<g transform="translate(238,200)"><rect x="-11" y="-8" width="22" height="16" rx="3" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="-4" cy="-1" r="2.6" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M-8 5 a4 3 0 0 1 8 0 M3 -2 H7 M3 2 H6" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="278" y="195" font-size="17" font-weight="700">Sign in once</text>
+<text x="278" y="218" font-size="13.5" style="fill:var(--muted)">Facet knows who you are and which role you act as</text>
+<text x="256" y="290" font-size="11.5" font-weight="700" letter-spacing="1.4" style="fill:var(--gold)">ONE SET OF CHECKS</text>
+<rect x="250" y="300" width="460" height="72" rx="14" stroke-width="2" style="fill:var(--card);stroke:var(--line);animation:fct-flow-chk 12.0s linear infinite"/>
+<rect x="250" y="300" width="460" height="72" rx="14" fill="none" stroke-width="2.5" style="stroke:transparent;animation:fct-flow-deny 12.0s linear infinite"/>
+<circle cx="292" cy="336" r="22" fill="var(--soft)"/>
+<path d="M292 323 L303 328 V336 C303 343 298 348 292 350 C286 348 281 343 281 336 V328 Z" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M287 336 L291 340 L298 332" fill="none" stroke="var(--gold)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="opacity:0;animation:fct-flow-tick 12.0s linear infinite"/>
+<text x="326" y="341" font-size="15.5" font-weight="700">Every read and write passes the role's checks</text>
+<g style="opacity:0;animation:fct-flow-x 12.0s linear infinite"><circle cx="732" cy="336" r="13" fill="var(--alert)"/><path d="M727 331 L737 341 M737 331 L727 341" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></g>
+<rect class="card" x="110" y="450" width="340" height="146" rx="14"/>
+<text x="132" y="482" font-size="16" font-weight="700">Domains</text>
+<rect x="128" y="500" width="96" height="78" rx="10" stroke-width="1.5" style="fill:var(--bg);stroke:var(--line);animation:fct-flow-c0 12.0s linear infinite"/>
+<g transform="translate(176,528)"><path d="M0 -9 L8 -4.5 V4.5 L0 9 L-8 4.5 V-4.5 Z M-8 -4.5 L0 0 L8 -4.5 M0 0 V9" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="176" y="562" text-anchor="middle" font-size="13" font-weight="600">Equipment</text>
+<rect x="232" y="500" width="96" height="78" rx="10" stroke-width="1.5" style="fill:var(--bg);stroke:var(--line);animation:fct-flow-c1 12.0s linear infinite"/>
+<g transform="translate(280,528)"><circle cx="0" cy="-4" r="4.5" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M-8 9 a8 7 0 0 1 16 0" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="280" y="562" text-anchor="middle" font-size="13" font-weight="600">Clients</text>
+<rect x="336" y="500" width="96" height="78" rx="10" stroke-width="1.5" style="fill:var(--bg);stroke:var(--line);animation:fct-flow-c2 12.0s linear infinite"/>
+<g transform="translate(384,528)"><rect x="-9" y="-7" width="18" height="16" rx="2.5" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M-9 -2 H9 M-4 -10 V-5 M4 -10 V-5" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="384" y="562" text-anchor="middle" font-size="13" font-weight="600">Rentals</text>
+<text x="516" y="440" font-size="11.5" font-weight="700" letter-spacing="1.4" style="fill:var(--gold)">ONE MEMORY</text>
+<rect class="card" x="510" y="450" width="340" height="146" rx="14"/>
+<text x="532" y="482" font-size="16" font-weight="700">Every change, remembered</text>
+<clipPath id="fct-flow-log"><rect x="526" y="496" width="310" height="92"/></clipPath>
+<line x1="542" y1="496" x2="542" y2="588" stroke="var(--line)" stroke-width="2"/>
+<g clip-path="url(#fct-flow-log)"><g style="animation:fct-flow-log 12.0s ease-out infinite">
+<circle cx="542" cy="466" r="4.5" style="fill:var(--muted);animation:fct-flow-new2 12.0s linear infinite"/>
+<rect x="556" y="462.5" width="150" height="7" rx="3.5" style="fill:var(--muted);animation:fct-flow-new2 12.0s linear infinite"/>
+<rect x="790" y="463" width="34" height="6" rx="3" fill="var(--line)"/>
+<circle cx="542" cy="488" r="4.5" style="fill:var(--muted);animation:fct-flow-new1 12.0s linear infinite"/>
+<rect x="556" y="484.5" width="120" height="7" rx="3.5" style="fill:var(--muted);animation:fct-flow-new1 12.0s linear infinite"/>
+<rect x="790" y="485" width="34" height="6" rx="3" fill="var(--line)"/>
+<circle cx="542" cy="510" r="4.5" style="fill:var(--muted)" opacity=".55"/>
+<rect x="556" y="506.5" width="170" height="7" rx="3.5" style="fill:var(--muted)" opacity=".55"/>
+<rect x="790" y="507" width="34" height="6" rx="3" fill="var(--line)"/>
+<circle cx="542" cy="532" r="4.5" style="fill:var(--muted)" opacity=".55"/>
+<rect x="556" y="528.5" width="110" height="7" rx="3.5" style="fill:var(--muted)" opacity=".55"/>
+<rect x="790" y="529" width="34" height="6" rx="3" fill="var(--line)"/>
+<circle cx="542" cy="554" r="4.5" style="fill:var(--muted)" opacity=".55"/>
+<rect x="556" y="550.5" width="140" height="7" rx="3.5" style="fill:var(--muted)" opacity=".55"/>
+<rect x="790" y="551" width="34" height="6" rx="3" fill="var(--line)"/>
+<circle cx="542" cy="576" r="4.5" style="fill:var(--muted)" opacity=".55"/>
+<rect x="556" y="572.5" width="160" height="7" rx="3.5" style="fill:var(--muted)" opacity=".55"/>
+<rect x="790" y="573" width="34" height="6" rx="3" fill="var(--line)"/>
+</g></g>
+<g transform="translate(330,622)">
+<rect x="-13" y="-7" width="26" height="14" rx="7" fill="none" stroke="var(--gold)" stroke-width="2.5"/><text x="20" y="4.5" font-size="12.5" style="fill:var(--muted)">read</text>
+<rect x="77" y="-7" width="26" height="14" rx="7" fill="var(--amber)" stroke="var(--gold)" stroke-width="2.5"/><text x="110" y="4.5" font-size="12.5" style="fill:var(--muted)">write</text>
+<path d="M180 -8 L187 0 L180 8 L173 0 Z" fill="var(--gold)"/><text x="196" y="4.5" font-size="12.5" style="fill:var(--muted)">change recorded</text>
+<circle cx="318" cy="0" r="8" fill="var(--alert)"/><path d="M315 -3 L321 3 M321 -3 L315 3" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><text x="332" y="4.5" font-size="12.5" style="fill:var(--muted)">refused</text>
+</g>
+</svg>

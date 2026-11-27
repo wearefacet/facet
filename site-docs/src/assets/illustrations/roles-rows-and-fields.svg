@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 590" class="fct-roles" role="img" aria-labelledby="fct-roles-t fct-roles-d">
+<title id="fct-roles-t">Roles: which rows you reach, which fields you read</title>
+<desc id="fct-roles-d">Tom has the sales role. A row rule lets through only the clients he owns, so his list shows his five clients out of nine. Lucía has the warehouse role. A field rule hides the purchase price, so when she opens an item she sees its name, stock and rental price, and no purchase price. The same checks apply in the portal, in apps, through the API and in the assistant.</desc>
+<style>
+.fct-roles{--c-bg:var(--surface);--c-deep:var(--sunken);--c-card:var(--surface);--c-line:var(--border-strong);--c-hair:var(--border);--c-ink:var(--text);--c-muted:var(--text-2);--c-accent:var(--accent);--c-accent-ink:var(--accent-ink);--c-on-accent:var(--on-accent);--c-soft:var(--accent-weak);--c-ok:var(--ok);--c-ok-soft:var(--ok-weak);--c-alert:var(--danger);}
+.fct-roles text{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;fill:var(--c-ink);}
+.fct-roles .card{fill:var(--c-card);stroke:var(--c-line);stroke-width:1.5;}
+@keyframes fct-roles-row0{0%,14.00%{transform:translateY(0);opacity:0}15.50%{transform:translateY(0);opacity:1}25.00%{transform:translateY(222px);opacity:1}93.00%{transform:translateY(222px);opacity:1}97.00%,100%{transform:translateY(222px);opacity:0}}
+@keyframes fct-roles-dim1{0%{opacity:1}20.20%{opacity:1}22.20%{opacity:.3}91.00%{opacity:.3}94.00%{opacity:1}100%{opacity:1}}
+@keyframes fct-roles-row1{0%,17.20%{transform:translateY(0);opacity:0}18.70%{transform:translateY(0);opacity:1}23.20%{transform:translateY(112px);opacity:1}26.20%,93.00%{transform:translateY(112px);opacity:0}97.00%,100%{transform:translateY(112px);opacity:0}}
+@keyframes fct-roles-row2{0%,20.40%{transform:translateY(0);opacity:0}21.90%{transform:translateY(0);opacity:1}31.40%{transform:translateY(219px);opacity:1}93.00%{transform:translateY(219px);opacity:1}97.00%,100%{transform:translateY(219px);opacity:0}}
+@keyframes fct-roles-row3{0%,23.60%{transform:translateY(0);opacity:0}25.10%{transform:translateY(0);opacity:1}34.60%{transform:translateY(228px);opacity:1}93.00%{transform:translateY(228px);opacity:1}97.00%,100%{transform:translateY(228px);opacity:0}}
+@keyframes fct-roles-dim4{0%{opacity:1}29.80%{opacity:1}31.80%{opacity:.3}91.00%{opacity:.3}94.00%{opacity:1}100%{opacity:1}}
+@keyframes fct-roles-row4{0%,26.80%{transform:translateY(0);opacity:0}28.30%{transform:translateY(0);opacity:1}32.80%{transform:translateY(76px);opacity:1}35.80%,93.00%{transform:translateY(76px);opacity:0}97.00%,100%{transform:translateY(76px);opacity:0}}
+@keyframes fct-roles-row5{0%,30.00%{transform:translateY(0);opacity:0}31.50%{transform:translateY(0);opacity:1}41.00%{transform:translateY(225px);opacity:1}93.00%{transform:translateY(225px);opacity:1}97.00%,100%{transform:translateY(225px);opacity:0}}
+@keyframes fct-roles-dim6{0%{opacity:1}36.20%{opacity:1}38.20%{opacity:.3}91.00%{opacity:.3}94.00%{opacity:1}100%{opacity:1}}
+@keyframes fct-roles-row6{0%,33.20%{transform:translateY(0);opacity:0}34.70%{transform:translateY(0);opacity:1}39.20%{transform:translateY(52px);opacity:1}42.20%,93.00%{transform:translateY(52px);opacity:0}97.00%,100%{transform:translateY(52px);opacity:0}}
+@keyframes fct-roles-dim7{0%{opacity:1}39.40%{opacity:1}41.40%{opacity:.3}91.00%{opacity:.3}94.00%{opacity:1}100%{opacity:1}}
+@keyframes fct-roles-row7{0%,36.40%{transform:translateY(0);opacity:0}37.90%{transform:translateY(0);opacity:1}42.40%{transform:translateY(40px);opacity:1}45.40%,93.00%{transform:translateY(40px);opacity:0}97.00%,100%{transform:translateY(40px);opacity:0}}
+@keyframes fct-roles-row8{0%,39.60%{transform:translateY(0);opacity:0}41.10%{transform:translateY(0);opacity:1}50.60%{transform:translateY(210px);opacity:1}93.00%{transform:translateY(210px);opacity:1}97.00%,100%{transform:translateY(210px);opacity:0}}
+@keyframes fct-roles-swL{0%{opacity:0}14.00%{opacity:0}16.00%{opacity:1}50.80%{opacity:1}53.80%{opacity:0}100%{opacity:0}}
+@keyframes fct-roles-f0{0%,16.00%{transform:translateY(0);opacity:0}17.50%{transform:translateY(0);opacity:1}26.00%{transform:translateY(224px);opacity:1}93.00%{transform:translateY(224px);opacity:1}97.00%,100%{transform:translateY(224px);opacity:0}}
+@keyframes fct-roles-f1{0%,21.50%{transform:translateY(0);opacity:0}23.00%{transform:translateY(0);opacity:1}31.50%{transform:translateY(226px);opacity:1}93.00%{transform:translateY(226px);opacity:1}97.00%,100%{transform:translateY(226px);opacity:0}}
+@keyframes fct-roles-f2{0%,27.00%{transform:translateY(0);opacity:0}28.50%{transform:translateY(0);opacity:1}37.00%{transform:translateY(228px);opacity:1}93.00%{transform:translateY(228px);opacity:1}97.00%,100%{transform:translateY(228px);opacity:0}}
+@keyframes fct-roles-f3{0%,32.50%{transform:translateY(0);opacity:0}34.00%{transform:translateY(0);opacity:1}39.50%{transform:translateY(42px);opacity:1}42.50%,93.00%{transform:translateY(42px);opacity:0}97.00%,100%{transform:translateY(42px);opacity:0}}
+@keyframes fct-roles-lock{0%{opacity:0}39.50%{opacity:0}41.50%{opacity:1}91.00%{opacity:1}94.00%{opacity:0}100%{opacity:0}}
+@keyframes fct-roles-swR{0%{opacity:0}16.00%{opacity:0}18.00%{opacity:1}44.00%{opacity:1}47.00%{opacity:0}100%{opacity:0}}
+@keyframes fct-roles-sf0{0%{stroke:var(--c-line)}5.00%{stroke:var(--c-line)}7.00%{stroke:var(--c-accent)}16.00%{stroke:var(--c-accent)}19.00%{stroke:var(--c-line)}100%{stroke:var(--c-line)}}
+@keyframes fct-roles-sf1{0%{stroke:var(--c-line)}28.00%{stroke:var(--c-line)}30.00%{stroke:var(--c-accent)}39.00%{stroke:var(--c-accent)}42.00%{stroke:var(--c-line)}100%{stroke:var(--c-line)}}
+@keyframes fct-roles-sf2{0%{stroke:var(--c-line)}51.00%{stroke:var(--c-line)}53.00%{stroke:var(--c-accent)}62.00%{stroke:var(--c-accent)}65.00%{stroke:var(--c-line)}100%{stroke:var(--c-line)}}
+@keyframes fct-roles-sf3{0%{stroke:var(--c-line)}74.00%{stroke:var(--c-line)}76.00%{stroke:var(--c-accent)}85.00%{stroke:var(--c-accent)}88.00%{stroke:var(--c-line)}100%{stroke:var(--c-line)}}
+@media (prefers-reduced-motion:reduce){.fct-roles *{animation:none!important}.fct-roles .smil{display:none}}
+</style>
+<defs><clipPath id="fct-roles-cl"><rect x="0" y="269" width="960" height="240"/></clipPath></defs>
+<rect class="card" x="90" y="344" width="320" height="146" rx="12" style="stroke:var(--c-ok)"/>
+<text x="110" y="366" font-size="12.5" font-weight="650" style="fill:var(--c-ok)">Tom's list · 5 clients</text>
+<rect x="102" y="371" width="296" height="18" rx="5" fill="var(--c-deep)"/>
+<rect x="102" y="392" width="296" height="18" rx="5" fill="var(--c-deep)"/>
+<rect x="102" y="413" width="296" height="18" rx="5" fill="var(--c-deep)"/>
+<rect x="102" y="434" width="296" height="18" rx="5" fill="var(--c-deep)"/>
+<rect x="102" y="455" width="296" height="18" rx="5" fill="var(--c-deep)"/>
+<rect class="card" x="550" y="344" width="320" height="146" rx="12" style="stroke:var(--c-ok)"/>
+<text x="570" y="366" font-size="12.5" font-weight="650" style="fill:var(--c-ok)">Lucía opens the item</text>
+<line x1="570" y1="397" x2="850" y2="397" stroke="var(--c-hair)"/>
+<line x1="570" y1="425" x2="850" y2="425" stroke="var(--c-hair)"/>
+<line x1="570" y1="453" x2="850" y2="453" stroke="var(--c-hair)"/>
+<rect class="card" x="120" y="28" width="260" height="62" rx="31"/>
+<circle cx="151" cy="59" r="20" fill="var(--c-deep)" stroke="var(--c-line)"/>
+<circle cx="151" cy="54" r="6.5" fill="var(--c-accent)"/><path d="M139 72" fill="none"/>
+<path d="M139 72 a12 9 0 0 1 24 0" fill="var(--c-accent)"/>
+<text x="182" y="65" font-size="17" font-weight="700">Tom</text>
+<rect x="299.0" y="45" width="73.0" height="28" rx="14" fill="var(--c-soft)" stroke="var(--c-accent)" stroke-width="1.2"/>
+<g transform="translate(314.0,59)"><path d="M-4 -4 a3 3 0 1 1 0.1 0 M-1 -1 L4 4 M2 2 L3.5 0.5" fill="none" stroke="var(--c-accent-ink)" stroke-width="1.6" stroke-linecap="round"/></g>
+<text x="344.5" y="64" text-anchor="middle" font-size="13" font-weight="700" style="fill:var(--c-accent-ink)">sales</text>
+<rect class="card" x="90" y="116" width="320" height="152" rx="12"/>
+<text x="110" y="140" font-size="12.5" font-weight="650" style="fill:var(--c-muted)">All clients · 9</text>
+<g style="opacity:1"><circle cx="114" cy="158" r="3.5" fill="var(--c-accent)"/><rect x="124" y="155" width="150" height="6" rx="3" fill="var(--c-accent)" opacity="1"/></g>
+<g clip-path="url(#fct-roles-cl)"><g style="animation:fct-roles-row0 10.0s cubic-bezier(.4,0,.2,1) infinite;opacity:0"><circle cx="114" cy="158" r="4.5" fill="var(--c-accent)"/><rect x="126" y="154" width="150" height="8" rx="4" fill="var(--c-ink)" opacity=".85"/></g></g>
+<g style="opacity:1;animation:fct-roles-dim1 10.0s linear infinite"><circle cx="114" cy="170" r="3.5" fill="var(--c-muted)"/><rect x="124" y="167" width="120" height="6" rx="3" fill="var(--c-muted)" opacity="0.55"/></g>
+<g clip-path="url(#fct-roles-cl)"><g style="animation:fct-roles-row1 10.0s cubic-bezier(.4,0,.2,1) infinite;opacity:0"><circle cx="114" cy="170" r="3.5" fill="var(--c-muted)"/><rect x="124" y="167" width="120" height="6" rx="3" fill="var(--c-muted)" opacity=".55"/></g></g>
+<g style="opacity:1"><circle cx="114" cy="182" r="3.5" fill="var(--c-accent)"/><rect x="124" y="179" width="170" height="6" rx="3" fill="var(--c-accent)" opacity="1"/></g>
+<g clip-path="url(#fct-roles-cl)"><g style="animation:fct-roles-row2 10.0s cubic-bezier(.4,0,.2,1) infinite;opacity:0"><circle cx="114" cy="182" r="4.5" fill="var(--c-accent)"/><rect x="126" y="178" width="170" height="8" rx="4" fill="var(--c-ink)" opacity=".85"/></g></g>
+<g style="opacity:1"><circle cx="114" cy="194" r="3.5" fill="var(--c-accent)"/><rect x="124" y="191" width="130" height="6" rx="3" fill="var(--c-accent)" opacity="1"/></g>
+<g clip-path="url(#fct-roles-cl)"><g style="animation:fct-roles-row3 10.0s cubic-bezier(.4,0,.2,1) infinite;opacity:0"><circle cx="114" cy="194" r="4.5" fill="var(--c-accent)"/><rect x="126" y="190" width="130" height="8" rx="4" fill="var(--c-ink)" opacity=".85"/></g></g>
+<g style="opacity:1;animation:fct-roles-dim4 10.0s linear infinite"><circle cx="114" cy="206" r="3.5" fill="var(--c-muted)"/><rect x="124" y="203" width="160" height="6" rx="3" fill="var(--c-muted)" opacity="0.55"/></g>
+<g clip-path="url(#fct-roles-cl)"><g style="animation:fct-roles-row4 10.0s cubic-bezier(.4,0,.2,1) infinite;opacity:0"><circle cx="114" cy="206" r="3.5" fill="var(--c-muted)"/><rect x="124" y="203" width="160" height="6" rx="3" fill="var(--c-muted)" opacity=".55"/></g></g>
+<g style="opacity:1"><circle cx="114" cy="218" r="3.5" fill="var(--c-accent)"/><rect x="124" y="215" width="110" height="6" rx="3" fill="var(--c-accent)" opacity="1"/></g>
+<g clip-path="url(#fct-roles-cl)"><g style="animation:fct-roles-row5 10.0s cubic-bezier(.4,0,.2,1) infinite;opacity:0"><circle cx="114" cy="218" r="4.5" fill="var(--c-accent)"/><rect x="126" y="214" width="110" height="8" rx="4" fill="var(--c-ink)" opacity=".85"/></g></g>
+<g style="opacity:1;animation:fct-roles-dim6 10.0s linear infinite"><circle cx="114" cy="230" r="3.5" fill="var(--c-muted)"/><rect x="124" y="227" width="140" height="6" rx="3" fill="var(--c-muted)" opacity="0.55"/></g>
+<g clip-path="url(#fct-roles-cl)"><g style="animation:fct-roles-row6 10.0s cubic-bezier(.4,0,.2,1) infinite;opacity:0"><circle cx="114" cy="230" r="3.5" fill="var(--c-muted)"/><rect x="124" y="227" width="140" height="6" rx="3" fill="var(--c-muted)" opacity=".55"/></g></g>
+<g style="opacity:1;animation:fct-roles-dim7 10.0s linear infinite"><circle cx="114" cy="242" r="3.5" fill="var(--c-muted)"/><rect x="124" y="239" width="125" height="6" rx="3" fill="var(--c-muted)" opacity="0.55"/></g>
+<g clip-path="url(#fct-roles-cl)"><g style="animation:fct-roles-row7 10.0s cubic-bezier(.4,0,.2,1) infinite;opacity:0"><circle cx="114" cy="242" r="3.5" fill="var(--c-muted)"/><rect x="124" y="239" width="125" height="6" rx="3" fill="var(--c-muted)" opacity=".55"/></g></g>
+<g style="opacity:1"><circle cx="114" cy="254" r="3.5" fill="var(--c-accent)"/><rect x="124" y="251" width="155" height="6" rx="3" fill="var(--c-accent)" opacity="1"/></g>
+<g clip-path="url(#fct-roles-cl)"><g style="animation:fct-roles-row8 10.0s cubic-bezier(.4,0,.2,1) infinite;opacity:0"><circle cx="114" cy="254" r="4.5" fill="var(--c-accent)"/><rect x="126" y="250" width="155" height="8" rx="4" fill="var(--c-ink)" opacity=".85"/></g></g>
+<line x1="250" y1="90" x2="250" y2="116" stroke="var(--c-line)" stroke-width="1.5" stroke-dasharray="3 4"/>
+<rect x="90" y="290" width="320" height="34" rx="17" fill="var(--c-deep)" stroke="var(--c-line)" stroke-width="1.5"/>
+<rect x="90" y="290" width="320" height="34" rx="17" fill="none" stroke="var(--c-accent)" stroke-width="2" style="animation:fct-roles-swL 10.0s linear infinite"/>
+<g transform="translate(114,307)"><path d="M-7 -6 H7 L2 0.5 V6 L-2 4 V0.5 Z" fill="none" stroke="var(--c-accent-ink)" stroke-width="1.7" stroke-linejoin="round"/></g>
+<text x="130" y="312" font-size="13.5" font-weight="650">Row rule · only the clients he owns</text>
+<rect class="card" x="580" y="28" width="260" height="62" rx="31"/>
+<circle cx="611" cy="59" r="20" fill="var(--c-deep)" stroke="var(--c-line)"/>
+<circle cx="611" cy="54" r="6.5" fill="var(--c-muted)"/><path d="M599 72" fill="none"/>
+<path d="M599 72 a12 9 0 0 1 24 0" fill="var(--c-muted)"/>
+<text x="642" y="65" font-size="17" font-weight="700">Lucía</text>
+<rect x="727.8" y="45" width="104.2" height="28" rx="14" fill="var(--c-soft)" stroke="var(--c-accent)" stroke-width="1.2"/>
+<g transform="translate(742.8,59)"><path d="M-4 -4 a3 3 0 1 1 0.1 0 M-1 -1 L4 4 M2 2 L3.5 0.5" fill="none" stroke="var(--c-accent-ink)" stroke-width="1.6" stroke-linecap="round"/></g>
+<text x="788.9" y="64" text-anchor="middle" font-size="13" font-weight="700" style="fill:var(--c-accent-ink)">warehouse</text>
+<rect class="card" x="550" y="116" width="320" height="152" rx="12"/>
+<text x="570" y="140" font-size="12.5" font-weight="650" style="fill:var(--c-muted)">Item · full record</text>
+<g><text x="570" y="164" font-size="12.5" style="fill:var(--c-muted)">Name</text><text x="850" y="164" text-anchor="end" font-size="14" font-weight="650">Marquee tent 6 × 12 m</text></g>
+<g clip-path="url(#fct-roles-cl)"><g style="animation:fct-roles-f0 10.0s cubic-bezier(.4,0,.2,1) infinite;opacity:0"><text x="570" y="164" font-size="12.5" style="fill:var(--c-muted)">Name</text><text x="850" y="164" text-anchor="end" font-size="14" font-weight="650">Marquee tent 6 × 12 m</text></g></g>
+<g><text x="570" y="190" font-size="12.5" style="fill:var(--c-muted)">Stock</text><text x="850" y="190" text-anchor="end" font-size="14" font-weight="650">4 units</text></g>
+<g clip-path="url(#fct-roles-cl)"><g style="animation:fct-roles-f1 10.0s cubic-bezier(.4,0,.2,1) infinite;opacity:0"><text x="570" y="190" font-size="12.5" style="fill:var(--c-muted)">Stock</text><text x="850" y="190" text-anchor="end" font-size="14" font-weight="650">4 units</text></g></g>
+<g><text x="570" y="216" font-size="12.5" style="fill:var(--c-muted)">Rental price</text><text x="850" y="216" text-anchor="end" font-size="14" font-weight="650">€480 / day</text></g>
+<g clip-path="url(#fct-roles-cl)"><g style="animation:fct-roles-f2 10.0s cubic-bezier(.4,0,.2,1) infinite;opacity:0"><text x="570" y="216" font-size="12.5" style="fill:var(--c-muted)">Rental price</text><text x="850" y="216" text-anchor="end" font-size="14" font-weight="650">€480 / day</text></g></g>
+<g><text x="570" y="242" font-size="12.5" style="fill:var(--c-muted)">Purchase price</text><text x="850" y="242" text-anchor="end" font-size="14" font-weight="650">€7,900</text></g>
+<g clip-path="url(#fct-roles-cl)"><g style="animation:fct-roles-f3 10.0s cubic-bezier(.4,0,.2,1) infinite;opacity:0"><text x="570" y="242" font-size="12.5" style="fill:var(--c-muted)">Purchase price</text><text x="850" y="242" text-anchor="end" font-size="14" font-weight="650">€7,900</text></g></g>
+<g style="opacity:0;animation:fct-roles-lock 10.0s linear infinite"><circle cx="850" cy="307" r="12" fill="var(--c-alert)"/><rect x="844" y="305" width="12" height="9" rx="2" fill="#fff"/><path d="M846.5 305 V302 a3.5 3.5 0 0 1 7 0 V305" fill="none" stroke="#fff" stroke-width="1.8"/></g>
+<line x1="710" y1="90" x2="710" y2="116" stroke="var(--c-line)" stroke-width="1.5" stroke-dasharray="3 4"/>
+<rect x="550" y="290" width="320" height="34" rx="17" fill="var(--c-deep)" stroke="var(--c-line)" stroke-width="1.5"/>
+<rect x="550" y="290" width="320" height="34" rx="17" fill="none" stroke="var(--c-accent)" stroke-width="2" style="animation:fct-roles-swR 10.0s linear infinite"/>
+<g transform="translate(574,307)"><path d="M-7 -6 H7 L2 0.5 V6 L-2 4 V0.5 Z" fill="none" stroke="var(--c-accent-ink)" stroke-width="1.7" stroke-linejoin="round"/></g>
+<text x="590" y="312" font-size="13.5" font-weight="650">Field rule · hide the purchase price</text>
+<line x1="90" y1="522" x2="870" y2="522" stroke="var(--c-hair)" stroke-width="1.5"/>
+<text x="90" y="556" font-size="13" font-weight="650" style="fill:var(--c-muted)">Same checks, every time, on every surface</text>
+<rect x="456" y="537" width="94" height="30" rx="15" fill="var(--c-card)" stroke-width="1.5" style="stroke:var(--c-line);animation:fct-roles-sf0 10.0s linear infinite"/>
+<g transform="translate(474,552) scale(.85)"><rect x="-8" y="-7" width="16" height="13" rx="2" fill="none" stroke="var(--c-ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M-4 9 H4" fill="none" stroke="var(--c-ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="488" y="557" font-size="12.5" font-weight="600">Portal</text>
+<rect x="560" y="537" width="94" height="30" rx="15" fill="var(--c-card)" stroke-width="1.5" style="stroke:var(--c-line);animation:fct-roles-sf1 10.0s linear infinite"/>
+<g transform="translate(578,552) scale(.85)"><rect x="-8" y="-8" width="16" height="16" rx="3" fill="none" stroke="var(--c-ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M-8 -3 H8" fill="none" stroke="var(--c-ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="592" y="557" font-size="12.5" font-weight="600">Apps</text>
+<rect x="664" y="537" width="94" height="30" rx="15" fill="var(--c-card)" stroke-width="1.5" style="stroke:var(--c-line);animation:fct-roles-sf2 10.0s linear infinite"/>
+<g transform="translate(682,552) scale(.85)"><path d="M-4 -7 L-9 0 L-4 7 M4 -7 L9 0 L4 7" fill="none" stroke="var(--c-ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="696" y="557" font-size="12.5" font-weight="600">API</text>
+<rect x="768" y="537" width="94" height="30" rx="15" fill="var(--c-card)" stroke-width="1.5" style="stroke:var(--c-line);animation:fct-roles-sf3 10.0s linear infinite"/>
+<g transform="translate(786,552) scale(.85)"><path d="M0 -8 C1 -2 2 -1 8 0 C2 1 1 2 0 8 C-1 2 -2 1 -8 0 C-2 -1 -1 -2 0 -8 Z" fill="none" stroke="var(--c-ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="800" y="557" font-size="12.5" font-weight="600">Assistant</text>
+</svg>

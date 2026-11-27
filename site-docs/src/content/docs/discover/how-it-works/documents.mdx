@@ -9,24 +9,13 @@ sidebar:
   order: 2
 ---
 
+import Illustration from '../../../../components/Illustration.astro';
+
 One client, one tent, one booking — in Facet, each is a **document**: one record, the real thing your team works on. And each one remembers its past.
 
 *Every change lands on the record's timeline, with a name and a time. Undo included.*
 
-<!-- d2
-direction: down
-doc: "A booking" {class: store}
-c1: "9:14 · Nadia created it" {class: node}
-c2: "11:02 · Tom moved the date" {class: node}
-c3: "11:05 · Tom rolled it back" {class: ok}
-doc -> c1
-c1 -> c2
-c2 -> c3
--->
-<div class="d2-diagram">
-<img class="d2-diagram__img d2-diagram__light" src="/diagrams/6890eba9-light.svg" alt="A booking" loading="lazy" />
-<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/6890eba9-dark.svg" alt="A booking" loading="lazy" />
-</div>
+<Illustration name="document-timeline" />
 
 ## A record you can shape
 

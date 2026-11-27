@@ -30,6 +30,8 @@ The site has no spec suite. `npm run build` is the gate: the `prebuild` hook run
 | `scripts/diagram-theme.mjs` | The house style: palette mapping and shape classes for every diagram |
 | `scripts/check-diagrams.mjs` | Fails the build on a leftover mermaid or D2 fence |
 | `public/diagrams/`     | Built diagram SVGs — generated, not edited |
+| `src/assets/illustrations/` | Hand-authored illustration SVGs, inlined by `Illustration.astro` |
+| `src/components/Illustration.astro` | Inlines an illustration SVG so its `[data-theme]` colours follow the page theme |
 | `src/scripts/copy-as-markdown.ts` | Client script behind the "Copy as markdown" button           |
 | `src/components/PageTitle.astro` | Starlight override: page title + the "Copy as markdown" button |
 | `src/components/Hero.astro` | Starlight override: the landing-page hero — title, tagline and actions from front-matter, animated gem in place of an image |
@@ -219,6 +221,10 @@ Rules for authors:
 - **Keep labels short.** A diagram wider than the content column is scaled down to it, and the text shrinks with it. Prefer `Permission` over `The permission record that names an action`.
 
 Each theme is its own compile, with its palette as the base override. D2 emits `dark-theme-overrides` inside a `prefers-color-scheme` media block, and the site switches theme with a `data-theme` attribute, so a single compile with both palettes would never apply the dark one.
+
+### Illustrations
+
+Hand-authored illustration SVGs live in `src/assets/illustrations/` and are shown with the `Illustration` component (`src/components/Illustration.astro`), which inlines the file into the page. An `<img>` cannot see the page's `data-theme` attribute, so its `[data-theme]` selectors never fire and the picture follows the OS `prefers-color-scheme` only — it would stay dark on a light-themed page. Inlining puts the SVG's own `<style>` in the page, so it tracks the theme toggle. These files are not diagrams: they are not hash-named and they do not live in `public/diagrams/` (that folder is generated and its stray files are deleted). Pages that use the component must be `.mdx`.
 
 ## Screenshots
 

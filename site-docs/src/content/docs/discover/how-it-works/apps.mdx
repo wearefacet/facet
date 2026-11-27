@@ -9,28 +9,13 @@ sidebar:
   order: 4
 ---
 
+import Illustration from '../../../../components/Illustration.astro';
+
 The workspace covers most days. Sooner or later a team wants a tool of its own — a warehouse check-out screen, a kiosk, a small dashboard. That tool is an **app**: a program outside Facet that uses it as its data and sign-in source.
 
 *An app is a guest with a badge. It signs in through Facet and reaches only what both the guest and the badge allow.*
 
-<!-- d2
-direction: down
-lucia: "Lucía signs in" {class: external}
-app: "The check-out app" {class: external}
-consent: "Facet asks: which role, and is this app allowed in?" {class: decision}
-ceiling: "The app's allowance"
-overlap: "Only what both allow" {class: accent}
-records: "Brightwater records" {class: store}
-lucia -> consent
-app -> consent
-consent -> overlap
-ceiling -> overlap
-overlap -> records
--->
-<div class="d2-diagram">
-<img class="d2-diagram__img d2-diagram__light" src="/diagrams/8eadf685-light.svg" alt="Lucía signs in" loading="lazy" />
-<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/8eadf685-dark.svg" alt="Lucía signs in" loading="lazy" />
-</div>
+<Illustration name="apps-role-and-allowance" />
 
 ## The workspace is built in
 
