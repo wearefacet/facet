@@ -6,7 +6,7 @@ audience: [author]
 features: [DOM-01, DOM-02, DOM-03, DOM-04, DOM-16, DOM-21, FE-10, FE-03, AI-02]
 sidebar:
   order: 2
-verified_at: c34885a
+verified_at: 11202ad
 ---
 
 You model the Brightwater equipment domain: the categories of gear, the
@@ -68,9 +68,13 @@ Grants / Check. Everything you build now stays in this private work area.
 :::note
 **Do you have a model connected?** The domain-builder assistant can
 propose this whole draft from a plain-language description — "a warehouse
-domain with categories, items, and maintenance tickets". You review its
-proposal in the same editors this tutorial uses. Without a model, follow
-the manual steps below; they need nothing extra. See [Build with the
+domain with categories, items, and maintenance tickets". The assistant is
+much faster than the manual steps, and you review its proposal in the
+same editors this tutorial uses. A model must be connected first: an
+administrator sets the endpoint and the API key in the system settings —
+see [Connect a language model](/admin/assistant/connect-a-model/), which
+also advises which model to pick. Without a model, follow the manual
+steps below; they need nothing extra. See [Build with the
 assistant](/build/model/in-app/build-with-assistant/).
 :::
 
