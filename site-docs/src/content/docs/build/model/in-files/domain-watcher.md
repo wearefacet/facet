@@ -35,6 +35,15 @@ dev:
     documents: preserve
 ```
 
+:::tip
+`facet-cli setup-dev` writes this section for you: it creates a `domains/`
+folder, mounts it into the backend, and points `dev.domain_watch.path` at it.
+Answer the watch prompt with a folder, or pass `--watch <dir>`, and the
+watcher is live on the next boot. On a container stack, the path in the
+config is the container path (`/watch`), while the folder you edit is
+`./domains` on the host.
+:::
+
 | Key | Default | Meaning |
 | --- | --- | --- |
 | `path` | required | The folder with one subfolder per domain. A missing path fails at boot. |

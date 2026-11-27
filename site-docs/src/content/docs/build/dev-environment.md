@@ -22,8 +22,16 @@ Three kinds of work need Facet running from source:
   all run against a local stack.
 
 If you only want to try the product, stop here: run the container stack
-from [Run Facet](/build/first-hour/run-facet/) or
-[Deploy to production](/admin/install/production/).
+with one command — `facet-cli setup-dev`, described in
+[Run Facet](/build/first-hour/run-facet/) — or follow
+[Deploy to production](/admin/install/production/). This page is the source
+route, for when you change the backend, the frontend, or the CLI itself.
+
+:::tip
+`facet-cli setup-dev` stands up a container dev instance without a clone.
+It also creates a `domains/` watch folder by default. Use this page when
+you need to modify Facet's own code.
+:::
 
 ## Prerequisites
 

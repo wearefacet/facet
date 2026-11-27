@@ -10,6 +10,10 @@ main
 
 /.zed
 
+# Facet CLI: per-project API key store (a secret)
+.facet.local.json
+
 .env*
 !.env.example
+!.env.ghcr.example
 tmp/

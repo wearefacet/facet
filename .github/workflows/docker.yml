@@ -208,6 +208,10 @@ jobs:
     needs: [build, smoke]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # `contents: write` lets a `v*` release attach the stack files.
+    permissions:
+      contents: write
+      packages: write
     steps:
       - uses: actions/checkout@v4
 
@@ -259,3 +263,26 @@ jobs:
             done
             docker buildx imagetools create "${tag_args[@]}" $refs
           done
+
+      # Attach the image-only stack files to the GitHub release, so an install
+      # needs no repository clone. The docs download them by these exact names:
+      # compose.yml, Caddyfile.prod, .env.example. `v*` tags create no release
+      # elsewhere (release-npm.yml claims only sdk-v*/chat-v*/cli-v*), so this
+      # step creates it first, then uploads.
+      - name: Publish the release stack files
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          stage="$(mktemp -d)"
+          cp docker/compose.ghcr.yml "${stage}/compose.yml"
+          cp docker/Caddyfile.prod "${stage}/Caddyfile.prod"
+          cp docker/.env.ghcr.example "${stage}/.env.example"
+          if ! gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release create "${GITHUB_REF_NAME}" --verify-tag --generate-notes
+          fi
+          gh release upload "${GITHUB_REF_NAME}" \
+            "${stage}/compose.yml" \
+            "${stage}/Caddyfile.prod" \
+            "${stage}/.env.example" \
+            --clobber

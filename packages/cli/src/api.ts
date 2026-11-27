@@ -63,6 +63,20 @@ export interface DeploymentContent {
 	app_id?: string;
 }
 
+/** One `iam.Account` profile, as `/Api/iam/me` answers it. */
+export interface MeResponse {
+	account: { id: string; display_name?: string; email?: string };
+	active_role: string;
+}
+
+/** A freshly issued API key. `key` is the raw token, shown exactly once. */
+export interface CreatedApiKey {
+	id: string;
+	key: string;
+	display_prefix: string;
+	expires_at: string | null;
+}
+
 /** The deploy route's response: not a document envelope. */
 export interface DeployResult {
 	/** The unqualified deployment document id. */
@@ -199,6 +213,10 @@ export interface ApiRequestOptions {
 export interface FacetApi {
 	/** Runs one authenticated request with 401 refresh-and-retry. */
 	request<T>(path: string, options?: ApiRequestOptions): Promise<T>;
+	/** Reads the caller's profile: account and active role. */
+	me(): Promise<MeResponse>;
+	/** Issues a user-owned API key pinned to the caller's account and the given role. */
+	createApiKey(name: string, role: string): Promise<CreatedApiKey>;
 	/** Resolves an app slug to its qualified document id. */
 	resolveAppId(slug: string): Promise<string>;
 	/** Resolves an app slug, or undefined when no app carries it. */
@@ -261,6 +279,12 @@ export function createApi(instanceUrl: string, fetchImpl: typeof fetch = fetch):
 
 	return {
 		request,
+		me: () => request<MeResponse>('/Api/iam/me'),
+		createApiKey: (name, role) =>
+			request<CreatedApiKey>('/Api/iam/keys', {
+				method: 'POST',
+				json: { name, role }
+			}),
 		findAppId,
 		resolveAppId: async (slug) => {
 			const found = await findAppId(slug);

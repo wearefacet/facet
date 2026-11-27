@@ -10,9 +10,10 @@ verified_at: eee55a2
 ---
 
 The board signed off and Monday is the go-live. The production path is
-Docker Compose: PostgreSQL, Redis, the backend, the frontend, and a Caddy
-edge with TLS. No local toolchain is needed — the host needs Docker with
-Compose, and nothing else.
+Docker Compose pulling the release images from GHCR: PostgreSQL, Redis, the
+backend, the frontend, and a Caddy edge with TLS. No local toolchain is
+needed — the host needs Docker with Compose, and nothing else. You do not
+clone the repository; you download three files and run Compose.
 
 ## Before you start
 
@@ -23,22 +24,30 @@ Compose, and nothing else.
 
 ## Steps
 
-1. Create the environment file:
+1. Make a folder and download the three stack files:
 
    ```sh
-   cp docker/.env.example docker/.env
+   mkdir facet && cd facet
+   curl -fsSLO https://github.com/wearefacet/facet/releases/latest/download/compose.yml
+   curl -fsSLO https://github.com/wearefacet/facet/releases/latest/download/Caddyfile.prod
+   curl -fsSL  https://github.com/wearefacet/facet/releases/latest/download/.env.example -o .env.example
+   cp .env.example .env
    ```
 
-   Fill in the values — public hostname, SMTP relay, secrets. The file
+   `compose.yml` pulls `ghcr.io/wearefacet/facet` and
+   `ghcr.io/wearefacet/facet-frontend`; it never builds. Pin a release tag in
+   `.env` with `FACET_VERSION` (default `latest`).
+
+2. Fill in `.env` — public hostname, SMTP relay, secrets. The file
    documents each key. Set `JWT_SIGNING_KEY` too: it is the access-token
    signing key. Keep one stable value — without it, every restart signs out
    bearer-token API clients. Compose fails loud on any missing required
    key, naming it.
 
-2. Build and start the stack:
+3. Start the stack:
 
    ```sh
-   docker compose -f docker/compose.prod.yml up -d --build
+   docker compose up -d
    ```
 
    The backend entrypoint applies migrations and seeds the core schema on
@@ -47,7 +56,7 @@ Compose, and nothing else.
 3. Create the first administrator:
 
    ```sh
-   docker compose -f docker/compose.prod.yml run --rm backend seed:admin ops@your-company.tld
+   docker compose run --rm backend seed:admin ops@your-company.tld
    ```
 
    The command prints a one-time password. It is shown once — record it in
@@ -57,7 +66,7 @@ Compose, and nothing else.
    `https://facet.localhost:3443`), sign in with the one-time password, and
    set a real password when prompted.
 
-   That address is the Caddy edge port. `HTTPS_PORT` in `docker/.env` sets
+   That address is the Caddy edge port. `HTTPS_PORT` in `.env` sets
    it (default `3443`). The backend listens on `3000` inside the Docker
    network, and the edge proxies to it. Port `3000` is not published on the
    host.
@@ -76,6 +85,10 @@ Compose, and nothing else.
 - **Migrations are embedded in the binary.** A deployed binary needs no
   `db/` tree on disk. After the first release, the migration directory is
   append-only — never edit an applied migration file.
+- **The images are pulled, not built.** `docker compose pull` fetches the
+  pinned `FACET_VERSION` tags; `up -d` starts them. To move to a newer
+  release, change `FACET_VERSION` in `.env`, then `docker compose pull &&
+  docker compose up -d`.
 - **Timestamps are stored as UTC.** The schema stores tz-naive UTC values.
   The application pins its PostgreSQL session to UTC. A client that
   connects with a different role (psql, BI tools) must set `TimeZone=UTC`
@@ -85,7 +98,7 @@ Compose, and nothing else.
   bus.
 - **One password source.** Compose interpolates both sides of
   `DATABASE_URL` from the same `POSTGRES_*` keys, so the Postgres password
-  exists in exactly one place — `docker/.env`.
+  exists in exactly one place — `.env`.
 - **The master key protects the stored secrets.** `FACET_SECRETS_MASTER_KEY`
   encrypts password hashes, API credentials, and TOTP seeds at rest. The
   store refuses to boot with a key shorter than 32 bytes. Losing it makes

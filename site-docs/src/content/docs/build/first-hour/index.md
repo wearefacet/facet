@@ -17,10 +17,10 @@ product. Follow them in order; each one continues from the last.
 
 **Before you start**, you need two things:
 
-- The Facet repository cloned on your machine — the tutorials run commands
-  from it.
-- [Docker with Compose](https://docs.docker.com/compose/) for tutorial 1.
-  Tutorial 4 needs Node.js 20+; the rest need nothing beyond a browser.
+- [Docker with Compose](https://docs.docker.com/compose/) for tutorial 1. No
+  repository clone: `facet-cli setup-dev` pulls the images.
+- Node.js 20+ for tutorials 1 and 4 (the CLI and the coding agent). The rest
+  need nothing beyond a browser.
 
 Every tutorial uses the same running example: **Brightwater Rentals**, a
 fictional event-equipment rental company near Lyon. You model their

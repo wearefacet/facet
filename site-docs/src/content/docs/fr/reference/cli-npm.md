@@ -16,6 +16,9 @@ Le paquet npm `@facetapp/cli` déploie un dossier de build statique comme nouvel
 | Commande | Options | Rôle |
 | --- | --- | --- |
 | `init` | `--yes`, `--app <slug>`, `--build <dir>`, `--server <url>` | Write a facet.config.json file for this project. |
+| `setup-dev` | `--dir <path>`, `--hostname <name>`, `--port <n>`, `--watch <dir>`, `--no-watch`, `--no-start`, `--no-key`, `--force`, `--yes` | Scaffold, start, and seed a local dev instance, then fetch an API key. |
+| `connect` | `--target <name>` | Sign in to a Facet instance and optionally store a project API key. |
+| `apikey` | `--target <name>` | Print the stored API key for this project (for Authorization: Bearer). |
 | `login` | `--target <name>` | Sign in to a Facet instance and store the session. |
 | `logout` | `--target <name>` | Remove the stored session for a Facet instance. |
 | `whoami` | `--target <name>` | Show the stored account, role, instance, and active revision. |
@@ -41,6 +44,12 @@ Options:
 Commands:
   init [options]                 Write a facet.config.json file for this
                                  project.
+  setup-dev [options]            Scaffold, start, and seed a local dev instance,
+                                 then fetch an API key.
+  connect [options]              Sign in to a Facet instance and optionally
+                                 store a project API key.
+  apikey [options]               Print the stored API key for this project (for
+                                 Authorization: Bearer).
   login [options]                Sign in to a Facet instance and store the
                                  session.
   logout [options]               Remove the stored session for a Facet instance.
@@ -65,6 +74,47 @@ Options:
   --build <dir>   Build folder to upload (default: dist).
   --server <url>  Facet instance URL to add as the default target.
   -h, --help      display help for command
+```
+
+### `facet-cli setup-dev`
+```text
+Usage: facet-cli setup-dev [options]
+
+Scaffold, start, and seed a local dev instance, then fetch an API key.
+
+Options:
+  --dir <path>       Folder to scaffold (default: current directory).
+  --hostname <name>  Edge hostname (default: facet.localhost).
+  --port <n>         Edge HTTPS port (default: 3443).
+  --watch <dir>      Folder to watch for domain bundles (default: domains).
+  --no-watch         Do not set up the domain watcher.
+  --no-start         Write the stack files but do not start it.
+  --no-key           Do not fetch an API key after the stack starts.
+  --force            Overwrite an existing dev stack in the folder.
+  --yes              Non-interactive: take every default.
+  -h, --help         display help for command
+```
+
+### `facet-cli connect`
+```text
+Usage: facet-cli connect [options]
+
+Sign in to a Facet instance and optionally store a project API key.
+
+Options:
+  --target <name>  Named target from facet.config.json to connect to.
+  -h, --help       display help for command
+```
+
+### `facet-cli apikey`
+```text
+Usage: facet-cli apikey [options]
+
+Print the stored API key for this project (for Authorization: Bearer).
+
+Options:
+  --target <name>  Named target from facet.config.json to read the key for.
+  -h, --help       display help for command
 ```
 
 ### `facet-cli login`

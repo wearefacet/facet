@@ -13,12 +13,21 @@ Requires Node 20 or newer.
 ## Quick start
 
 ```
+npm install -g @facetapp/cli
+facet-cli setup-dev
+```
+
+`setup-dev` scaffolds a complete dev instance in the current folder — the GHCR stack in dev mode, a generated `.env`, `config.dev.yml`, `facet.config.json`, and a git repo — then starts it, seeds the known dev admin, and fetches your API key. No repository clone and no local toolchain: Docker with Compose is the only prerequisite.
+
+For an app deploy project instead, the manual path is:
+
+```
 pnpx @facetapp/cli init
-pnpx @facetapp/cli login
+pnpx @facetapp/cli connect
 pnpx @facetapp/cli deploy --note "first build"
 ```
 
-`init` asks for the app slug, the build folder, and the instance URL, then writes `facet.config.json`. Without a terminal, pass the answers as flags or pipe them on stdin (see [init](#init)). `login` opens a browser for the consent screen. `deploy` uploads the build folder as a new revision and activates it.
+`init` asks for the app slug, the build folder, and the instance URL, then writes `facet.config.json`. Without a terminal, pass the answers as flags or pipe them on stdin (see [init](#init)). `connect` signs in and, on request, stores a project API key. `deploy` uploads the build folder as a new revision and activates it.
 
 ## Configuration — `facet.config.json`
 
@@ -57,6 +66,28 @@ For CI and automation, skip the browser flow and set `FACET_TOKEN` to an access 
 
 ## Commands
 
+### setup-dev
+
+```
+pnpx @facetapp/cli setup-dev [--dir <path>] [--hostname <name>] [--port <n>]
+                             [--watch <dir>|--no-watch] [--no-start] [--no-key]
+                             [--force] [--yes]
+```
+
+Takes an empty folder to a running dev instance:
+
+1. Checks Docker with Compose.
+2. Asks the hostname (default `facet.localhost`), the HTTPS port (default `3443`), and whether to watch a folder for domain bundles (default yes, folder `domains`). `--yes` takes every default without prompting.
+3. Writes `compose.yml`, `config.dev.yml`, `.env` (generated secrets, mode 600), `Caddyfile.prod`, `facet.config.json`, `.gitignore`, and the `domains/` folder when watching. Runs `git init` when the folder is not already in a repository.
+4. Starts the stack (`docker compose up -d --wait`) and seeds the known dev admin (`db_reset --yes seed:dev`).
+5. Prints the URL and the credential `admin@example.tld` / `admin`, then fetches an API key through the `connect` flow.
+
+The generated `facet.config.json` targets the fresh instance (`defaultTarget: dev`), so `connect`, `apikey`, and `whoami` work at once. It carries no `app` — this sets up the Facet environment, not an app deploy; add an app slug with `init` or by hand when you deploy a build.
+
+`--no-start` writes the files only. `--no-key` skips the API key. `--force` overwrites an existing stack in the folder. `--dir` picks the folder (default: current directory).
+
+The dev credential is for throwaway local data only — the platform refuses `seed:dev` in production.
+
 ### init
 
 ```
@@ -73,13 +104,37 @@ printf 'myapp\ndist\nhttps://facet.example.tld\n' | pnpx @facetapp/cli init
 
 `--build` defaults to `dist`. When `--server` is omitted, no target is written and the app check is skipped. `--yes` makes the run non-interactive: it skips the answer prompts and creates a missing app without asking.
 
+### connect
+
+```
+pnpx @facetapp/cli connect [--target <name>]
+```
+
+Signs in through the browser (the same OAuth flow as `login`), then asks `Store an API key for this project?`. Answer `y` and the CLI issues a **user-owned API key** pinned to your account and your active role, and writes it to `.facet.local.json` in the project folder (mode 600, gitignored). Answer anything else and no key is stored.
+
+A key is refused when the role is not assigned to you or its `connectivity` excludes the `api` channel; the command prints the server's message and exits failing. Each project keeps its own key, so several Facet setups can live side by side.
+
+### apikey
+
+```
+pnpx @facetapp/cli apikey [--target <name>]
+```
+
+Prints the stored API key for the resolved target on stdout — nothing else — so a shell can inline it:
+
+```sh
+curl -H "Authorization: Bearer $(pnpx @facetapp/cli apikey)" https://facet.example.tld/Api/hr/Employee
+```
+
+Fails (non-zero exit) when no key is stored or the stored key has expired. Run `connect` again to issue a fresh one.
+
 ### login
 
 ```
 pnpx @facetapp/cli login [--target <name>]
 ```
 
-Runs the browser sign-in round-trip against the configured target. Without a config file the command asks for the instance URL.
+Runs the browser sign-in round-trip against the configured target, without offering an API key. Without a config file the command asks for the instance URL.
 
 ### logout
 
@@ -133,6 +188,10 @@ Points the app's `active_deployment` at the deployment with the given revision. 
 | `Run "pnpx @facetapp/cli login" to sign in again.` | The session expired or was revoked, and refresh failed. Sign in again.                           |
 | `No app with slug "x" on <instance>`               | The config's `app` slug matches no app on the instance. Create it or fix the slug.               |
 | `init needs answers` / `init needs an app slug`    | No terminal, no flags, and no piped stdin. Pass `--app`, pipe the answers, or run in a terminal. |
+| `Docker with Compose is required`                  | `setup-dev` needs Docker. Install it and retry.                                                  |
+| `already holds a dev stack`                        | `setup-dev` found stack files in the folder. Re-run with `--force` or pick another `--dir`.      |
+| `No API key stored for <instance>`                 | `apikey` found no key in `.facet.local.json`. Run `connect` and choose to store one.             |
+| `The stored API key … expired`                     | The key's `expires_at` passed. Run `connect` again to issue a fresh one.                         |
 | `The build folder "x" does not exist`              | `outDir` points at a missing folder. Check the config.                                           |
 | `holds no files to deploy`                         | The build folder is empty. Build first.                                                          |
 | `HTTP 422 from /Api/app/…/deploy: …`               | The server refused the upload — usually a draft/disabled app or a rejected file path.            |

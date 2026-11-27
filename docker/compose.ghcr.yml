@@ -1,0 +1,112 @@
+# Facet release stack from published images — no clone, no build.
+#
+# This is the install path for operators. It pulls the release images from
+# GHCR and needs three files side by side in one folder:
+#
+#   compose.yml     this file
+#   Caddyfile.prod  the edge config (shipped with this file)
+#   .env            your values (copy from .env.example, shipped too)
+#
+#   docker compose up -d
+#
+# The repository copy (docker/compose.prod.yml) builds the images from a
+# checkout; this one never builds. Same services, same network, same edge.
+#
+# Pin FACET_VERSION in .env to a release tag (for example 0.2.2). `latest`
+# follows the newest release; `sha-<sha>` reproduces one build exactly.
+
+name: facet
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.0-pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-facet}
+      POSTGRES_USER: ${POSTGRES_USER:-facet}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required - see .env.example}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  backend:
+    image: ghcr.io/wearefacet/facet:${FACET_VERSION:-latest}
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgres://${POSTGRES_USER:-facet}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required - see .env.example}@postgres:5432/${POSTGRES_DB:-facet}
+      FACET_HOST: ${FACET_HOST:?FACET_HOST is required - see .env.example}
+      FACET_BASE_URL: ${FACET_BASE_URL:?FACET_BASE_URL is required - see .env.example}
+      FACET_ARTIFACT_BASE_URL: ${FACET_ARTIFACT_BASE_URL:?FACET_ARTIFACT_BASE_URL is required - see .env.example}
+      FACET_ARTIFACT_GRANT_SECRET: ${FACET_ARTIFACT_GRANT_SECRET:?FACET_ARTIFACT_GRANT_SECRET is required - see .env.example}
+      FACET_REDIS_URL: redis://redis:6379/0
+      FACET_MAIL_FROM_ADDRESS: ${FACET_MAIL_FROM_ADDRESS:?FACET_MAIL_FROM_ADDRESS is required - see .env.example}
+      FACET_MAIL_FROM_NAME: ${FACET_MAIL_FROM_NAME:?FACET_MAIL_FROM_NAME is required - see .env.example}
+      FACET_SMTP_HOST: ${FACET_SMTP_HOST:?FACET_SMTP_HOST is required - see .env.example}
+      FACET_SMTP_USERNAME: ${FACET_SMTP_USERNAME:?FACET_SMTP_USERNAME is required - see .env.example}
+      FACET_SMTP_PASSWORD: ${FACET_SMTP_PASSWORD:?FACET_SMTP_PASSWORD is required - see .env.example}
+      FACET_SECRETS_MASTER_KEY: ${FACET_SECRETS_MASTER_KEY:?FACET_SECRETS_MASTER_KEY is required - see .env.example}
+      JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?JWT_SIGNING_KEY is required - see .env.example}
+    volumes:
+      - artifact-store:/data/store
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    image: ghcr.io/wearefacet/facet-frontend:${FACET_VERSION:-latest}
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://backend:3000
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "${HTTPS_PORT:-3443}:${HTTPS_PORT:-3443}"
+      - "${CADDY_HTTP_PUBLISH:-127.0.0.1:18080:80}"
+    environment:
+      FACET_HOSTNAME: ${FACET_HOSTNAME:-facet.localhost}
+      HTTPS_PORT: ${HTTPS_PORT:-3443}
+      BACKEND_URL: http://backend:3000
+      FRONTEND_URL: http://frontend:3000
+    volumes:
+      - caddy-data:/data
+      - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
+    networks:
+      default:
+        aliases:
+          - facet.localhost
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+
+volumes:
+  pg-data:
+  redis-data:
+  caddy-data:
+  artifact-store:

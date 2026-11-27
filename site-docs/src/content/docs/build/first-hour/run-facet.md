@@ -11,28 +11,51 @@ next: /build/first-hour/first-domain/
 verified_at: c34885a
 ---
 
-You have the repository on your machine and you want Facet running in front
-of you. Five containers give you a complete instance: PostgreSQL, Redis, the
-backend, the frontend, and the Caddy edge that terminates TLS. At the end of
-this tutorial the first administrator is signed in and the welcome tour has
+You want Facet running in front of you, without cloning the repository.
+Five containers give you a complete instance: PostgreSQL, Redis, the
+backend, the frontend, and the Caddy edge that terminates TLS. The two Facet
+images are pulled from GHCR — you do not build them. At the end of this
+tutorial the first administrator is signed in and the welcome tour has
 introduced the product.
 
 **You will build:** a running Facet instance with one admin account.
-**Time:** about 15 minutes, plus the first image build.
+**Time:** about 10 minutes, plus the first image pull.
 **You need:** [Docker with Compose](https://docs.docker.com/compose/) and a
 browser. Check Docker with `docker compose version`.
 
-## 1. Set the stack values
-
-The stack reads its values from one file. Copy the template next to the
-compose file:
+:::tip
+If you have Node 20+, one command does everything below:
 
 ```sh
-cd facet
-cp docker/.env.example docker/.env
+npm install -g @facetapp/cli
+facet-cli setup-dev
 ```
 
-Open `docker/.env` and set the values the file comments describe. At
+It writes the stack files, starts the containers, seeds the dev admin, and
+fetches an API key. The rest of this page shows the manual steps the command
+runs.
+:::
+
+## 1. Get the three stack files
+
+Make a folder and download the stack from the latest release. Nothing else
+is needed — no repository clone:
+
+```sh
+mkdir facet && cd facet
+curl -fsSLO https://github.com/wearefacet/facet/releases/latest/download/compose.yml
+curl -fsSLO https://github.com/wearefacet/facet/releases/latest/download/Caddyfile.prod
+curl -fsSL  https://github.com/wearefacet/facet/releases/latest/download/.env.example -o .env.example
+cp .env.example .env
+```
+
+`compose.yml` pulls `ghcr.io/wearefacet/facet` and
+`ghcr.io/wearefacet/facet-frontend`; it never builds. It pins the tag in
+`FACET_VERSION` — `latest` by default.
+
+## 2. Set the stack values
+
+Open `.env` and set the values the file comments describe. At
 minimum:
 
 - `POSTGRES_PASSWORD` — the password of the built-in PostgreSQL.
@@ -48,33 +71,33 @@ minimum:
 A missing value fails the boot with a message that names the variable. Fix
 the file and start again — the boot is safe to repeat.
 
-## 2. Start the stack
+## 3. Start the stack
 
-From the repository root:
+From the folder that holds `compose.yml`:
 
 ```sh
-docker compose -f docker/compose.prod.yml up -d --wait
+docker compose up -d --wait
 ```
 
-The first run pulls or builds five images, which takes a few minutes.
-`--wait` returns when every service reports healthy. On a fresh volume the
-backend bootstraps itself: the boot log shows `facet migrate` applying the
-database migrations, then `facet seed:core` creating the core doctypes. You
-never run a schema step by hand.
+The first run pulls five images, which takes a few minutes. `--wait` returns
+when every service reports healthy. On a fresh volume the backend
+bootstraps itself: the boot log shows `facet migrate` applying the database
+migrations, then `facet seed:core` creating the core doctypes. You never run
+a schema step by hand.
 
 You should see five healthy containers:
 
 ```sh
-docker compose -f docker/compose.prod.yml ps
+docker compose ps
 ```
 
 ```text
-NAME                          IMAGE                          STATUS
-facet-docs-wp14a-backend-1    facet                          Up 18 seconds (healthy)
-facet-docs-wp14a-caddy-1      caddy:2                        Up 6 seconds
-facet-docs-wp14a-frontend-1   facet-frontend                 Up 12 seconds (healthy)
-facet-docs-wp14a-postgres-1   pgvector/pgvector:0.8.0-pg17   Up 23 seconds (healthy)
-facet-docs-wp14a-redis-1      redis:7                        Up 23 seconds (healthy)
+NAME                          IMAGE                                   STATUS
+facet-backend-1               ghcr.io/wearefacet/facet:latest         Up 18 seconds (healthy)
+facet-caddy-1                 caddy:2                                 Up 6 seconds
+facet-frontend-1              ghcr.io/wearefacet/facet-frontend:latest Up 12 seconds (healthy)
+facet-postgres-1              pgvector/pgvector:0.8.0-pg17             Up 23 seconds (healthy)
+facet-redis-1                 redis:7                                 Up 23 seconds (healthy)
 ```
 
 Ask the backend directly. The readiness probe answers `status: ok`:
@@ -90,13 +113,13 @@ curl -sk https://facet.localhost:3443/Healthcheck
 The probe path is `/Healthcheck`, with a capital H. The lowercase spelling
 answers 404, so a typo cannot fake a green light.
 
-## 3. Create the first admin
+## 4. Create the first admin
 
 A fresh install has no login. Create the administrator with the bootstrap
 command:
 
 ```sh
-docker compose -f docker/compose.prod.yml run --rm backend seed:admin ops@your-company.tld
+docker compose run --rm backend seed:admin ops@your-company.tld
 ```
 
 The command prints the account and a one-time password:
@@ -117,14 +140,14 @@ bcrypt hash.
 Check the account exists:
 
 ```sh
-docker compose -f docker/compose.prod.yml exec -T backend sh -c './facet accounts:list'
+docker compose exec -T backend sh -c './facet accounts:list'
 ```
 
 ```text
 06H1G3A8YM80JQJ52B9VNNTFQJ	ops@your-company.tld	Administrator	active	iam.Roles.admin
 ```
 
-## 4. Sign in and set your password
+## 5. Sign in and set your password
 
 Open `https://facet.localhost:3443`.
 
@@ -148,7 +171,7 @@ You can enroll later — the steps are in
 
 You land on the dashboard, signed in as the admin.
 
-## 5. Take the welcome tour
+## 6. Take the welcome tour
 
 The first sign-in as the seeded admin opens the welcome tour: seven steps
 that present Facet — the governance layer, domains, the Builder, roles, the
@@ -164,6 +187,7 @@ next tutorial. You can restart the tour later in **Settings**.
 ## What you learned
 
 - A Facet instance is five containers, started from one compose file.
+- The images are pulled from GHCR — no repository clone, no build.
 - The backend bootstraps its own schema — migrations and core doctypes — on
   the first boot.
 - `seed:admin` creates the first administrator with a one-time password.
@@ -176,10 +200,10 @@ next tutorial. You can restart the tour later in **Settings**.
 Read the boot log — it names the missing or wrong value:
 
 ```sh
-docker compose -f docker/compose.prod.yml logs backend
+docker compose logs backend
 ```
 
-Every required value must be set in `docker/.env`. Set the named variable
+Every required value must be set in `.env`. Set the named variable
 and start the stack again.
 
 ### The browser cannot reach `facet.localhost`
@@ -193,7 +217,7 @@ Nobody can recover it. Create a second admin and reset the first account
 from the UI:
 
 ```sh
-docker compose -f docker/compose.prod.yml run --rm backend seed:admin second-admin@your-company.tld
+docker compose run --rm backend seed:admin second-admin@your-company.tld
 ```
 
 ## Related
