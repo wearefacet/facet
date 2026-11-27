@@ -52,8 +52,9 @@ Connect an external agent over MCP when:
 
 The session below ran against a dev instance at
 `https://facet.localhost:3443` with the Brightwater Rentals data loaded.
-Ravi's admin account drove it, so the browser consent steps carry a session
-cookie (`-b facet-cookies.txt`); a real client opens the same URLs in a
+Ravi's admin account drove it: every API call presents its own credential,
+so the transcript issues an API key for the admin role and carries it in
+`Authorization: Bearer`. A real client opens the same consent URLs in a
 browser.
 
 ## Steps
@@ -162,15 +163,16 @@ the role.
 The consent confirm is a `POST /OAuth/authorize` with the same parameters
 plus the elected `role` — this is the step a browser form submits. In the
 session below, a signed-in operator session drives it through `curl`. The
-request needs the CSRF header:
+request carries the elected role and the credential:
 
 ```sh
 VERIFIER=$(openssl rand -base64 48 | tr '+/' '-_' | tr -d '=\n')
 CHALLENGE=$(printf '%s' "$VERIFIER" | openssl dgst -sha256 -binary \
   | openssl base64 | tr '+/' '-_' | tr -d '=\n')
 
-curl -sk -b facet-cookies.txt -X POST https://facet.localhost:3443/OAuth/authorize \
-  -H 'Content-Type: application/json' -H 'X-Requested-With: XMLHttpRequest' \
+curl -sk -X POST https://facet.localhost:3443/OAuth/authorize \
+  -H "Authorization: Bearer $RAVI_KEY" \
+  -H 'Content-Type: application/json' \
   -d '{
     "client_id": "o-4ZmjY-zkPOT8w61Nzf0GJ55VfTq7Zkrk6TC2Iu8XU",
     "redirect_uri": "http://127.0.0.1:8765/callback",
@@ -354,17 +356,14 @@ Every write stamps `mutations.channel = "mcp"` plus the pinned role as
 
 The full session, end to end, on one Brightwater dev instance. Steps 3 and
 4 need a browser consent in production; the script drives the consent with
-a signed-in operator session instead:
+an admin API key instead:
 
 ```sh
 BASE=https://facet.localhost:3443
 MCPURL=$BASE/Api/_mcp/iam.Roles.admin
-JAR=facet-cookies.txt
 
-# 0. Operator session for the consent steps.
-curl -sk -c $JAR -X POST $BASE/Api/iam/login \
-  -H 'Content-Type: application/json' -H 'X-Requested-With: XMLHttpRequest' \
-  -d '{"email": "ravi@brightwater.example", "password": "brightwater-ravi"}'
+# 0. An API key for the consent steps — pinned to the admin role.
+RAVI_KEY=$(pnpx @facetapp/cli connect >/dev/null && pnpx @facetapp/cli apikey)
 
 # 1. Discover.
 curl -sk -D - -o /dev/null -X POST $MCPURL \
@@ -381,8 +380,9 @@ CLIENT_ID=$(curl -sk -X POST $BASE/OAuth/register \
 VERIFIER=$(openssl rand -base64 48 | tr '+/' '-_' | tr -d '=\n')
 CHALLENGE=$(printf '%s' "$VERIFIER" | openssl dgst -sha256 -binary \
   | openssl base64 | tr '+/' '-_' | tr -d '=\n')
-CODE=$(curl -sk -b $JAR -X POST $BASE/OAuth/authorize \
-  -H 'Content-Type: application/json' -H 'X-Requested-With: XMLHttpRequest' \
+CODE=$(curl -sk -X POST $BASE/OAuth/authorize \
+  -H "Authorization: Bearer $RAVI_KEY" \
+  -H 'Content-Type: application/json' \
   -d '{"client_id":"'"$CLIENT_ID"'","redirect_uri":"http://127.0.0.1:8765/callback","state":"consent-round-trip","code_challenge":"'"$CHALLENGE"'","code_challenge_method":"S256","resource":"'"$MCPURL"'","role":"iam.Roles.admin"}' \
   | grep -o '"code":"[^"]*"' | cut -d'"' -f4)
 

@@ -18,7 +18,7 @@ product. Follow them in order; each one continues from the last.
 **Before you start**, you need two things:
 
 - [Docker with Compose](https://docs.docker.com/compose/) for tutorial 1. No
-  repository clone: `facet-cli setup-dev` pulls the images.
+  repository clone: `pnpx @facetapp/cli setup-dev` pulls the images.
 - Node.js 20+ for tutorials 1 and 4 (the CLI and the coding agent). The rest
   need nothing beyond a browser.
 
@@ -31,7 +31,7 @@ follows two pages sees the same domains and the same people.
 
 | # | Tutorial | Time | You end with |
 |---|---|---|---|
-| 1 | [Run Facet](/build/first-hour/run-facet/) | 15 min | The container stack up, the first admin signed in, the welcome tour done. |
+| 1 | [Run Facet](/build/first-hour/run-facet/) | 10 min | The container stack up, the admin signed in, the welcome tour done. |
 | 2 | [Model your first domain](/build/first-hour/first-domain/) | 20 min | The Brightwater equipment domain built in a draft with the assistant, checked, published, with a kanban board of maintenance tickets. |
 | 3 | [The same domain in files](/build/first-hour/first-domain-in-files/) | 15 min | The same domain as files under the dev watcher — one change seen live, one bundle exported. Developers only. |
 | 4 | [Ship your first app](/build/first-hour/first-app/) | 30 min | The Brightwater check-out app, built with a coding agent and signed in through Facet. |

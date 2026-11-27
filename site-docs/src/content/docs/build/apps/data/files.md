@@ -49,12 +49,19 @@ The live calls on this page ran against a dev instance at
 
 ### 1. Attach files on write
 
+Every API call presents its own credential. Issue a key pinned to Nadia's
+`manager` role and keep it in a variable:
+
+```sh
+NADIA_KEY=$(pnpx @facetapp/cli connect --role manager >/dev/null && pnpx @facetapp/cli apikey)
+```
+
 One multipart call creates the document and uploads the parts in one
 transaction:
 
 ```sh
-curl -sk -b facet-cookies.txt -X POST https://facet.localhost:3443/Api/clients/Company \
-  -H 'X-Requested-With: XMLHttpRequest' \
+curl -sk -X POST https://facet.localhost:3443/Api/clients/Company \
+  -H "Authorization: Bearer $NADIA_KEY" \
   -F '$content={"name": "Café des Sports", "city": "Vienne"};type=application/json' \
   -F 'logo=@/path/to/logo.png'
 ```
@@ -72,7 +79,7 @@ two-line text file:
 ```sh
 printf 'Brightwater invoice, season 2026\nTotal: 1 240 EUR\n' > sample.txt
 
-curl -sk -b facet-cookies.txt -H 'X-Requested-With: XMLHttpRequest' \
+curl -sk -H "Authorization: Bearer $NADIA_KEY" \
   -F 'file=@sample.txt;type=text/plain' \
   https://facet.localhost:3443/Api/core/artifacts
 ```
@@ -98,7 +105,7 @@ unlinked upload after the retention window.
 ### 3. Read metadata and mint a fresh URL
 
 ```sh
-curl -sk -b facet-cookies.txt \
+curl -sk -H "Authorization: Bearer $NADIA_KEY" \
   https://facet.localhost:3443/Api/core/artifacts/06H1FS5YBW6JQ7R39DQBK6T236
 ```
 
@@ -138,7 +145,7 @@ The download gateway does the auth check, the read check, and the mint, then
 answers `302` to the signed URL:
 
 ```sh
-curl -sk -D - -o /dev/null -b facet-cookies.txt \
+curl -sk -D - -o /dev/null -H "Authorization: Bearer $NADIA_KEY" \
   'https://facet.localhost:3443/Api/core/artifacts/06H1FS5YBW6JQ7R39DQBK6T236/download' | grep -i location
 # location: https://facet.localhost:3443/A/06H1FS5YJC402HNNVJHGAF529V?exp=…&sig=…
 ```
@@ -159,17 +166,18 @@ A permanent URL does not expire. It needs a named permission — the
 The call names the owner row that binds the grant:
 
 ```sh
-curl -sk -b facet-cookies.txt -X POST \
+curl -sk -X POST \
   https://facet.localhost:3443/Api/core/artifacts/06H1FS5YBW6JQ7R39DQBK6T236/publish \
-  -H 'Content-Type: application/json' -H 'X-Requested-With: XMLHttpRequest' \
+  -H "Authorization: Bearer $NADIA_KEY" \
+  -H 'Content-Type: application/json' \
   -d '{"owner_id": "<owner document id>"}'
 ```
 
 Revoke any grant with `DELETE /Api/core/artifacts/grants/:gid`:
 
 ```sh
-curl -sk -b facet-cookies.txt -X DELETE -o /dev/null -w '%{http_code}\n' \
-  -H 'X-Requested-With: XMLHttpRequest' \
+curl -sk -X DELETE -o /dev/null -w '%{http_code}\n' \
+  -H "Authorization: Bearer $NADIA_KEY" \
   https://facet.localhost:3443/Api/core/artifacts/grants/06H1FS6HNCZ1C6KWKZXMZSRDAE
 # 204
 ```

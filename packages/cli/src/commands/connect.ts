@@ -14,6 +14,11 @@ export const API_KEY_NAME = 'facet-cli';
 
 export interface ConnectOptions {
 	promptFn?: PromptFn;
+	/**
+	 * Role to pin the key to, as a qualified id or a bare name (`editor`).
+	 * Defaults to the session's active role.
+	 */
+	role?: string;
 	/** Test seam: replaces the interactive OAuth flow. */
 	login?: (input: { instanceUrl: string }) => Promise<StoredSession>;
 	/** Test seam: replaces the API client factory. */
@@ -48,21 +53,27 @@ export async function runConnect(
 
 	const api = (options.apiFactory ?? createApi)(instanceUrl);
 	const me = await api.me();
-	const created = await api.createApiKey(API_KEY_NAME, me.active_role);
+	const role = qualifyRole(options.role ?? me.active_role);
+	const created = await api.createApiKey(API_KEY_NAME, role);
 
 	const stored: StoredKey = {
 		key: created.key,
 		id: created.id,
 		display_prefix: created.display_prefix,
-		role: me.active_role,
+		role,
 		...(created.expires_at !== null ? { expires_at: created.expires_at } : {})
 	};
 	writeStoredKey(root, instanceUrl, stored);
 
-	console.log(`Issued API key ${created.display_prefix} (role ${me.active_role}).`);
+	console.log(`Issued API key ${created.display_prefix} (role ${role}).`);
 	console.log(
 		`Stored it in .facet.local.json. Use it with: Authorization: Bearer $(facet-cli apikey)`
 	);
+}
+
+/** `editor` becomes `iam.Roles.editor`; a qualified id passes through. */
+export function qualifyRole(role: string): string {
+	return role.startsWith('iam.Roles.') ? role : `iam.Roles.${role}`;
 }
 
 /** Resolves the instance URL: the configured target first, then a prompt. */

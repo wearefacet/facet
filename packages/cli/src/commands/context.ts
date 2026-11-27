@@ -49,3 +49,12 @@ export async function confirm(question: string, promptFn: PromptFn = prompt): Pr
 	const answer = (await promptFn(`${question} (y/N)`)).toLowerCase();
 	return answer === 'y' || answer === 'yes';
 }
+
+/** Asks a yes/no question that takes yes on a bare Enter. */
+export async function confirmDefaultYes(
+	question: string,
+	promptFn: PromptFn = prompt
+): Promise<boolean> {
+	const answer = (await promptFn(`${question} (Y/n)`)).toLowerCase();
+	return answer !== 'n' && answer !== 'no';
+}

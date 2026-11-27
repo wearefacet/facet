@@ -196,8 +196,13 @@ describe('cli program', () => {
 		it('routes connect and apikey to their runners', async () => {
 			await run('connect', '--target', 'prod');
 			await run('apikey');
-			expect(runConnect).toHaveBeenCalledWith(process.cwd(), 'prod');
+			expect(runConnect).toHaveBeenCalledWith(process.cwd(), 'prod', { role: undefined });
 			expect(runApikey).toHaveBeenCalledWith(process.cwd(), undefined);
+		});
+
+		it('routes the connect --role flag to its runner', async () => {
+			await run('connect', '--target', 'prod', '--role', 'warehouse');
+			expect(runConnect).toHaveBeenCalledWith(process.cwd(), 'prod', { role: 'warehouse' });
 		});
 
 		it('routes setup-dev and its flags to its runner', async () => {

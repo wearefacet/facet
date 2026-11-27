@@ -107,11 +107,12 @@ error texts, from a live session:
 ### 3. Receive frames
 
 While a session was subscribed to `/clients/Company`, this create ran over
-the REST API:
+the REST API, under Nadia's API key:
 
 ```sh
-curl -sk -b facet-cookies.txt -X POST https://facet.localhost:3443/Api/clients/Company \
-  -H 'Content-Type: application/json' -H 'X-Requested-With: XMLHttpRequest' \
+curl -sk -X POST https://facet.localhost:3443/Api/clients/Company \
+  -H "Authorization: Bearer $NADIA_KEY" \
+  -H 'Content-Type: application/json' \
   -d '{ "name": "WS Test Co", "city": "Lyon" }'
 ```
 

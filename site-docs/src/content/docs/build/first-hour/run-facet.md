@@ -1,7 +1,7 @@
 ---
 type: tutorial
 title: Run Facet
-description: Start the container stack, seed the first admin, and sign in.
+description: Start Facet on your machine with one command, sign in as the admin, and take the welcome tour.
 audience: [evaluator, operator]
 features: [PLT-16, PLT-01, IAM-12, FE-01, FE-19, DOM-24]
 sidebar:
@@ -11,189 +11,103 @@ next: /build/first-hour/first-domain/
 verified_at: c34885a
 ---
 
-You want Facet running in front of you, without cloning the repository.
-Five containers give you a complete instance: PostgreSQL, Redis, the
-backend, the frontend, and the Caddy edge that terminates TLS. The two Facet
-images are pulled from GHCR — you do not build them. At the end of this
-tutorial the first administrator is signed in and the welcome tour has
-introduced the product.
+You want Facet running in front of you, without cloning the repository. One
+command gives you a complete instance: PostgreSQL, Redis, the backend, the
+frontend, and the Caddy edge that terminates TLS — five containers, all
+started for you. The two Facet images are pulled from GHCR — you do not build
+them. At the end of this tutorial the administrator is signed in and the
+welcome tour has introduced the product.
 
 **You will build:** a running Facet instance with one admin account.
 **Time:** about 10 minutes, plus the first image pull.
-**You need:** [Docker with Compose](https://docs.docker.com/compose/) and a
-browser. Check Docker with `docker compose version`.
+**You need:** [Docker with Compose](https://docs.docker.com/compose/), Node
+20+, and a browser. Check both with `docker compose version` and
+`node --version`.
 
-:::tip
-If you have Node 20+, one command does everything below:
+## 1. Start the stack
 
-```sh
-npm install -g @facetapp/cli
-facet-cli setup-dev
-```
-
-It writes the stack files, starts the containers, seeds the dev admin, and
-fetches an API key. The rest of this page shows the manual steps the command
-runs.
-:::
-
-## 1. Get the three stack files
-
-Make a folder and download the stack from the latest release. Nothing else
-is needed — no repository clone:
+Run the CLI command in an empty folder. It writes the stack files, starts the
+containers, seeds the admin, and fetches an API key:
 
 ```sh
-mkdir facet && cd facet
-curl -fsSLO https://github.com/wearefacet/facet/releases/latest/download/compose.yml
-curl -fsSLO https://github.com/wearefacet/facet/releases/latest/download/Caddyfile.prod
-curl -fsSL  https://github.com/wearefacet/facet/releases/latest/download/.env.example -o .env.example
-cp .env.example .env
+pnpx @facetapp/cli setup-dev
 ```
 
-`compose.yml` pulls `ghcr.io/wearefacet/facet` and
-`ghcr.io/wearefacet/facet-frontend`; it never builds. It pins the tag in
-`FACET_VERSION` — `latest` by default.
-
-## 2. Set the stack values
-
-Open `.env` and set the values the file comments describe. At
-minimum:
-
-- `POSTGRES_PASSWORD` — the password of the built-in PostgreSQL.
-- `FACET_SECRETS_MASTER_KEY` and `FACET_ARTIFACT_GRANT_SECRET` — two
-  secrets. Generate each with `openssl rand -base64 32`.
-- `JWT_SIGNING_KEY` — a P-256 private key in PEM form. Generate one with
-  `openssl ecparam -genkey -name prime256v1 -noout`. The backend uses it to
-  sign session tokens; without it, every restart invalidates outstanding
-  sessions.
-- `FACET_SMTP_*` — placeholder values are fine for now. Real delivery
-  matters when you invite people by link (tutorial 5).
-
-A missing value fails the boot with a message that names the variable. Fix
-the file and start again — the boot is safe to repeat.
-
-## 3. Start the stack
-
-From the folder that holds `compose.yml`:
-
-```sh
-docker compose up -d --wait
-```
-
-The first run pulls five images, which takes a few minutes. `--wait` returns
-when every service reports healthy. On a fresh volume the backend
-bootstraps itself: the boot log shows `facet migrate` applying the database
-migrations, then `facet seed:core` creating the core doctypes. You never run
-a schema step by hand.
-
-You should see five healthy containers:
-
-```sh
-docker compose ps
-```
+Three questions, each with a default — press Enter three times:
 
 ```text
-NAME                          IMAGE                                   STATUS
-facet-backend-1               ghcr.io/wearefacet/facet:latest         Up 18 seconds (healthy)
-facet-caddy-1                 caddy:2                                 Up 6 seconds
-facet-frontend-1              ghcr.io/wearefacet/facet-frontend:latest Up 12 seconds (healthy)
-facet-postgres-1              pgvector/pgvector:0.8.0-pg17             Up 23 seconds (healthy)
-facet-redis-1                 redis:7                                 Up 23 seconds (healthy)
+Hostname [facet.localhost]:
+HTTPS port [3443]:
+Watch a folder for domain bundles? (Y/n):
 ```
 
-Ask the backend directly. The readiness probe answers `status: ok`:
+The command then writes `compose.yml`, `.env` with generated secrets,
+`config.dev.yml`, `Caddyfile.prod`, and `facet.config.json`, and runs
+`docker compose up -d --wait`. The first run pulls five images, which takes a
+few minutes. `--wait` returns when every service reports healthy.
 
-```sh
-curl -sk https://facet.localhost:3443/Healthcheck
-```
+`setup-dev` also writes `.gitignore` and runs `git init`, so the secrets stay
+out of version control. To scaffold without starting, pass `--no-start`; to
+take every default without a question, pass `--yes`.
 
-```json
-{"status":"ok","service":{"env":"production","instance_id":"06H1G35H…"},"database":{"status":"ok","error":null,"pools":[{"database":"main","role":"rw","status":"ok","error":null}]},"redis":{"status":"ok",…}
-```
-
-The probe path is `/Healthcheck`, with a capital H. The lowercase spelling
-answers 404, so a typo cannot fake a green light.
-
-## 4. Create the first admin
-
-A fresh install has no login. Create the administrator with the bootstrap
-command:
-
-```sh
-docker compose run --rm backend seed:admin ops@your-company.tld
-```
-
-The command prints the account and a one-time password:
-
-```text
-Admin account created.
-  email:    ops@your-company.tld
-  id:       06H1G3A8YM80JQJ52B9VNNTFQJ
-  password: BVPK-XYC2-XDNG-DGTZ
-
-This password is shown once. It is not stored in plaintext and not logged.
-The account must change the password at first login.
-```
-
-Record the password now. Nobody can read it back — Facet stores only a
-bcrypt hash.
-
-Check the account exists:
-
-```sh
-docker compose exec -T backend sh -c './facet accounts:list'
-```
-
-```text
-06H1G3A8YM80JQJ52B9VNNTFQJ	ops@your-company.tld	Administrator	active	iam.Roles.admin
-```
-
-## 5. Sign in and set your password
+## 2. Sign in
 
 Open `https://facet.localhost:3443`.
 
 Your browser warns about the certificate. The edge issues it from its own
-internal certificate authority — expected for a `.localhost` name. Accept
-the warning to continue.
+internal certificate authority — expected for a `.localhost` name. Accept the
+warning to continue.
 
-Sign in with the email and the one-time password. Facet does not open the
-workspace yet: it first asks you to set a real password on the **Set a new
-password** screen. Enter the one-time password under **Current password**,
-choose a new password of at least 8 characters, and click **Save password
-and continue**. The one-time password stops working the moment the change
-lands.
+Sign in with the dev admin:
 
-![The Set a new password screen asks for the current password and the new password twice.](/assets/screens/build/run-facet-3.png)
+- **Email**: `admin@example.tld`
+- **Password**: `admin`
 
-The next screen can ask you to set up two-factor authentication: scan the
-code with an authenticator app on your phone, or choose **Skip for now**.
-You can enroll later — the steps are in
-[Sign in and secure your account](/use/first-day/sign-in/).
+`setup-dev` also printed both, with the URL, in its summary. This credential
+is a dev default: it skips the password-change step and the platform refuses
+to seed it on a production instance.
+
+:::note
+The `setup-dev` command fetches an API key through the OAuth consent screen
+in your browser. If that prompt appears, choose the admin role and click
+**Allow**. The key lands in `.facet.local.json` for `facet-cli` calls; you do
+not need it for this tutorial.
+:::
 
 You land on the dashboard, signed in as the admin.
 
-## 6. Take the welcome tour
+## 3. Take the welcome tour
 
-The first sign-in as the seeded admin opens the welcome tour: seven steps
-that present Facet — the governance layer, domains, the Builder, roles, the
-audit trail, integrations — and end with two buttons, **Create a domain**
-and **Import a bundle**.
+The first sign-in opens the welcome tour: seven steps that present Facet —
+the governance layer, domains, the Builder, roles, the audit trail,
+integrations — and end on **Your first domain** with three buttons: **Create
+a domain**, **Import a bundle**, and **Done**.
 
-![The welcome tour opens on the dashboard at its first step, A governance layer.](/assets/screens/build/run-facet-2.png)
+![The welcome tour opens on the dashboard at its first step, A governance layer.](/screens/build/run-facet-2.png)
 
-Click **Next** through the seven steps, or tick **Don't show again**. The
-final step's buttons lead straight into your first domain — which is the
-next tutorial. You can restart the tour later in **Settings**.
+Click **Next** through the seven steps, or tick **Don't show again** to stop
+it opening at your next sign-in. The tour leaves you on the dashboard, where
+the sidebar offers **Builder** and **Configure**. To see the tour again, turn
+**Show the welcome tour** back on in **Settings → Welcome tour**.
 
 ## What you learned
 
-- A Facet instance is five containers, started from one compose file.
-- The images are pulled from GHCR — no repository clone, no build.
+- One command, `facet-cli setup-dev`, starts a complete Facet instance — five
+  containers, no repository clone, no build.
 - The backend bootstraps its own schema — migrations and core doctypes — on
   the first boot.
-- `seed:admin` creates the first administrator with a one-time password.
-- First sign-in ends with a password change and the welcome tour.
+- The dev admin is `admin@example.tld` / `admin`; a production instance uses
+  `seed:admin` and a one-time password instead.
+- The welcome tour introduces the product on the first sign-in.
 
 ## Troubleshooting
+
+### The command stops before the stack starts
+
+`setup-dev` fails when Docker is missing or when the folder already holds a
+stack. Check Docker with `docker compose version`. For an existing folder,
+re-run with `--force` to overwrite the stack files, or pass `--dir` to pick
+another folder.
 
 ### The backend fails to boot
 
@@ -203,31 +117,28 @@ Read the boot log — it names the missing or wrong value:
 docker compose logs backend
 ```
 
-Every required value must be set in `.env`. Set the named variable
-and start the stack again.
-
 ### The browser cannot reach `facet.localhost`
 
 Try the address with the explicit port, `https://facet.localhost:3443`. If
-you changed `HTTPS_PORT` in `docker/.env`, use that port.
+you answered a different HTTPS port at the first question, use that port.
 
-### The one-time password is lost
+### Sign-in is refused
 
-Nobody can recover it. Create a second admin and reset the first account
-from the UI:
-
-```sh
-docker compose run --rm backend seed:admin second-admin@your-company.tld
-```
+The dev credential is `admin@example.tld` / `admin`. If you reset the
+database (`docker compose run --rm backend db_reset --yes seed:dev`), the
+same credential works again.
 
 ## Related
 
 - [Your first hour](/build/first-hour/) — the route this tutorial starts.
-- [Deploy to production](/admin/install/production/) — the same stack,
-  hardened for a real host.
-- [The bootstrap CLI](/reference/cli-facet/) — `seed:admin`,
-  `accounts:list` and the other commands.
+- [Deploy to production](/admin/install/production/) — a real host, a real
+  hostname, and `seed:admin` instead of the dev credential.
+- [Run with containers](/admin/install/containers/) — the images, the config
+  mount, and the TLS edge in detail.
+- [The `facet-cli` developer CLI](/reference/cli-npm/) — `setup-dev` and the
+  other commands, with their options.
 - [Security and governance](/discover/security/)
+
 ## Next
 
 You have Facet running. In [Model your first domain](/build/first-hour/first-domain/)

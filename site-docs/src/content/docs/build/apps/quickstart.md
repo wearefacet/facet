@@ -15,8 +15,9 @@ to its first successful API call. You register the app, activate it, sign a
 user in, and read real data — every response below comes from a live
  Brightwater instance.
 
-> **For agents:** the whole path is four calls: `POST /Api/app/App` (session
-> cookie plus `X-Requested-With: XMLHttpRequest`) → `PATCH …/App/{id}` with
+> **For agents:** the whole path is four calls: `POST /Api/app/App` (an API key
+> in `Authorization: Bearer` — `facet-cli apikey` prints the stored one — or a
+> session cookie plus `X-Requested-With: XMLHttpRequest`) → `PATCH …/App/{id}` with
 > `{"status": "active"}` → `GET /OAuth/authorize` + `POST /OAuth/authorize`
 > with `role`, then `POST /OAuth/token` with the PKCE `code_verifier` →
 > `GET /Api/<domain>/<Doctype>` with `Authorization: Bearer <access_token>`.
@@ -35,30 +36,38 @@ AI agent at [Connect agents over MCP](/build/apps/agents/mcp/).
 - A running Facet instance and an account that holds `update` on `app.App`.
   The seeded `admin` role holds it. On the Brightwater example, sign in as
   Ravi Menon (`ravi@brightwater.example`).
-- `curl` and `jq` (or any HTTP client) for the walkthrough. The app itself
-  makes the same calls from its own code — see the complete browser client in
-  [Sign users in](/build/apps/connect/user-login/).
+- `curl` (or any HTTP client) and `pnpx @facetapp/cli` for the walkthrough.
+  The app itself makes the same calls from its own code — see the complete
+  browser client in [Sign users in](/build/apps/connect/user-login/).
 
 ## Steps
 
 ### 1. Register the app
 
-Sign in as an operator and keep the session cookies:
+Every API call presents its own credential, and the CLI issues one pinned to a
+role you hold. From your project folder, sign in once through the browser
+(elect the admin role on the consent screen):
 
 ```sh
-curl -sk -c cookies.txt -X POST https://facet.localhost:3443/Api/iam/login \
-  -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
-  -d '{"email": "ravi@brightwater.example", "password": "brightwater-ravi"}'
+pnpx @facetapp/cli connect
+```
+
+The command signs you in (the same OAuth flow as `login`), asks whether to
+store an API key, and writes the key to `.facet.local.json`. It needs a
+`facet.config.json` for the target — `init` writes one, or `connect` asks for
+the URL once. Keep the key in a variable:
+
+```sh
+RAVI_KEY=$(pnpx @facetapp/cli apikey)
 ```
 
 Then create the app document. The grants name concrete doctypes — a
 wildcard target is refused:
 
 ```sh
-curl -sk -b cookies.txt -X POST https://facet.localhost:3443/Api/app/App \
+curl -sk -X POST https://facet.localhost:3443/Api/app/App \
+  -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
   -d '{
     "slug": "bfr-checkout",
     "name": "Brightwater Check-out",
@@ -118,10 +127,10 @@ A new app is a `draft`. Sign-ins and keys work only when the status is
 `active`:
 
 ```sh
-curl -sk -b cookies.txt -X PATCH \
+curl -sk -X PATCH \
   https://facet.localhost:3443/Api/app/App/06H1FQF7NGDJJKSNHXPYT6627M \
+  -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
   -d '{"status": "active"}'
 ```
 
@@ -146,7 +155,7 @@ In the running app the browser does the next two hops. From a terminal,
 ask the authorize endpoint what the consent screen would show:
 
 ```sh
-curl -sk -b cookies.txt \
+curl -sk -H "Authorization: Bearer $RAVI_KEY" \
   'https://facet.localhost:3443/OAuth/authorize?response_type=code&client_id=06H1FQF7NG357EQ0P348Z2BEV5&redirect_uri=http%3A%2F%2Flocalhost%3A5173%2Fauth%2Fcallback&code_challenge=JNVgr1Czh8QJ1zYgaq6fQFQT5bbfH90Snk4IEaRPQAc&code_challenge_method=S256&state=winter-fair-43' \
   -H 'Accept: application/json'
 ```
@@ -180,9 +189,9 @@ The user elects one role. Post the election with the same parameters plus
 `role`; the answer carries the one-time code:
 
 ```sh
-curl -sk -b cookies.txt -X POST https://facet.localhost:3443/OAuth/authorize \
+curl -sk -X POST https://facet.localhost:3443/OAuth/authorize \
+  -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
   -d '{
     "response_type": "code",
     "client_id": "06H1FQF7NG357EQ0P348Z2BEV5",

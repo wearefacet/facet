@@ -17,7 +17,8 @@ deploy goes live with no restart and no config change. An app without a
 > **For agents:** Deploy with `pnpx @facetapp/cli deploy --note "build"`, or POST multipart to
 > `/Api/app/<app id>/deploy`: one `$content` JSON part
 > (`{"spa": true, "activate": true, "note": "build", "files": [{"path": "index.html"}]}`) plus one
-> `files[<i>].file` part per file. Auth: `Authorization: Bearer <token>`; the caller needs
+> `files[<i>].file` part per file. Auth: `Authorization: Bearer <token>` — an app key, a user
+> API key from `POST /Api/iam/keys`, or an OAuth token; the caller needs
 > `deploy` on `app.App` in grant ∩ role. List:
 > `GET /Api/app/Deployment?filters[app_id__eq]=app.App.<id>&sort=-revision`. Roll back:
 > `PATCH /Api/app/App/<id>` with `{"active_deployment": "app.Deployment.<id>"}`.
@@ -38,6 +39,10 @@ Use this page when:
   seeded `editor` role does not. Over the API, [grant](/admin/apps-access/app-grants/) and role must both
   carry it.
 - For a custom host: control of the Domain Name System (DNS) records.
+
+For the API steps, sign in once and store an API key with the CLI —
+`pnpx @facetapp/cli connect`, then `RAVI_KEY=$(pnpx @facetapp/cli apikey)`.
+The key is pinned to the role you elected on the consent screen.
 
 Brightwater's check-out board runs as a Facet-hosted app: the
 `bfr-checkout` app record signs its browser calls in with OAuth and serves
@@ -122,11 +127,11 @@ failed file rolls the whole deploy back.
 The route answers `{id, revision, activated, files}` — not a document
 envelope; `files` counts the accepted files.
 
-The caller needs `deploy` on `app.App` in grant ∩ role. An OAuth app token
-or an app-owned API key works with a plain `Authorization: Bearer` header;
-an operator session instead needs the `X-Requested-With` header for the
-cross-site request forgery (CSRF) check. [Example](#example) shows the
-complete call.
+The caller needs `deploy` on `app.App` in grant ∩ role. An OAuth app token,
+an app-owned API key, or a user API key from `POST /Api/iam/keys` works with
+a plain `Authorization: Bearer` header; an operator session instead needs
+the `X-Requested-With` header for the cross-site request forgery (CSRF)
+check. [Example](#example) shows the complete call.
 
 ### 3. List releases
 
@@ -149,7 +154,7 @@ The list is newest revision first. The active release carries a `*`:
 Over the API:
 
 ```sh
-curl -skg -b facet-cookies.txt \
+curl -skg -H "Authorization: Bearer $RAVI_KEY" \
   'https://facet.localhost:3443/Api/app/Deployment?filters[app_id__eq]=app.App.<id>&sort=-revision'
 ```
 
@@ -173,9 +178,10 @@ The API form is a plain document update; the reference value is a qualified
 token, `app.Deployment.<id>`:
 
 ```sh
-curl -sk -b facet-cookies.txt -X PATCH \
+curl -sk -X PATCH \
   'https://facet.localhost:3443/Api/app/App/<app id>' \
-  -H 'Content-Type: application/json' -H 'X-Requested-With: XMLHttpRequest' \
+  -H "Authorization: Bearer $RAVI_KEY" \
+  -H 'Content-Type: application/json' \
   -d '{"active_deployment": "app.Deployment.<deployment id>"}'
 ```
 

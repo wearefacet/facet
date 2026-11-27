@@ -15,7 +15,7 @@ import {
 	type DevStackInput
 } from '../devcompose.js';
 import { generateJwtSigningKey, generateSecret } from '../util.js';
-import { confirm, prompt, type PromptFn } from './context.js';
+import { confirm, confirmDefaultYes, prompt, type PromptFn } from './context.js';
 
 /** Raised when the folder already holds a stack and `--force` is absent. */
 export class SetupError extends Error {
@@ -185,7 +185,7 @@ async function resolveAnswers(options: SetupDevOptions, ask: PromptFn): Promise<
 		watchPath = options.watch;
 	} else if (options.yes) {
 		watchPath = 'domains';
-	} else if (await confirm('Watch a folder for domain bundles?', ask)) {
+	} else if (await confirmDefaultYes('Watch a folder for domain bundles?', ask)) {
 		watchPath = (await ask('Watch folder', 'domains')) || 'domains';
 	}
 

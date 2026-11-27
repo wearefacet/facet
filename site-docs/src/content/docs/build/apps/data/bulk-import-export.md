@@ -18,7 +18,8 @@ runs in one transaction: every row lands, or none does.
 > /Api/<domain>/<doctype>/import` with the CSV or JSON body answers `202 {job_id, row_count,
 > status_url}`; poll `GET /Api/<domain>/<doctype>/import_export/<job_id>` for
 > `{id, status, error, result}`. One transaction: the first failing row aborts all. Upsert keys on
-> the `id` column. POSTs need `X-Requested-With: XMLHttpRequest` for cookie sessions.
+> the `id` column. Cookie-session POSTs need `X-Requested-With: XMLHttpRequest`;
+> API-key calls need no CSRF header.
 
 ## When to use this
 
@@ -54,11 +55,18 @@ The live calls on this page ran against a dev instance at
 
 ### 1. Export a doctype
 
+Every API call presents its own credential. Issue a key pinned to Nadia's
+`manager` role and keep it in a variable:
+
+```sh
+NADIA_KEY=$(pnpx @facetapp/cli connect --role manager >/dev/null && pnpx @facetapp/cli apikey)
+```
+
 A `wait=true` call blocks until the job ends and returns the file itself.
 This session exported the Brightwater companies:
 
 ```sh
-curl -sk -b facet-cookies.txt -H 'X-Requested-With: XMLHttpRequest' \
+curl -sk -H "Authorization: Bearer $NADIA_KEY" \
   -X POST 'https://facet.localhost:3443/Api/clients/Company/export?format=csv&wait=true' \
   -o companies.csv
 ```
@@ -97,9 +105,10 @@ answer `422`: the export is fixed to id order.
 ### 2. Export the current table view
 
 ```sh
-curl -sk -b facet-cookies.txt -X POST \
+curl -sk -X POST \
   'https://facet.localhost:3443/Api/clients/Company/export_view' \
-  -H 'Content-Type: application/json' -H 'X-Requested-With: XMLHttpRequest' \
+  -H "Authorization: Bearer $NADIA_KEY" \
+  -H 'Content-Type: application/json' \
   -d '{"columns": ["name", "city"], "sort": ["-created_at", "id"], "filters": {"city__eq": "Lyon"}, "timezone": "Europe/Paris"}'
 ```
 
@@ -126,9 +135,11 @@ cat > probe.json <<'EOF'
 [{"content":{"name":"Import Probe Co","city":"Bastia"}}]
 EOF
 
-curl -sk -b facet-cookies.txt -X POST \
+```sh
+curl -sk -X POST \
   'https://facet.localhost:3443/Api/clients/Company/import' \
-  -H 'Content-Type: application/json' -H 'X-Requested-With: XMLHttpRequest' \
+  -H "Authorization: Bearer $NADIA_KEY" \
+  -H 'Content-Type: application/json' \
   --data-binary @probe.json
 ```
 
@@ -171,18 +182,18 @@ poll the job:
 
 ```sh
 BASE=https://facet.localhost:3443
-X='X-Requested-With: XMLHttpRequest'
+AUTH="Authorization: Bearer $NADIA_KEY"
 
 # 1. Export and wait: the call returns the CSV file directly.
-curl -sk -b facet-cookies.txt -H "$X" \
+curl -sk -H "$AUTH" \
   -X POST "$BASE/Api/clients/Company/export?format=csv&wait=true" -o companies.csv
 
 # 2. Import the file back.
-curl -sk -b facet-cookies.txt -H "$X" -H 'Content-Type: text/csv' \
+curl -sk -H "$AUTH" -H 'Content-Type: text/csv' \
   -X POST "$BASE/Api/clients/Company/import" --data-binary @companies.csv
 
 # 3. Poll the job status (the job_id from the import answer).
-curl -sk -b facet-cookies.txt \
+curl -sk -H "$AUTH" \
   "$BASE/Api/clients/Company/import_export/01JBK2M4N6P8R0T2V4X6Z8B2D4"
 ```
 

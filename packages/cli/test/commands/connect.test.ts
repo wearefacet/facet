@@ -82,6 +82,29 @@ describe('connect', () => {
 		expect(logs.join('\n')).toContain('Issued API key fct_6VBSG6');
 	});
 
+	it('pins the key to the --role value, qualified from a bare name', async () => {
+		await runConnect(root, undefined, {
+			login,
+			apiFactory,
+			role: 'warehouse',
+			promptFn: async () => 'y'
+		});
+
+		expect(createApiKey).toHaveBeenCalledWith(API_KEY_NAME, 'iam.Roles.warehouse');
+		expect(readStoredKey(root, INSTANCE)?.role).toBe('iam.Roles.warehouse');
+	});
+
+	it('passes a qualified --role through unchanged', async () => {
+		await runConnect(root, undefined, {
+			login,
+			apiFactory,
+			role: 'iam.Roles.admin',
+			promptFn: async () => 'y'
+		});
+
+		expect(createApiKey).toHaveBeenCalledWith(API_KEY_NAME, 'iam.Roles.admin');
+	});
+
 	it('prints the raw key once and names the apikey command', async () => {
 		await runConnect(root, undefined, { login, apiFactory, promptFn: async () => 'y' });
 

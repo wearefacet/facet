@@ -98,6 +98,48 @@ describe('setup-dev', () => {
 		expect(readFileSync(path.join(root, 'config.dev.yml'), 'utf8')).toContain('domain_watch:');
 	});
 
+	it('takes a bare Enter as yes on the watcher question', async () => {
+		const { runner } = fakeRunner();
+		const asked: string[] = [];
+		const promptFn = async (question: string): Promise<string> => {
+			asked.push(question);
+			return '';
+		};
+
+		await runSetupDev({
+			dir: root,
+			runner,
+			noStart: true,
+			noKey: true,
+			promptFn,
+			hostname: 'facet.localhost',
+			port: 3443
+		});
+
+		expect(asked.some((q) => q.includes('Watch a folder for domain bundles? (Y/n)'))).toBe(true);
+		expect(existsSync(path.join(root, 'domains', '.gitkeep'))).toBe(true);
+		expect(readFileSync(path.join(root, 'config.dev.yml'), 'utf8')).toContain('domain_watch:');
+	});
+
+	it('skips the watcher when the question is answered n', async () => {
+		const { runner } = fakeRunner();
+		const promptFn = async (question: string): Promise<string> =>
+			question.startsWith('Watch a folder') ? 'n' : '';
+
+		await runSetupDev({
+			dir: root,
+			runner,
+			noStart: true,
+			noKey: true,
+			promptFn,
+			hostname: 'facet.localhost',
+			port: 3443
+		});
+
+		expect(existsSync(path.join(root, 'domains'))).toBe(false);
+		expect(readFileSync(path.join(root, 'config.dev.yml'), 'utf8')).not.toContain('domain_watch');
+	});
+
 	it('skips the watcher with watch=false', async () => {
 		const { runner } = fakeRunner();
 

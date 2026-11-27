@@ -107,10 +107,12 @@ printf 'myapp\ndist\nhttps://facet.example.tld\n' | pnpx @facetapp/cli init
 ### connect
 
 ```
-pnpx @facetapp/cli connect [--target <name>]
+pnpx @facetapp/cli connect [--target <name>] [--role <name>]
 ```
 
-Signs in through the browser (the same OAuth flow as `login`), then asks `Store an API key for this project?`. Answer `y` and the CLI issues a **user-owned API key** pinned to your account and your active role, and writes it to `.facet.local.json` in the project folder (mode 600, gitignored). Answer anything else and no key is stored.
+Signs in through the browser (the same OAuth flow as `login`), then asks `Store an API key for this project?`. Answer `y` and the CLI issues a **user-owned API key** pinned to your account and one role, and writes it to `.facet.local.json` in the project folder (mode 600, gitignored). Answer anything else and no key is stored.
+
+`--role` picks the pinned role, as a bare name (`warehouse`) or a qualified id (`iam.Roles.warehouse`); without it the key is pinned to your active role. Use it to hold two keys at once — run `connect --role warehouse`, copy the key from `apikey`, then run `connect` again for the default role.
 
 A key is refused when the role is not assigned to you or its `connectivity` excludes the `api` channel; the command prints the server's message and exits failing. Each project keeps its own key, so several Facet setups can live side by side.
 

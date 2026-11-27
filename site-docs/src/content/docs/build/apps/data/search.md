@@ -43,8 +43,9 @@ To filter one known doctype, use the list filters instead — see
   [Use the REST API](/build/apps/data/rest-api/).
 
 The examples run against a dev instance at `https://facet.localhost:3443`
-with the Brightwater Rentals data loaded. Sign in first — see
-[Use the REST API](/build/apps/data/rest-api/) for the login call.
+with the Brightwater Rentals data loaded. Sign in first and issue an API
+key — see [Use the REST API](/build/apps/data/rest-api/) for both calls —
+and keep it in a variable:
 
 ## Steps
 
@@ -62,10 +63,10 @@ by rank. An unknown domain answers `404`. A draft domain answers `200` with
 an empty result and is excluded from the app-wide route:
 
 ```sh
-curl -sk -b facet-cookies.txt \
+curl -sk -H "Authorization: Bearer $NADIA_KEY" \
   'https://facet.localhost:3443/Api/clients/search?q=Lumière'
 
-curl -sk -b facet-cookies.txt \
+curl -sk -H "Authorization: Bearer $NADIA_KEY" \
   'https://facet.localhost:3443/Api/search?q=Lumière'
 ```
 
@@ -78,8 +79,9 @@ the same way in the client before you call.
 The `QUERY` form carries `q` in a JSON body only:
 
 ```sh
-curl -sk -b facet-cookies.txt -X QUERY 'https://facet.localhost:3443/Api/clients/search' \
-  -H 'Content-Type: application/json' -H 'X-Requested-With: XMLHttpRequest' \
+curl -sk -X QUERY 'https://facet.localhost:3443/Api/clients/search' \
+  -H "Authorization: Bearer $NADIA_KEY" \
+  -H 'Content-Type: application/json' \
   -d '{ "q": "Lumière" }'
 ```
 
@@ -188,7 +190,7 @@ Hits carry labels only, never content. Fetch the content with a document
 read on `root_id`, or on `id` when the hit is the root:
 
 ```sh
-curl -sk -b facet-cookies.txt \
+curl -sk -H "Authorization: Bearer $NADIA_KEY" \
   'https://facet.localhost:3443/Api/clients/Company/06H1FM1B3MXBPS0JYVM3BDD154'
 ```
 

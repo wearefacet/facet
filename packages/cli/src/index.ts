@@ -98,7 +98,8 @@ export function createProgram(): Command {
 		.command('connect')
 		.description('Sign in to a Facet instance and optionally store a project API key.')
 		.option('--target <name>', 'Named target from facet.config.json to connect to.')
-		.action(action((opts: TargetOptions) => runConnect(process.cwd(), opts.target)));
+		.option('--role <name>', 'Role to pin the key to (id or name; default: your active role).')
+		.action(action((opts: TargetOptions & { role?: string }) => runConnect(process.cwd(), opts.target, { role: opts.role })));
 
 	program
 		.command('apikey')

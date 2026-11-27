@@ -14,7 +14,7 @@ All paths are relative to `packages/cli/`:
 | `src/commands/context.ts` | Config + target resolution into a `CommandContext`; readline prompts |
 | `src/commands/init.ts` | `facet.config.json` writer; flag, piped-stdin, and interactive answers; app lookup + create offer |
 | `src/commands/setup-dev.ts` | `setup-dev`: scaffold the GHCR dev stack, start it, seed the dev admin, fetch an API key |
-| `src/commands/connect.ts` | `connect`: sign in, then optionally issue and store a project API key |
+| `src/commands/connect.ts` | `connect`: sign in, then optionally issue and store a project API key (pinned to the active role, or `--role`) |
 | `src/commands/apikey.ts` | `apikey`: print the stored project API key for shell substitution |
 | `src/commands/login.ts` | Command wrapper around the OAuth flow in `src/login.ts` |
 | `src/commands/logout.ts` | Stored-session removal |
@@ -69,7 +69,7 @@ Steps: pre-flight `docker compose version`, prompt hostname/port/watch folder (s
 
 ## Connect and API keys
 
-`connect` runs the same OAuth flow as `login`, then offers to issue a **user-owned API key**. The key is created through `POST /Api/iam/keys` with `{name, role}`, where the role is the caller's `active_role` read from `GET /Api/iam/me` — the key is pinned to the signed-in account and that role, exactly like the self-service key route documented for operators. No app-owned key is involved: the seeded `facet-cli` app is a public client and `App::ApiKeys.issue` refuses it (`422 App is not a backend app`), so `connect` never asks an app to mint a key for itself.
+`connect` runs the same OAuth flow as `login`, then offers to issue a **user-owned API key**. The key is created through `POST /Api/iam/keys` with `{name, role}` — the key is pinned to the signed-in account and that role, exactly like the self-service key route documented for operators. `--role` names the role (a bare name is qualified to `iam.Roles.<name>`); without it the role is the caller's `active_role` read from `GET /Api/iam/me`. No app-owned key is involved: the seeded `facet-cli` app is a public client and `App::ApiKeys.issue` refuses it (`422 App is not a backend app`), so `connect` never asks an app to mint a key for itself.
 
 The instance refuses the key with `422` when the role is not assigned to the account or its `connectivity` excludes the `api` channel. The command prints the server's message and exits failing; no key is stored.
 

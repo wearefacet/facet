@@ -61,17 +61,17 @@ client -> facet: JSON-RPC tools/call
 Sign in as Nadia in the browser and open **Settings → MCP endpoints**. Facet
 lists one URL per role she holds:
 
-![The MCP endpoints panel in Settings: one URL for the manager role, with a Copy button.](/assets/screens/build/connect-an-agent-1.png)
+![The MCP endpoints panel in Settings: one URL for the manager role, with a Copy button.](/screens/build/connect-an-agent-1.png)
 
-The API answers the same list. As Nadia:
+The API answers the same list. Every API call presents its own credential, and
+the CLI pins one to a role you hold. From the folder where you ran
+`setup-dev`, ask for a `manager` key (sign in as the admin in your browser and
+elect the manager role on the consent screen):
 
 ```sh
-curl -sk -c nadia-cookies.txt -X POST https://facet.localhost:3443/Api/iam/login \
-  -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
-  -d '{"email": "nadia@brightwater.example", "password": "brightwater-nadia"}'
+NADIA_KEY=$(pnpx @facetapp/cli connect --role manager >/dev/null && pnpx @facetapp/cli apikey)
 
-curl -sk -b nadia-cookies.txt -H "X-Requested-With: XMLHttpRequest" \
+curl -sk -H "Authorization: Bearer $NADIA_KEY" \
   https://facet.localhost:3443/Api/_mcp/endpoints
 ```
 
@@ -128,13 +128,12 @@ CHALLENGE=$(printf '%s' "$VERIFIER" | openssl dgst -sha256 -binary \
 ```
 
 The consent step is where Nadia approves. In production her browser shows a
-screen and she clicks; here her signed-in session submits the same request.
-It carries the role she elects and the MCP resource it applies to:
+screen and she clicks; here her credential submits the same request. It
+carries the role she elects and the MCP resource it applies to:
 
 ```sh
-# What the consent screen shows (as JSON, from her browser session).
-curl -sk -b nadia-cookies.txt -H "Accept: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
+# What the consent screen shows (as JSON, from her credential).
+curl -sk -H "Authorization: Bearer $NADIA_KEY" -H "Accept: application/json" \
   "https://facet.localhost:3443/OAuth/authorize?response_type=code&client_id=$CLIENT_ID&redirect_uri=http%3A%2F%2F127.0.0.1%3A8765%2Fcallback&code_challenge=$CHALLENGE&code_challenge_method=S256&state=wp14c-tutorial&resource=https%3A%2F%2Ffacet.localhost%3A3443%2FApi%2F_mcp%2Fiam.Roles.manager"
 ```
 
@@ -152,9 +151,9 @@ curl -sk -b nadia-cookies.txt -H "Accept: application/json" \
 
 ```sh
 # Nadia approves; the answer carries the one-time code.
-CODE=$(curl -sk -b nadia-cookies.txt -X POST https://facet.localhost:3443/OAuth/authorize \
+CODE=$(curl -sk -X POST https://facet.localhost:3443/OAuth/authorize \
+  -H "Authorization: Bearer $NADIA_KEY" \
   -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
   -d '{"client_id": "'"$CLIENT_ID"'", "redirect_uri": "http://127.0.0.1:8765/callback", "state": "wp14c-tutorial", "code_challenge": "'"$CHALLENGE"'", "code_challenge_method": "S256", "resource": "https://facet.localhost:3443/Api/_mcp/iam.Roles.manager", "role": "iam.Roles.manager"}' \
   | grep -o '"code":"[^"]*"' | cut -d'"' -f4)
 echo "$CODE"
@@ -364,12 +363,14 @@ The draft holds the date but moves no stock — items go out when a booking is
 Everything the agent did is on the record. Sign in as Ravi and open
 **Configure → Audit**. Filter the channel to `mcp`:
 
-![The audit table filtered to the mcp channel: the booking create, with Nadia as the actor and the manager role.](/assets/screens/build/connect-an-agent-2.png)
+![The audit table filtered to the mcp channel: the booking create, with Nadia as the actor and the manager role.](/screens/build/connect-an-agent-2.png)
 
-The API answers the same rows:
+The API answers the same rows. Take the admin key back and read them:
 
 ```sh
-curl -skg -b ravi-cookies.txt -H "X-Requested-With: XMLHttpRequest" \
+RAVI_KEY=$(pnpx @facetapp/cli connect >/dev/null && pnpx @facetapp/cli apikey)
+
+curl -skg -H "Authorization: Bearer $RAVI_KEY" \
   "https://facet.localhost:3443/Api/Audit?filters%5Bchannel__eq%5D=mcp&items=5"
 ```
 
@@ -411,7 +412,7 @@ The draft booking was a pencil mark. Delete it — from the workspace, or with
 one call:
 
 ```sh
-curl -skg -b ravi-cookies.txt -H "X-Requested-With: XMLHttpRequest" \
+curl -skg -H "Authorization: Bearer $RAVI_KEY" \
   -X DELETE https://facet.localhost:3443/Api/rentals/Booking/BK-2026-0017
 ```
 

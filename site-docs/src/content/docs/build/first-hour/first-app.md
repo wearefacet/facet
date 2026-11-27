@@ -25,7 +25,7 @@ signed in through Facet.
 - [Tutorial 1](/build/first-hour/run-facet/) — a running instance, with the
   Brightwater example loaded ([tutorial 2](/build/first-hour/first-domain/)
   does it, or the example's `load.sh`).
-- Node.js 20+ with pnpm.
+- Node.js 20+ with pnpm, and `curl` for the API steps.
 - A coding agent for step 5 — any agent that reads files and runs commands.
 
 :::note
@@ -38,23 +38,22 @@ language model connected by an administrator — see
 
 ## 1. Register the app
 
-An app is a document in the `app` domain. Sign in as an operator and keep the
-session — this tutorial uses Ravi Menon, the example's admin:
+An app is a document in the `app` domain. Every API call presents its own
+credential, and the CLI stores one pinned to your role. From the folder where
+you ran `setup-dev`:
 
 ```sh
-curl -sk -c cookies.txt -X POST https://facet.localhost:3443/Api/iam/login \
-  -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
-  -d '{"email": "ravi@brightwater.example", "password": "brightwater-ravi"}'
+RAVI_KEY=$(pnpx @facetapp/cli apikey)
 ```
 
+The key is pinned to `iam.Roles.admin`, which holds `update` on `app.App`.
 Create the app document. The grants name the doctypes the app touches — each
 target concrete, each action marked `required`:
 
 ```sh
-curl -sk -b cookies.txt -X POST https://facet.localhost:3443/Api/app/App \
+curl -sk -X POST https://facet.localhost:3443/Api/app/App \
+  -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
   -d '{
     "slug": "bfr-checkout",
     "name": "Brightwater Check-out",
@@ -100,10 +99,10 @@ secret: the sign-in uses Proof Key for Code Exchange (PKCE) instead.
 A new app is a `draft`. Sign-ins work only when the status is `active`:
 
 ```sh
-curl -sk -b cookies.txt -X PATCH \
+curl -sk -X PATCH \
   https://facet.localhost:3443/Api/app/App/06H1FQF7NGDJJKSNHXPYT6627M \
+  -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
   -d '{"status": "active"}'
 ```
 
@@ -130,10 +129,10 @@ The fix is one concrete line on the role. Patch the role with its lines plus
 `{"on": "equipment.Item", "action": "*"}`:
 
 ```sh
-curl -sk -b cookies.txt -X PATCH \
+curl -sk -X PATCH \
   https://facet.localhost:3443/Api/iam/Roles/iam.Roles.warehouse \
+  -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
   -d '{
     "permissions": [
       { "on": "equipment", "action": "*" },
@@ -255,23 +254,19 @@ goes to Facet's sign-in — use Lucía, `lucia@brightwater.example` — and then
 to the consent screen. The screen names the app and lists the one role
 Lucía may elect, with the reach the app would keep:
 
-![The Facet consent screen for Brightwater Check-out: the Warehouse role with the reach the app keeps — Booking and BookingLine read, Item read, create, update.](/assets/screens/build/first-app-1.png)
+![The Facet consent screen for Brightwater Check-out: the Warehouse role with the reach the app keeps — Booking and BookingLine read, Item read, create, update.](/screens/build/first-app-1.png)
 
 She elects **Warehouse** and clicks **Allow**. The browser returns to the
 app, and the board renders:
 
-![The check-out board: one card per confirmed booking, with the items, their status and an out/back button.](/assets/screens/build/first-app-2.png)
+![The check-out board: one card per confirmed booking, with the items, their status and an out/back button.](/screens/build/first-app-2.png)
 
 The browser flow is four calls. The transcript below shows them with `curl`,
-using Lucía's session cookie the way her browser would — handy when a step
-misbehaves:
+using a `warehouse` key the way the app holds Lucía's token — handy when a
+step misbehaves. Pin it first (sign in as the admin in your browser):
 
 ```sh
-# Lucía's session, as her browser holds it.
-curl -sk -c lucia-cookies.txt -X POST https://facet.localhost:3443/Api/iam/login \
-  -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
-  -d '{"email": "lucia@brightwater.example", "password": "brightwater-lucia"}'
+LUCIA_KEY=$(pnpx @facetapp/cli connect --role warehouse >/dev/null && pnpx @facetapp/cli apikey)
 
 # A PKCE pair for this sign-in.
 VERIFIER=$(openssl rand -base64 48 | tr '+/' '-_' | tr -d '=\n')
@@ -279,8 +274,7 @@ CHALLENGE=$(printf '%s' "$VERIFIER" | openssl dgst -sha256 -binary \
   | openssl base64 | tr '+/' '-_' | tr -d '=\n')
 
 # The consent screen, as JSON: which roles may elect, and the reach each keeps.
-curl -sk -b lucia-cookies.txt -H "Accept: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
+curl -sk -H "Authorization: Bearer $LUCIA_KEY" -H "Accept: application/json" \
   "https://facet.localhost:3443/OAuth/authorize?response_type=code&client_id=06H1FQF7NG357EQ0P348Z2BEV5&redirect_uri=http%3A%2F%2Flocalhost%3A5173%2Fauth%2Fcallback&code_challenge=$CHALLENGE&code_challenge_method=S256&state=winter-fair-43"
 ```
 
@@ -303,9 +297,9 @@ curl -sk -b lucia-cookies.txt -H "Accept: application/json" \
 
 ```sh
 # Lucía elects the role; the answer carries the one-time code.
-CODE=$(curl -sk -b lucia-cookies.txt -X POST https://facet.localhost:3443/OAuth/authorize \
+CODE=$(curl -sk -X POST https://facet.localhost:3443/OAuth/authorize \
+  -H "Authorization: Bearer $LUCIA_KEY" \
   -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
   -d '{"response_type": "code", "client_id": "06H1FQF7NG357EQ0P348Z2BEV5", "redirect_uri": "http://localhost:5173/auth/callback", "code_challenge": "'"$CHALLENGE"'", "code_challenge_method": "S256", "state": "winter-fair-43", "role": "iam.Roles.warehouse"}' \
   | grep -o '"code":"[^"]*"' | cut -d'"' -f4)
 echo "$CODE"
@@ -372,10 +366,10 @@ at the app's own host, so the registration needs that origin's redirect and
 CORS entries first:
 
 ```sh
-curl -sk -b cookies.txt -X PATCH \
+curl -sk -X PATCH \
   https://facet.localhost:3443/Api/app/App/06H1FQF7NGDJJKSNHXPYT6627M \
+  -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
   -d '{
     "redirect_uris": [
       "http://localhost:5173/auth/callback",

@@ -15,7 +15,8 @@ table, and Lucía's warehouse board all read this surface — and so does your
 app.
 
 > **For agents:** Login: `POST /Api/iam/login` (cookie) or `Authorization: Bearer fct_…`
-> (app API key) or `Authorization: DPoP <token>` + `DPoP` proof header (app token). Sequence:
+> (an API key from `POST /Api/iam/keys`, pinned to one role, or an app API key) or
+> `Authorization: DPoP <token>` + `DPoP` proof header (app token). Sequence:
 > `POST /Api/clients/Company` with fields at the top level of the JSON body (`201`, envelope
 > `{data, meta}`) → `GET /Api/clients/Company/<id>` (store the `ETag` — the `mid`) → send it back as
 > `If-None-Match` for a `304` → `GET /Api/clients/Company?items=50&filters[status__eq]=confirmed&sort=-updated_at`
@@ -61,19 +62,21 @@ certificate is why every `curl` carries `-k`.
 
 ### 1. Read one document
 
-Sign in once and store the cookie jar:
+Sign in once and store an API key pinned to the `manager` role. Every API
+call presents its own credential; a bearer call carries no cookie, so it
+needs no `X-Requested-With` header:
 
 ```sh
-curl -sk -c facet-cookies.txt -X POST https://facet.localhost:3443/Api/iam/login \
-  -H 'Content-Type: application/json' -H 'X-Requested-With: XMLHttpRequest' \
-  -d '{"email": "nadia@brightwater.example", "password": "brightwater-nadia"}'
+pnpx @facetapp/cli connect --role manager   # sign in, elect manager, store the key
+NADIA_KEY=$(pnpx @facetapp/cli apikey)
 ```
 
 One booking in the rentals domain is `BK-2026-0001` — the Maison Lumière
 wedding, 11 to 13 December:
 
 ```sh
-curl -sk -b facet-cookies.txt https://facet.localhost:3443/Api/rentals/Booking/BK-2026-0001
+curl -sk -H "Authorization: Bearer $NADIA_KEY" \
+  https://facet.localhost:3443/Api/rentals/Booking/BK-2026-0001
 ```
 
 ```json
@@ -118,8 +121,9 @@ doctype declares. `meta` holds system metadata and is never writable:
 Fields ride at the top level of the JSON body. There is no `content` wrapper:
 
 ```sh
-curl -sk -b facet-cookies.txt -X POST https://facet.localhost:3443/Api/clients/Company \
-  -H 'Content-Type: application/json' -H 'X-Requested-With: XMLHttpRequest' \
+curl -sk -X POST https://facet.localhost:3443/Api/clients/Company \
+  -H "Authorization: Bearer $NADIA_KEY" \
+  -H 'Content-Type: application/json' \
   -d '{ "name": "Atelier Vermeil", "city": "Lyon" }'
 ```
 
@@ -159,8 +163,9 @@ To create a parent with its children in one call, send `$content` and
 back. The `$children` keys are relationship names on the doctype:
 
 ```sh
-curl -sk -b facet-cookies.txt -X POST https://facet.localhost:3443/Api/clients/Company \
-  -H 'Content-Type: application/json' -H 'X-Requested-With: XMLHttpRequest' \
+curl -sk -X POST https://facet.localhost:3443/Api/clients/Company \
+  -H "Authorization: Bearer $NADIA_KEY" \
+  -H 'Content-Type: application/json' \
   -d '{ "$content": { "name": "Café des Sports", "city": "Vienne" },
     "$children": { "contacts": [ { "name": "Léa Martin", "email": "lea@cafedesports.example" } ] } }'
 ```
@@ -180,8 +185,9 @@ Each entry carries the same `{ data, meta }` shape as the parent:
 from the document:
 
 ```sh
-curl -sk -b facet-cookies.txt -X PATCH https://facet.localhost:3443/Api/clients/Company/06H1FRV45MM80SVH32K5JCA6BH \
-  -H 'Content-Type: application/json' -H 'X-Requested-With: XMLHttpRequest' \
+curl -sk -X PATCH https://facet.localhost:3443/Api/clients/Company/06H1FRV45MM80SVH32K5JCA6BH \
+  -H "Authorization: Bearer $NADIA_KEY" \
+  -H 'Content-Type: application/json' \
   -d '{ "city": "Annecy", "name": null }'
 ```
 
@@ -192,7 +198,8 @@ The answer is `200` with the updated envelope. Document routes accept
 `DELETE` soft-deletes the document and answers `204` with no body:
 
 ```sh
-curl -sk -b facet-cookies.txt -X DELETE -o /dev/null -w '%{http_code}\n' \
+curl -sk -X DELETE -o /dev/null -w '%{http_code}\n' \
+  -H "Authorization: Bearer $NADIA_KEY" \
   https://facet.localhost:3443/Api/clients/Company/06H1FRV45MM80SVH32K5JCA6BH
 # 204
 ```
@@ -215,7 +222,7 @@ document back. The answer carries the restored envelope and a
 ### 4. List and filter
 
 ```sh
-curl -skg -b facet-cookies.txt \
+curl -skg -H "Authorization: Bearer $NADIA_KEY" \
   'https://facet.localhost:3443/Api/rentals/Booking?filters[status__eq]=confirmed&select=client_name,status,dates&items=2'
 ```
 
@@ -303,7 +310,7 @@ unpaginated.
 `items`:
 
 ```sh
-curl -skg -b facet-cookies.txt \
+curl -skg -H "Authorization: Bearer $NADIA_KEY" \
   'https://facet.localhost:3443/Api/rentals/Booking?aggregate=count&filters[status__eq]=confirmed'
 ```
 
@@ -317,7 +324,7 @@ entry per currency present, never a cross-currency total; amounts are decimal
 strings. Brightwater's 44 booking lines hold 387 rented pieces in total:
 
 ```sh
-curl -skg -b facet-cookies.txt \
+curl -skg -H "Authorization: Bearer $NADIA_KEY" \
   'https://facet.localhost:3443/Api/rentals/BookingLine?aggregate=sum&field=price'
 ```
 
@@ -326,7 +333,7 @@ curl -skg -b facet-cookies.txt \
 ```
 
 ```sh
-curl -skg -b facet-cookies.txt \
+curl -skg -H "Authorization: Bearer $NADIA_KEY" \
   'https://facet.localhost:3443/Api/rentals/BookingLine?aggregate=sum&field=quantity'
 ```
 
@@ -351,11 +358,11 @@ the role, the request, and the doctype version. Send the tag back in
 changed:
 
 ```sh
-curl -sk -b facet-cookies.txt -D - -o /dev/null \
+curl -sk -H "Authorization: Bearer $NADIA_KEY" -D - -o /dev/null \
   https://facet.localhost:3443/Api/rentals/Booking/BK-2026-0001 | grep -i etag
 # etag: "06H1FM1DPGYWFD4D8RR2BXM2S9"
 
-curl -sk -b facet-cookies.txt -o /dev/null -w '%{http_code}\n' \
+curl -sk -H "Authorization: Bearer $NADIA_KEY" -o /dev/null -w '%{http_code}\n' \
   -H 'If-None-Match: "06H1FM1DPGYWFD4D8RR2BXM2S9"' \
   https://facet.localhost:3443/Api/rentals/Booking/BK-2026-0001
 # 304
@@ -371,8 +378,9 @@ The `QUERY` method carries list parameters in a JSON body only. It keeps long
 filters readable and out of the shell's quoting rules:
 
 ```sh
-curl -sk -b facet-cookies.txt -X QUERY https://facet.localhost:3443/Api/clients/Company \
-  -H 'Content-Type: application/json' -H 'X-Requested-With: XMLHttpRequest' \
+curl -sk -X QUERY https://facet.localhost:3443/Api/clients/Company \
+  -H "Authorization: Bearer $NADIA_KEY" \
+  -H 'Content-Type: application/json' \
   -d '{ "items": 10, "filters": { "city__eq": "Lyon" }, "sort": ["-updated_at"] }'
 ```
 
@@ -439,39 +447,38 @@ delete, restore, delete again:
 
 ```sh
 BASE=https://facet.localhost:3443
-X='-H X-Requested-With:XMLHttpRequest'
-CT='-H Content-Type:application/json'
-JAR=facet-cookies.txt
+AUTH="Authorization: Bearer $NADIA_KEY"
+CT='Content-Type: application/json'
 
 # Create — remember meta.id from the 201 answer.
-curl -sk -b $JAR $CT $X -X POST "$BASE/Api/clients/Company" \
+curl -sk -H "$AUTH" -H "$CT" -X POST "$BASE/Api/clients/Company" \
   -d '{ "name": "Atelier Vermeil", "city": "Lyon" }'
 
 # Read — copy the ETag (the mid) from the headers.
-curl -sk -b $JAR -D - -o /dev/null "$BASE/Api/clients/Company/06H1FRV45MM80SVH32K5JCA6BH"
+curl -sk -H "$AUTH" -D - -o /dev/null "$BASE/Api/clients/Company/06H1FRV45MM80SVH32K5JCA6BH"
 
 # Conditional read — 304 when nothing changed.
-curl -sk -b $JAR -o /dev/null -w '%{http_code}\n' \
+curl -sk -H "$AUTH" -o /dev/null -w '%{http_code}\n' \
   -H 'If-None-Match: "06H1FRV45MKNZD49WQA7A843TW"' \
   "$BASE/Api/clients/Company/06H1FRV45MM80SVH32K5JCA6BH"
 
 # Update — 200 with the fresh envelope.
-curl -sk -b $JAR $CT $X -X PATCH "$BASE/Api/clients/Company/06H1FRV45MM80SVH32K5JCA6BH" \
+curl -sk -H "$AUTH" -H "$CT" -X PATCH "$BASE/Api/clients/Company/06H1FRV45MM80SVH32K5JCA6BH" \
   -d '{ "city": "Annecy" }'
 
 # List — one filtered page.
-curl -skg -b $JAR \
+curl -skg -H "$AUTH" \
   "$BASE/Api/clients/Company?filters[name__match]=Vermeil&select=name,city"
 
 # Delete — 204. Read answers 410 afterwards.
-curl -sk -b $JAR $X -X DELETE -o /dev/null -w '%{http_code}\n' \
+curl -sk -H "$AUTH" -X DELETE -o /dev/null -w '%{http_code}\n' \
   "$BASE/Api/clients/Company/06H1FRV45MM80SVH32K5JCA6BH"
 
 # Restore — 200 with the restored envelope.
-curl -sk -b $JAR $CT $X -X POST "$BASE/Api/clients/Company/06H1FRV45MM80SVH32K5JCA6BH/restore" -d '{}'
+curl -sk -H "$AUTH" -H "$CT" -X POST "$BASE/Api/clients/Company/06H1FRV45MM80SVH32K5JCA6BH/restore" -d '{}'
 
 # Delete again — the record is a throwaway probe.
-curl -sk -b $JAR $X -X DELETE -o /dev/null -w '%{http_code}\n' \
+curl -sk -H "$AUTH" -X DELETE -o /dev/null -w '%{http_code}\n' \
   "$BASE/Api/clients/Company/06H1FRV45MM80SVH32K5JCA6BH"
 ```
 
@@ -480,8 +487,9 @@ curl -sk -b $JAR $X -X DELETE -o /dev/null -w '%{http_code}\n' \
 **A create or delete answers `403` with `{"error":"CSRF: Missing X-Requested-With header"}`.**
 
 The call carries a session cookie, so the CSRF check applies. Add
-`X-Requested-With: XMLHttpRequest`. A bearer or DPoP call without a cookie
-needs no header.
+`X-Requested-With: XMLHttpRequest`, or send an API key in
+`Authorization: Bearer`. A bearer or DPoP call without a cookie needs no
+header.
 
 **A list answers `422 Unknown filter field 'name][match'`.**
 

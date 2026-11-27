@@ -20,9 +20,10 @@ publish.
 **You will build:** the Brightwater `equipment` domain — three doctypes,
 typed fields, and a kanban board of maintenance tickets.
 **Time:** about 20 minutes.
-**You need:** [Facet running and your first admin signed
+**You need:** [Facet running and the admin signed
 in](/build/first-hour/run-facet/) — tutorial 1 ends there. Creating domains
-needs an administrator account; this tutorial signs in as that admin.
+needs an administrator account, and the seeded `admin` role holds it. On a
+`setup-dev` instance that is `admin@example.tld` / `admin`.
 
 *The path your domain takes from a private draft to the live workspace.*
 
@@ -51,7 +52,7 @@ publish -> live
 Open **Builder** in the sidebar. The landing lists your drafts in progress;
 the Builder sidebar holds the actions. Click **New domain** and fill the
 
-![The New domain dialog in the Builder: a Label field, a Domain id field with the rule that the id is permanent once the domain is published, and Cancel and Create draft buttons.](/assets/screens/build/first-domain-4.png)
+![The New domain dialog in the Builder: a Label field, a Domain id field with the rule that the id is permanent once the domain is published, and Cancel and Create draft buttons.](/screens/build/first-domain-4.png)
 
 dialog:
 
@@ -110,7 +111,7 @@ Add five fields, saving after each:
 | `purchase_price` | Money | Title `Purchase price` |
 | `serial_number` | String | Title `Serial number`; **Unique** on |
 
-![Adding the category field on the Item doctype: the field editor with Key and Title, the Type list open on String, and the Filter capabilities chips below.](/assets/screens/build/first-domain-5.png)
+![Adding the category field on the Item doctype: the field editor with Key and Title, the Type list open on String, and the Filter capabilities chips below.](/screens/build/first-domain-5.png)
 
 Four of these deserve a word:
 
@@ -166,7 +167,7 @@ page shows the starter screen: one card per layout. Pick **Kanban** —
 
 The New view dialog asks for:
 
-![The New view dialog for a kanban view: Name, the Scope choice between Personal and General, Board mode with By field values and Custom lanes, Group by, Allow card moves, and Card sort.](/assets/screens/build/first-domain-6.png)
+![The New view dialog for a kanban view: Name, the Scope choice between Personal and General, Board mode with By field values and Custom lanes, Group by, Allow card moves, and Card sort.](/screens/build/first-domain-6.png)
 
 - **Name**: `Board`
 - **Scope**: **General** — every reader of the doctype sees this view.
@@ -214,7 +215,7 @@ publish."
 Click **Publish** in the top bar. The **Publish draft domain** dialog
 prefills the **Target domain name** with `equipment`.
 
-![The Publish draft domain dialog over the Check tab: the target domain name prefilled with equipment, the Import existing documents box unticked, and Cancel and Publish buttons.](/assets/screens/build/first-domain-7.png)
+![The Publish draft domain dialog over the Check tab: the target domain name prefilled with equipment, the Import existing documents box unticked, and Cancel and Publish buttons.](/screens/build/first-domain-7.png)
 
 Leave the **Import
 existing documents** box unticked — the scratch documents stay behind and
@@ -235,16 +236,16 @@ scratch tickets stayed behind.
 On the loaded Brightwater example the board is at work. One lane per
 state, cards showing the item and the assignee:
 
-![The MaintenanceTicket board of the equipment domain on the finished Brightwater example: one lane per state — Reported, Diagnosing, Waiting for parts, Fixed — with ticket cards showing the item, the state chip, and the assignee.](/assets/screens/build/first-domain-1.png)
+![The MaintenanceTicket board of the equipment domain on the finished Brightwater example: one lane per state — Reported, Diagnosing, Waiting for parts, Fixed — with ticket cards showing the item, the state chip, and the assignee.](/screens/build/first-domain-1.png)
 
 The equipment domain is the base of the whole Brightwater story. The
 `clients` domain holds the companies, and the `rentals` domain holds their
 bookings — each booking line references one of your items. The surfaces
 your team works on every day look like this:
 
-![The Booking list of the finished Brightwater example: the All bookings table view with search, filters, Export and Import, beside a Calendar view tab.](/assets/screens/build/first-domain-2.png)
+![The Booking list of the finished Brightwater example: the All bookings table view with search, filters, Export and Import, beside a Calendar view tab.](/screens/build/first-domain-2.png)
 
-![A Booking document of the finished example: its fields, the Lines children as chips, and the comments pane.](/assets/screens/build/first-domain-3.png)
+![A Booking document of the finished example: its fields, the Lines children as chips, and the comments pane.](/screens/build/first-domain-3.png)
 
 You built and shipped a domain. The live `equipment` domain carries three
 doctypes and typed fields: a reference, an enum, money, a unique

@@ -15,8 +15,9 @@ same REST surface as any other caller, under the same bounds: grant ∩ pinned
 role, re-resolved on every request.
 
 > **For agents:** Pin a service role that lists the `api` connectivity
-> channel, then issue with `POST /Api/app/{id}/api-key` (operator session
-> cookie plus `X-Requested-With: XMLHttpRequest`). Store the raw `key` — it
+> channel, then issue with `POST /Api/app/{id}/api-key` (an operator API key
+> in `Authorization: Bearer`, or a session cookie plus
+> `X-Requested-With: XMLHttpRequest`). Store the raw `key` — it
 > shows once. Call `GET /Api/{domain}/{doctype}` with
 > `Authorization: Bearer fct_…`; no CSRF header and no cookie. Rotate by
 > issuing again; revoke with `DELETE /Api/app/{id}/api-key`. Every key
@@ -54,12 +55,18 @@ what may be attempted. Facet keeps only the actions the role also gives, on
 every request. Row scopes on the role still apply.
 
 The stock-sync backend at Brightwater gets its own least-privilege role —
-one concrete permission line, the `api` channel, nothing else:
+one concrete permission line, the `api` channel, nothing else. Every API
+call presents its own credential; sign in once and store a key from the CLI:
 
 ```sh
-curl -sk -b cookies.txt -X POST https://facet.localhost:3443/Api/iam/Roles \
+pnpx @facetapp/cli connect   # sign in, elect the admin role, store the key
+RAVI_KEY=$(pnpx @facetapp/cli apikey)
+```
+
+```sh
+curl -sk -X POST https://facet.localhost:3443/Api/iam/Roles \
+  -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
   -d '{
     "name": "stock_sync",
     "level": 30,
@@ -78,9 +85,9 @@ A backend app is a `confidential` registration with the service role pinned.
 No redirect addresses are needed — there is no browser round trip:
 
 ```sh
-curl -sk -b cookies.txt -X POST https://facet.localhost:3443/Api/app/App \
+curl -sk -X POST https://facet.localhost:3443/Api/app/App \
+  -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
   -d '{
     "slug": "bfr-stock-sync",
     "name": "Brightwater stock sync",
@@ -105,14 +112,14 @@ The create answers `201` with `client_type: "confidential"`,
 
 ### 3. Issue the key
 
-Call the issue route from an operator session. The route provisions the
+Call the issue route with an operator key. The route provisions the
 service account, re-pins its role, and revokes any active key first. One
 active key per app exists, so issuing again is a rotation:
 
 ```sh
-curl -sk -b cookies.txt -X POST \
+curl -sk -X POST \
   https://facet.localhost:3443/Api/app/06H1G4RS1CQFAC128KPASQFX7H/api-key \
-  -H "X-Requested-With: XMLHttpRequest"
+  -H "Authorization: Bearer $RAVI_KEY"
 ```
 
 The answer carries the raw key:
@@ -224,9 +231,9 @@ Issue a new key to rotate: the route revokes the old key in the same
 transaction. Revoke with the delete route when the key is no longer needed:
 
 ```sh
-curl -sk -b cookies.txt -X DELETE \
+curl -sk -X DELETE \
   https://facet.localhost:3443/Api/app/06H1G4RS1CQFAC128KPASQFX7H/api-key \
-  -H "X-Requested-With: XMLHttpRequest"
+  -H "Authorization: Bearer $RAVI_KEY"
 ```
 
 ```json

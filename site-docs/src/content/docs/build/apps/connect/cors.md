@@ -17,8 +17,9 @@ live: an origin edit applies on the next request.
 
 > **For agents:** Put bare origins in `allowed_origins` on `app.App` — for
 > example `https://app.company.tld` and dev origins such as
-> `http://localhost:5173`. Edit with `PATCH /Api/app/App/{id}` (session
-> cookie plus `X-Requested-With: XMLHttpRequest`). Verify with
+> `http://localhost:5173`. Edit with `PATCH /Api/app/App/{id}` (an API key
+> in `Authorization: Bearer`, or a session cookie plus
+> `X-Requested-With: XMLHttpRequest`). Verify with
 > `curl -X OPTIONS` sending `Origin`, `Access-Control-Request-Method`, and
 > `Access-Control-Request-Headers: Authorization, DPoP`; a registered origin
 > gets `Access-Control-Allow-Origin` echoed back. The change is live on the
@@ -50,23 +51,21 @@ dev hosts, for example `http://localhost:5173`.
 ### 2. Set them on the app
 
 The wizard setup step collects the origins at registration. To change them
-later, PATCH the app document. Sign in as an operator and keep the session
-cookies:
+later, PATCH the app document. Every API call presents its own credential —
+sign in once and store a key from the CLI:
 
 ```sh
-curl -sk -c cookies.txt -X POST https://facet.localhost:3443/Api/iam/login \
-  -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
-  -d '{"email": "ravi@brightwater.example", "password": "brightwater-ravi"}'
+pnpx @facetapp/cli connect   # sign in, elect the admin role, store the key
+RAVI_KEY=$(pnpx @facetapp/cli apikey)
 ```
 
 Then set the origin list:
 
 ```sh
-curl -sk -b cookies.txt -X PATCH \
+curl -sk -X PATCH \
   https://facet.localhost:3443/Api/app/App/06H1FQF7NGDJJKSNHXPYT6627M \
+  -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
   -d '{"allowed_origins": ["https://checkout.brightwater.example", "http://localhost:5173"]}'
 ```
 

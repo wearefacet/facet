@@ -27,7 +27,8 @@ remove it.
 running (`./scripts/dev`). The dev configuration already watches this
 repository's example folder. To point the watcher at your own folder, set
 `dev.domain_watch.path` in your dev config — see
-[The dev domain watcher](/build/model/in-files/domain-watcher/).
+[The dev domain watcher](/build/model/in-files/domain-watcher/). One step
+reads the API with `curl` and the API key `setup-dev` stored.
 
 :::caution
 The watcher applies every save to the running database. The tutorial's
@@ -138,11 +139,18 @@ The watcher replaces the domain's definitions from the folder on every
 change; `4 doctype(s) created` counts the three existing ones plus your
 new `ScratchNote`.
 
-You should see the new doctype in the API. Sign in as the dev admin and
-read the definition:
+You should see the new doctype in the API. Every API call presents its own
+credential, and the CLI stores one for you. From the folder where you ran
+`setup-dev`:
 
 ```sh
-curl -skg -b cookies.txt -H "X-Requested-With: XMLHttpRequest" \
+AUTH="Authorization: Bearer $(pnpx @facetapp/cli apikey)"
+```
+
+Read the definition:
+
+```sh
+curl -skg -H "$AUTH" \
   https://facet.localhost:3443/Api/core/DocType/equipment.ScratchNote
 ```
 
@@ -153,7 +161,7 @@ curl -skg -b cookies.txt -H "X-Requested-With: XMLHttpRequest" \
 Create a document in it, as you would in the workspace:
 
 ```sh
-curl -skg -b cookies.txt -X POST -H "X-Requested-With: XMLHttpRequest" \
+curl -skg -H "$AUTH" -X POST \
   -H "Content-Type: application/json" \
   -d '{"name":"Winch check","note":"Tutorial test note"}' \
   https://facet.localhost:3443/Api/equipment/ScratchNote
@@ -238,8 +246,7 @@ Read the doctype after the revert: Facet answers `410 Gone` — the row is a
 tombstone, not a never-existed row:
 
 ```sh
-curl -skg -b cookies.txt -o /dev/null -w "%{http_code}\n" \
-  -H "X-Requested-With: XMLHttpRequest" \
+curl -skg -o /dev/null -w "%{http_code}\n" -H "$AUTH" \
   https://facet.localhost:3443/Api/core/DocType/equipment.ScratchNote
 ```
 

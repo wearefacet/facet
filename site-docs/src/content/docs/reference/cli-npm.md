@@ -19,7 +19,7 @@ The `@facetapp/cli` npm package deploys a static build folder as a new revision 
 | --- | --- | --- |
 | `init` | `--yes`, `--app <slug>`, `--build <dir>`, `--server <url>` | Write a facet.config.json file for this project. |
 | `setup-dev` | `--dir <path>`, `--hostname <name>`, `--port <n>`, `--watch <dir>`, `--no-watch`, `--no-start`, `--no-key`, `--force`, `--yes` | Scaffold, start, and seed a local dev instance, then fetch an API key. |
-| `connect` | `--target <name>` | Sign in to a Facet instance and optionally store a project API key. |
+| `connect` | `--target <name>`, `--role <name>` | Sign in to a Facet instance and optionally store a project API key. |
 | `apikey` | `--target <name>` | Print the stored API key for this project (for Authorization: Bearer). |
 | `login` | `--target <name>` | Sign in to a Facet instance and store the session. |
 | `logout` | `--target <name>` | Remove the stored session for a Facet instance. |
@@ -105,6 +105,8 @@ Sign in to a Facet instance and optionally store a project API key.
 
 Options:
   --target <name>  Named target from facet.config.json to connect to.
+  --role <name>    Role to pin the key to (id or name; default: your active
+                   role).
   -h, --help       display help for command
 ```
 

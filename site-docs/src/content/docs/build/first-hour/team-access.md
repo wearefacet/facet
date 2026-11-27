@@ -33,11 +33,15 @@ workspace, the API, the assistant:
 **You will build:** one account with the `warehouse` role, verified against
 the field tag; Tom's scoped list, verified against the row scope.
 **Time:** about 15 minutes.
-**You need:** [tutorial 1](/build/first-hour/run-facet/) — a running
-instance with an admin account. The Brightwater example is loaded
-([tutorial 2](/build/first-hour/first-domain/) does this; the example's
-`load.sh` does it too). One step uses `curl` with the session cookie from
-your browser sign-in.
+**You need:**
+
+- [tutorial 1](/build/first-hour/run-facet/) — a running
+  instance with an admin account (`admin@example.tld` / `admin` on a
+  `setup-dev` instance). The Brightwater example is loaded
+  ([tutorial 2](/build/first-hour/first-domain/) does this; the example's
+  `load.sh` does it too).
+- `curl` and `pnpx @facetapp/cli` for the API step, which pins two API keys
+  to two roles.
 
 ## 1. Create Pat's account
 
@@ -48,7 +52,7 @@ the only required fields:
 - **Email**: `pat@brightwater.example`
 - **Display Name**: `Pat Mardell`
 
-![The New Account form with the email and display name filled in. Status starts at Active and the organizational unit at /.](/assets/screens/build/team-access-3.png)
+![The New Account form with the email and display name filled in. Status starts at Active and the organizational unit at /.](/screens/build/team-access-3.png)
 
 Click **Create**. The account page opens with the status *pending* — the
 account exists, but holds no credential yet.
@@ -56,7 +60,7 @@ account exists, but holds no credential yet.
 Find the **Credentials** panel and click **Generate password**. Facet
 shows the temporary password once:
 
-![The Temporary password generated dialog: a one-time password with a Copy button, and a note that it is shown only now.](/assets/screens/build/team-access-4.png)
+![The Temporary password generated dialog: a one-time password with a Copy button, and a note that it is shown only now.](/screens/build/team-access-4.png)
 
 :::caution
 Pass the password to Pat over a safe channel — a password manager, not
@@ -75,7 +79,7 @@ Pick Pat in **Pick an account…** — the *Roles assigned to account* panel
 starts empty. Open the **Add a role to this account…** picker, choose
 **Warehouse**, and click **Assign role**:
 
-![The Assignments page in By account mode: the Warehouse role assigned to Pat Mardell, with the default badge.](/assets/screens/build/team-access-5.png)
+![The Assignments page in By account mode: the Warehouse role assigned to Pat Mardell, with the default badge.](/screens/build/team-access-5.png)
 
 The row carries a *default* badge — the first role on an account becomes
 its default role. Pat signs in as `warehouse` without picking anything.
@@ -98,15 +102,28 @@ but not `finance`.
 Pat opens an item — say **Main tent 10x15** — and the page shows Name,
 Status, Category, Serial number:
 
-![An item page as the warehouse user: name, status, category and serial number, with no purchase price.](/assets/screens/build/team-access-2.png)
+![An item page as the warehouse user: name, status, category and serial number, with no purchase price.](/screens/build/team-access-2.png)
 
 There is no purchase price on the page. The field does not exist for this
 role — not hidden with a blank, absent.
 
-The same request from the API shows the same filter. As Pat:
+The same request from the API shows the same filter. Every API call presents its own credential, and the CLI issues one pinned to
+a role you hold. Keep the admin key from `setup-dev` under a name of its own,
+then pin a `warehouse` key for Pat — the CLI asks Nadia nothing, because the
+credential is per role, not per person:
 
 ```sh
-curl -skg -b pat-cookies.txt -H "X-Requested-With: XMLHttpRequest" \
+cd /path/to/your/setup-dev/folder
+AP_ADMIN_KEY=$(pnpx @facetapp/cli apikey)
+PAT_KEY=$(pnpx @facetapp/cli connect --role warehouse >/dev/null && pnpx @facetapp/cli apikey)
+```
+
+`connect` signs in as the admin in your browser — choose the admin role on the
+consent screen — and stores a key pinned to `iam.Roles.warehouse`. A bearer
+request carries no cookie, so it needs no `X-Requested-With` header. As Pat:
+
+```sh
+curl -skg -H "Authorization: Bearer $PAT_KEY" \
   https://facet.localhost:3443/Api/equipment/Item/EQ-2026-0001
 ```
 
@@ -114,10 +131,13 @@ curl -skg -b pat-cookies.txt -H "X-Requested-With: XMLHttpRequest" \
 {"data":{"name":"Main tent 10x15","status":"out","category":"equipment.Category.…","serial_number":"TN-10015-A"}}
 ```
 
-As Nadia (the `manager` role, which holds the `finance` tag):
+As Nadia (the `manager` role, which holds the `finance` tag) — pin a
+`manager` key the same way:
 
 ```sh
-curl -skg -b nadia-cookies.txt -H "X-Requested-With: XMLHttpRequest" \
+NADIA_KEY=$(pnpx @facetapp/cli connect --role manager >/dev/null && pnpx @facetapp/cli apikey)
+
+curl -skg -H "Authorization: Bearer $NADIA_KEY" \
   https://facet.localhost:3443/Api/equipment/Item/EQ-2026-0001
 ```
 
@@ -133,7 +153,7 @@ anywhere.
 
 Tom signs in and opens **Clients → Company**. The list shows five rows:
 
-![Tom's clients list shows exactly five companies, the ones he manages.](/assets/screens/build/team-access-1.png)
+![Tom's clients list shows exactly five companies, the ones he manages.](/screens/build/team-access-1.png)
 
 Brightwater's ten companies are in the database; Tom reaches the five where
 he is the account manager. The rule lives on his `sales` role: the read

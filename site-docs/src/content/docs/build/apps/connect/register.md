@@ -17,7 +17,8 @@ script the setup. Either way, the app becomes usable when its status turns
 
 > **For agents:** Create the app with `POST /Api/app/App`. The JSON body
 > carries `slug`, `name`, `client_type`, `redirect_uris`, `allowed_origins`,
-> and `grants`; send a session cookie and `X-Requested-With: XMLHttpRequest`.
+> and `grants`; send an API key in `Authorization: Bearer`, or a session
+> cookie plus `X-Requested-With: XMLHttpRequest`.
 > The create answers `201` with the stored document and a hook-written
 > `client_id`. Publish with `PATCH /Api/app/App/{id}` and
 > `{"status": "active"}`. Each grant entry looks like
@@ -74,14 +75,22 @@ confidential app issues one API key; the raw key shows once.
 
 ### 3. Or register through the REST API
 
-Sign in as an operator and keep the session cookies in `cookies.txt` — the
-full sequence appears under [Backend apps and service
-accounts](/build/apps/connect/backend-apps/). Then create the app document:
+Sign in as an operator and store an API key for your role — the full
+sequence appears under [Backend apps and service
+accounts](/build/apps/connect/backend-apps/). The CLI writes it, so keep it
+in a variable:
 
 ```sh
-curl -sk -b cookies.txt -X POST https://facet.localhost:3443/Api/app/App \
+pnpx @facetapp/cli connect
+RAVI_KEY=$(pnpx @facetapp/cli apikey)
+```
+
+Then create the app document:
+
+```sh
+curl -sk -X POST https://facet.localhost:3443/Api/app/App \
+  -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
   -d '{
     "slug": "bfr-checkout",
     "name": "Brightwater Check-out",
@@ -152,10 +161,10 @@ Publish when the app is ready. An app needs `status: active` before sign-ins
 work:
 
 ```sh
-curl -sk -b cookies.txt -X PATCH \
+curl -sk -X PATCH \
   https://facet.localhost:3443/Api/app/App/06H1FQF7NGDJJKSNHXPYT6627M \
+  -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
   -d '{"status": "active"}'
 ```
 
