@@ -26,50 +26,114 @@ publish or export it.
 
 ## Before you start
 
-- **The domain document.** You update the domain document to declare hooks.
-- **The event names.** Know the event names you care about: `created`,
+- **The domain document.** You declare hooks by editing the domain's own
+  document, not a doctype.
+- **The event names.** Know the events you care about: `created`,
   `updated`, `deleted`, and the action events your model emits.
 - **The right tool.** Hooks run inside Facet. To call an outside system, use
   a webhook instead — see [Send webhooks](/build/model/automation/webhooks/).
 
-## Declare a hook
+## Where hooks live
 
-Add an entry to the `hooks` array of the domain document:
+A hook is one entry in the `hooks` list of the domain document. The
+**Lua script** is a separate value, and the entry points at it. There are
+two places to write both.
+
+**In the app.** Open **Configure → Domains**, open the domain, and open the
+**Overview** tab. The editor shows the domain's name and description; it
+has no field for the `hooks` list. To add a hook there, send a patch that
+carries the full list — see the example at the end of this page. The hook
+is live as soon as the patch saves; there is no restart.
+
+**In files.** The hook script sits in the domain folder, and `domain.yml`
+reads it with a `!read_file` tag:
+
+```text
+equipment.facet-domain/
+├── domain.yml
+└── hooks/
+    └── 1-booking-drives-stock.lua
+```
+
+```yml
+content:
+  color: "#0F766E"
+  description: Rental equipment — items, categories, and maintenance tickets.
+  hooks:
+    - id: booking-drives-stock
+      kind: event
+      source:
+        domain: rentals
+        doc_type: Booking
+        events:
+          - booking_confirmed
+          - booking_returned
+      script: !read_file hooks/1-booking-drives-stock.lua
+meta: {}
+```
+
+The file name is free. An export names each script `{i}-{hook_id}.lua`,
+where `{i}` is the hook's position in the list. The dev watcher applies
+the folder on the next save — see [The domain
+watcher](/build/model/in-files/domain-watcher/).
+
+## Declare an event hook
+
+An event hook names a source and a script. Add one entry to the `hooks`
+list:
 
 ```json
 {
   "id": "alert-on-hold",
   "kind": "event",
   "source": { "domain": "accountancy", "doc_type": "Contract", "events": ["created"] },
-  "script": "local export = {}\n\nfunction export.on_event(ctx)\n  …\nend\n\nreturn export"
+  "script": "…"
 }
 ```
 
 | Part | Meaning |
 | --- | --- |
-| `id` | Unique within the domain. |
+| `id` | Required. Unique within the domain. |
+| `kind` | Required. `event` for a hook on changes, `schedule` for a cron hook. |
 | `source.domain` | Required. The domain to watch. |
 | `source.doc_type` | Optional. Without it, the hook watches every doctype of that domain. |
 | `source.events` | Optional. Without it, the hook fires on every event. |
+| `script` | Required. The Lua text, or `!read_file` in files mode. |
 
-In files, the hook script sits in the domain folder —
-`hooks/1-booking-drives-stock.lua` in the Brightwater bundle — and the
-domain file reads it with `!read_file`.
+The `script` value holds the script text itself, not a path. In files mode
+only, `!read_file` reads the text from the named file. Do not paste the Lua
+into a one-line JSON string: keep it in its own `.lua` file and point
+`script` at it, as above.
 
-## The script surface
+## Write the script
 
-The `script` value is Lua text. It returns a table with `on_event` (event
-hooks) or `on_schedule` (schedule hooks). Inside the script you read and
-write documents with the `document.*` helpers, and you can notify people
-with `notification.send`.
+The script is a Lua module. It returns a table that carries `on_event`
+for an event hook, or `on_schedule` for a schedule hook. A script that
+lacks that function is refused when you save.
 
-An event hook receives the change in `ctx.event`:
+```lua
+local export = {}
+
+function export.on_event(ctx)
+  if ctx.event.content.status == "on_hold" then
+    ctx.error("Contract " .. ctx.event.doc_id .. " entered on-hold")
+  end
+end
+
+return export
+```
+
+Inside the script you read and write documents with the `document.*`
+helpers, and you notify people with `notification.send`. The full surface
+sits in the [Lua API reference](/reference/lua-api/).
+
+An event hook receives the change in `ctx.event`. The members are:
 
 | Member | Meaning |
 | --- | --- |
 | `ctx.event.domain`, `ctx.event.doc_type`, `ctx.event.doc_id` | Which document changed. |
 | `ctx.event.event` | The event name. |
-| `ctx.event.content` | The document's current field values, as a ready Lua table. |
+| `ctx.event.content` | The document's field values, as a Lua table. It is empty when the document was deleted. |
 | `ctx.error(msg)` | Collects an error for the log. |
 | `ctx.now` | The current UTC time, as ISO 8601 text. |
 
@@ -90,11 +154,21 @@ fields, in UTC, with `/` steps allowed. Macros such as `@daily` and the
 seconds field are refused. Each fire runs once per cluster, even on a
 multi-server installation.
 
+```json
+{ "id": "morning-digest", "kind": "schedule", "schedule": "0 6 * * *", "script": "…" }
+```
+
+The script exports `on_schedule` instead of `on_event`. The example below
+shows a complete one.
+
 ## Save and watch it run
 
 Facet compiles each script when you save the domain. A script that does not
 compile, or lacks the right function, is refused. An edit takes effect on
 the next event or tick, without a restart.
+
+Read the server log to see a fire. Each `ctx.error` call writes one line
+with the message; the change that triggered the hook still saves.
 
 ## Delivery, stated honestly
 
@@ -113,8 +187,9 @@ that short window are not delivered to it.
 
 ## Example
 
-The Brightwater equipment domain carries this hook, complete and in
-production on the example instance:
+The Brightwater equipment domain carries this hook, complete and running
+on the example instance. First the script, then the declaration that
+points at it:
 
 ```lua
 -- booking-drives-stock — equipment domain hook
@@ -175,21 +250,47 @@ end
 return export
 ```
 
-The declaration on the equipment domain document names the source and the
-two action events:
+In files, the script sits in `hooks/1-booking-drives-stock.lua`, and
+`domain.yml` carries the declaration — the full file is in [Where hooks
+live](#where-hooks-live). The declaration names the source and the two
+action events:
 
-```json
-{
-  "id": "booking-drives-stock",
-  "kind": "event",
-  "source": {
-    "domain": "rentals",
-    "doc_type": "Booking",
-    "events": ["booking_confirmed", "booking_returned"]
-  },
-  "script": "…"
-}
+```yml
+hooks:
+  - id: booking-drives-stock
+    kind: event
+    source:
+      domain: rentals
+      doc_type: Booking
+      events:
+        - booking_confirmed
+        - booking_returned
+    script: !read_file hooks/1-booking-drives-stock.lua
 ```
+
+To send the same declaration from the app, PATCH the domain document with
+the list in `content.hooks`:
+
+```sh
+curl -X PATCH "$(facet-cli host)/Api/core/Domain/equipment" \
+  -H "Authorization: Bearer $(facet-cli apikey)" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "hooks": [{
+      "id": "booking-drives-stock",
+      "kind": "event",
+      "source": {
+        "domain": "rentals",
+        "doc_type": "Booking",
+        "events": ["booking_confirmed", "booking_returned"]
+      },
+      "script": "local export = {}\n\nfunction export.on_event(ctx)\n  -- …\nend\n\nreturn export"
+    }]
+  }'
+```
+
+The `hooks` key is replaced as a whole: send every hook the domain keeps,
+not only the new one.
 
 A schedule hook follows the same shape. A morning digest for the warehouse
 lead sends one notification per open ticket, every day at 06:00 UTC:
@@ -216,8 +317,12 @@ end
 return export
 ```
 
-```json
-{ "id": "morning-digest", "kind": "schedule", "schedule": "0 6 * * *", "script": "…" }
+```yml
+hooks:
+  - id: morning-digest
+    kind: schedule
+    schedule: "0 6 * * *"
+    script: !read_file hooks/2-morning-digest.lua
 ```
 
 The reads stay inside the owning domain, so no grant is needed. See
@@ -229,8 +334,16 @@ The reads stay inside the owning domain, so no grant is needed. See
 **The hook never fires.**
 
 Check the source: the domain must be live, the doctype must exist, and a
-foreign source needs an active grant. A brand-new hook also starts at the
-present moment; it does not replay past events.
+foreign source needs an active grant. Check `source.events` too — an event
+name the source never emits matches nothing. A brand-new hook also starts
+at the present moment; it does not replay past events.
+
+**The save is refused with a hook error.**
+
+The message names the hook and the field. The usual causes: a missing
+`kind`, an empty `script`, a script that does not return a table, a script
+without `on_event` (or `on_schedule` for a schedule hook), a duplicate
+`id`, or a cron expression with a macro or a seconds field.
 
 **The script fails at runtime.**
 

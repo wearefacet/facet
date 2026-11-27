@@ -24,53 +24,119 @@ l’exportez.
 ## Avant de commencer
 
 - **Le document du domaine.** Vous déclarez les hooks en modifiant le document
-  du domaine.
-- **Les noms d’événements.** Repérez les noms qui vous concernent : `created`,
-  `updated`, `deleted`, et le reste du vocabulaire des mutations.
+  du domaine, pas un doctype.
+- **Les noms d’événements.** Repérez les noms qui vous concernent : `created`,
+  `updated`, `deleted`, et les événements d’action émis par votre modèle.
 - **Le bon outil.** Les hooks tournent dans Facet. Pour appeler un système
   externe, passez par un webhook. Voir [Webhooks sortants](/fr/build/model/automation/webhooks/).
+
+## Où vivent les hooks
+
+Un hook est une entrée de la liste `hooks` du document du domaine. Le
+**script Lua** est une valeur séparée, et l’entrée y renvoie. Il y a deux
+endroits pour écrire les deux.
+
+**Dans l’application.** Ouvrez **Configurer → Domaines**, ouvrez le domaine,
+puis l’onglet **Vue d’ensemble**. L’éditeur montre le nom et la description
+du domaine ; il n’a pas de champ pour la liste `hooks`. Pour ajouter un hook
+à cet endroit, envoyez un patch qui porte la liste complète — voir l’exemple
+à la fin de cette page. Le hook est actif dès l’enregistrement du patch ;
+aucun redémarrage n’est nécessaire.
+
+**Dans les fichiers.** Le script du hook se trouve dans le dossier du
+domaine, et `domain.yml` le lit avec la balise `!read_file` :
+
+```text
+equipment.facet-domain/
+├── domain.yml
+└── hooks/
+    └── 1-booking-drives-stock.lua
+```
+
+```yml
+content:
+  color: "#0F766E"
+  description: Rental equipment — items, categories, and maintenance tickets.
+  hooks:
+    - id: booking-drives-stock
+      kind: event
+      source:
+        domain: rentals
+        doc_type: Booking
+        events:
+          - booking_confirmed
+          - booking_returned
+      script: !read_file hooks/1-booking-drives-stock.lua
+meta: {}
+```
+
+Le nom du fichier est libre. Un export nomme chaque script
+`{i}-{hook_id}.lua`, où `{i}` est la position du hook dans la liste. Le
+surveillant de développement applique le dossier à l’enregistrement suivant —
+voir [Le surveillant de domaine](/fr/build/model/in-files/domain-watcher/).
 
 ## Étapes
 
 ### 1. Écrire l’entrée du hook
 
-Ajoutez une entrée au tableau `hooks` du document du domaine. Un hook
-d’événement nomme une source et porte un script :
+Un hook d’événement nomme une source et un script. Ajoutez une entrée à la
+liste `hooks` :
 
 ```json
 {
   "id": "alert-on-hold",
   "kind": "event",
   "source": { "domain": "accountancy", "doc_type": "Contract", "events": ["created"] },
-  "script": "local export = {}\n\nfunction export.on_event(ctx)\n  if ctx.event.content.status == \"on_hold\" then\n    ctx.error(\"Contract \" .. ctx.event.doc_id .. \" entered on-hold\")\n  end\nend\n\nreturn export"
+  "script": "…"
 }
 ```
 
 | Élément | Signification |
 | --- | --- |
-| `id` | Unique dans le domaine. |
+| `id` | Requis. Unique dans le domaine. |
+| `kind` | Requis. `event` pour un hook sur les changements, `schedule` pour un hook planifié. |
 | `source.domain` | Requis. Le domaine à observer. |
 | `source.doc_type` | Facultatif. Sans lui, le hook observe tous les doctypes du domaine. |
 | `source.events` | Facultatif. Sans lui, le hook se déclenche à chaque événement. |
+| `script` | Requis. Le texte Lua, ou `!read_file` en mode fichiers. |
 
-### 2. Connaître la surface du script
+La valeur `script` porte le texte du script, pas un chemin. En mode fichiers
+seulement, `!read_file` lit le texte dans le fichier nommé. Ne collez pas le
+Lua dans une chaîne JSON sur une ligne : gardez-le dans son propre fichier
+`.lua` et faites pointer `script` dessus, comme ci-dessus.
 
-La valeur `script` est du texte Lua. Elle renvoie une table avec `on_event`
-(hooks d’événement) ou `on_schedule` (hooks planifiés), comme l’entrée
-ci-dessus.
+### 2. Écrire le script
+
+Le script est un module Lua. Il renvoie une table qui porte `on_event` pour
+un hook d’événement, ou `on_schedule` pour un hook planifié. Un script qui
+n’a pas cette fonction est refusé à l’enregistrement.
+
+```lua
+local export = {}
+
+function export.on_event(ctx)
+  if ctx.event.content.status == "on_hold" then
+    ctx.error("Contract " .. ctx.event.doc_id .. " entered on-hold")
+  end
+end
+
+return export
+```
 
 Dans le script, vous lisez et écrivez des documents avec `document.get`,
 `document.list`, `document.create` et `document.update`, et vous prévenez des
 personnes avec `notification.send`. Les écritures issues des hooks sont
-marquées comme automatisées : un hook qui écrit ce qu’il observe ne peut pas
-boucler.
+marquées comme automatisées : un hook qui écrit ce qu’il observe ne peut pas
+boucler. La surface complète est dans [la référence de l’API
+Lua](/fr/reference/lua-api/).
 
 ### 3. Ajouter un hook planifié
 
-Un hook planifié remplace la source par une expression cron : cinq champs
+Un hook planifié remplace la source par une expression cron : cinq champs
 numériques, en UTC, avec des incréments `/` admis. Les macros comme `@daily`
-et le champ des secondes sont refusés. L’exemple ci-dessous montre une entrée
-planifiée complète.
+et le champ des secondes sont refusés. Le script exporte `on_schedule` au
+lieu de `on_event`. L’exemple ci-dessous montre une entrée planifiée
+complète.
 
 ### 4. Enregistrer et observer l’exécution
 
@@ -89,8 +155,8 @@ l’état.
 ## Exemple
 
 Une consolidation qui compte chaque nuit les contrats actifs dans un document
-`Dashboard` du domaine propriétaire. Déclarez le hook avec `kind: "schedule"`
-et `schedule: "0 3 * * *"`. La valeur `script` est le texte ci-dessous :
+`Dashboard` du domaine propriétaire. Déclarez le hook avec `kind: schedule`
+et `schedule: "0 3 * * *"`. La valeur `script` est le texte ci-dessous :
 
 ```lua
 local export = {}
@@ -112,6 +178,14 @@ function export.on_schedule(ctx)
 end
 
 return export
+```
+
+```yml
+hooks:
+  - id: contract-roll-up
+    kind: schedule
+    schedule: "0 3 * * *"
+    script: !read_file hooks/1-contract-roll-up.lua
 ```
 
 La planification `"0 3 * * *"` l’exécute chaque jour à 03:00 UTC. Les lectures
