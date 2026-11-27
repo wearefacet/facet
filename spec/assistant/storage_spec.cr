@@ -152,6 +152,20 @@ describe Facet::Assistant::Conversation do
         live.id.should_not be_empty
       end
     end
+
+    it "filters created_at by a relative date" do
+      with_db do |db|
+        old = spawn_test_conversation(db, "sess-rel-old")
+        db.exec("UPDATE agent_conversations SET created_at = now() - interval '2 days' WHERE id = $1", old.id)
+        fresh = spawn_test_conversation(db, "sess-rel-fresh")
+
+        recent = Facet::Assistant::Conversation.list(
+          db,
+          filters: {"created_at__gte" => JSON::Any.new("-1d")},
+        )
+        recent.map(&.id).should eq([fresh.id])
+      end
+    end
   end
 
   describe ".set_title" do

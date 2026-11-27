@@ -347,6 +347,23 @@ describe "Audit::List filter validation (B-145)" do
     end
   end
 
+  it "filters emitted_at by a relative date" do
+    with_db do |db|
+      doc = ListFilters.create_doc(db, "LFRel")
+      doc_id = doc.projection.id
+
+      # A fresh mutation is inside the last day.
+      recent = Facet::Audit::List.call(db, domain: LF_DOMAIN, doc_type: "LFRel", doc_id: doc_id,
+        filters: {"emitted_at__gte" => JSON::Any.new("-1d")}, auth_context: Facet::RBAC::AuthContext.system)
+      recent.as(Facet::Audit::List::Result).total.should be >= 1
+
+      # A future bound matches nothing.
+      future = Facet::Audit::List.call(db, domain: LF_DOMAIN, doc_type: "LFRel", doc_id: doc_id,
+        filters: {"emitted_at__gte" => JSON::Any.new("+1d")}, auth_context: Facet::RBAC::AuthContext.system)
+      future.as(Facet::Audit::List::Result).total.should eq(0)
+    end
+  end
+
   # ── Aggregate mode ─────────────────────────────────────────────────
 
   it "aggregate mode still merges child rows when filters are valid" do

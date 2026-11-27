@@ -29,6 +29,17 @@ that names no rows simply returns an empty result.
   numbers, strings as text. Send datetime bounds as UTC RFC-3339
   (for example `2025-06-01T00:00:00Z`) — offsets are accepted and
   converted to UTC before the comparison.
+- **Relative dates** are accepted anywhere a datetime or date bound is:
+  `[+|-]<n><unit>…` with units `y`, `mo` (month), `w`, `d`, `h`, `m`
+  (minute), `s`. `-` is the past, `+` or no sign the future; the sign
+  applies to every component. `-1mo6d` is one month and six days back.
+  **`m` is a minute; `mo` is a month.** Months and years are calendar
+  steps (`-1mo` on Mar 31 is Feb 28); weeks and below are fixed-length.
+  On a `datetime` field or `created_at`/`updated_at` the bound is the
+  exact instant; on a `date` field it truncates to the calendar day.
+  `__lte` covers the whole day the bound lands on and `__gt` starts at
+  it, so `created_at__lte=-7d` means "up to seven days ago, whole day".
+  A relative bound with `h`, `m` or `s` on a `date` field is an error.
 - Money comparisons accept `"USD 1200"` (currency-bound) or `"1200"`
   (any currency). Combine `__currency` to pin the ticker.
 

@@ -347,19 +347,7 @@ module Facet
               end
 
         if TIMESTAMP_COLUMNS.includes?(field)
-          return {"FALSE", [] of ::DB::Any} unless TIMESTAMP_OPS.includes?(op)
-          # Normalize the ISO‑8601 input to UTC RFC‑3339 before binding.
-          # The `created_at` / `updated_at` columns are tz‑naive and store
-          # UTC, so a bare `text::timestamp` cast would silently drop any
-          # timezone offset supplied by the caller. Casting the normalized
-          # value to `::timestamp` (rather than `::timestamptz`) avoids
-          # the crossed tz‑aware vs tz‑naive comparison and keeps the
-          # session TimeZone out of the result.
-          normalized =
-            val.is_a?(String) ? Util::TimeHelper.to_utc_rfc3339(val) : nil
-          return {"FALSE", [] of ::DB::Any} unless normalized
-          sql_op = sql_operator(op)
-          {"#{field} #{sql_op} $#{n}::timestamp", [normalized] of ::DB::Any}
+          build_timestamp_column_clause(field, op, val, n)
         else
           return {"FALSE", [] of ::DB::Any} unless TEXT_OPS.includes?(op)
           case op
@@ -374,6 +362,29 @@ module Facet
           else {"FALSE", [] of ::DB::Any}
           end
         end
+      end
+
+      # Builds a comparison clause against a timestamp column. Resolves the
+      # ISO‑8601 input (or a relative date such as `-7d`) to UTC RFC‑3339
+      # before binding: the `created_at` / `updated_at` columns are tz‑naive
+      # and store UTC, so a bare `text::timestamp` cast would silently drop
+      # any timezone offset supplied by the caller. Casting to `::timestamp`
+      # (rather than `::timestamptz`) avoids the crossed tz‑aware vs tz‑naive
+      # comparison. A relative `lte` bound takes the calendar reading of its
+      # day (end of day); every other operator keeps the exact instant.
+      private def self.build_timestamp_column_clause(
+        field : String,
+        op : String,
+        val : ::DB::Any,
+        n : Int32,
+      ) : {String, Array(::DB::Any)}
+        return {"FALSE", [] of ::DB::Any} unless TIMESTAMP_OPS.includes?(op)
+        return {"FALSE", [] of ::DB::Any} unless val.is_a?(String)
+
+        resolved = Util::TimeHelper.resolve_bound(val)
+        return {"FALSE", [] of ::DB::Any} unless resolved
+        resolved = Util::TimeHelper.day_edge(resolved, :end) if op == "lte" && Util::TimeHelper.relative?(val)
+        {"#{field} #{sql_operator(op)} $#{n}::timestamp", [resolved] of ::DB::Any}
       end
 
       # Maps an operator suffix to its SQL operator.

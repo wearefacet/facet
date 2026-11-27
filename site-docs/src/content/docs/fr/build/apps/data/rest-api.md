@@ -202,6 +202,22 @@ Les clés de filtre sont des paires `field__operator` :
 | `__contains`, `__overlaps`, `__within`     | Tests d’intervalle sur les champs `period` et `dateperiod`. |
 | `search` (clé nue, sans suffixe)           | Correspondance de sous-chaîne sur le corpus de recherche du document. |
 
+**Dates relatives.** Toute borne datetime ou date accepte une date
+relative à la place d’une date absolue : `filters[created_at__gte]=-7d`.
+La grammaire est `[+|-]<n><unité>…` avec les unités `y`, `mo` (mois),
+`w`, `d`, `h`, `m` (minute), `s` ; un `-` initial signifie le passé, `+`
+ou l’absence de signe le futur, et le signe s’applique à chaque
+composant (`-1mo6d` = un mois et six jours en arrière). **`m` est une
+minute et `mo` un mois.** Les mois et les années sont des pas de
+calendrier — `-1mo` depuis le 31 mars donne le 28 février — tandis que
+les semaines, jours, heures, minutes et secondes sont de longueur fixe.
+Sur un champ `datetime` ou `created_at`/`updated_at`, la borne est
+l’instant exact ; sur un champ `date`, elle est tronquée au jour
+calendaire. `__lte` couvre toute la journée où tombe la borne et `__gt`
+commence à celle-ci : `created_at__lte=-7d` signifie « jusqu’à il y a sept
+jours, journée incluse ». Une borne relative avec `h`, `m` ou `s` sur un
+champ `date` répond `422`.
+
 Chaque doctype accepte aussi les cibles système `id`, `created_at`,
 `updated_at` et `deleted_at`. Les valeurs de tableau sur la query string
 voyagent encodées en JSON :

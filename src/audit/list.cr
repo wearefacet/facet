@@ -647,10 +647,13 @@ module Facet
         ] of {String, ::DB::Any}
       end
 
-      # Builds the emitted_at range clause. The ISO-8601 input normalizes
+      # Builds the emitted_at range clause. An ISO-8601 input normalizes
       # to UTC RFC-3339 before binding so a caller-supplied timezone
       # offset is honored — the column is tz-naive and stores UTC, so a
-      # bare `text::timestamp` cast would silently drop the offset. An
+      # bare `text::timestamp` cast would silently drop the offset. A
+      # well-formed relative date (`-7d`, `-20m`) resolves against now the
+      # same way, and `lte` takes the calendar reading of the day it lands
+      # on (end of day) while `gte` stays the exact instant. An
       # unparseable value answers no clause (the value contract stays
       # lenient, like the document list's scalar filters).
       private def self.build_emitted_at_filter(
@@ -661,8 +664,9 @@ module Facet
       ) : Array({String, ::DB::Any})
         raw = value.raw
         return [] of {String, ::DB::Any} unless raw.is_a?(String)
-        normalized = Util::TimeHelper.to_utc_rfc3339(raw)
+        normalized = Util::TimeHelper.resolve_bound(raw)
         return [] of {String, ::DB::Any} unless normalized
+        normalized = Util::TimeHelper.day_edge(normalized, :end) if op == "lte" && Util::TimeHelper.relative?(raw)
         clause = case op
                  when "gte" then "#{qual}emitted_at >= $#{param_idx + 1}"
                  when "lte" then "#{qual}emitted_at <= $#{param_idx + 1}"

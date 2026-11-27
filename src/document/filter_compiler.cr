@@ -421,24 +421,34 @@ module Facet
 
       # Pre-processes the raw filter hash: for every filter targeting
       # a `datetime` field (or a system timestamp column — `created_at` /
-      # `updated_at`), normalizes the supplied ISO‑8601 value (which
-      # may carry a timezone offset) to its UTC RFC‑3339 form so that the
+      # `updated_at`), normalizes the supplied value — an ISO‑8601 string
+      # (which may carry a timezone offset) or a relative date (`-7d`,
+      # `-1mo6d`, `-20m`) — to its UTC RFC‑3339 form so that the
       # subsequent text-based comparison against the tz‑naive UTC stored
-      # value succeeds. Other filters are passed through unchanged.
+      # value succeeds. A `date` field resolves the same way and truncates
+      # to the UTC calendar day. Other filters are passed through
+      # unchanged.
+      #
+      # A relative value with a clock unit (`h`, `m`, `s`) on a `date` field
+      # raises `FilterGrammarError` (reason `relative_date_time_unit`): the
+      # field holds no clock, so the bound has no meaning and a silent
+      # truncation would hide the caller's mistake.
       private def self.normalize_datetime_query_filters(
         filters : Hash(String, JSON::Any),
         definition : Doctype::DoctypeDefinition,
       ) : Hash(String, JSON::Any)
         result = {} of String => JSON::Any
         filters.each do |key, value|
-          field, _op_suffix = Util::FilterSet.parse_filter_key(key)
+          field, op_suffix = Util::FilterSet.parse_filter_key(key)
           field_type = definition.fields[field]?.try(&.type)
           if field_type && field_type.type_name == "datetime"
-            result[key] = normalize_datetime_filter_value(value)
+            result[key] = normalize_datetime_filter_value(value, key, op_suffix)
+          elsif field_type && field_type.type_name == "date"
+            result[key] = normalize_date_filter_value(value, key, op_suffix)
           elsif field == "created_at" || field == "updated_at" || field == "deleted_at"
             # System-managed timestamp columns: same UTC RFC-3339 contract
             # as `datetime` fields — see AGENTS.md → Time / Timezone.
-            result[key] = normalize_datetime_filter_value(value)
+            result[key] = normalize_datetime_filter_value(value, key, op_suffix)
           else
             result[key] = value
           end
@@ -446,21 +456,30 @@ module Facet
         result
       end
 
+      # The comparison operators whose relative bound takes the calendar
+      # reading of the day it lands on: `lte` covers the whole day (an end
+      # bound), `gt` starts at it (a start bound). `gte`, `lt` and `between`
+      # stay exact — `-7d` there means the instant itself. Only a bound that
+      # started as a relative value is adjusted, so an absolute ISO bound
+      # keeps its exact semantics.
+      END_DAY_OPERATORS   = Set{"lte"}
+      START_DAY_OPERATORS = Set{"gt"}
+
       # Normalizes a single `datetime` field filter value to UTC RFC‑3339.
       # Handles both scalar string values (for `eq`/`ne`/`gt`/`gte`/`lt`/`lte`/
       # `match`) and two‑element array values (for `between`). Non‑string and
       # unparseable values are returned as‑is — `FilterSet` and the validator
       # surface the resulting mismatch as a no‑match rather than a 500.
-      private def self.normalize_datetime_filter_value(value : JSON::Any) : JSON::Any
+      private def self.normalize_datetime_filter_value(value : JSON::Any, key : String, op_suffix : String) : JSON::Any
         case raw = value.raw
         when String
-          normalized = Util::TimeHelper.to_utc_rfc3339(raw)
+          normalized = resolve_relative_datetime(raw, op_suffix)
           normalized ? JSON::Any.new(normalized) : value
         when Array(JSON::Any)
           new_arr = raw.map do |item|
             case sub = item.raw
             when String
-              sub_normalized = Util::TimeHelper.to_utc_rfc3339(sub)
+              sub_normalized = Util::TimeHelper.resolve_bound(sub)
               sub_normalized ? JSON::Any.new(sub_normalized) : item
             else
               item
@@ -469,6 +488,68 @@ module Facet
           JSON::Any.new(new_arr)
         else
           value
+        end
+      end
+
+      # Resolves one scalar `datetime` bound. A relative value is shifted to
+      # the calendar edge its operator implies (`lte` → end of day, `gt` →
+      # start of day); an absolute ISO value resolves as itself. Returns
+      # `nil` when the value is neither a relative date nor an ISO datetime.
+      private def self.resolve_relative_datetime(raw : String, op_suffix : String) : String?
+        resolved = Util::TimeHelper.resolve_bound(raw)
+        return nil if resolved.nil?
+        return resolved unless Util::TimeHelper.relative?(raw)
+
+        if END_DAY_OPERATORS.includes?(op_suffix)
+          Util::TimeHelper.day_edge(resolved, :end)
+        elsif START_DAY_OPERATORS.includes?(op_suffix)
+          Util::TimeHelper.day_edge(resolved, :start)
+        else
+          resolved
+        end
+      end
+
+      # Normalizes a single `date` field filter value. A relative value
+      # resolves against now and truncates to its UTC calendar day — `lte`
+      # widens it to the end of that day and `gt` narrows it to the start,
+      # the calendar reading. An ISO `YYYY-MM-DD` string passes through
+      # untouched. A relative value that carries a clock unit raises — a
+      # calendar date has no clock.
+      private def self.normalize_date_filter_value(value : JSON::Any, key : String, op_suffix : String) : JSON::Any
+        case raw = value.raw
+        when String
+          JSON::Any.new(resolve_date_bound(raw, key, op_suffix))
+        when Array(JSON::Any)
+          new_arr = raw.map do |item|
+            case sub = item.raw
+            when String then JSON::Any.new(resolve_date_bound(sub, key, op_suffix))
+            else             item
+            end
+          end
+          JSON::Any.new(new_arr)
+        else
+          value
+        end
+      end
+
+      # Resolves one `date` filter bound: a relative value truncates to its
+      # UTC calendar day, everything else keeps its text form (a `date`
+      # field stores `YYYY-MM-DD`, so a plain string already compares).
+      private def self.resolve_date_bound(raw : String, key : String, op_suffix : String) : String
+        return raw unless Util::TimeHelper.relative?(raw)
+
+        if Util::TimeHelper.relative_has_time_unit?(raw)
+          raise Util::FilterClauses::FilterGrammarError.new(key, "relative_date_time_unit",
+            "Relative date '#{raw}' carries a time unit (h, m or s) but field '#{Util::FilterSet.parse_filter_key(key)[0]}' is a calendar date — use a datetime field, or drop the time unit")
+        end
+
+        day = Util::TimeHelper.apply_relative(raw).to_s("%F")
+        if END_DAY_OPERATORS.includes?(op_suffix)
+          "#{day}T23:59:59Z"
+        elsif START_DAY_OPERATORS.includes?(op_suffix)
+          "#{day}T00:00:00Z"
+        else
+          day
         end
       end
 

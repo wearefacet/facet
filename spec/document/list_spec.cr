@@ -684,6 +684,76 @@ describe Facet::Document::List do
     end
   end
 
+  it "filters by created_at with a relative date" do
+    with_temp_doctype("listrelativedt") do |db, domain, doctype|
+      ensure_domain(db, domain)
+      create_schema = %({"doctype": "#{doctype}", "domain": "#{domain}", "fields": {"name": {"type": "string"}}})
+      expect_create_success(Facet::Document::Create.call(db, "core", "DocType", create_schema, Facet::RBAC::AuthContext.system))
+
+      alice = Facet::Document::Create.call(db, domain, doctype, %({"name": "Alice"}), Facet::RBAC::AuthContext.system)
+      expect_create_success(alice)
+      alice_id = alice.as(Facet::Document::Create::Result).projection.id
+      db.exec("UPDATE projections SET created_at = now() - interval '2 days' WHERE id = $1", alice_id)
+      bob = Facet::Document::Create.call(db, domain, doctype, %({"name": "Bob"}), Facet::RBAC::AuthContext.system)
+      expect_create_success(bob)
+
+      # `-1d` covers the last 24 hours: only Bob, created now.
+      list = Facet::Document::List.call(
+        db, domain, doctype,
+        filters: {"created_at__gte" => JSON::Any.new("-1d")},
+        auth_context: Facet::RBAC::AuthContext.system
+      )
+      list.as(Facet::Document::List::Result).items.map(&.content["name"].as_s).should eq(["Bob"])
+
+      # `-3d` covers both rows.
+      wide = Facet::Document::List.call(
+        db, domain, doctype,
+        filters: {"created_at__gte" => JSON::Any.new("-3d")},
+        auth_context: Facet::RBAC::AuthContext.system
+      )
+      wide.as(Facet::Document::List::Result).items.size.should eq(2)
+    end
+  end
+
+  it "filters a date field with a relative date truncated to the day" do
+    with_temp_doctype("listrelativedate") do |db, domain, doctype|
+      ensure_domain(db, domain)
+      create_schema = %({"doctype": "#{doctype}", "domain": "#{domain}", "fields": {"name": {"type": "string"}, "due": {"type": "date", "filters": ["comparison"]}}})
+      expect_create_success(Facet::Document::Create.call(db, "core", "DocType", create_schema, Facet::RBAC::AuthContext.system))
+
+      yesterday = (Time.utc - 1.day).to_s("%F")
+      last_year = (Time.utc - 1.year).to_s("%F")
+      [{"Alice", last_year}, {"Bob", yesterday}].each do |(name, due)|
+        expect_create_success(Facet::Document::Create.call(db, domain, doctype, %({"name": "#{name}", "due": "#{due}"}), Facet::RBAC::AuthContext.system))
+      end
+
+      # `-1d` truncates to yesterday's calendar day: only Bob.
+      list = Facet::Document::List.call(
+        db, domain, doctype,
+        filters: {"due__gte" => JSON::Any.new("-1d")},
+        auth_context: Facet::RBAC::AuthContext.system
+      )
+      list.as(Facet::Document::List::Result).items.map(&.content["name"].as_s).should eq(["Bob"])
+    end
+  end
+
+  it "refuses a relative time unit on a date field with a 422" do
+    with_temp_doctype("listrelativedateunit") do |db, domain, doctype|
+      ensure_domain(db, domain)
+      create_schema = %({"doctype": "#{doctype}", "domain": "#{domain}", "fields": {"due": {"type": "date", "filters": ["comparison"]}}})
+      expect_create_success(Facet::Document::Create.call(db, "core", "DocType", create_schema, Facet::RBAC::AuthContext.system))
+
+      result = Facet::Document::List.call(
+        db, domain, doctype,
+        filters: {"due__gte" => JSON::Any.new("-2h")},
+        auth_context: Facet::RBAC::AuthContext.system
+      )
+      error = result.as(Facet::ServiceError)
+      error.status.should eq(422)
+      error.message.should contain("carries a time unit")
+    end
+  end
+
   it "filters by updated_at__between with an ISO-8601 array" do
     with_temp_doctype("listupdatedatbetween") do |db, domain, doctype|
       ensure_domain(db, domain)

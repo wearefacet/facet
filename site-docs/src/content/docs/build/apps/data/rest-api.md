@@ -268,6 +268,20 @@ Array values on the query string ride JSON-encoded, for example
 `filters[dates__between]=%5B%222026-12-11%22%2C%222026-12-20%22%5D`. Sort
 entries take a `-` prefix for descending: `sort=-updated_at,id`.
 
+**Relative dates.** Any datetime or date bound accepts a relative date
+instead of an absolute one: `filters[created_at__gte]=-7d`. The grammar is
+`[+|-]<n><unit>…` with units `y`, `mo` (month), `w`, `d`, `h`, `m`
+(minute), `s`; a leading `-` is in the past, `+` or no sign in the future,
+and the sign applies to every component (`-1mo6d` is one month and six
+days back). **`m` is a minute and `mo` is a month.** Months and years are
+calendar steps — `-1mo` from March 31 is February 28 — and weeks, days,
+hours, minutes and seconds are fixed-length. On a `datetime` field or
+`created_at`/`updated_at` the bound is the exact instant; on a `date`
+field it truncates to the calendar day. `__lte` covers the whole day the
+bound lands on and `__gt` starts at it, so `created_at__lte=-7d` means "up
+to seven days ago, the whole day". A relative bound with `h`, `m` or `s`
+on a `date` field answers `422`.
+
 A second form exists for long filters: the `QUERY` method (step 6) carries
 the same parameters as a JSON body.
 

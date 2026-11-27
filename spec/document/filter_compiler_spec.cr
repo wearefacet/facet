@@ -14,6 +14,7 @@ require "../../src/doctype/field_types/money_type"
 require "../../src/doctype/field_types/array_type"
 require "../../src/doctype/field_types/period_type"
 require "../../src/doctype/field_types/datetime_type"
+require "../../src/doctype/field_types/date_type"
 require "../../src/doctype/field_types/enum_type"
 require "../../src/doctype/doctype_definition"
 require "../../src/util/money"
@@ -54,6 +55,7 @@ def filter_doctype : DoctypeDef
     "tags"   => FieldDef.new(type: Facet::Doctype::ArrayType.new, filters: [Facet::Doctype::FilterCapability::Membership]),
     "window" => FieldDef.new(type: Facet::Doctype::PeriodType.new, filters: [Facet::Doctype::FilterCapability::Interval]),
     "starts" => FieldDef.new(type: Facet::Doctype::DatetimeType.new, filters: [Facet::Doctype::FilterCapability::Comparison]),
+    "day"    => FieldDef.new(type: Facet::Doctype::DateType.new, filters: [Facet::Doctype::FilterCapability::Comparison]),
     "status" => FieldDef.new(type: Facet::Doctype::EnumType.new, filters: [Facet::Doctype::FilterCapability::Equality]),
   } of String => FieldDef
   DoctypeDef.new(doctype: "Invoice", domain: "core", fields: fields)
@@ -401,6 +403,81 @@ describe Facet::Document::FilterCompiler do
     params.should eq([] of ::DB::Any)
   end
 
+  # ── Relative dates ──────────────────────────────────────────────────
+  #
+  # A relative bound resolves against the request clock, so each assertion
+  # compares the bound to the same instant the compiler used — with a
+  # small window to absorb the run-time difference.
+
+  it "resolves a relative date on a datetime field to a UTC instant" do
+    before = Time.utc
+    clauses, params = compile_one(definition, {"starts__gte" => jv("-7d")})
+    clauses.should eq(["content->>'starts' >= $1"])
+    expected = (before - 7.days).to_rfc3339
+    (params[0].as(String) >= expected).should be_true
+    (params[0].as(String) <= (Time.utc - 7.days).to_rfc3339).should be_true
+  end
+
+  it "widens a relative lte bound to the end of its UTC day on a datetime field" do
+    _clauses, params = compile_one(definition, {"starts__lte" => jv("-7d")})
+    params[0].as(String).should end_with("T23:59:59Z")
+  end
+
+  it "widens a relative gt bound to the start of its UTC day on a datetime field" do
+    _clauses, params = compile_one(definition, {"starts__gt" => jv("-7d")})
+    params[0].as(String).should end_with("T00:00:00Z")
+  end
+
+  it "keeps an absolute lte bound exact on a datetime field" do
+    _clauses, params = compile_one(definition, {"starts__lte" => jv("2026-01-01T10:00:00Z")})
+    params[0].should eq("2026-01-01T10:00:00Z")
+  end
+
+  it "truncates a relative date to its UTC calendar day on a date field" do
+    before = Time.utc
+    clauses, params = compile_one(definition, {"day__eq" => jv("-1d")})
+    clauses.should eq(["content->>'day' = $1"])
+    day = params[0].as(String)
+    day.size.should eq(10)
+    day.should eq((before - 1.day).to_s("%F"))
+  end
+
+  it "widens a relative lte bound to the end of the day on a date field" do
+    _clauses, params = compile_one(definition, {"day__lte" => jv("-1d")})
+    params[0].as(String).should end_with("T23:59:59Z")
+  end
+
+  it "leaves an absolute date bound untouched" do
+    _clauses, params = compile_one(definition, {"day__gte" => jv("2026-01-15")})
+    params[0].should eq("2026-01-15")
+  end
+
+  it "raises on a relative time unit against a date field (B-relative)" do
+    ex = expect_raises(Facet::Util::FilterClauses::FilterGrammarError, /carries a time unit/) do
+      compile_one(definition, {"day__gte" => jv("-2h")})
+    end
+    ex.reason.should eq("relative_date_time_unit")
+    ex.filter_key.should eq("day__gte")
+  end
+
+  it "resolves a relative date on the created_at system column" do
+    _clauses, params = compile_one(definition, {"created_at__gte" => jv("-20m")})
+    expected = (Time.utc - 20.minutes).to_rfc3339
+    (params[0].as(String) >= expected).should be_true
+  end
+
+  it "resolves relative bounds on a datetime __between filter" do
+    _clauses, params = compile_one(definition, {"starts__between" => jarr([jv("-7d"), jv("1d")])})
+    (params[0].as(String) <= (Time.utc - 7.days).to_rfc3339).should be_true
+    (params[1].as(String) >= (Time.utc + 1.day).to_rfc3339).should be_true
+  end
+
+  it "resolves a relative bound in a period range filter" do
+    _clauses, params = compile_one(definition, {"window__contains" => jarr([jv("-7d"), jv("1d")])})
+    (params[0].as(String) <= (Time.utc - 7.days).to_rfc3339).should be_true
+    (params[1].as(String) >= (Time.utc + 1.day).to_rfc3339).should be_true
+  end
+
   # ── Unknown fields ──────────────────────────────────────────────────
 
   # ── Value-shape validation (B-41) ──────────────────────────────────
@@ -515,7 +592,7 @@ describe Facet::Document::FilterCompiler do
   end
 
   it "lists the filterable fields in the unknown-field message (B-20)" do
-    expect_raises(Facet::Util::FilterClauses::FilterGrammarError, /filterable: active, age, created_at, delay, deleted_at, id, name, price, score, search, starts, status, tags, updated_at, window/) do
+    expect_raises(Facet::Util::FilterClauses::FilterGrammarError, /filterable: active, age, created_at, day, delay, deleted_at, id, name, price, score, search, starts, status, tags, updated_at, window/) do
       compile_one(definition, {"ghost" => jv("x")})
     end
   end
