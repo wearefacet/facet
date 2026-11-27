@@ -19,7 +19,8 @@ requests, then tears its subsystems down in a fixed order.
 ## What a release is
 
 Releases so far — 0.2.0-beta (2026-11-20), 0.2.1 (2026-11-24), 0.2.2
-(2026-11-26) — follow `MAJOR.MINOR.PATCH`, with `0.x` treated as beta. The
+(2026-11-26), 0.2.3 (2026-11-28) — follow `MAJOR.MINOR.PATCH`, with `0.x`
+treated as beta. The
 project is pre-1.0: a release can contain breaking changes. Every release
 carries a **Deployment notes** section in `CHANGELOG.md`; read it before you
 pull. It names the steps this page cannot know in advance — a required
