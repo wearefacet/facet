@@ -296,3 +296,15 @@ shots:
     wait: main
     settle: 1200
     crop: "#settings-chapter-mcp"
+
+# Captured-once (hand-run): the first-app wizard shots depend on the
+# brw-checkout registration state and the dismissed first-run tour, so
+# they are not pipeline entries. Recipe:
+#   node scripts/screens/capture-first-app-wizard.mjs [appIdToDelete]
+# then delete the app it leaves behind (the script prints the id) so the
+# slug stays free for tutorial readers. Files:
+#   build/first-app-wizard-setup.png        (Set it up, filled)
+#   build/first-app-wizard-permissions.png  (grants set, required on)
+#   build/first-app-wizard-review.png       (checklist + consent preview)
+#   build/first-app-wizard-credentials.png  (client id, no secret)
+#   build/first-app-wizard-host.png         (Settings > Serving host)

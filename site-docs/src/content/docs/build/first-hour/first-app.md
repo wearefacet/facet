@@ -6,9 +6,7 @@ audience: [developer]
 features: [APP-01, APP-02, APP-05, APP-06, APP-09, APP-10]
 sidebar:
   order: 4
-prev: /build/first-hour/first-domain-in-files/
-next: /build/first-hour/team-access/
-verified_at: df99911
+verified_at: c2d5808
 ---
 
 The Brightwater warehouse tracks its stock on a spreadsheet. You will replace
@@ -18,7 +16,7 @@ it, and signs its users in — the spreadsheet gets none of that.
 
 The tutorial has three parts:
 
-1. **Register the app on Facet** — two commands you copy and paste.
+1. **Register the app on Facet** — the dashboard wizard, or two commands.
 2. **Build it with your coding agent** — one prompt; the agent writes the code.
 3. **Try it and ship it** — sign in, then deploy with the CLI.
 
@@ -28,7 +26,7 @@ The tutorial has three parts:
 - [Tutorial 1](/build/first-hour/run-facet/) — a running instance, with the
   Brightwater example loaded ([tutorial 2](/build/first-hour/first-domain/)
   does it, or the example's `load.sh`).
-- Node.js 20+ with pnpm, plus `curl` and `jq`.
+- Node.js 20+ with pnpm (`curl` and `jq` only for the scripted registration).
 - A coding-agent harness — Claude Code, Codex, or OpenCode. Any agent that
   reads files and runs commands works.
 
@@ -42,14 +40,74 @@ connected by an administrator — see
 
 ## Part 1 — Register the app on Facet
 
-### 1. Describe the app
-
 On Facet, an app is a document. It says who the app is, where sign-ins may
 return to, and which data it may touch — its **grants**. The check-out app
 reads bookings and their lines, and reads and updates equipment items.
 
-Create the project folder and save the app's description in it as
-`facet-app.json`:
+Two ways to register it — both write the same document, so pick one:
+
+- **[The wizard](#1-register-through-the-wizard)** — four screens in the
+  dashboard. The friendly path.
+- **[The script](#2-or-script-the-registration)** — two terminal commands
+  on a `facet-app.json` file. The repeatable path; use it again for the
+  next app.
+
+### 1. Register through the wizard
+
+Open **Configure → Apps** and click **New app**. The wizard walks four
+steps: **Set it up**, **Permissions**, **Review**, **Credentials**.
+
+**Set it up.** Fill the fields with the check-out app's addresses:
+
+- **Display name** — `Brightwater Check-out`
+- **Slug** — click **Edit** beside the derived address and set
+  `brw-checkout`. The rest of the tutorial uses it.
+- **Owner** — defaults to your account; leave it.
+- **Allowed origins** — `http://localhost:5173`, then
+  `https://checkout.apps.localhost:3443`
+- **Redirect URIs** — `http://localhost:5173/auth/callback`, then
+  `https://checkout.apps.localhost:3443/auth/callback`
+
+Each list entry: type the address, press Enter. Each address appears
+twice — the dev server on your machine, and the hosted build you deploy
+in Part 3.
+
+![The Set it up step of the app wizard: display name Brightwater Check-out, slug brw-checkout, two allowed origins and two redirect URIs.](/screens/build/first-app-wizard-setup.png)
+
+**Permissions.** One access level per doctype, grouped by domain. Open the
+**Rentals** and **Equipment** domain tabs and set:
+
+| Doctype | Level | Role must have at setup |
+| --- | --- | --- |
+| `rentals.Booking` | **Read** | Read → required |
+| `rentals.BookingLine` — nested under Booking | **Read** | Read → required |
+| `equipment.Item` | **Write** | Read → required, Create and edit → required |
+
+Leave every other doctype on **None**. Each **Role must have at setup**
+row lists the level's actions as pills with a toggle; flipping a toggle
+marks the action `required`. A required action asks one thing of every
+role that signs in: it must carry that action. The consent screen then
+lists only the roles that do.
+
+![The Permissions step: Booking and BookingLine on Read, Item on Write, with each action's required toggle turned on.](/screens/build/first-app-wizard-permissions.png)
+
+**Review.** The checklist confirms each required item, and **What people
+will see** previews the consent screen. Click **Publish**:
+
+![The Review step: the required checklist with three ticks, and the consent preview — Brightwater Check-out wants to read bookings, bookinglines and items, and create and edit items.](/screens/build/first-app-wizard-review.png)
+
+Publishing sets the status `active` — sign-ins work from now on.
+
+**Credentials.** The last screen shows the `client_id` Facet wrote, the
+sign-in address, and the discovery document. A public app carries no
+secret: the sign-in uses Proof Key for Code Exchange (PKCE) instead.
+
+![The Credentials screen: the client id, the sign-in address, the discovery document, and the "No client secret" panel naming PKCE and DPoP.](/screens/build/first-app-wizard-credentials.png)
+
+### 2. Or script the registration
+
+Prefer the terminal? Create the project folder and save the app's
+description in it as `facet-app.json`:
 
 ```sh
 mkdir brightwater-checkout && cd brightwater-checkout
@@ -77,15 +135,12 @@ mkdir brightwater-checkout && cd brightwater-checkout
 }
 ```
 
-Each address appears twice: once for the dev server on your machine, once for
-the hosted build at `checkout.apps.localhost`, where you deploy in Part 3.
-The `host` is a bare hostname — no scheme, no port. `public` means the app
-runs in the browser and carries no secret.
-
-### 2. Register and activate it
-
-Run these from the project folder. The CLI supplies the instance address and
-an admin key — the one it stored for Ravi when you ran `setup-dev`:
+Each address appears twice: once for the dev server on your machine, once
+for the hosted build at `checkout.apps.localhost`. The `host` is a bare
+hostname — no scheme, no port. `public` means the app runs in the browser
+and carries no secret. Then register and activate — the CLI supplies the
+instance address and the admin key it stored for Ravi when you ran
+`setup-dev`:
 
 ```sh
 HOST=$(pnpx @facetapp/cli host)
@@ -122,9 +177,11 @@ the same — see [Register an app](/build/apps/connect/register/).
 
 ### 3. Scaffold the project
 
-Install the SDK and the build tools, and write the deploy config:
+Create the project folder, install the SDK and the build tools, and write
+the deploy config:
 
 ```sh
+mkdir brightwater-checkout && cd brightwater-checkout
 pnpm init
 pnpm add @facetapp/sdk
 pnpm add -D typescript vite
@@ -245,8 +302,13 @@ To watch each sign-in call with `curl`, see
 ### 6. Deploy on Facet
 
 The app runs on your machine; now let Facet host it. The registration
-already carries the hosted address, its redirect, and its CORS origin — you
-only sign the CLI in and deploy:
+already carries the hosted redirect and its CORS origin. The wizard
+collects no host, so set it on the app's **Settings** tab under
+**Serving**: a bare hostname, no scheme, no port.
+
+![The Settings tab of the app: the Serving section with the host checkout.apps.localhost and its Save button.](/screens/build/first-app-wizard-host.png)
+
+Then build, sign the CLI in, and deploy:
 
 ```sh
 pnpm build
@@ -276,8 +338,8 @@ sign-in. Releases, rollback, and custom domains are
 
 ## What you learned
 
-- An app is a document: it holds the app's identity, its grants, and where
-  sign-ins may return. Setting it `active` switches sign-ins on.
+- An app is a document: the wizard writes it in four steps, the API in two
+  commands. Publishing sets it `active` — sign-ins start.
 - The consent screen lists only roles that cover every required grant
   action. The overlap counts a role's domain-wide lines too — the seeded
   Warehouse role qualifies with no extra lines.
