@@ -215,6 +215,121 @@ module Facet
         issues.select(&.severity.==(:error))
       end
 
+      # ── Field coverage ───────────────────────────────────────────────
+
+      # Top-level doctype field names referenced anywhere in a template —
+      # the input of the `Doctype::Check` field-coverage warning. A name
+      # comes from a `field` binding (`input` / `input-*` / `object` /
+      # `array` / `dict` / `if` / `markdown` / `image-artifact`), a `$field`
+      # interpolation on a display node (`field` / `label` / `capsule` /
+      # `title` values, `header` title / subtitle, `link` / `email` label,
+      # `image-artifact` alt), or a URL interpolation (`link` / `email`
+      # `href`, `image` `src`). A dotted path counts for its first segment
+      # (`$address.street` covers `address`). Bindings inside an `object` /
+      # `array` / `dict` wrapper resolve against the wrapped field's
+      # sub-schema, so they never add root names — the wrapper itself
+      # already recorded its root field.
+      def self.covered_fields(template : JSON::Any?, definition : DoctypeDefinition) : Set(String)
+        covered = Set(String).new
+        return covered if template.nil?
+        collect_fields(template, definition.fields, nil, covered)
+        covered
+      end
+
+      # The coverage walk mirrors `walk` — same scope derivation, same
+      # early returns for missing / unknown node types (children of a node
+      # the frontend cannot render never show a value) — but records names
+      # instead of issues, so it stays in step with the node vocabulary.
+      private def self.collect_fields(
+        node : JSON::Any,
+        scope : Hash(String, FieldDefinition)?,
+        root : String?,
+        covered : Set(String),
+      ) : Nil
+        obj = node.as_h?
+        return if obj.nil?
+        type = obj["type"]?.try(&.as_s?)
+        return if type.nil? || type.empty? || !REQUIRED.has_key?(type)
+
+        record_bindings(obj, type, covered) if root.nil?
+        child_scope, child_root = descend_scope(obj, type, scope, root)
+        walk_coverage_children(obj, type, child_scope, child_root, covered)
+      end
+
+      # Records the root-level field names a node references: the `field`
+      # binding (bare keys and dotted wrapper targets; `markdown.field` is
+      # a plain key, not an interpolated string), the `$field`
+      # interpolations of the display nodes, and the URL interpolations.
+      private def self.record_bindings(
+        obj : Hash(String, JSON::Any),
+        type : String,
+        covered : Set(String),
+      ) : Nil
+        field = obj["field"]?.try(&.as_s?)
+        covered << field.split('.').first if field && !field.empty?
+
+        if props = INTERPOLATED_PROPS[type]?
+          props.each do |prop|
+            next if prop == "field" # bare key, covered above
+            value = obj[prop]?.try(&.as_s?)
+            next if value.nil? || value.empty?
+            interpolation_tokens(value).each { |token| covered << token.split('.').first }
+          end
+        end
+
+        if url_prop = URL_PROPS[type]?
+          value = obj[url_prop]?.try(&.as_s?)
+          if value && !value.empty?
+            value.scan(/\$(\w+(?:\.\w+)*)/).each { |m| covered << m[1].split('.').first }
+          end
+        end
+      end
+
+      # Returns the scope and the pinned root field name the node's
+      # children resolve against. The descent mirrors `walk`: object /
+      # array / dict shift the scope and pin the root field they bind;
+      # `if` and layout containers keep both.
+      private def self.descend_scope(
+        obj : Hash(String, JSON::Any),
+        type : String,
+        scope : Hash(String, FieldDefinition)?,
+        root : String?,
+      ) : {Hash(String, FieldDefinition)?, String?}
+        child_scope = scope.try { |s| derive_scope(obj, type, "template", [] of Issue, s) }
+        child_root = root
+        if root.nil? && {"object", "array", "dict"}.includes?(type)
+          field = obj["field"]?.try(&.as_s?)
+          child_root = field && !field.empty? ? field.split('.').first : nil
+        end
+        {child_scope, child_root}
+      end
+
+      # Recurses the children the way `walk` does — `tabs` entries carry
+      # their own `children`; every other node reads the `children` prop.
+      private def self.walk_coverage_children(
+        obj : Hash(String, JSON::Any),
+        type : String,
+        child_scope : Hash(String, FieldDefinition)?,
+        child_root : String?,
+        covered : Set(String),
+      ) : Nil
+        if type == "tabs"
+          obj["tabs"]?.try(&.as_a?).try do |tabs|
+            tabs.each do |tab|
+              tab.as_h?.try do |h|
+                h["children"]?.try(&.as_a?).try do |children|
+                  children.each { |child| collect_fields(child, child_scope, child_root, covered) }
+                end
+              end
+            end
+          end
+        else
+          obj["children"]?.try(&.as_a?).try do |children|
+            children.each { |child| collect_fields(child, child_scope, child_root, covered) }
+          end
+        end
+      end
+
       # ── Tree walk ───────────────────────────────────────────────────
 
       private def self.walk(

@@ -1105,6 +1105,99 @@ module Facet::Doctype
           template_issues.first.message.should contain("missing required 'field'")
         end
       end
+
+      it "warns when the view template does not show every field" do
+        with_db do |db|
+          ensure_domain(db, "viewgap")
+          defn = DoctypeDefinition.from_json(%({
+            "doctype": "Gadget",
+            "domain": "viewgap",
+            "schema_version": 1,
+            "fields": {
+              "name":  {"type": "string"},
+              "notes": {"type": "longtext"},
+              "stock": {"type": "integer"}
+            }
+          }))
+          doc_id = persist_doctype_for_check(db, defn)
+          persist_view_for_check(db, doc_id, "view", %({
+            "type": "col",
+            "children": [{"type": "field", "value": "$name"}]
+          }))
+
+          res = Check.call(db, doc_id).as(Check::Result)
+          coverage = res.issues.select(&.category.==(:view)).select(&.severity.==(:warning))
+            .select(&.field.==("view"))
+          coverage.size.should eq(1)
+          coverage.first.message.should contain("does not list every field")
+          coverage.first.message.should contain("notes, stock")
+          coverage.first.message.should_not contain("name")
+        end
+      end
+
+      it "warns when the form template omits editable fields but skips computed, read-only, and dictionary ones" do
+        with_db do |db|
+          ensure_domain(db, "formgap")
+          defn = DoctypeDefinition.from_json(%({
+            "doctype": "Gadget",
+            "domain": "formgap",
+            "schema_version": 1,
+            "fields": {
+              "name":  {"type": "string"},
+              "notes": {"type": "longtext"},
+              "total": {"type": "data"},
+              "ref":   {"type": "string", "read_only": true},
+              "tags":  {"type": "dictionary", "values": {"type": "string"}}
+            }
+          }))
+          doc_id = persist_doctype_for_check(db, defn)
+          persist_view_for_check(db, doc_id, "form", %({
+            "type": "col",
+            "children": [{"type": "input-text", "field": "name", "label": "Name"}]
+          }))
+
+          res = Check.call(db, doc_id).as(Check::Result)
+          coverage = res.issues.select(&.category.==(:view)).select(&.severity.==(:warning))
+            .select(&.field.==("form"))
+          coverage.size.should eq(1)
+          coverage.first.message.should contain("notes")
+          coverage.first.message.should_not contain("total")
+          coverage.first.message.should_not contain("tags")
+        end
+      end
+
+      it "counts wrapper-bound and interpolated references as coverage" do
+        with_db do |db|
+          ensure_domain(db, "viewcover")
+          defn = DoctypeDefinition.from_json(%({
+            "doctype": "Gadget",
+            "domain": "viewcover",
+            "schema_version": 1,
+            "fields": {
+              "name":    {"type": "string"},
+              "address": {
+                "type": "object",
+                "properties": {"street": {"type": "string"}}
+              }
+            }
+          }))
+          doc_id = persist_doctype_for_check(db, defn)
+          persist_view_for_check(db, doc_id, "view", %({
+            "type": "col",
+            "children": [
+              {"type": "label", "value": "Hello $name"},
+              {"type": "object", "field": "address", "children": [
+                {"type": "field", "value": "$street"}
+              ]}
+            ]
+          }))
+
+          res = Check.call(db, doc_id).as(Check::Result)
+          coverage = res.issues.select(&.category.==(:view)).select(&.severity.==(:warning))
+            .select(&.field.==("view"))
+          coverage.size.should eq(0)
+        end
+      end
     end
 
     describe "collection views" do
