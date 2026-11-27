@@ -52,12 +52,12 @@ function session(overrides: Partial<StoredSession> = {}): StoredSession {
 }
 
 const APP_LIST: ListEnvelope = {
-	data: [{ data: { slug: 'bfr-plans', status: 'active' }, meta: { id: 'app.App.01HAPP' } }],
+	data: [{ data: { slug: 'brw-plans', status: 'active' }, meta: { id: 'app.App.01HAPP' } }],
 	meta: { count: 1, more: false }
 };
 
 const APP_ENVELOPE: DocumentEnvelope = {
-	data: { slug: 'bfr-plans', host: 'plans.facet.example.com' },
+	data: { slug: 'brw-plans', host: 'plans.facet.example.com' },
 	meta: { id: 'app.App.01HAPP', created_at: '2026-01-01T00:00:00Z' }
 };
 
@@ -140,11 +140,11 @@ describe('createApi — app resolution', () => {
 		const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(200, APP_LIST));
 
 		const api = createApi(INSTANCE, fetchImpl as unknown as typeof fetch);
-		await expect(api.resolveAppId('bfr-plans')).resolves.toBe('app.App.01HAPP');
+		await expect(api.resolveAppId('brw-plans')).resolves.toBe('app.App.01HAPP');
 
 		const url = String(fetchImpl.mock.calls[0]?.[0]);
 		expect(url).toContain('/Api/app/App?');
-		expect(url).toContain('filters%5Bslug__eq%5D=bfr-plans');
+		expect(url).toContain('filters%5Bslug__eq%5D=brw-plans');
 	});
 
 	it('fails with a clear message when the slug matches nothing', async () => {
@@ -164,14 +164,14 @@ describe('createApi — deployment operations', () => {
 		const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(201, APP_ENVELOPE));
 
 		const api = createApi(INSTANCE, fetchImpl as unknown as typeof fetch);
-		await expect(api.createApp('bfr-plans')).resolves.toEqual(APP_ENVELOPE);
+		await expect(api.createApp('brw-plans')).resolves.toEqual(APP_ENVELOPE);
 
 		// `app.App` requires `name` and declares no `display_name` content
 		// field, so a `display_name` body key answers 422.
 		const [url, init] = fetchImpl.mock.calls[0] as unknown as [URL, RequestInit];
 		expect(String(url)).toBe(`${INSTANCE}/Api/app/App`);
 		expect(init.method).toBe('POST');
-		expect(JSON.parse(String(init.body))).toEqual({ name: 'bfr-plans', slug: 'bfr-plans' });
+		expect(JSON.parse(String(init.body))).toEqual({ name: 'brw-plans', slug: 'brw-plans' });
 	});
 
 	it('lists deployments with the qualified filter and revision sort', async () => {

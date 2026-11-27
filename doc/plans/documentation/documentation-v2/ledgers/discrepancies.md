@@ -652,7 +652,7 @@ a free allowlist of exact origins echoed back.
 
 Evidence: hook validation at `data/seeds/app.App/script.lua` (origins
 section — shape checks only, loop over any number of entries); the seeded
-`bfr-checkout` example carries `http://localhost:5173` while its build is
+`brw-checkout` example carries `http://localhost:5173` while its build is
 served by the CLI deploy flow, and a second origin can be PATCHed freely.
 
 Found by WP 17 batch A (apps pages). Docs impact: the rewritten CORS and
@@ -675,7 +675,7 @@ the client type.
 
 Evidence: `grep -n assistant_enabled data/seeds/app.App/script.lua` finds no
 client-type branch; `src/assistant/app/gate.cr` has no `client_type` read;
-a confidential `bfr-stock-sync` create returned `"assistant_enabled": false`
+a confidential `brw-stock-sync` create returned `"assistant_enabled": false`
 with no complaint, and flipping it is not guarded.
 
 Found by WP 17 batch A (apps pages). Docs impact: the rewritten pages stay

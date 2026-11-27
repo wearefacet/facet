@@ -45,7 +45,7 @@ For the API steps, sign in once and store an API key with the CLI —
 The key is pinned to the role you elected on the consent screen.
 
 Brightwater's check-out board runs as a Facet-hosted app: the
-`bfr-checkout` app record signs its browser calls in with OAuth and serves
+`brw-checkout` app record signs its browser calls in with OAuth and serves
 its build from Facet hosting.
 
 ## The model
@@ -74,7 +74,7 @@ instance URL — and writes `facet.config.json` at the project root:
 
 ```json
 {
-  "app": "bfr-checkout",
+  "app": "brw-checkout",
   "outDir": "dist",
   "spa": true,
   "targets": { "default": { "url": "https://facet.localhost:3443" } },
@@ -100,7 +100,7 @@ The command walks the build folder, uploads one multipart request, and
 activates the new revision:
 
 ```text
-Deploying "dist" to https://facet.localhost:3443 (target of app "bfr-checkout")…
+Deploying "dist" to https://facet.localhost:3443 (target of app "brw-checkout")…
 Packed 4 files.
 Deployed revision 3 (4 files stored).
 Active at checkout.brightwater.example

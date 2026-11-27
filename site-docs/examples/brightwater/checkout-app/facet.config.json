@@ -1,5 +1,5 @@
 {
-	"app": "bfr-checkout",
+	"app": "brw-checkout",
 	"outDir": "dist",
 	"spa": true,
 	"targets": { "default": { "url": "https://facet.localhost:3443" } },

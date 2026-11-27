@@ -69,7 +69,7 @@ curl -sk -X POST https://facet.localhost:3443/Api/app/App \
   -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "slug": "bfr-checkout",
+    "slug": "brw-checkout",
     "name": "Brightwater Check-out",
     "client_type": "public",
     "redirect_uris": ["http://localhost:5173/auth/callback"],
@@ -97,7 +97,7 @@ The create answers `201`. The hook has already written the read-only
 ```json
 {
   "data": {
-    "slug": "bfr-checkout",
+    "slug": "brw-checkout",
     "name": "Brightwater Check-out",
     "client_type": "public",
     "status": "draft",
@@ -166,7 +166,7 @@ with the reach each role would leave the app:
 ```json
 {
   "app": {
-    "slug": "bfr-checkout",
+    "slug": "brw-checkout",
     "display_name": "Brightwater Check-out",
     "status": "active"
   },

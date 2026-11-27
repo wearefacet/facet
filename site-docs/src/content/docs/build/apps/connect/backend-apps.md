@@ -89,7 +89,7 @@ curl -sk -X POST https://facet.localhost:3443/Api/app/App \
   -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "slug": "bfr-stock-sync",
+    "slug": "brw-stock-sync",
     "name": "Brightwater stock sync",
     "client_type": "confidential",
     "no_launcher": true,
@@ -138,7 +138,7 @@ Store the `key` now. It shows exactly once, and no route returns it again.
 
 The service account appears at the first issuance. Facet provisions it as
 an `iam.Account` with `service_account: true` and the email
-`svc.bfr-stock-sync@apps.facet.invalid`. It holds exactly the pinned role
+`svc.brw-stock-sync@apps.facet.invalid`. It holds exactly the pinned role
 and cannot log in with email and password.
 
 | Route | Verb | Behaviour |
@@ -209,7 +209,7 @@ shows the effective intersection, the key's identity, and its channels:
 {
   "account": {
     "display_name": "Brightwater stock sync",
-    "email": "svc.bfr-stock-sync@apps.facet.invalid"
+    "email": "svc.brw-stock-sync@apps.facet.invalid"
   },
   "active_role": "iam.Roles.stock_sync",
   "expires_at": null,

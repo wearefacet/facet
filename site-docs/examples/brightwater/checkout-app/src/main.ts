@@ -6,7 +6,7 @@ import './style.css';
 const FACET_URL = 'https://facet.localhost:3443';
 
 const auth = oauthBrowser({
-	slug: 'bfr-checkout',
+	slug: 'brw-checkout',
 	redirectUri: `${location.origin}/auth/callback`,
 	baseUrl: FACET_URL
 });

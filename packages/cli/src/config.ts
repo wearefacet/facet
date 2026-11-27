@@ -12,7 +12,7 @@ export interface TargetConfig {
 
 /** Parsed and validated content of `facet.config.json`. */
 export interface FacetConfig {
-	/** The app slug, for example `bfr-plans`. */
+	/** The app slug, for example `brw-plans`. */
 	app: string;
 	/** The build folder to upload, relative to the project root. */
 	outDir: string;

@@ -92,7 +92,7 @@ curl -sk -X POST https://facet.localhost:3443/Api/app/App \
   -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "slug": "bfr-checkout",
+    "slug": "brw-checkout",
     "name": "Brightwater Check-out",
     "client_type": "public",
     "redirect_uris": ["http://localhost:5173/auth/callback"],
@@ -120,7 +120,7 @@ already written `client_id`:
 ```json
 {
   "data": {
-    "slug": "bfr-checkout",
+    "slug": "brw-checkout",
     "name": "Brightwater Check-out",
     "client_type": "public",
     "status": "draft",
@@ -177,11 +177,11 @@ Before you wire up the browser side, ask the server what a sign-in form
 reads. The client-info endpoint takes the slug:
 
 ```sh
-curl -sk 'https://facet.localhost:3443/OAuth/client-info?slug=bfr-checkout'
+curl -sk 'https://facet.localhost:3443/OAuth/client-info?slug=brw-checkout'
 ```
 
 ```json
-{"slug": "bfr-checkout", "client_id": "06H1FQF7NG357EQ0P348Z2BEV5", "name": "Brightwater Check-out", "client_type": "public"}
+{"slug": "brw-checkout", "client_id": "06H1FQF7NG357EQ0P348Z2BEV5", "name": "Brightwater Check-out", "client_type": "public"}
 ```
 
 An unknown or inactive slug answers `404`:

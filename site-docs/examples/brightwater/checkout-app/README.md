@@ -9,7 +9,7 @@ TypeScript single-page app that signs its users in through Facet
 
 - A Facet instance with the Brightwater example loaded
   (`site-docs/examples/brightwater/load.sh`).
-- The `bfr-checkout` app registered on that instance — see
+- The `brw-checkout` app registered on that instance — see
   [Ship your first app](../../src/content/docs/build/first-hour/first-app.md).
   The registration must list both redirect URIs this app uses:
   `http://localhost:5173/auth/callback` (local dev) and the hosted app's own

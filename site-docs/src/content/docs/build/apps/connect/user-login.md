@@ -124,7 +124,7 @@ check-out app, Ravi's payload reads:
   "app": {
     "id": "06H1FQF7NGDJJKSNHXPYT6627M",
     "client_id": "06H1FQF7NG357EQ0P348Z2BEV5",
-    "slug": "bfr-checkout",
+    "slug": "brw-checkout",
     "display_name": "Brightwater Check-out",
     "description": "The warehouse check-out board: today's bookings, with the items each booking needs. Marks items out and back in.",
     "redirect_uris": ["http://localhost:5173/auth/callback"],

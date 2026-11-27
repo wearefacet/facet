@@ -138,7 +138,7 @@ The SDK matches both manifest shapes for you:
 ```ts
 import { createFacetClient, oauthBrowser } from '@facetapp/sdk';
 
-const auth = oauthBrowser({ slug: 'bfr-checkout', redirectUri: `${location.origin}/auth/callback` });
+const auth = oauthBrowser({ slug: 'brw-checkout', redirectUri: `${location.origin}/auth/callback` });
 const facet = createFacetClient({ baseUrl: 'https://facet.localhost:3443', auth });
 
 await facet.whoami(); // GET /Api/iam/me — cached after the first call
@@ -209,7 +209,7 @@ scoped:
 ```ts
 import { createFacetClient, oauthBrowser } from '@facetapp/sdk';
 
-const auth = oauthBrowser({ slug: 'bfr-checkout', redirectUri: `${location.origin}/auth/callback` });
+const auth = oauthBrowser({ slug: 'brw-checkout', redirectUri: `${location.origin}/auth/callback` });
 const facet = createFacetClient({ baseUrl: 'https://facet.localhost:3443', auth });
 
 // On the redirect route, after sign-in:

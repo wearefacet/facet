@@ -130,7 +130,7 @@ The environment blocked the tutorial as written at every demo-data dependency:
 - The "confirmed bookings, six of them on the example data" do not exist: rentals had **0** documents, equipment **0**, clients **0**. The so-called loaded Brightwater example is schema-only: the domain/doctype definitions (with the finance tag on `purchase_price` and the Brightwater field shapes) are seeded, but no data, people, or roles came with it.
 
 What I did as a resourceful newcomer would: created the `warehouse` role (documented REST route), created a Lucía account (`POST /Api/iam/Account`, `POST /Api/iam/accounts/:id/temporary-password` — both documented on the Manage accounts page), ran her first sign-in in the browser (temp password → forced change → forced TOTP enrollment with a Skip), seeded one company, two items, and one confirmed booking through the API, then ran the tutorial's own curl transcript:
-- Registered the app `bfr-checkout` → 201, hook wrote the read-only `client_id`; activated it (draft → active).
+- Registered the app `brw-checkout` → 201, hook wrote the read-only `client_id`; activated it (draft → active).
 - The consent screen listed **exactly one** electable role with its `effective_scope` — matching the tutorial's "grants ∩ roles" story (it correctly listed nothing before I added the concrete `equipment.Item` line — I verified the intersection logic in the direction the page teaches).
 - PKCE code → token (Bearer, 900 s, refresh token) worked verbatim.
 - With the app token: `rentals/Booking?filters[status__eq]=confirmed` returned my booking; `clients/Company` returned `{"error":"Forbidden"}` — the grant ceiling holds exactly as the page promises.

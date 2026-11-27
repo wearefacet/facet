@@ -55,7 +55,7 @@ curl -sk -X POST https://facet.localhost:3443/Api/app/App \
   -H "Authorization: Bearer $RAVI_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "slug": "bfr-checkout",
+    "slug": "brw-checkout",
     "name": "Brightwater Check-out",
     "client_type": "public",
     "redirect_uris": ["http://localhost:5173/auth/callback"],
@@ -74,7 +74,7 @@ The create answers `201`. The hook has already written the read-only
 ```json
 {
   "data": {
-    "slug": "bfr-checkout",
+    "slug": "brw-checkout",
     "name": "Brightwater Check-out",
     "client_type": "public",
     "status": "draft",
@@ -122,7 +122,7 @@ domain-wide line never covers one. So the consent screen lists no role for
 Lucía yet:
 
 ```json
-{ "app": { "slug": "bfr-checkout", "status": "active" }, "roles": [], "state": "winter-fair-43" }
+{ "app": { "slug": "brw-checkout", "status": "active" }, "roles": [], "state": "winter-fair-43" }
 ```
 
 The fix is one concrete line on the role. Patch the role with its lines plus
@@ -162,14 +162,14 @@ mkdir brightwater-checkout && cd brightwater-checkout
 pnpm init
 pnpm add @facetapp/sdk
 pnpm add -D typescript vite
-pnpx @facetapp/cli init --app bfr-checkout --build dist --server https://facet.localhost:3443
+pnpx @facetapp/cli init --app brw-checkout --build dist --server https://facet.localhost:3443
 ```
 
 `init` writes the deploy config, `facet.config.json`, and then looks the app
 up on the instance. With no CLI sign-in yet it stops after the config:
 
 ```text
-Wrote facet.config.json for app "bfr-checkout".
+Wrote facet.config.json for app "brw-checkout".
 No stored session for https://facet.localhost:3443. Run "pnpx @facetapp/cli login" to sign in.
 ```
 
@@ -201,7 +201,7 @@ Facts you must not invent — fetch them first:
 
 Project facts:
 - Facet instance: https://facet.localhost:3443
-- App slug: bfr-checkout (already registered, client_type public)
+- App slug: brw-checkout (already registered, client_type public)
 - Sign-in: OAuth authorization code + PKCE through @facetapp/sdk's
   oauthBrowser({ slug, redirectUri }) — redirect path /auth/callback
 - Data:
@@ -230,7 +230,7 @@ The agent fetches the pages, copies their code blocks, and writes the
 source files. LLM output varies, so check the result instead of the wording:
 
 - `pnpm build` passes with no type errors.
-- `src/main.ts` creates the client with `oauthBrowser({ slug: 'bfr-checkout' … })`
+- `src/main.ts` creates the client with `oauthBrowser({ slug: 'brw-checkout' … })`
   and no secret.
 - The sign-in button calls `auth.signIn()`; the callback path calls
   `auth.handleCallback(location.href)`.
@@ -280,7 +280,7 @@ curl -sk -H "Authorization: Bearer $LUCIA_KEY" -H "Accept: application/json" \
 
 ```json
 {
-  "app": { "slug": "bfr-checkout", "display_name": "Brightwater Check-out", "status": "active" },
+  "app": { "slug": "brw-checkout", "display_name": "Brightwater Check-out", "status": "active" },
   "roles": [
     {
       "role_id": "iam.Roles.warehouse",
@@ -395,14 +395,14 @@ pnpx @facetapp/cli deploy --note "first build"
 registration. `deploy` packs `dist/`, uploads it, and activates it:
 
 ```text
-Deploying "dist" to https://facet.localhost:3443 (target of app "bfr-checkout")…
+Deploying "dist" to https://facet.localhost:3443 (target of app "brw-checkout")…
 Packed 3 files.
 Deployed revision 1 (3 files stored).
 Active at https://checkout.apps.localhost:3443
 ```
 
 (The capture above ran against a scratch copy of the app registered as
-`bfr-checkout-t3`; your run names `bfr-checkout` and your host.) Open the
+`brw-checkout-t3`; your run names `brw-checkout` and your host.) Open the
 hosted address — Chromium resolves `*.apps.localhost` by itself; Firefox and
 `curl` need one hosts entry, `127.0.0.1 checkout.apps.localhost`. Sign in
 again at the hosted address — the registration already carries its redirect

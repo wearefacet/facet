@@ -63,7 +63,7 @@ Check the gate from your app with the SDK:
 import { createFacetClient, oauthBrowser } from '@facetapp/sdk';
 
 const auth = oauthBrowser({
-	slug: 'bfr-checkout',
+	slug: 'brw-checkout',
 	redirectUri: 'http://localhost:5173/auth/callback',
 	baseUrl: 'https://facet.localhost:3443'
 });
@@ -126,7 +126,7 @@ import { FacetAssistant } from '@facetapp/chat';
 FacetAssistant.open({
 	baseUrl: 'https://facet.localhost:3443',
 	fetch: hostFetch,
-	appId: '06H1FQF7NGDJJKSNHXPYT6627M', // the bfr-checkout app record id
+	appId: '06H1FQF7NGDJJKSNHXPYT6627M', // the brw-checkout app record id
 	bubble: true
 });
 ```
@@ -239,7 +239,7 @@ const driver = new HttpAssistantDriver('https://facet.localhost:3443', hostFetch
 
 The app flag is off, the role lacks the `assistant` channel, or the caller
 is not app-scoped. Check `await facet.assistant()` — the `access` field
-mirrors the same gate. On the Brightwater dev instance the `bfr-checkout`
+mirrors the same gate. On the Brightwater dev instance the `brw-checkout`
 app ships with `assistant_enabled: false`; its conversation create answers
 `403` with `{"error":"You do not have access to the app assistant"}`.
 
