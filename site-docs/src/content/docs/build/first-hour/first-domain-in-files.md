@@ -6,8 +6,6 @@ audience: [developer]
 features: [DOM-19, DOM-15]
 sidebar:
   order: 3
-prev: /build/first-hour/first-domain/
-next: /build/first-hour/first-app/
 verified_at: eee55a2
 ---
 

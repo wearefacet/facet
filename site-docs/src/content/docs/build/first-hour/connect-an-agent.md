@@ -6,8 +6,6 @@ audience: [developer, author]
 features: [AI-05, APP-04, AI-04]
 sidebar:
   order: 6
-prev: /build/first-hour/team-access/
-next: /build/apps/
 verified_at: eee55a2
 ---
 

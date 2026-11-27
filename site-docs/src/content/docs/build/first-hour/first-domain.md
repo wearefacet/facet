@@ -6,8 +6,6 @@ audience: [author]
 features: [DOM-01, DOM-02, DOM-03, DOM-04, DOM-16, DOM-21, FE-10, FE-03, AI-02]
 sidebar:
   order: 2
-prev: /build/first-hour/run-facet/
-next: /build/first-hour/first-app/
 verified_at: c34885a
 ---
 

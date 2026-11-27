@@ -6,7 +6,6 @@ audience: [user]
 features: [FE-19, FE-02, FE-07]
 sidebar:
   order: 1
-next: /use/first-day/sign-in/
 verified_at: eee55a2
 ---
 

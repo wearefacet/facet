@@ -6,8 +6,6 @@ audience: [user]
 features: [FE-01, IAM-01, IAM-03, IAM-04, IAM-05, IAM-10]
 sidebar:
   order: 2
-prev: /use/first-day/
-next: /use/first-day/dashboard/
 verified_at: eee55a2
 ---
 

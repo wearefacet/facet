@@ -6,7 +6,6 @@ audience: [evaluator, author, admin, developer]
 features: []
 sidebar:
   order: 0
-next: /build/first-hour/run-facet/
 verified_at: eee55a2
 ---
 

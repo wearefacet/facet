@@ -6,8 +6,6 @@ audience: [evaluator, operator]
 features: [PLT-16, PLT-01, IAM-12, FE-01, FE-19, DOM-24]
 sidebar:
   order: 1
-prev: /build/first-hour/
-next: /build/first-hour/first-domain/
 verified_at: c34885a
 ---
 

@@ -6,8 +6,6 @@ audience: [admin]
 features: [IAM-06, RBC-01, RBC-02, RBC-04, RBC-05, FE-11]
 sidebar:
   order: 5
-prev: /build/first-hour/first-app/
-next: /build/first-hour/connect-an-agent/
 verified_at: eee55a2
 ---
 

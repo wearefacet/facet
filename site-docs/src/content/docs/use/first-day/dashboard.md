@@ -6,7 +6,6 @@ audience: [user]
 features: [FE-02, APP-12]
 sidebar:
   order: 3
-prev: /use/first-day/sign-in/
 verified_at: eee55a2
 ---
 

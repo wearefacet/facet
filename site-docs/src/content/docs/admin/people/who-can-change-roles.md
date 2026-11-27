@@ -7,8 +7,6 @@ features: [RBC-01, RBC-07]
 verified_at: eee55a2
 sidebar:
   order: 6
-prev: /admin/people/hidden-fields/
-next: /admin/people/mfa/
 ---
 
 Nadia runs Brightwater's client work as *Manager*, level 60. Ravi manages the
