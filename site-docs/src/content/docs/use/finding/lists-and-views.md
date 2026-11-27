@@ -24,7 +24,7 @@ reopen in one click — keep it to yourself, or share it with your team.
 Open a domain in the sidebar, then select a record type. The list opens on
 the first saved view, shown as a tab above the table:
 
-![Tom's clients list: a table of companies with the view tabs above it and the filter toolbar on top.](/assets/screens/use/finding-lists-1.png)
+![Tom's clients list: a table of companies with the view tabs above it and the filter toolbar on top.](/screens/use/finding-lists-1.png)
 
 A record type with no views yet shows a starter screen instead: one card per
 layout. Pick a card to build the first view. After that, the tabs carry an
@@ -44,14 +44,14 @@ matches its state, and she drags a card when the work moves on. Dragging
 needs the right to change records — the same right the Edit button
 follows.
 
-![Lucía's maintenance board: five ticket cards grouped in lanes by status.](/assets/screens/use/finding-lists-2.png)
+![Lucía's maintenance board: five ticket cards grouped in lanes by status.](/screens/use/finding-lists-2.png)
 
 The calendar puts records on the days they happen. Switch between **Month**
 and **Week**, and move with **Previous**, **Next**, and **Today**. A busy day
 folds its entries into one chip — for example `4 documents` — and selecting
 the chip lists them.
 
-![Nadia's booking calendar for December: bookings placed on their date ranges.](/assets/screens/use/finding-lists-3.png)
+![Nadia's booking calendar for December: bookings placed on their date ranges.](/screens/use/finding-lists-3.png)
 
 In every layout, selecting a row, card, or chip opens a preview beside the
 list. The preview holds **Edit** and **Open full page**.

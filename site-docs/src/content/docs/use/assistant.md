@@ -19,7 +19,7 @@ than you could do yourself.
 
 - [Sign in and secure your account](/use/first-day/sign-in/) — a signed-in session opens the assistant with your rights.
 
-![The Assistant button in the top bar — selecting it opens the chat window.](/assets/screens/use/assistant-1.png)
+![The Assistant button in the top bar — selecting it opens the chat window.](/screens/use/assistant-1.png)
 
 ## Open the assistant
 

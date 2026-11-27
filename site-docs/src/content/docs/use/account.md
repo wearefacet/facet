@@ -19,7 +19,7 @@ here belongs to your account only — other people keep their own settings.
 
 - [Sign in and secure your account](/use/first-day/sign-in/) — you need a signed-in session to reach the settings.
 
-![The settings page: chapters for General, Notifications, MCP endpoints and Active sessions on the left.](/assets/screens/use/account-1.png)
+![The settings page: chapters for General, Notifications, MCP endpoints and Active sessions on the left.](/screens/use/account-1.png)
 
 ## Open your settings
 
@@ -77,7 +77,7 @@ straight where the program needs it, never send it by chat or email, and
 revoke it when the work is done. Your administrator sets what roles may do;
 see [Roles: who sees and does what](/discover/how-it-works/roles/).
 
-![The API keys page: the list of keys with name, role, last used and status.](/assets/screens/use/account-2.png)
+![The API keys page: the list of keys with name, role, last used and status.](/screens/use/account-2.png)
 
 **Create a key**
 

@@ -17,7 +17,7 @@ You can also bring back a document that someone deleted.
 
 - [Open and edit a document](/use/documents/view-and-edit/) — how to open the document whose history you will read.
 
-![The history page of a booking: the Audit trail timeline on the left and the detail pane for the selected change on the right.](/assets/screens/use/documents-3.png)
+![The history page of a booking: the Audit trail timeline on the left and the detail pane for the selected change on the right.](/screens/use/documents-3.png)
 
 ## Steps
 

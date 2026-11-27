@@ -28,7 +28,7 @@ opened records. Start your daily work here.
 Open your instance address and sign in. The home page shows, from top to
 bottom:
 
-![Nadia's home page with the greeting, the key surfaces, and the domain cards.](/assets/screens/use/first-day-tour-1.png)
+![Nadia's home page with the greeting, the key surfaces, and the domain cards.](/screens/use/first-day-tour-1.png)
 
 | Part | What it shows |
 | --- | --- |
@@ -55,7 +55,7 @@ administrator.
 The domain dashboard shows one domain: its record types, the views you
 pinned, and the records you opened last.
 
-![Nadia's Rentals domain dashboard: the header with counts, the pinned views, the recently viewed chips, and the record-type list.](/assets/screens/use/first-day-dashboard-1.png)
+![Nadia's Rentals domain dashboard: the header with counts, the pinned views, the recently viewed chips, and the record-type list.](/screens/use/first-day-dashboard-1.png)
 
 | Section | What it shows |
 | --- | --- |

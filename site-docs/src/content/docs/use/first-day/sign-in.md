@@ -16,7 +16,7 @@ organization can require a second check at sign-in: multi-factor
 authentication (MFA). The sign-in screens call it two-factor authentication.
 This page covers sign-in, first passwords, MFA, and password reset.
 
-![The Facet sign-in screen with the email and password fields and the Sign in button.](/assets/screens/use/first-day-sign-in-1.png)
+![The Facet sign-in screen with the email and password fields and the Sign in button.](/screens/use/first-day-sign-in-1.png)
 
 ## Before you start
 
@@ -54,7 +54,7 @@ Your first sign-in depends on the credential your administrator sent.
   a new password"*. Enter a new password with at least 8 characters and
   select **Set password**. Facet signs you in.
 
-![The Set a new password screen for an account with a temporary password.](/assets/screens/build/run-facet-3.png)
+![The Set a new password screen for an account with a temporary password.](/screens/build/run-facet-3.png)
 
 ### 4. Enter the code from your authenticator app
 

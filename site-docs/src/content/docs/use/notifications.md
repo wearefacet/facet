@@ -14,7 +14,7 @@ record. Facet tells you in the app, on the bell in the top bar. The bell
 shows how many notifications you have not read, and the panel behind it
 holds the list.
 
-![The bell in the top bar — selecting it opens the notification panel.](/assets/screens/use/notifications-1.png)
+![The bell in the top bar — selecting it opens the notification panel.](/screens/use/notifications-1.png)
 
 ## Read your notifications
 

@@ -11,7 +11,7 @@ verified_at: eee55a2
 
 Every list page carries **Export** and **Import** in its toolbar.
 
-![A clients list with the Export and Import controls in the toolbar.](/assets/screens/use/documents-4.png)
+![A clients list with the Export and Import controls in the toolbar.](/screens/use/documents-4.png)
 
 - **Export** writes the documents of the list to a CSV (comma-separated
   values) or JSON (JavaScript Object Notation) file.

@@ -18,7 +18,7 @@ typing.
 
 - [A tour of the workspace](/use/first-day/) — the layout this page navigates from.
 
-![The search box in the top bar — the same box the Ctrl+K shortcut opens.](/assets/screens/use/finding-search-1.png)
+![The search box in the top bar — the same box the Ctrl+K shortcut opens.](/screens/use/finding-search-1.png)
 
 ## The command palette
 

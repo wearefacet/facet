@@ -234,14 +234,14 @@ Playwright captures the UI screenshots the tutorial pages embed. One script, one
 | --- | --- |
 | `scripts/screens/capture.mjs` | The capture script. Reads a YAML shot file (`--shots`, default `scripts/screens/shots.yml`), accepts `--base` and `--only <id,...>`. One browser context per persona, signed in once through the real sign-in form (`/Login`, placeholder-driven, "Skip for now" on the MFA enrollment interstitial). Per shot: goto (networkidle, 30 s), optional `wait` selector, `settle` ms, optional `highlight` (2 px `#2563eb` outline), screenshot of the `crop` element or full page, `animations: disabled`, `caret: hide`, written to `src/assets/screens/<out>`. A `login: true` shot runs unauthenticated in a throwaway context. Run: `cd site-docs && NODE_PATH=$(pwd)/../frontend/node_modules node scripts/screens/capture.mjs`. |
 | `scripts/screens/shots.yml` | The shot list: defaults (base `https://facet.localhost:3443`, viewport 1280×800, light theme), five personas (nadia, tom, lucia, ravi, admin), and one entry per shot with its output path under `src/assets/screens/`. |
-| `scripts/copy-screens.mjs` | Copies `src/assets/screens/` to `public/assets/screens/` before `astro build` and `astro dev`. Pages embed `/assets/screens/<out>`; Astro serves `public/` at the site root, so the copy makes the URLs resolve. The source PNGs stay the single committed copy under `src/assets/screens/`; `public/assets/` is gitignored. |
+| `scripts/copy-screens.mjs` | Copies `src/assets/screens/` to `public/screens/` before `astro build` and `astro dev`. Pages embed `/screens/<out>`; Astro serves `public/` at the site root, so the copy makes the URLs resolve. The source PNGs stay the single committed copy under `src/assets/screens/`; `public/screens/` is gitignored. The URL sits at the site root, not under `/assets/screens/`: a first segment of `build/`, `admin/` or `reference/` collides with a Starlight topic route, and `astro dev` returns 404 for the image because the router matches the page prefix before the static handler runs. |
 
 Two classes of shot live in the list:
 
 - **Standard shots** — reproducible on any instance with the Brightwater example loaded. They read live data, so views that show today-relative content (kanban boards, dashboard panels) differ on every run; the shots.yml header names them.
 - **Captured-once shots** — listed in the shots.yml comment block. They depend on one-off UI states (an OTP sign-in screen, a filled New Account form, a generated temporary password) and were taken against scratch flows outside the standard run; recapture them by replaying those flows.
 
-Pages embed the PNGs with markdown image syntax and a descriptive alt text; the alt text says what the shot shows, not "screenshot". The URL is absolute (`/assets/screens/<out>`), and `scripts/copy-screens.mjs` places the PNGs under `public/assets/screens/` so both `astro dev` and `astro build` serve them.
+Pages embed the PNGs with markdown image syntax and a descriptive alt text; the alt text says what the shot shows, not "screenshot". The URL is absolute (`/screens/<out>`), and `scripts/copy-screens.mjs` places the PNGs under `public/screens/` so both `astro dev` and `astro build` serve them.
 
 ## Tailwind
 

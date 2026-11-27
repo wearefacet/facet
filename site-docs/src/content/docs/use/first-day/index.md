@@ -28,7 +28,7 @@ Facet is for, what a **domain** is, how records take shape without code, who
 may read and change what, how every change stays on record, how Facet
 connects to other tools, and a last card that points to the first domain.
 
-![The welcome tour's first card, titled "A governance layer", with the Next button.](/assets/screens/build/run-facet-2.png)
+![The welcome tour's first card, titled "A governance layer", with the Next button.](/screens/build/run-facet-2.png)
 
 Everyday users do not see this popup. If it opens for you, it means your
 account holds the administrator role. Click **Next** to read the cards, or
@@ -42,7 +42,7 @@ Sign in, and Facet opens the home page. It greets you by first name and
 names the role you work under. Everything below answers one question: what
 can I reach?
 
-![Nadia's home page: the greeting "Hello Nadia, connected as Manager", links to key surfaces, and cards for applications, drafts and domains.](/assets/screens/use/first-day-tour-1.png)
+![Nadia's home page: the greeting "Hello Nadia, connected as Manager", links to key surfaces, and cards for applications, drafts and domains.](/screens/use/first-day-tour-1.png)
 
 From top to bottom:
 
@@ -64,7 +64,7 @@ contact your administrator.
 The dark strip on the left stays in place on every page. It lists the
 domain you currently work in and the record types inside it.
 
-![Lucía's workspace: the sidebar shows the Equipment domain, the Item, Category and MaintenanceTicket types with record counts, and her account at the bottom.](/assets/screens/use/first-day-tour-2.png)
+![Lucía's workspace: the sidebar shows the Equipment domain, the Item, Category and MaintenanceTicket types with record counts, and her account at the bottom.](/screens/use/first-day-tour-2.png)
 
 From top to bottom:
 
@@ -87,7 +87,7 @@ the active domain.
 Select a record type, and its list opens. A list is a table of records; the
 domain's author decides the shape — a table, a board of cards, or a calendar.
 
-![Tom's Booking list: the toolbar on top, the table of bookings, and the sidebar on the left.](/assets/screens/use/first-day-tour-3.png)
+![Tom's Booking list: the toolbar on top, the table of bookings, and the sidebar on the left.](/screens/use/first-day-tour-3.png)
 
 The toolbar on top carries the daily actions: a **New** button for a new
 record, search over this list, and **Export** or **Import** where your role
@@ -101,7 +101,7 @@ Lists, filters and saved views have their own page:
 Select a row, and the record opens on its own page. One record is one
 **document** — one booking, one item, one client.
 
-![Tom's booking BK-2026-0001: the header with the version pill and the action buttons, the fields below, and the comments panel on the right.](/assets/screens/use/first-day-tour-4.png)
+![Tom's booking BK-2026-0001: the header with the version pill and the action buttons, the fields below, and the comments panel on the right.](/screens/use/first-day-tour-4.png)
 
 The header carries the actions you need most:
 
@@ -122,7 +122,7 @@ The search control sits at the top right of every page. Select it, or press
 `Ctrl+K` (`⌘K` on a Mac), and the **command palette** opens. It searches
 records across your domains and offers jumps to pages and actions.
 
-![The top bar with the search control highlighted.](/assets/screens/use/first-day-tour-5.png)
+![The top bar with the search control highlighted.](/screens/use/first-day-tour-5.png)
 
 The palette never offers a page your role cannot open. Type part of a name,
 select the record, and its page opens. See
@@ -133,7 +133,7 @@ select the record, and its page opens. See
 The sparkles control beside the search opens the assistant, a chat window
 that answers questions about your data and makes changes when you ask it to.
 
-![The top bar with the assistant control highlighted.](/assets/screens/use/first-day-tour-6.png)
+![The top bar with the assistant control highlighted.](/screens/use/first-day-tour-6.png)
 
 Three facts matter on day one:
 
@@ -153,7 +153,7 @@ week?"*, *"Mark booking BK-2026-0003 as returned"*.
 The bell at the top right collects your notifications: a mention in a
 comment, a finished export, an event your organization sends you.
 
-![The top bar with the notifications bell highlighted, showing its unread badge.](/assets/screens/use/first-day-tour-7.png)
+![The top bar with the notifications bell highlighted, showing its unread badge.](/screens/use/first-day-tour-7.png)
 
 A number on the bell counts what you have not read. Select the bell to open
 the panel; select an entry to go to the record behind it. When all is read,
@@ -164,7 +164,7 @@ the panel says *"You're all caught up"*.
 At the bottom of the sidebar sits your account: your initials, your name,
 and your active role.
 
-![The bottom of the sidebar with Lucía's account highlighted: her name and the Warehouse role.](/assets/screens/use/first-day-tour-8.png)
+![The bottom of the sidebar with Lucía's account highlighted: her name and the Warehouse role.](/screens/use/first-day-tour-8.png)
 
 Select your name to open the menu:
 

@@ -13,7 +13,7 @@ A **document** is one record, for example one booking or one item. This page
 covers the record page and the edit form. It also explains what happens when
 two people edit at once, and how to delete a record.
 
-![A booking document open on its page: the header with the action buttons, the fields below, and the comments panel on the right.](/assets/screens/use/first-day-tour-4.png)
+![A booking document open on its page: the header with the action buttons, the fields below, and the comments panel on the right.](/screens/use/first-day-tour-4.png)
 
 ## Before you start
 
@@ -63,7 +63,7 @@ button.
 
 Select **Edit**. The form opens with the fields of the record:
 
-![The booking edit form: the fields as inputs, with Save and Cancel at the bottom.](/assets/screens/use/documents-1.png)
+![The booking edit form: the fields as inputs, with Save and Cancel at the bottom.](/screens/use/documents-1.png)
 
 - **Text** — text fields take text. A long-text field takes markdown.
 - **Pick list** — the field offers its fixed values in a dropdown.

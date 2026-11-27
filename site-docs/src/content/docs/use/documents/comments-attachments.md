@@ -13,7 +13,7 @@ The side panel sits beside a document page. Use it to discuss the document
 in comments and to keep its files as attachments. Comments take markdown,
 so you can format text, mention people, and link other documents.
 
-![A maintenance ticket page with the side panel on the right: the Comments and Attachments tabs above the thread and the composer.](/assets/screens/use/documents-2.png)
+![A maintenance ticket page with the side panel on the right: the Comments and Attachments tabs above the thread and the composer.](/screens/use/documents-2.png)
 
 ## Before you start
 
