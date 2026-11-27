@@ -223,6 +223,11 @@ One dependency lives under this project's author's account and is pinned to a co
 
 To move a pin: edit the `commit:` SHA, run `shards install` (or `shards update <name>`), then `make check` and `make test`.
 
+## Commits
+
+- **Check the branch before you commit.** `git branch --show-current`. Work lands on the branch you mean to push; never commit straight to `master`.
+- **Never add a co-author trailer.** No `Co-authored-by:` line, and no tool signature (Claude, Copilot, any assistant) in the commit message or the body. The commit carries the human author only.
+
 ## Conventions that surprise newcomers
 
 - `account` names the identity (`account_id`). `user` stays in UX copy. See [`doc/backend/iam.md`](doc/backend/iam.md) → Terminology.

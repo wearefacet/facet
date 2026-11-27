@@ -6,6 +6,7 @@ IMPORTANT NOTES
 - If you catch some architectural concern, it is worth it to discuss it now before we ship!
 - Use ASD-STE100 Simplified Technical English for every documentation, comments and conversation with the user.
 - DO NOT GIT STASH AS MULTIPLE AGENTS CAN WORK AT THE SAME TIME AND IT CONFUSES EVERYBODY !
+- COMMITS: CHECK THE CURRENT BRANCH FIRST (`git branch --show-current`) AND NEVER COMMIT TO `master`. NEVER ADD A `Co-authored-by:` TRAILER OR ANY TOOL SIGNATURE TO A COMMIT MESSAGE. THE COMMIT CARRIES THE HUMAN AUTHOR ONLY.
 - Avoid infinite grep loops. Limit your code study to a few grep calls before moving forward.
 
 ## What is Facet?
