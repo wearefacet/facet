@@ -50,10 +50,11 @@ cost, speed, and quality.
 :::note
 Lost in the model zoo? We recommend [OpenRouter](https://openrouter.ai)
 with the model `glm-5.3-flash`: one key and one endpoint
-(`https://openrouter.ai/api/v1`) reach many models, and GLM 5.3 Flash
-balances performance, speed, and cost. Amplitude (the creator of Facet !) also use DeepSeek v4.1 Flash;
-it works well, as long as you keep the conversation in English. A frontier model
-such as Claude Opus 5.5 costs more and performs best overall.
+(`https://openrouter.ai/api/v1`) give you access to many models, and
+GLM 5.3 Flash balances performance, speed, and cost. Amplitude (the
+creator of Facet!) also uses DeepSeek v4.1 Flash; it works well, as
+long as you keep the conversation in English. A frontier model such as
+Claude Opus 5.5 costs more and performs best overall.
 :::
 
 Copy the model identifier exactly as the provider's model page shows it
