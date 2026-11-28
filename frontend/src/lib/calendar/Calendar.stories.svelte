@@ -123,13 +123,23 @@
 	};
 
 	// Window discriminator restricted to `planned` tasks via persisted filters.
+	// The month grid shows the whole month, so the filters also narrow it to the
+	// anchor week: `status__eq: planned` alone leaves every planned task in
+	// view, and a month cell keeps a single chip — the later `Pump` / `Valve`
+	// pair overflows into a `+N` badge, which pushes `Audit` out of the
+	// rendered text. The window bounds ride the `scheduled_on` date scalar (the
+	// chips are laid out by their real window).
 	const cfgFiltered: CalendarViewConfig = {
 		discriminator: 'scheduled_window',
 		end_field: null,
 		color_by: 'status',
 		title_template: '{{ name }}',
 		week_start: 'monday',
-		filters: { status__eq: 'planned' }
+		filters: {
+			status__eq: 'planned',
+			scheduled_on__gte: '2026-02-23',
+			scheduled_on__lte: '2026-02-27'
+		}
 	};
 
 	// System `created_at` meta key as discriminator — used when the doctype

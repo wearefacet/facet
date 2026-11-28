@@ -6,7 +6,6 @@ import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
-import adapter from '@sveltejs/adapter-node';
 import { sveltekit } from '@sveltejs/kit/vite';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -108,26 +107,44 @@ if (process.env.FACET_HIDE_DEV_URLS === '1') {
 const dirname =
 	typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
+const optimizeDeps = {
+	exclude: [
+		'svelte-codemirror-editor',
+		'codemirror',
+		'@codemirror/lang-markdown',
+		'@codemirror/language-data',
+		'@codemirror/legacy-modes',
+		'@codemirror/language',
+		'@codemirror/state',
+		'@codemirror/view',
+		'@lezer/highlight',
+		'@lezer/common'
+	]
+};
+
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
+	// Dependency pre-bundling. A bare `optimizeDeps` map makes the bundler scan
+	// the project, and that scan follows every dynamic import it finds —
+	// including Crepe's Vue sub-apps (`@milkdown/crepe` ships `.tsx` sources that
+	// import `react`/`react-dom/client`). None of those packages is installed, so
+	// Vite printed one `Failed to resolve dependency` line per miss on every cold
+	// start.
+	//
+	// Under Vitest the storybook project boots one dev server per file; a bare
+	// map forced a dependency re-optimization there too (three times a run), and
+	// each re-optimization re-emitted the misses. The browser dependencies the
+	// story runtime loads are listed instead, so nothing is scanned. Storybook
+	// adds its own entries (`storybook/preview-api`, the addon internals) on top.
+	// The CodeMirror packages stay excluded in both modes: every copy must
+	// resolve from the root node_modules (the `@codemirror/*` sub-packages are
+	// declared there — svelte-codemirror-editor imports them without declaring
+	// them). Never exclude-experiment here without reading
+	// doc/frontend/workflow.md → CodeMirror quirks: partial optimization
+	// duplicates instances.
 	optimizeDeps: {
-		// All CodeMirror packages stay excluded so every copy resolves from the
-		// root node_modules (the @codemirror/* sub-packages are declared there —
-		// svelte-codemirror-editor imports them without declaring them). Never
-		// exclude-experiment here without reading doc/frontend/workflow.md →
-		// CodeMirror quirks: partial optimization duplicates instances.
-		exclude: [
-			'svelte-codemirror-editor',
-			'codemirror',
-			'@codemirror/lang-markdown',
-			'@codemirror/language-data',
-			'@codemirror/legacy-modes',
-			'@codemirror/language',
-			'@codemirror/state',
-			'@codemirror/view',
-			'@lezer/highlight',
-			'@lezer/common'
-		]
+		...optimizeDeps,
+		...(process.env.VITEST ? { include: ['@storybook/addon-svelte-csf'] } : {})
 	},
 	resolve: {
 		dedupe: ['@lezer/highlight', '@lezer/common', '@codemirror/state', '@codemirror/view']
@@ -140,16 +157,9 @@ export default defineConfig({
 	plugins: [
 		facetOriginGuard,
 		tailwindcss(),
-		sveltekit({
-			compilerOptions: {
-				// Force runes mode for the project, except for libraries. Can be removed in svelte 6.
-				runes: ({ filename }) =>
-					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
-			},
-			// adapter-node produces the self-contained Node server the release
-			// container runs (`node build`). See https://svelte.dev/docs/kit/adapter-node.
-			adapter: adapter()
-		}),
+		// Svelte compiler and adapter options live in svelte.config.js — the
+		// plugin reads that file on its own (app build and Storybook server).
+		sveltekit(),
 		paraglideVitePlugin({
 			project: './project.inlang',
 			outdir: './src/lib/paraglide'
@@ -222,7 +232,16 @@ export default defineConfig({
 						]
 					},
 					testTimeout: 10_000,
-					retry: 1
+					retry: 1,
+					// One expected stderr line: `@storybook/sveltekit` strips the
+					// SvelteKit compile and guard plugins from this project's server,
+					// so the runtime it keeps cannot read its hook table
+					// (`Cannot read properties of undefined (reading
+					// 'wrapDynamicImport')`). Stories render client-side and never
+					// touch SSR hooks. Everything else stays fatal.
+					onUnhandledError(error) {
+						if (error?.message?.includes('wrapDynamicImport')) return false;
+					}
 				}
 			}
 		]

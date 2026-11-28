@@ -114,7 +114,9 @@
 			// Coerce to '' on the working copy so the bindings never see undefined.
 			// Normalize on a local before assigning to `doctypeDef` to avoid reading
 			// `doctypeDef.*` inside this effect (which would form a read/write cycle).
-			const parsed = parseDoctypeDef(structuredClone(raw));
+			// The result is adopted as raw state: the field editor writes into its
+			// fields in place, and the writes must stay owned by this component.
+			const parsed = $state(parseDoctypeDef(structuredClone(raw)));
 			parsed.color ??= '';
 			parsed.icon ??= '';
 			parsed.label ??= '';
@@ -270,6 +272,8 @@
 	//   - Renaming a *different* field          → same object, selection persists
 
 	let selectedFieldRef: FieldDef | undefined = $state(undefined);
+	// The selection derived from the raw-state definition, so the object the
+	// field editor mutates is the same one the list renders (no proxy copy).
 	let selectedField: FieldDef | undefined = $derived(
 		doctypeDef?.fields.find((f) => f === selectedFieldRef)
 	);
@@ -290,6 +294,23 @@
 		selectedFieldRef = field;
 		// Update the ?field= query param without polluting browser history.
 		setSearchParams({ field: field.key || null });
+	}
+
+	/** Commit the edited field object. The field editor reports a new object
+	 *  after each edit; the definition (owned here) swaps it in by key, so the
+	 *  keyed field list, the editor, and the selection all follow the edit and
+	 *  the field stays selected after a rename. */
+	function updateField(next: FieldDef) {
+		if (!doctypeDef) return;
+		const previous = selectedFieldRef;
+		const index = doctypeDef.fields.findIndex((f) => f === previous || f.key === next.key);
+		if (index === -1) return;
+		doctypeDef.fields[index] = next;
+		selectedFieldRef = doctypeDef.fields[index];
+		if (previous && previous.key !== next.key) {
+			// Keep the deep link on the renamed key.
+			setSearchParams({ field: next.key || null });
+		}
 	}
 
 	function selectView(kind: ViewKind) {
@@ -625,6 +646,7 @@
 							tagSuggestions={domainTagSuggestions}
 							domain={doctypeDef.domain}
 							{readonly}
+							onchange={updateField}
 							ondelete={deleteField}
 						/>
 					</div>

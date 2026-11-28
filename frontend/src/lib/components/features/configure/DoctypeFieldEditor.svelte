@@ -19,7 +19,8 @@
 		tagSuggestions = [],
 		domain = '',
 		readonly = false,
-		ondelete
+		ondelete,
+		onchange
 	}: {
 		field: FieldDef | undefined;
 		/** All fields in the doctype (for duplicate-key validation). */
@@ -35,56 +36,80 @@
 		domain?: string;
 		readonly?: boolean;
 		ondelete?: () => void;
+		/** Reports the edited field after every edit. The parent owns the
+		 *  definition; a form that passes no handler keeps the edits local to
+		 *  the `field` object it handed in. */
+		onchange?: (field: FieldDef) => void;
 	} = $props();
 
-	// Duplicate-key error computed via $effect reading deep property on the shared proxy object.
-	// This is the ONLY pattern that reliably tracks field.key mutations across component boundaries.
-	let keyError: string | undefined = $state(undefined);
+	/** The working copy this editor shows. Each edit is applied to it and
+	 *  reported upward — never written into the `field` prop itself, which
+	 *  would mutate the parent's state from here. The local copy is the
+	 *  fallback for a form that passes no `onchange` handler. */
+	let draft = $derived(field);
 
-	$effect(() => {
-		if (!field) {
-			keyError = undefined;
-			return;
-		}
-		const k = field.key;
-		if (!k) {
-			keyError = undefined;
-			return;
-		}
-		keyError = allFields.some((f) => f !== field && f.key === k)
+	function edit(mutate: (d: FieldDef) => void) {
+		if (!draft) return;
+		const next = { ...draft };
+		mutate(next);
+		draft = next;
+		onchange?.(next);
+	}
+
+	/** A field edited by the type section: adopt it and report it upward. */
+	function adoptField(next: FieldDef) {
+		draft = next;
+		onchange?.(next);
+	}
+
+	// Duplicate-key error derived from the edited field. It reads the key the
+	// input just committed (`typedKey`) ahead of the stored one, so the inline
+	// error appears at once, before the parent has re-rendered.
+	let keyError = $derived.by(() => {
+		if (!draft) return undefined;
+		const k = typedKey ?? draft.key;
+		if (!k) return undefined;
+		return allFields.some((f) => f !== draft && f.key === k)
 			? m.configure_doctypes_key_duplicate_error({ key: k })
 			: undefined;
 	});
 
-	function handleTypeChange() {
-		if (!field || readonly) return;
-		// field.type already updated via bind:value
-		// Reset type-specific fields when switching type
-		field.values = undefined;
-		field.properties = undefined;
-		field.items = undefined;
-		field.compute = undefined;
-		field.compute_when = undefined;
-		field.currency = undefined;
-		// Capabilities re-seed to the new type's defaults: the old set may
-		// carry capabilities the new type may not declare (the backend
-		// validator would reject them), and a switched field starts from the
-		// same filterable-by-default state as a freshly added one.
-		const caps = defaultFilterCapabilities(field.type);
-		field.filters = caps.length > 0 ? [...caps] : undefined;
-		// secret and replicate fields reject unique server-side — drop the flag
-		// so a type switch cannot leave an invalid definition behind.
-		if (!uniqueSupported) {
-			field.unique = undefined;
-		}
+	/** The last text committed by the key input, so `keyError` reflects it
+	 *  immediately (the parent re-renders on its own schedule). */
+	let typedKey: string | undefined = $state(undefined);
+
+	function handleTypeChange(next: string) {
+		if (!draft || readonly) return;
+		// The Select reports the committed value; write it before resetting the
+		// type-specific fields (they belong to the previous type).
+		edit((f) => {
+			f.type = next as FieldDef['type'];
+			f.values = undefined;
+			f.properties = undefined;
+			f.items = undefined;
+			f.compute = undefined;
+			f.compute_when = undefined;
+			f.currency = undefined;
+			// Capabilities re-seed to the new type's defaults: the old set may
+			// carry capabilities the new type may not declare (the backend
+			// validator would reject them), and a switched field starts from the
+			// same filterable-by-default state as a freshly added one.
+			const caps = defaultFilterCapabilities(f.type);
+			f.filters = caps.length > 0 ? [...caps] : undefined;
+			// secret and replicate fields reject unique server-side — drop the flag
+			// so a type switch cannot leave an invalid definition behind.
+			if (!uniqueSupported) {
+				f.unique = undefined;
+			}
+		});
 	}
 
 	/** The backend rejects unique on secret fields and on replicated fields
 	 *  (uniqueness there is governed by the source document). */
-	const uniqueSupported = $derived(field?.type !== 'secret' && field?.replicate === undefined);
+	const uniqueSupported = $derived(draft?.type !== 'secret' && draft?.replicate === undefined);
 
 	function handleFieldChange(e: Event) {
-		if (!field || readonly) return;
+		if (!draft || readonly) return;
 		const target = e.target as HTMLInputElement;
 		// Overwrite the DOM display too — the input is not bind:value-bound, so
 		// only the handler can filter out illegal characters as the user types.
@@ -94,66 +119,79 @@
 		// DoctypeFieldList. Refuse the write and keep the typed text in the
 		// input, so the user can type past the collision. The inline error
 		// names the key that already exists.
-		if (allFields.some((f) => f !== field && f.key === v)) {
-			keyError = m.configure_doctypes_key_duplicate_error({ key: v });
-			return;
-		}
-		keyError = undefined;
-		field.key = v;
+		typedKey = v;
+		if (keyError) return;
+		edit((f) => {
+			f.key = v;
+		});
 	}
 
 	function handleTitleChange(e: Event) {
-		if (!field || readonly) return;
+		if (!draft || readonly) return;
 		const target = e.target as HTMLInputElement;
-		field.title = target.value || undefined;
+		const title = target.value || undefined;
+		edit((f) => {
+			f.title = title;
+		});
 	}
 
 	function handleDescChange(e: Event) {
-		if (!field || readonly) return;
+		if (!draft || readonly) return;
 		const target = e.target as HTMLTextAreaElement;
-		field.description = target.value || undefined;
+		const description = target.value || undefined;
+		edit((f) => {
+			f.description = description;
+		});
 	}
 
 	function handleTagsChange(e: Event) {
-		if (!field || readonly) return;
+		if (!draft || readonly) return;
 		const target = e.target as HTMLInputElement;
-		field.tags = target.value
+		const tags = target.value
 			? target.value
 					.split(',')
 					.map((s) => s.trim())
 					.filter(Boolean)
 			: undefined;
+		edit((f) => {
+			f.tags = tags;
+		});
 	}
 
 	/** Appends one suggested tag (a click on an in-use chip). Already-set
 	 *  tags toggle off — the chips double as removal affordances. */
 	function toggleSuggestedTag(tag: string) {
-		if (!field || readonly) return;
-		const current = field.tags ?? [];
+		if (!draft || readonly) return;
+		const current = draft.tags ?? [];
 		const next = current.includes(tag) ? current.filter((t) => t !== tag) : [...current, tag];
-		field.tags = next.length > 0 ? next : undefined;
+		edit((f) => {
+			f.tags = next.length > 0 ? next : undefined;
+		});
 	}
 
-	const tagsValue = $derived(field?.tags?.join(', ') ?? '');
+	const tagsValue = $derived(draft?.tags?.join(', ') ?? '');
 
 	// Suggestion chips not already on the field — the ones that would add
 	// a new label. On-field tags render as active chips below instead.
-	const offSuggestions = $derived(tagSuggestions.filter((t) => !field?.tags?.includes(t)));
-	const onSuggestions = $derived((field?.tags ?? []).filter((t) => tagSuggestions.includes(t)));
+	const offSuggestions = $derived(tagSuggestions.filter((t) => !draft?.tags?.includes(t)));
+	const onSuggestions = $derived((draft?.tags ?? []).filter((t) => tagSuggestions.includes(t)));
 </script>
 
 <div class="fdetail">
-	{#if field}
+	{#if draft}
 		<!-- Header -->
 		<div class="dt-h">
-			<span class="key">{field.key}</span>
-			<span class="ty-mono">{field.type}</span>
+			<span class="key">{draft.key}</span>
+			<span class="ty-mono">{draft.type}</span>
 			<span class="sp"></span>
 			<Toggle
 				label={m.configure_doctypes_required_label()}
-				checked={field.required ?? false}
+				checked={draft.required ?? false}
 				onchange={() => {
-					field.required = !field.required;
+					const required = !draft?.required;
+					edit((f) => {
+						f.required = required;
+					});
 				}}
 				{readonly}
 			/>
@@ -161,9 +199,12 @@
 				<span class="unique-toggle" title={m.configure_doctypes_unique_helper()}>
 					<Toggle
 						label={m.configure_doctypes_unique_label()}
-						checked={field.unique ?? false}
+						checked={draft?.unique ?? false}
 						onchange={() => {
-							field.unique = !field.unique;
+							const unique = !draft?.unique;
+							edit((f) => {
+								f.unique = unique;
+							});
 						}}
 						{readonly}
 					/>
@@ -193,8 +234,8 @@
 				</span>
 			{/if}
 		</div>
-		{#if field.description}
-			<div class="dt-sub">{field.description}</div>
+		{#if draft.description}
+			<div class="dt-sub">{draft.description}</div>
 		{/if}
 
 		<!-- General section -->
@@ -204,7 +245,7 @@
 				<div class="f">
 					<Input
 						label={m.configure_doctypes_key_label()}
-						value={field.key}
+						value={draft.key}
 						oninput={handleFieldChange}
 						error={keyError}
 						helper={keyError ? undefined : m.configure_doctypes_key_helper()}
@@ -215,15 +256,15 @@
 					<Select
 						label={m.common_type()}
 						options={TYPE_OPTIONS}
-						bind:value={field.type}
-						onchange={handleTypeChange}
+						value={draft.type ?? ''}
+						onValueChange={handleTypeChange}
 						{readonly}
 					/>
 				</div>
 				<div class="f wide">
 					<Input
 						label={m.configure_doctypes_title_label()}
-						value={field.title ?? ''}
+						value={draft.title ?? ''}
 						oninput={handleTitleChange}
 						disabled={readonly}
 					/>
@@ -234,7 +275,7 @@
 						id="field-desc"
 						class="textarea"
 						rows="2"
-						value={field.description ?? ''}
+						value={draft.description ?? ''}
 						oninput={handleDescChange}
 						disabled={readonly}></textarea>
 				</div>
@@ -242,7 +283,7 @@
 		</div>
 
 		<!-- Type-specific section -->
-		<DoctypeTypeEditor {field} {readonly} {domain} />
+		<DoctypeTypeEditor field={draft} {readonly} {domain} onchange={adoptField} />
 
 		<!-- Access section -->
 		<div class="fsec">

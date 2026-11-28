@@ -120,7 +120,12 @@
 			await userEvent.click(mdBtn);
 		});
 		const source = await waitFor(() => canvas.getByRole('textbox'));
-		await expect(source.textContent).toContain('Existing note.');
+		// CodeMirror lays the document out in per-line divs, so the assertion
+		// reads the editor content element, not the textbox root's text.
+		await expect(canvasElement.querySelector('.cm-content')?.textContent).toContain(
+			'Existing note.'
+		);
+		await expect(source).toBeVisible();
 		// Back to WYSIWYG — the source editor unmounts, the WYSIWYG editor
 		// takes over with the same content.
 		await userEvent.click(canvas.getByRole('button', { name: 'Write' }));

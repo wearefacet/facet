@@ -15,7 +15,8 @@
 	let {
 		field,
 		readonly = false,
-		domain = ''
+		domain = '',
+		onchange
 	}: {
 		field: FieldDef | undefined;
 		readonly?: boolean;
@@ -23,7 +24,21 @@
 		 *  qualified into the `domain.Target` form the backend Check requires
 		 *  (empty when unknown — no qualification). */
 		domain?: string;
+		/** Reports the edited field after every edit — the parent owns the
+		 *  definition, so the edits are never written into the prop itself. */
+		onchange?: (field: FieldDef) => void;
 	} = $props();
+
+	/** The working copy this editor shows. */
+	let draft = $derived(field);
+
+	function edit(mutate: (d: FieldDef) => void) {
+		if (!draft) return;
+		const next = { ...draft };
+		mutate(next);
+		draft = next;
+		onchange?.(next);
+	}
 
 	/**
 	 * Qualifies a bare reference target at commit time. The backend Check
@@ -40,11 +55,13 @@
 
 	/** Commit handler for the reference target input. */
 	function handleReferenceTargetChange(e: Event) {
-		if (!field || readonly) return;
+		if (!draft || readonly) return;
 		const target = e.target as HTMLInputElement;
 		const qualified = qualifyReferenceTarget(target.value);
 		target.value = qualified;
-		field.doctype = qualified || undefined;
+		edit((d) => {
+			d.doctype = qualified || undefined;
+		});
 	}
 
 	/**
@@ -66,24 +83,31 @@
 	let newEnumValue = $state('');
 
 	function addEnumValue() {
-		if (!field || readonly) return;
+		if (!draft || readonly) return;
 		const v = newEnumValue.trim();
 		if (!v) return;
 		// Duplicate keys would throw `each_key_duplicate` at the keyed {#each}.
-		if ((field.values ?? []).some((e) => e.key === v)) return;
-		field.values = [...(field.values ?? []), { key: v }];
+		if ((draft.values ?? []).some((e) => e.key === v)) return;
+		edit((d) => {
+			d.values = [...(d.values ?? []), { key: v }];
+		});
 		newEnumValue = '';
 	}
 
 	function removeEnumValue(v: string) {
-		if (!field || readonly) return;
-		field.values = (field.values ?? []).filter((x) => x.key !== v);
-		if (field.default === v) field.default = undefined;
+		if (!draft || readonly) return;
+		edit((d) => {
+			d.values = (d.values ?? []).filter((x) => x.key !== v);
+			if (d.default === v) d.default = undefined;
+		});
 	}
 
 	function setEnumDefault(v: string) {
-		if (!field || readonly) return;
-		field.default = v === field.default ? undefined : v;
+		if (!draft || readonly) return;
+		const same = v === draft.default;
+		edit((d) => {
+			d.default = same ? undefined : v;
+		});
 	}
 
 	function enumLabel(v: { key: string; label?: string; color?: string }): string {
@@ -97,9 +121,11 @@
 	// ── Capability toggle ─────────────────────────────────────────────────
 
 	function toggleCapability(cap: string) {
-		if (!field || readonly) return;
-		const caps = field.filters ?? [];
-		field.filters = caps.includes(cap) ? caps.filter((c) => c !== cap) : [...caps, cap];
+		if (!draft || readonly) return;
+		edit((d) => {
+			const caps = d.filters ?? [];
+			d.filters = caps.includes(cap) ? caps.filter((c) => c !== cap) : [...caps, cap];
+		});
 	}
 
 	// ── Shape editor for array/object ─────────────────────────────────────
@@ -107,64 +133,70 @@
 	let shapeNewKey = $state('');
 
 	function addShapeField() {
-		if (!field || readonly) return;
+		if (!draft || readonly) return;
 		const k = shapeNewKey.trim();
 		if (!k) return;
-		if (!field.properties) field.properties = [];
-		field.properties = [...field.properties, { key: k, type: 'string' }];
+		edit((d) => {
+			d.properties = [...(d.properties ?? []), { key: k, type: 'string' }];
+		});
 		shapeNewKey = '';
 	}
 
 	function removeShapeField(key: string) {
-		if (!field || readonly) return;
-		field.properties = (field.properties ?? []).filter((s) => s.key !== key);
+		if (!draft || readonly) return;
+		edit((d) => {
+			d.properties = (d.properties ?? []).filter((s) => s.key !== key);
+		});
 	}
 
 	// ── Default type editor (string/datetime/boolean) ─────────────────────
 
 	function handleDefaultChange(e: Event) {
-		if (!field || readonly) return;
+		if (!draft || readonly) return;
 		const target = e.target as HTMLInputElement;
-		field.default = target.value || undefined;
+		const next = target.value || undefined;
+		edit((d) => {
+			d.default = next;
+		});
 	}
 </script>
 
-{#if field}
+{#if draft}
 	<div class="fsec">
 		<h4>
-			{field.type === 'enum'
+			{draft.type === 'enum'
 				? m.configure_doctypes_enum_title()
-				: field.type === 'integer'
+				: draft.type === 'integer'
 					? m.configure_doctypes_number_title()
-					: field.type === 'reference'
+					: draft.type === 'reference'
 						? m.configure_doctypes_reference_title()
-						: field.type === 'data' && field.compute
+						: draft.type === 'data' && draft.compute
 							? m.configure_doctypes_computed_title()
-							: field.type === 'money'
+							: draft.type === 'money'
 								? m.configure_doctypes_money_title()
-								: field.type === 'object'
+								: draft.type === 'object'
 									? m.configure_doctypes_object_title()
-									: field.type === 'array'
+									: draft.type === 'array'
 										? m.configure_doctypes_array_items_title()
-										: field.type === 'secret'
+										: draft.type === 'secret'
 											? m.configure_doctypes_secret_title()
 											: m.configure_doctypes_default_title()}
 		</h4>
 
 		<!-- ─── enum ─── -->
-		{#if field.type === 'enum'}
+		{#if draft.type === 'enum'}
 			<div class="vchips">
-				{#each field.values ?? [] as v (v.key)}
+				{#each draft.values ?? [] as v (v.key)}
 					<span
 						class="vchip"
-						class:def={v.key === field.default}
+						class:def={v.key === draft.default}
 						onclick={() => !readonly && setEnumDefault(v.key)}
 						role="button"
 						tabindex="0"
 						onkeydown={(e) => e.key === 'Enter' && !readonly && setEnumDefault(v.key)}
 						style={`background: color-mix(in srgb, ${enumColor(v)} 14%, transparent); color: ${enumColor(v)};`}
 					>
-						{#if v.key === field.default}<span class="star">★</span>{/if}
+						{#if v.key === draft.default}<span class="star">★</span>{/if}
 						{enumLabel(v)}
 						{#if !readonly}
 							<button
@@ -192,8 +224,8 @@
 			<div class="f" style="margin-top:13px">
 				<Select
 					label={m.configure_doctypes_enum_default_label()}
-					value={(field.default as string) ?? ''}
-					options={(field.values ?? []).map((v) => ({
+					value={(draft.default as string) ?? ''}
+					options={(draft.values ?? []).map((v) => ({
 						value: v.key,
 						label: v.label ?? humanize(v.key)
 					}))}
@@ -203,12 +235,12 @@
 			</div>
 
 			<!-- ─── integer ─── -->
-		{:else if field.type === 'integer'}
+		{:else if draft.type === 'integer'}
 			<div class="grid2">
 				<div class="f">
 					<Input
 						label={m.configure_doctypes_default_label()}
-						value={(field.default as string) ?? ''}
+						value={(draft.default as string) ?? ''}
 						oninput={handleDefaultChange}
 						disabled={readonly}
 					/>
@@ -217,10 +249,13 @@
 				<div class="f">
 					<Input
 						label={m.configure_doctypes_min_label()}
-						value={field.min ?? ''}
+						value={draft.min ?? ''}
 						type="number"
 						oninput={(e) => {
-							field.min = Number((e.target as HTMLInputElement).value) || undefined;
+							const min = Number((e.target as HTMLInputElement).value) || undefined;
+							edit((d) => {
+								d.min = min;
+							});
 						}}
 						disabled={readonly}
 					/>
@@ -228,10 +263,13 @@
 				<div class="f">
 					<Input
 						label={m.configure_doctypes_max_label()}
-						value={field.max ?? ''}
+						value={draft.max ?? ''}
 						type="number"
 						oninput={(e) => {
-							field.max = Number((e.target as HTMLInputElement).value) || undefined;
+							const max = Number((e.target as HTMLInputElement).value) || undefined;
+							edit((d) => {
+								d.max = max;
+							});
 						}}
 						disabled={readonly}
 					/>
@@ -239,14 +277,17 @@
 			</div>
 
 			<!-- ─── reference ─── -->
-		{:else if field.type === 'reference'}
+		{:else if draft.type === 'reference'}
 			<div class="grid2">
 				<div class="f">
 					<Input
 						label={m.configure_doctypes_target_doctype_label()}
-						value={field.doctype ?? ''}
+						value={draft.doctype ?? ''}
 						oninput={(e) => {
-							field.doctype = (e.target as HTMLInputElement).value || undefined;
+							const doctype = (e.target as HTMLInputElement).value || undefined;
+							edit((d) => {
+								d.doctype = doctype;
+							});
 						}}
 						onchange={handleReferenceTargetChange}
 						disabled={readonly}
@@ -255,7 +296,7 @@
 				<div class="f">
 					<Select
 						label={m.configure_doctypes_on_delete_label()}
-						value={field.on_source_delete ?? 'restrict'}
+						value={draft.on_source_delete ?? 'restrict'}
 						options={[
 							{ value: 'restrict', label: 'restrict' },
 							{ value: 'set null', label: 'set null' },
@@ -280,22 +321,22 @@
 					/>
 				</svg>
 				<div>
-					{m.configure_doctypes_reference_note({ doctype: field.doctype ?? '(unknown)' })}
+					{m.configure_doctypes_reference_note({ doctype: draft.doctype ?? '(unknown)' })}
 				</div>
 			</div>
 
 			<!-- ─── computed (data + compute) ─── -->
-		{:else if field.type === 'data' && field.compute}
+		{:else if draft.type === 'data' && draft.compute}
 			<div class="f">
 				<label for="compute-fn">{m.configure_doctypes_compute_fn_label()}</label>
 				<div style="display:flex;gap:9px;align-items:center">
-					<input id="compute-fn" class="inp mono" value={field.compute} readonly />
+					<input id="compute-fn" class="inp mono" value={draft.compute} readonly />
 				</div>
 			</div>
 			<div class="f" style="margin-top:13px">
 				<span class="label">{m.configure_doctypes_recompute_when_label()}</span>
 				<div class="vchips">
-					{#each field.compute_when ?? [] as c, i (i)}
+					{#each draft.compute_when ?? [] as c, i (i)}
 						<span class="vchip">{c}</span>
 					{/each}
 				</div>
@@ -310,14 +351,17 @@
 			</div>
 
 			<!-- ─── money ─── -->
-		{:else if field.type === 'money'}
+		{:else if draft.type === 'money'}
 			<div class="grid2">
 				<div class="f">
 					<Input
 						label={m.configure_doctypes_currency_from_label()}
-						value={field.currency ?? 'currency'}
+						value={draft.currency ?? 'currency'}
 						oninput={(e) => {
-							field.currency = (e.target as HTMLInputElement).value || undefined;
+							const currency = (e.target as HTMLInputElement).value || undefined;
+							edit((d) => {
+								d.currency = currency;
+							});
 						}}
 						disabled={readonly}
 					/>
@@ -336,9 +380,9 @@
 			</div>
 
 			<!-- ─── object ─── -->
-		{:else if field.type === 'object'}
+		{:else if draft.type === 'object'}
 			<div class="shape">
-				{#each field.properties ?? [] as sub (sub.key)}
+				{#each draft.properties ?? [] as sub (sub.key)}
 					<div class="sr">
 						<span class="sk">{sub.key}</span>
 						{#if sub.required}<span class="rq">*</span>{/if}
@@ -406,11 +450,11 @@
 			</div>
 
 			<!-- ─── array ─── -->
-		{:else if field.type === 'array'}
+		{:else if draft.type === 'array'}
 			<div class="f" style="max-width:260px">
 				<Select
 					label={m.configure_doctypes_item_type_label()}
-					value={field.items?.type ?? 'object'}
+					value={draft.items?.type ?? 'object'}
 					options={[
 						{ value: 'object', label: 'object' },
 						{ value: 'string', label: 'string' },
@@ -421,7 +465,7 @@
 					disabled={readonly}
 				/>
 			</div>
-			{#if field.items?.type === 'object' || !field.items}
+			{#if draft.items?.type === 'object' || !draft.items}
 				<div style="margin-top:13px">
 					<div style="font-size:12.5px;font-weight:600;display:block;margin-bottom:9px">
 						{m.configure_doctypes_item_shape_label()}
@@ -430,7 +474,7 @@
 						>
 					</div>
 					<div class="shape">
-						{#each field.items?.properties ?? [] as sub (sub.key)}
+						{#each draft.items?.properties ?? [] as sub (sub.key)}
 							<div class="sr">
 								<span class="sk">{sub.key}</span>
 								{#if sub.required}<span class="rq">*</span>{/if}
@@ -483,10 +527,13 @@
 						<Input
 							label={m.configure_doctypes_min_items_label()}
 							type="number"
-							value={field.min ?? ''}
+							value={draft.min ?? ''}
 							placeholder="—"
 							oninput={(e) => {
-								field.min = Number((e.target as HTMLInputElement).value) || undefined;
+								const min = Number((e.target as HTMLInputElement).value) || undefined;
+								edit((d) => {
+									d.min = min;
+								});
 							}}
 							disabled={readonly}
 						/>
@@ -495,10 +542,13 @@
 						<Input
 							label={m.configure_doctypes_max_items_label()}
 							type="number"
-							value={field.max ?? ''}
+							value={draft.max ?? ''}
 							placeholder="—"
 							oninput={(e) => {
-								field.max = Number((e.target as HTMLInputElement).value) || undefined;
+								const max = Number((e.target as HTMLInputElement).value) || undefined;
+								edit((d) => {
+									d.max = max;
+								});
 							}}
 							disabled={readonly}
 						/>
@@ -506,9 +556,12 @@
 					<div class="f wide">
 						<Toggle
 							label={m.configure_doctypes_unique_items_label()}
-							checked={field.unique ?? false}
+							checked={draft.unique ?? false}
 							onchange={() => {
-								field.unique = !field.unique;
+								const next = !draft?.unique;
+								edit((d) => {
+									d.unique = next;
+								});
 							}}
 							disabled={readonly}
 						/>
@@ -533,35 +586,44 @@
 			</div>
 
 			<!-- ─── boolean ─── -->
-		{:else if field.type === 'boolean'}
+		{:else if draft.type === 'boolean'}
 			<div class="f" style="max-width:280px">
 				<Toggle
 					label={m.configure_doctypes_default_value_label()}
-					checked={field.default === true}
+					checked={draft.default === true}
 					onchange={() => {
-						field.default = !field.default;
+						const next = !draft?.default;
+						edit((d) => {
+							d.default = next;
+						});
 					}}
 					disabled={readonly}
 				/>
 			</div>
 
 			<!-- ─── color ─── -->
-		{:else if field.type === 'color'}
+		{:else if draft.type === 'color'}
 			<div class="f" style="max-width:280px">
 				<ColorInput
 					label={m.configure_doctypes_default_value_label()}
-					bind:value={field.default as string}
+					value={(draft.default as string) ?? ''}
+					onchange={(v) => {
+						if (readonly) return;
+						edit((d) => {
+							d.default = v || undefined;
+						});
+					}}
 					placeholder="#c89329"
 					disabled={readonly}
 				/>
 			</div>
 
 			<!-- ─── secret ─── -->
-		{:else if field.type === 'secret'}
+		{:else if draft.type === 'secret'}
 			<div class="f" style="max-width:320px">
 				<Select
 					label={m.configure_doctypes_mode_label()}
-					value={field.mode ?? 'hash'}
+					value={draft.mode ?? 'hash'}
 					options={[
 						{ value: 'hash', label: m.configure_doctypes_mode_verify() },
 						{ value: 'sealed', label: m.configure_doctypes_mode_reveal() },
@@ -569,7 +631,9 @@
 					]}
 					onValueChange={(v) => {
 						if (readonly) return;
-						field.mode = v as FieldDef['mode'];
+						edit((d) => {
+							d.mode = v as FieldDef['mode'];
+						});
 					}}
 					helper={m.configure_doctypes_mode_helper()}
 					disabled={readonly}
@@ -582,9 +646,12 @@
 				<Input
 					label={m.configure_doctypes_default_value_label()}
 					placeholder="—"
-					value={(field.default as string) ?? ''}
+					value={(draft.default as string) ?? ''}
 					oninput={(e) => {
-						field.default = (e.target as HTMLInputElement).value || undefined;
+						const next = (e.target as HTMLInputElement).value || undefined;
+						edit((d) => {
+							d.default = next;
+						});
 					}}
 					disabled={readonly}
 				/>
@@ -598,12 +665,12 @@
 		<div style="font-size:12.5px;font-weight:600;display:block;margin-bottom:9px">
 			{m.configure_doctypes_filter_capabilities_title()}
 		</div>
-		{#if capabilitiesFor(field.type).length > 0}
+		{#if capabilitiesFor(draft.type).length > 0}
 			<div class="opchips">
-				{#each capabilitiesFor(field.type) as cap (cap)}
+				{#each capabilitiesFor(draft.type) as cap (cap)}
 					<button
 						class="opchip"
-						class:on={(field.filters ?? []).includes(cap)}
+						class:on={(draft.filters ?? []).includes(cap)}
 						onclick={() => toggleCapability(cap)}
 						disabled={readonly}>{cap}</button
 					>
@@ -623,7 +690,7 @@
 					<path d="M4 6h16M7 12h10M10 18h4" />
 				</svg>
 				<div>
-					<b>{m.configure_doctypes_not_filterable_note({ type: field.type })}</b>
+					<b>{m.configure_doctypes_not_filterable_note({ type: draft.type })}</b>
 				</div>
 			</div>
 		{/if}

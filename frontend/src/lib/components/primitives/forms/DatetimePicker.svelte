@@ -98,13 +98,15 @@
 		return String(n).padStart(2, '0');
 	}
 
-	const els: Record<SegKey, HTMLInputElement | null> = {
+	// Segment inputs, keyed by segment. `$state` so `bind:this` writes are
+	// reactive — Svelte warns on a binding to a plain object property.
+	const els = $state<Record<SegKey, HTMLInputElement | null>>({
 		y: null,
 		m: null,
 		d: null,
 		h: null,
 		mi: null
-	};
+	});
 
 	let segs = $state<Record<SegKey, string>>({ y: '', m: '', d: '', h: '', mi: '' });
 
@@ -433,6 +435,7 @@
 			? `${String(wall.y).padStart(4, '0')}-${pad2(wall.m)}-${pad2(wall.d)} ${pad2(wall.h)}:${pad2(wall.mi)}`
 			: m.doc_dt_not_set()
 	);
+	// The offset label for the wall time.
 	const zoneText = $derived(
 		zoneOffsetLabel(tz, wall ? (wallToUtcMs(wall, tz) ?? undefined) : undefined)
 	);

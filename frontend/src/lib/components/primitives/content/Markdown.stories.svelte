@@ -412,8 +412,13 @@ not a valid diagram
 		const canvas = within(canvasElement);
 		await userEvent.click(canvas.getByRole('button', { name: 'Markdown' }));
 		const content = await waitFor(() => canvas.getByRole('textbox'));
-		// The source editor holds the raw markdown, not rendered HTML.
-		await expect(content.textContent).toContain('# Hello world');
+		// The source editor holds the raw markdown, not rendered HTML. CodeMirror
+		// lays the document out in per-line divs, so the assertion reads the
+		// editor content element, not the textbox root's direct text.
+		await expect(canvasElement.querySelector('.cm-content')?.textContent).toContain(
+			'# Hello world'
+		);
+		await expect(content).toBeVisible();
 		await expect(canvas.queryByRole('heading')).toBeNull();
 	}}
 >

@@ -37,6 +37,10 @@ export function createChapterScroll(options: {
 		scrollReleaseTimer = setTimeout(() => {
 			scrollingToChapter = false;
 		}, 800);
+		// A chapter that is already in place emits no scroll event — the
+		// spy must run on the next frame or the release timer fires against
+		// a document that never moved and `active` keeps the clicked id.
+		requestAnimationFrame(spy);
 		section.scrollIntoView({
 			behavior: prefersReducedMotion() ? 'auto' : 'smooth',
 			block: 'start'
@@ -73,6 +77,9 @@ export function createChapterScroll(options: {
 		spy();
 		return () => {
 			target.removeEventListener('scroll', onScroll);
+			// The release timer writes `active` 800 ms after a click — left
+			// running past the cleanup it mutates the state of a destroyed
+			// component (`derived_inert` in stories that unmount mid-click).
 			clearTimeout(scrollReleaseTimer);
 		};
 	}

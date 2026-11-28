@@ -27,13 +27,16 @@
 		label,
 		placeholder = '#RRGGBB',
 		disabled = false,
-		id
+		id,
+		onchange
 	}: {
 		value?: string;
 		label?: string;
 		placeholder?: string;
 		disabled?: boolean;
 		id?: string;
+		/** Fires with the committed hex after a pick or a valid typed entry. */
+		onchange?: (value: string) => void;
 	} = $props();
 
 	let popoverOpen = $state(false);
@@ -81,6 +84,7 @@
 	/* ── select a cell ──────────────────────────────────────── */
 	function pickColor(cell: HoneyCell) {
 		value = cell.hex;
+		onchange?.(cell.hex);
 		hexInputValue = cell.hex;
 		hexError = null;
 		closePopover();
@@ -101,6 +105,7 @@
 		const clean = v.startsWith('#') ? v : '#' + v;
 		if (/^#[0-9a-fA-F]{6}$/.test(clean)) {
 			value = clean.toUpperCase();
+			onchange?.(value);
 			hexError = null;
 		}
 	}
