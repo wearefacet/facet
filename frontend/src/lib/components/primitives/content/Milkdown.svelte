@@ -28,7 +28,7 @@
 	 */
 	import { onMount } from 'svelte';
 	import { Crepe, type CrepeConfig } from '@milkdown/crepe';
-	import { replaceAll } from '@milkdown/kit/utils';
+	import { getMarkdown, replaceAll } from '@milkdown/kit/utils';
 	import { editorViewCtx } from '@milkdown/kit/core';
 	import { Decoration, DecorationSet } from '@milkdown/kit/prose/view';
 	import { TextSelection } from '@milkdown/kit/prose/state';
@@ -888,6 +888,10 @@
 		});
 		instance.on((listener) => {
 			listener.markdownUpdated((_ctx, markdown) => {
+				// The destroy cleanup can run before an in-flight emission (the
+				// 200 ms debounce outlives the teardown): reporting now would
+				// push into the parent state of a destroyed component.
+				if (destroyed) return;
 				// Milkdown serializes an empty paragraph (a blank line made with
 				// Enter, or a pasted empty <p>) as a literal `<br />` line. Stored
 				// longtext is markdown and must never carry HTML — collapse the
@@ -936,6 +940,15 @@
 		instance.editor.use(createMermaidPlugins({ isReadonly: () => isReadonly }));
 		crepe = instance;
 		void instance.create().then(() => {
+			// Unmounted while create() was in flight (the shared Storybook page
+			// swaps stories mid-create). The editor is live in the DOM with no
+			// owner left, and the cleanup below never saw it ready — tear it
+			// down here or its Vue sub-apps and ProseMirror view leak into the
+			// page.
+			if (destroyed) {
+				void instance.destroy();
+				return;
+			}
 			// The editor was created from this exact value — seed the reported
 			// form with it so the sync effect does not push the (differently
 			// serialized) doc back over itself on mount.
@@ -1014,6 +1027,30 @@
 		return () => {
 			destroyed = true;
 			ready = false;
+			// Flush the last edit before the editor goes away. The parent may
+			// unmount this component in response to an `onchange` emission
+			// (a mode switch, a drawer close) — the pending emission is then
+			// dropped and the last keystrokes never reach the values bag.
+			// The seeded baseline still applies: a document that is back on it
+			// stays silent, exactly like the live listener.
+			if (crepe && instance.editor.status === 'Created') {
+				const markdown = instance.editor.action(getMarkdown());
+				const normalized = normalizeMarkdown(markdown);
+				if (
+					seededRaw !== null &&
+					seededNormalized !== null &&
+					isSameMarkdownDocument(seededNormalized, normalized)
+				) {
+					if (lastBagValue !== seededRaw) {
+						lastBagValue = seededRaw;
+						onchange?.(seededRaw);
+					}
+				} else if (normalized !== reportedMarkdown) {
+					reportedMarkdown = normalized;
+					lastBagValue = normalized;
+					onchange?.(normalized);
+				}
+			}
 			cleanupPickerListeners?.();
 			rootEl?.removeEventListener('drop', onDrop, true);
 			rootEl?.removeEventListener('paste', onPaste, true);

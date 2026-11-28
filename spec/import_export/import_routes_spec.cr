@@ -72,7 +72,7 @@ private def with_import_worker(& : Facet::Jobs::Worker -> Nil) : Nil
   begin
     yield worker
   ensure
-    worker.stop
+    stop_worker_draining(worker)
   end
 end
 

@@ -660,13 +660,22 @@ module Facet
         views.each do |(kind, template)|
           kinds << kind if kind
 
-          ViewTemplateValidator.validate(template, definition).each do |issue|
+          template_issues = ViewTemplateValidator.validate(template, definition)
+          template_issues.each do |issue|
             issues << Issue.new(
               severity: :warning,
               category: :view,
               field: issue.path,
               message: "DocumentView '#{kind}': #{issue.message}",
             )
+          end
+
+          # A structurally broken template cannot be assessed for coverage —
+          # the bindings the walk cannot see may exist on nodes the frontend
+          # never renders. The validator's errors already tell the author
+          # what to fix; the coverage warning would only repeat the noise.
+          if kind && VIEW_COVERAGE_KINDS.includes?(kind) && template_issues.none?(&.severity.==(:error))
+            check_template_field_coverage(definition, kind, template, issues)
           end
         end
 
@@ -681,6 +690,66 @@ module Facet
         end
 
         check_collection_views(db, definition, issues)
+      end
+
+      # ── View field coverage ──────────────────────────────────────
+
+      # The kinds the field-coverage warning applies to: the show page
+      # (`view`) and the create/edit form (`form`). quickView, inline, and
+      # card are summary surfaces — showing a subset of fields is their
+      # purpose.
+      private VIEW_COVERAGE_KINDS = Set{"view", "form"}
+
+      # Warns when a `view` or `form` template does not reference every
+      # field of the doctype (`ViewTemplateValidator.covered_fields` does
+      # the counting). The domain-builder assistant reads the check output,
+      # so this warning is what tells it a doctype edit left the views
+      # behind. Per kind:
+      #
+      # - `view`: every declared field must show, computed and read-only
+      #   included — a show page that hides data is a gap. `write_only`
+      #   fields are excluded: the show page must not display them.
+      # - `form`: every editable field must appear. Computed (`data`),
+      #   `read_only`, and typeless fields are excluded — no input node can
+      #   bind them (`ViewTemplateValidator` errors on such bindings) — and
+      #   `dictionary` fields too (they have no input control), so
+      #   requiring them would make the warning unfixable.
+      #
+      # A view without a template is skipped: the generic fallback renders
+      # every field, so nothing is missing. A template the validator
+      # reported `:error` issues on is skipped too — the structural errors
+      # already name what to fix. One warning per view, with the missing
+      # names in the message — one pass fixes them all.
+      private def self.check_template_field_coverage(
+        definition : DoctypeDefinition,
+        kind : String,
+        template : JSON::Any?,
+        issues : Array(Issue),
+      ) : Nil
+        return if template.nil? # the generic fallback renders every field
+
+        required = definition.fields.select do |_, field|
+          if kind == "form"
+            !(field.computed? || field.read_only? || field.type.nil? ||
+              field.type.try(&.type_name) == "dictionary")
+          else
+            !field.write_only?
+          end
+        end
+        return if required.empty?
+
+        covered = ViewTemplateValidator.covered_fields(template, definition)
+        missing = required.keys.reject { |name| covered.includes?(name) }
+        return if missing.empty?
+
+        verb = kind == "form" ? "edit" : "show"
+        issues << Issue.new(
+          severity: :warning,
+          category: :view,
+          field: kind,
+          message: "DocumentView '#{kind}' on #{definition.qualified_name} does not list every field — " \
+                   "add nodes that #{verb}: #{missing.join(", ")}",
+        )
       end
 
       # Reports a `core.CollectionView` config the renderer cannot use as a
@@ -731,7 +800,7 @@ module Facet
             severity: :info,
             category: :view,
             field: nil,
-            message: "No CollectionView defined for #{definition.qualified_name} — the listing shows the view starter. Create at least one collection view (table, kanban, or calendar) so the doctype has a listing surface.",
+            message: "No CollectionView defined for #{definition.qualified_name} — the listing shows the view starter. Create at least one collection view (table, kanban, calendar, or grid) so the doctype has a listing surface.",
           )
         end
       end

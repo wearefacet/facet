@@ -3,6 +3,7 @@ title: Clés de réglage de compte
 description: Chaque clé de réglage de compte, avec son type et sa valeur par défaut.
 audience: [operator, admin]
 features: [PLT-17]
+type: reference
 sidebar:
   order: 16
 verified_at: 008dd880
@@ -20,7 +21,7 @@ Le tableau liste chaque clé enregistrée, avec son type et sa valeur par défau
 | `core.pinned_collection_views` | array | [] | Vues de collection que le compte épingle dans les listes de doctypes. |
 | `core.pinned_doctypes` | array | [] | Noms de doctypes qualifiés que le compte épingle en haut de la barre latérale. |
 | `core.show_welcome` | bool | true | Rejoue la visite de bienvenue au premier lancement quand vrai ; la visite écrit faux quand on la ferme. |
-| `core.timezone` | string | "UTC" | Fuseau horaire IANA dans lequel s'affichent les dates et heures du compte. |
+| `core.timezone` | string | "auto" | Fuseau horaire IANA dans lequel s'affichent les dates et heures du compte. |
 | `notifications.in_app` | bool | true | Commande la diffusion des notifications côté client : cloche, badge et abonnement en direct. |
 
 Deux clés portent un palier serveur avant leur défaut de registre. Un compte sans valeur propre suit les réglages système de l'instance :
@@ -30,5 +31,5 @@ Deux clés portent un palier serveur avant leur défaut de registre. Un compte s
 
 ## Voir aussi
 
-- [/fr/workspace/settings-sessions-api-keys/](/fr/workspace/settings-sessions-api-keys/)
-- [/fr/operate/system-settings/](/fr/operate/system-settings/)
+- [/fr/use/account/](/fr/use/account/)
+- [/fr/admin/configure/system-settings/](/fr/admin/configure/system-settings/)

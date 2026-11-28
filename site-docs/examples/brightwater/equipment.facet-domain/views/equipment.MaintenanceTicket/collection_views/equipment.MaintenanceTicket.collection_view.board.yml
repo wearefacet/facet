@@ -1,0 +1,11 @@
+---
+content:
+  name: Board
+  config:
+    kanban:
+      mode: values
+      group_by: status
+      page_size: 25
+  surface: kanban
+meta:
+  parent_id: equipment.MaintenanceTicket

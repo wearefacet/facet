@@ -25,6 +25,10 @@ module Facet
     #   (import/export) pass at enqueue. Far above any real runtime, short
     #   enough that a dead worker's row recovers within the window.
     # - `batch` — max rows claimed per pass.
+    # - `max_concurrent` — max job fibers running at once (minimum 1). A
+    #   claim pass holds while this many run, so a burst of heavy jobs (an
+    #   import decodes a whole file and buffers its events) cannot
+    #   multiply the process footprint without bound.
     # - `sweep_interval_s` — cadence of the expired-lease sweep.
     # - `retention_days` — terminal rows older than this are pruned.
     record JobsConfig,
@@ -32,6 +36,7 @@ module Facet
       lease_ttl_s : Int32 = 60,
       long_lease_ttl_s : Int32 = 3600,
       batch : Int32 = 32,
+      max_concurrent : Int32 = 4,
       sweep_interval_s : Float64 = 30.0,
       retention_days : Int32 = 30,
       enabled : Bool = true
@@ -43,11 +48,19 @@ module Facet
       jobs_raw = raw["jobs"]?
       return JobsConfig.new if jobs_raw.nil? || jobs_raw.raw.nil?
 
+      max_concurrent = read_int(jobs_raw["max_concurrent"]?, 4)
+      if max_concurrent < 1
+        raise ArgumentError.new(
+          "jobs.max_concurrent must be a positive number of job fibers (got #{max_concurrent})"
+        )
+      end
+
       JobsConfig.new(
         poll_interval_s: read_float(jobs_raw["poll_interval_s"]?, 5.0),
         lease_ttl_s: read_int(jobs_raw["lease_ttl_s"]?, 60),
         long_lease_ttl_s: read_int(jobs_raw["long_lease_ttl_s"]?, 3600),
         batch: read_int(jobs_raw["batch"]?, 32),
+        max_concurrent: max_concurrent,
         sweep_interval_s: read_float(jobs_raw["sweep_interval_s"]?, 30.0),
         retention_days: read_int(jobs_raw["retention_days"]?, 30),
         enabled: read_bool(jobs_raw["enabled"]?, true),

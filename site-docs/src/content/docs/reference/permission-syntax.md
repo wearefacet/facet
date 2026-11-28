@@ -1,15 +1,15 @@
 ---
+type: reference
 title: Permission line syntax
 description: The grammar of permission lines with examples and their effects.
 audience: [admin, developer]
 features: [RBC-01, RBC-03, RBC-06]
 sidebar:
-  order: 5
-verified_at: 008dd880
+  order: 15
+verified_at: eee55a2
 ---
 
-Use this page to write a permission line and check what each form grants.
-
+You author a role and need to know exactly what each permission line grants.
 A permission line is one JSON object in the `permissions` array of an
 `iam.Roles` document. The line grants one action on one doctype path,
 with an optional row scope and an optional path subtraction.
@@ -28,7 +28,7 @@ A line carries four parts. `action` and `on` are required; `scope` and
 
 | Part | Required | Form |
 | --- | --- | --- |
-| `action` | yes | `read`, `create`, `update`, `delete`, `*` (all actions), or a named action such as `activate` or `publish_artifact`. Matching is exact; only `*` is a wildcard. |
+| `action` | yes | `read`, `create`, `update`, `delete`, `*` (all actions), or a named action such as `activate` or `publish_artifact`. Matching is exact; only `*` is a wildcard. `write` is a grant-only alias — an app grant expands it to `create` + `update`, and the role validator refuses it on a permission line as "not a role action". |
 | `on` | yes | A dot-separated path: domain, then doctype segments. Domain names are lowercase with dashes; doctype segments are CamelCase. |
 | `scope` | no | An array of `$<alias>` strings. Each alias names a scope declared on the leaf doctype. Aliases combine with OR. |
 | `except` | no | An array of concrete `domain.Doctype` paths. Each entry removes its subtree from the line. |
@@ -59,12 +59,18 @@ Rules the validator enforces:
   full path must be `*.*`. A mixed form such as `*.Deal` is an error.
 - A `*.*` line is a wildcard line. The role-authority guard lets only a
   caller whose own role reaches `*.*` write one.
+- Every line a caller writes must be implied by its own role's lines or by
+  the previous state of the role it edits. The role-authority guard refuses
+  a role write that grants powers the caller does not hold (a widening).
 
 ## The `scope` field
 
-The array form is required on every write path. The single-string form
-(`"scope": "$mine"`) is a legacy shape that stored roles may still
-carry; a role write with a string scope fails with `must be an array`.
+The parser accepts both forms and normalises them to the array: a single
+string becomes a one-entry array, and `"$all"` collapses the whole result
+to unrestricted. The array form is the canonical shape — always send it.
+The single-string form is a legacy shape that stored roles may still carry;
+the parser still normalises it, so no write path rejects it
+(discrepancy #12).
 
 | Form | Rows the line reaches |
 | --- | --- |
@@ -77,7 +83,11 @@ carry; a role write with a string scope fails with `must be an array`.
 Each alias must be declared in the `scopes:` block of the leaf doctype.
 The validator rejects an unknown alias at authoring time; enforcement
 expands it against the live definition at request time. A role never
-writes its own query predicate. See [Row scopes](/govern/row-scopes/)
+writes its own query predicate. A line that pairs `create` with a scope
+stays legal — the validator warns, because the scope cannot gate a create
+(no row exists to check). The scope is an intent channel that a Lua create
+hook reads through `ctx.actor.scope`. See
+[Row scopes](/admin/people/row-scopes/)
 for the declaration grammar.
 
 ## The `except` field
@@ -165,10 +175,10 @@ Field visibility is not part of a permission line. The role carries one
 when all of its tags sit in the role's tags. The default role tags are
 `["default"]`; the wildcard tag `["*"]` sees every field. A write into
 an invisible field answers `403`. See
-[Field visibility with tags](/govern/field-visibility-tags/).
+[Field visibility with tags](/admin/people/hidden-fields/).
 
 ## Related
 
-- [Roles and permission lines](/govern/roles-permission-lines/) — edit role documents.
-- [Row scopes](/govern/row-scopes/) — declare and reference the scopes.
-- [Field visibility with tags](/govern/field-visibility-tags/) — the per-field mask.
+- [Roles and permission lines](/admin/people/roles-and-permissions/) — edit role documents.
+- [Row scopes](/admin/people/row-scopes/) — declare and reference the scopes.
+- [Field visibility with tags](/admin/people/hidden-fields/) — the per-field mask.

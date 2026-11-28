@@ -1,0 +1,54 @@
+---
+type: explanation
+title: "Apps: built fast, replaced freely"
+description: See how apps connect to Facet, what they may reach, and why your data survives them.
+audience: [evaluator, author]
+features: [APP-01, APP-06, RBC-08]
+verified_at: eee55a2
+sidebar:
+  order: 4
+---
+
+import Illustration from '../../../../components/Illustration.astro';
+
+The workspace covers most days. Sooner or later a team wants a tool of its own — a warehouse check-out screen, a kiosk, a small dashboard. That tool is an **app**: a program outside Facet that uses it as its data and sign-in source.
+
+*An app is a guest with a badge. It signs in through Facet and reaches only what both the guest and the badge allow.*
+
+<Illustration name="apps-role-and-allowance" />
+
+## The workspace is built in
+
+The web interface your team uses every day comes with Facet. It follows your roles directly, and it is not one of these apps — it needs no registration and no consent. Apps are the tools you add beyond it.
+
+## An app is a guest with a badge
+
+An app registers in Facet first: a record that names it and states its **grant**. The grant is the most the app may ever ask for, in record kinds and actions. When Lucía opens the check-out app for the first time, Facet shows its consent screen: which app, which role, which rights. She picks the role she acts as, and the app is in.
+
+From then on the app gets only the overlap: what her role allows, cut down to what the grant names. Her role may hide purchase prices; a grant cannot unhide them — grants narrow, they never widen. Narrow the grant later, and the change applies on the app's next call — no new sign-in.
+
+## Hosted for you, or not
+
+Facet can serve the app's screens itself, at the app's own address, so a browser tool needs no server of your own to run on. An app that prefers its own hosting works the same way. It still signs in through Facet, and gets no more than its users and its grant allow.
+
+## Replace it without a ceremony
+
+Next quarter, the check-out app has a better successor. Delete the old app: the records, the rules, and the history stay exactly where they are. Register the new one, sign in, and it works on the same data under the same rules. That is what "apps are disposable" means in practice — switching tools is a Tuesday task, not a migration project.
+
+## What this means for you
+
+- Build the small tools your teams ask for, without hosting chores or a new user database.
+- The consent screen keeps every app's reach visible and revocable.
+- Your records never live inside an app, so no tool can hold your data hostage.
+
+## For the technical detail
+
+- [How apps work on Facet](/build/apps/how-apps-work/) — registration, sign-in, hosting.
+- [What an app is allowed to do](/build/apps/connect/what-an-app-can-do/) — the grant, line by line.
+- [Control what apps can reach](/admin/apps-access/app-grants/) — the administrator's side.
+
+## Related
+
+- [The big picture](/discover/how-it-works/) — where apps sit among the five ideas.
+- [Roles: who sees and does what](/discover/how-it-works/roles/) — the other half of the overlap.
+- [Build apps](/build/apps/) — register, build, and deploy your first app.

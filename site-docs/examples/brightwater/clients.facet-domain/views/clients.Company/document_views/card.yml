@@ -1,0 +1,15 @@
+---
+content:
+  kind: card
+  template:
+    type: col
+    children:
+      - type: field
+        label: City
+        value: $city
+      - type: field
+        label: Account manager
+        value: $account_manager
+  parent_doctype: clients.Company
+meta:
+  parent_id: clients.Company

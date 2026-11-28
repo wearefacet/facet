@@ -1,0 +1,197 @@
+---
+type: how-to
+title: Partager des données entre domaines
+description: Autorisez un domaine à lire les champs d’un autre avec un octroi, et copiez des valeurs avec des champs répliqués.
+audience: [author, admin]
+features: [DOM-14, DOM-25]
+sidebar:
+  order: 2
+verified_at: eee55a2
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Les domaines cloisonnent les données. Le domaine `rentals` de Brightwater
+affiche une réservation avec le nom du client, mais le client se trouve dans
+le domaine `clients`. Deux outils ouvrent une porte contrôlée entre les
+domaines. Un **octroi de domaine** est un contrat de consentement : le
+domaine producteur nomme un consommateur et les ressources qu’il peut lire.
+Un **champ répliqué** copie une valeur d’un document source vers le document
+du consommateur, qui l’affiche sans interrogation.
+
+## Quand l’utiliser
+
+- Un doctype référence des documents d’un autre domaine et ses scripts doivent
+  les lire.
+- Une liste du domaine `rentals` doit afficher une valeur stockée dans
+  `clients`, par exemple le nom du client.
+- Vous voulez que la copie suive la source automatiquement.
+
+## Avant de commencer
+
+- **Deux côtés.** Décidez quel côté porte le contrat : le **producteur**
+  fournit les données, le **consommateur** les reçoit.
+- **Étiquettes.** [Étiquetez](/fr/admin/people/hidden-fields/) les champs du
+  producteur que vous partagez. Un champ sans étiquette porte l’étiquette
+  implicite `default`.
+- **Lecture seule.** Les octrois donnent un accès en lecture, et rien
+  d’autre. Aucun octroi n’autorise une écriture.
+- **Rien à faire dans un même domaine.** Deux doctypes d’un même domaine se
+  lisent sans octroi. L’octroi est le contrat entre domaines.
+
+## Étapes
+
+Un octroi est un document, pas une définition : les fichiers de domaine
+n’en contiennent aucun. Les étapes ci-dessous sont le même travail dans
+l’application et par l’API.
+
+<Tabs syncKey="build-mode">
+<TabItem label="Builder">
+
+1. Ouvrez la page document du domaine producteur — l’octroi s’y trouve, comme
+   enfant du domaine.
+2. Créez un octroi par domaine consommateur. Nommez le consommateur et ajoutez
+   une entrée de ressource par doctype, avec les étiquettes que le
+   consommateur peut lire.
+3. Faites activer l’octroi par un détenteur du droit **Activate** côté
+   producteur.
+
+</TabItem>
+<TabItem label="API">
+
+L’octroi est un document sous le domaine producteur. Brightwater en dépose un
+pour que `rentals` puisse lire `clients` :
+
+```sh
+curl -k -X POST "https://facet.localhost:3443/Api/core/Domain/clients/grants" \
+  -H "Authorization: Bearer $FACET_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "consumer_domain": "core.Domain.rentals",
+    "resources": [
+      { "doctype": "Company", "tags": ["default"] }
+    ]
+  }'
+
+curl -k -X POST "https://facet.localhost:3443/Api/core/DomainGrant/<grant-id>/activate" \
+  -H "Authorization: Bearer $FACET_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+`-k` ignore la vérification du certificat de l’adresse de développement
+locale. Un octroi démarre inactif ; un octroi inactif n’admet rien.
+Facet refuse l’auto-octroi : un domaine n’a besoin d’aucun contrat pour
+se lire lui-même.
+
+</TabItem>
+</Tabs>
+
+### Déclarer le champ répliqué côté consommateur
+
+Sur le doctype consommateur, ajoutez deux champs : une référence vers le
+doctype source et un champ qui porte la copie. Voici la réservation réelle de
+Brightwater :
+
+```yaml
+# rentals/doctypes/rentals.Booking.yml (extrait)
+fields:
+  client:
+    type: reference
+    title: Client
+    doctype: clients.Company
+    required: true
+    filters: [equality]
+  client_name:
+    type: string
+    title: Client name
+    replicate:
+      via: client
+      field: name
+    filters: [text_search]
+```
+
+Règles du couple :
+
+- `via` nomme le champ de référence du même doctype.
+- Le champ source ne doit pas être un secret, et une copie ne peut pas
+  alimenter une autre copie.
+- La copie doit porter toutes les étiquettes de sa source.
+- `on_source_delete` vaut `keep` (valeur par défaut) ou `unset`. `keep`
+  conserve la valeur copiée ; `unset` l’efface quand la source est
+  supprimée.
+- Les utilisateurs ne peuvent pas écrire un champ copié. Il ne peut être ni
+  obligatoire ni unique.
+
+### Suivre le comportement des copies
+
+Facet récupère la valeur initiale à la création d’un document consommateur ou
+au changement de sa référence. Les changements suivants de la source sont
+poussés vers chaque consommateur qui la référence. Chaque poussée est une
+vraie mise à jour, auditée, du document consommateur.
+
+:::caution
+Une liaison inter-domaines sans octroi actif reste inerte. La vérification
+signale l’octroi manquant, et la copie reste vide tant que le producteur n’a
+pas activé le contrat.
+:::
+
+## Exemple
+
+L’instance d’exemple porte le couple fonctionnel. Une réservation référence
+`clients.Company.06H1FM1B3MXBPS0JYVM3BDD154`, dont le nom est `Maison
+Lumière`. La réservation affiche la copie :
+
+```json
+{
+  "client": "clients.Company.06H1FM1B3MXBPS0JYVM3BDD154",
+  "client_name": "Maison Lumière",
+  "status": "confirmed"
+}
+```
+
+Le client est renommé plus tard. La copie sur la réservation se met à jour
+sans que personne ne touche à la réservation, et l’historique affiche la mise
+à jour comme une modification automatisée sur la réservation.
+
+{/* d2
+*One consent, one copy*
+producer: "clients (producer)" {class: node}
+consumer: "rentals (consumer)" {class: node}
+grant: "Grant: reads Company" {class: store}
+source: "Company.name" {class: node}
+replica: "Booking.client_name" {class: node}
+
+producer -> grant: files and activates
+consumer -> grant: named in
+source -> replica: pushed on change
+*/}
+<div class="d2-diagram">
+<img class="d2-diagram__img d2-diagram__light" src="/diagrams/71054885-light.svg" alt="clients (producer)" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/71054885-dark.svg" alt="clients (producer)" loading="lazy" />
+</div>
+
+## Dépannage
+
+**La copie reste vide.**
+
+Parcourez la chaîne : l’octroi doit être actif, nommer le doctype source,
+et ses étiquettes doivent couvrir le champ source. La vérification du doctype
+nomme la pièce manquante.
+
+**La copie n’a pas suivi un changement de la source.**
+
+La référence doit pointer vers le document source. Une référence vide ou
+orpheline n’a aucune source à récupérer.
+
+**L’octroi a disparu de la vue du consommateur.**
+
+Un octroi élargi repasse à inactif jusqu’à ce que le producteur l’accepte à
+nouveau. La boîte de dialogue de publication le signale quand cela arrive.
+
+## Voir aussi
+
+- [Octrois de domaine (doc d’ingénierie)](https://github.com/wearefacet/facet/blob/main/doc/backend/domain-grants.md) — le contrat d’octroi et ses garde-fous.
+- [La réplication inter-domaines](/fr/build/deeper/cross-domain-replication/) — comment les copies circulent entre domaines, une couche plus bas.
+- [Relier des documents entre eux](/fr/build/model/relations/references-links/) — le champ de référence qui porte la copie.
+- [Les domaines : où se trouvent vos données](/fr/discover/how-it-works/domains/)

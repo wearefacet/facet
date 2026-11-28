@@ -67,6 +67,12 @@ module Facet
       @handlers : Hash(String, Handler.class)
       @worker : Worker?
       @mutex : Mutex
+      # The tightest `max_concurrent` any enqueue named. It lowers the cap
+      # of the next `start` (the worker snapshots its cap at start), so a
+      # heavy kind cannot fill the worker with default-capped fibers. Once
+      # a worker runs, the cap applies at its next restart — the running
+      # worker keeps the cap it started with.
+      @concurrency_override : Int32?
 
       # Stores configuration and the handler map. No I/O. The map fills
       # the flat `kind` → `Handler` table of the worker constructed at
@@ -75,6 +81,7 @@ module Facet
         @config = config
         @handlers = handlers
         @worker = nil
+        @concurrency_override = nil
         @mutex = Mutex.new
       end
 
@@ -103,10 +110,15 @@ module Facet
         @mutex.synchronize do
           return if @worker || !@config.enabled
 
+          # `@concurrency_override` is the tightest cap any enqueue named
+          # (an import caps the whole worker at its own `max_concurrent`),
+          # so the aggregate footprint stays bounded by the heaviest work
+          # the worker can run, not only by the global `jobs.max_concurrent`.
           worker = Worker.new(
             poll_interval_s: @config.poll_interval_s,
             lease_ttl_s: @config.lease_ttl_s,
             batch: @config.batch,
+            max_concurrent: @concurrency_override || @config.max_concurrent,
             sweep_interval_s: @config.sweep_interval_s,
             retention_days: @config.retention_days,
             handlers: @handlers,
@@ -132,9 +144,18 @@ module Facet
       # the running worker; in enqueue-only mode it inserts the row directly
       # so the work is staged even though no worker will claim it here.
       # `lease_ttl_s` overrides the row's lease length at claim time; nil
-      # keeps the worker default.
-      def enqueue(kind : String, payload : JSON::Any, *, max_attempts : Int32? = nil, backoff : Array(Int32)? = nil, run_after : Time? = nil, lease_ttl_s : Int32? = nil) : String
-        worker = @mutex.synchronize { @worker }
+      # keeps the worker default. `max_concurrent` is the kind's own
+      # concurrency cap: the next worker start honours the tightest cap
+      # among its enqueues, so a heavy kind (an import) can hold the
+      # worker to fewer fibers than `jobs.max_concurrent`.
+      def enqueue(kind : String, payload : JSON::Any, *, max_attempts : Int32? = nil, backoff : Array(Int32)? = nil, run_after : Time? = nil, lease_ttl_s : Int32? = nil, max_concurrent : Int32? = nil) : String
+        worker = @mutex.synchronize do
+          if cap = max_concurrent
+            previous = @concurrency_override
+            @concurrency_override = previous ? (previous < cap ? previous : cap) : cap
+          end
+          @worker
+        end
         Database.with_db(:read_write) do |db|
           if worker
             worker.enqueue(db, kind, payload, max_attempts: max_attempts, backoff: backoff, run_after: run_after, lease_ttl_s: lease_ttl_s)

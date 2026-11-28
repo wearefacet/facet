@@ -12,9 +12,11 @@
 	import { resolveColumnLabel } from '$lib/doctype/columnLabel.js';
 	import { SYSTEM_TIMESTAMP_FIELD_DEFS } from '$lib/doctype/filters.js';
 	import Table from '$lib/table/Table.svelte';
+	import Grid from '$lib/grid/Grid.svelte';
 	import Calendar from '$lib/calendar/Calendar.svelte';
 	import Kanban from '$lib/kanban/Kanban.svelte';
-	import type { Column, ColumnMoveEvent, ToolbarActionsArgs } from '$lib/table/types.js';
+	import type { Column, ColumnMoveEvent, SortState, ToolbarActionsArgs } from '$lib/table/types.js';
+	import type { GridColumn } from '$lib/grid/types.js';
 	import IconButton from '$lib/components/primitives/actions/IconButton.svelte';
 	import Tabs from '$lib/components/primitives/navigation/Tabs.svelte';
 	import CollectionViewEditor from './CollectionViewEditor.svelte';
@@ -267,6 +269,20 @@
 	/** Convenience: the active view data (or null). */
 	const activeView = $derived(activeItem?.data ?? null);
 
+	// The fill chain — the host `.listview` becomes a full-height flex column
+	// for the surfaces that scroll their rows inside the frame (kanban, grid,
+	// table). This mirrors the render branches in the template: the table
+	// fills when the `{:else}` branch renders it — a table view, the
+	// trash-mode grid fallback, or a tab-less listing. Loading, the
+	// zero-views starter, and Calendar keep their content height.
+	const tableFill = $derived(
+		!loading &&
+			!(showTabs && views.length === 0) &&
+			!(activeView?.surface === 'calendar' && activeView.config?.calendar) &&
+			!(activeView?.surface === 'kanban' && activeView.config?.kanban) &&
+			!(activeView?.surface === 'grid' && !includeDeleted)
+	);
+
 	/**
 	 * localStorage key the `Table` persists its manual state (sort, filters,
 	 * rows-per-page) under — per parent doctype, active collection view
@@ -422,10 +438,59 @@
 
 	/** Surface of a tab, for the lead icon. Defaults to `table`. */
 	function tabSurface(index: number): CollectionSurface {
-		const item = views[index];
-		if (item?.data.surface === 'calendar') return 'calendar';
-		if (item?.data.surface === 'kanban') return 'kanban';
-		return 'table';
+		const surface = views[index]?.data.surface;
+		return surface === 'calendar' || surface === 'kanban' || surface === 'grid' ? surface : 'table';
+	}
+
+	// ── Grid surface state ────────────────────────────────────────────
+	// The grid seeds its toolbar filter map at mount (the `{#key activeItem?.id}`
+	// wrapper below remounts the surface per view), so the host hands it the
+	// view's base filter merged under the page's URL filters. Sort is
+	// host-owned: the view's `config.grid.sort` seeds the session sort (the
+	// surface default `-updated_at` when absent), and a header click overrides
+	// it per view for the session — the same split the table keeps between a
+	// view's authored columns and its stored sort.
+
+	/** Columns for the grid — the resolved listing columns plus the
+	 *  grid-only `summary` and `editable: false` flags from the view config.
+	 *  The grid re-derives writability from the doctype schema; only the
+	 *  authored opt-out rides the column. */
+	const gridColumns: GridColumn[] = $derived(
+		columns.map((c) => {
+			const cfg = activeView?.config?.columns?.find((col) => col.key === c.key);
+			return {
+				key: c.key,
+				label: c.label,
+				width: c.width,
+				sortable: c.sortable,
+				...(cfg?.editable === false ? { editable: false as const } : {}),
+				...(cfg?.summary ? { summary: cfg.summary } : {})
+			};
+		})
+	);
+
+	const gridFilters = $derived({ ...(activeView?.config?.grid?.filters ?? {}), ...filters });
+
+	/** Per-view runtime sort overrides — view id → the last header click. */
+	let gridSorts = $state(new Map<string, SortState>());
+
+	const gridSort = $derived.by<SortState>(() => {
+		const override = activeItem ? gridSorts.get(activeItem.id) : undefined;
+		if (override) return override;
+		const first = activeView?.config?.grid?.sort?.[0];
+		if (!first) return { key: 'updated_at', desc: true };
+		return { key: first.startsWith('-') ? first.slice(1) : first, desc: first.startsWith('-') };
+	});
+
+	function handleGridSort(key: string) {
+		const id = activeItem?.id;
+		if (!id) return;
+		const current = gridSorts.get(id) ?? gridSort;
+		const next: SortState =
+			current.key === key ? { key, desc: !current.desc } : { key, desc: false };
+		const nextMap = new Map(gridSorts);
+		nextMap.set(id, next);
+		gridSorts = nextMap;
 	}
 
 	// ── Editor dialog state ────────────────────────────────────────────
@@ -558,6 +623,8 @@
 		<div
 			class="listview"
 			class:kanban-fill={activeView?.surface === 'kanban' && activeView.config?.kanban}
+			class:grid-fill={activeView?.surface === 'grid' && !includeDeleted}
+			class:table-fill={tableFill}
 		>
 			{#if showTabs && views.length > 0}
 				<Tabs {tabs} bind:active onchange={selectView}>
@@ -587,6 +654,20 @@
 									<rect x="3" y="4" width="6" height="16" rx="1" />
 									<rect x="10" y="4" width="6" height="11" rx="1" />
 									<rect x="17" y="4" width="4" height="8" rx="1" />
+								</svg>
+							{:else if tabSurface(i) === 'grid'}
+								<svg
+									viewBox="0 0 24 24"
+									width="14"
+									height="14"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+								>
+									<rect x="3" y="4" width="8" height="8" rx="1" />
+									<rect x="13" y="4" width="8" height="8" rx="1" />
+									<rect x="3" y="14" width="8" height="6" rx="1" />
+									<rect x="13" y="14" width="8" height="6" rx="1" />
 								</svg>
 							{:else}
 								<svg
@@ -709,6 +790,33 @@
 					config={activeView.config.kanban}
 					onCardClick={(id) => api.openRootDoc(id)}
 				/>
+			{:else if activeView?.surface === 'grid' && !includeDeleted}
+				<!-- Trash mode never renders the grid (tombstone rows cannot
+					 edit) — it falls back to the table, like the other
+					 surfaces' write affordances. The `{#key}` remounts the
+					 surface per view so its mount-seeded toolbar filter map
+					 never leaks across tabs. -->
+				{#key activeItem?.id}
+					<Grid
+						columns={gridColumns}
+						{datasource}
+						{doctype}
+						{driver}
+						filters={gridFilters}
+						sort={gridSort}
+						onSort={handleGridSort}
+						frozen={activeView.config?.grid?.frozen ?? 0}
+						{rowKey}
+						{pageSize}
+						allowCreate={activeView.config?.grid?.allow_create === true}
+						{toolbarActions}
+						onRowClick={(row) => {
+							const id = (row as Record<string, unknown>).id;
+							if (typeof id === 'string' && id.length > 0) api.openRootDoc(id);
+						}}
+						onReferenceClick={api.openReference}
+					/>
+				{/key}
 			{:else}
 				<Table
 					{datasource}
@@ -778,10 +886,13 @@
 		overflow: hidden;
 	}
 
-	/* Kanban surface only — the fill chain. The host becomes a flex column
-	   and takes the full height. The board then fills the page, and each
-	   lane fits the board. Table and Calendar keep their content height. */
-	.listview.kanban-fill {
+	/* Kanban, grid, and table surfaces — the fill chain. The host becomes a
+	   flex column and takes the full height. The board fills the page, and
+	   each lane fits the board. The grid and table frames take the rest, and
+	   their rows scroll inside. Calendar keeps its content height. */
+	.listview.kanban-fill,
+	.listview.grid-fill,
+	.listview.table-fill {
 		display: flex;
 		flex-direction: column;
 		height: 100%;

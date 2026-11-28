@@ -455,16 +455,39 @@ describe "App API-key routes" do
     end
   end
 
-  it "refuses issuance when a domain-wide role line misses the app's grants (422 + remedy)" do
+  it "issues when the role's domain-wide line reaches the grant targets" do
     with_db do |db|
       seed_app_key_roles(db)
-      # A backend app granted one concrete doctype, pinned to a role whose
-      # only line is the domain-wide form — its empty path never covers a
-      # concrete grant target.
+      # The bare-domain line (`{"on": "crm"}`) reaches every doctype in the
+      # domain — its reach contains the concrete grant target, so the
+      # intersection is non-empty and the key issues without repeating the
+      # target on the role side.
       role_id = "iam.Roles.domain-wide-#{unique_suffix}"
       Facet::Mutation::Client.create(
         db, "iam", "Roles", doc_id: role_id,
         content: %({"name": "domain-wide-#{unique_suffix}", "description": "Domain-wide role", "visible_tags": ["default"], "connectivity": ["api"], "permissions": [{"action": "*", "on": "crm"}]}),
+        actioner_id: "system",
+      )
+      app_id = create_backend_app_with_role(db, role_id, [
+        %({"target": "crm.Contact", "actions": [{"name": "read", "required": true}]}),
+      ])
+
+      issued = Facet::App::ApiKeys.issue(db, app_id)
+      issued.should be_a(Facet::App::ApiKeys::Issued)
+      issued.as(Facet::App::ApiKeys::Issued).role_id.should eq(role_id)
+    end
+  end
+
+  it "refuses issuance when the role's lines sit outside the grant domains (422 + remedy)" do
+    with_db do |db|
+      seed_app_key_roles(db)
+      # A backend app granted one concrete doctype, pinned to a role whose
+      # only line reaches a different domain — no reach overlap, the key
+      # would be refused at every request.
+      role_id = "iam.Roles.disjoint-#{unique_suffix}"
+      Facet::Mutation::Client.create(
+        db, "iam", "Roles", doc_id: role_id,
+        content: %({"name": "disjoint-#{unique_suffix}", "description": "Disjoint role", "visible_tags": ["default"], "connectivity": ["api"], "permissions": [{"action": "*", "on": "hr"}]}),
         actioner_id: "system",
       )
       app_id = create_backend_app_with_role(db, role_id, [
@@ -476,6 +499,9 @@ describe "App API-key routes" do
       err = result.as(Facet::ServiceError)
       err.status.should eq(422)
       err.message.should contain("do not intersect")
+      # The remedy names both qualifying line forms: the domain-wide line
+      # and the concrete target repeated on the role.
+      err.message.should contain(%({"on": "crm", "action": "*"}))
       err.message.should contain(%({"on": "crm.Contact", "action": "*"}))
 
       # No key row exists — the refusal precedes issuance.

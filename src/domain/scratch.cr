@@ -4,6 +4,7 @@
 require "pg"
 require "json"
 require "../util/projections"
+require "../index"
 
 module Facet
   module Domain
@@ -140,10 +141,18 @@ module Facet
       # with no data touched. Data rows, personal (owner-bound) collection
       # views, and artifact provenance survive.
       def self.dispose_definitions!(db : DB::Connection, domain : String) : Nil
-        # 1. Drop doctype indexes for the domain's doctypes (doctype
-        #    definitions live under core.DocType; their content has
-        #    domain=…). This is a tracking table, not part of the event
-        #    log, so a hard-delete is appropriate.
+        # 1. Drop the domain's physical indexes and field statistics
+        #    objects, then hard-delete the tracking rows. The managed
+        #    indexes are partial indexes on the shared `projections` table
+        #    (scoped by `domain = '<d>'`), so deleting the tracking rows
+        #    alone would leave the real indexes behind — every later write
+        #    and query plan would keep paying for a domain that no longer
+        #    exists. The drop is non-concurrent: `dispose!` runs inside the
+        #    caller's transaction, and `DROP INDEX CONCURRENTLY` cannot run
+        #    in a transaction block. Failures are logged, not raised — a
+        #    leftover index is a performance problem, never a correctness
+        #    one, and must not abort the disposal.
+        Index::Manager.dispose_domain_indexes(db, domain, concurrent: false)
         db.exec(
           "DELETE FROM doctype_indexes WHERE domain = $1",
           domain,

@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 470" class="fct-dom" role="img" aria-labelledby="fct-dom-t fct-dom-d">
+<title id="fct-dom-t">Domains keep their records inside</title>
+<desc id="fct-dom-d">Three domains sit side by side like rooms: clients (companies and contacts), rentals (bookings) and equipment (items and repairs). Records stay inside their own room. Between clients and rentals is a granted door: the client's name rides onto the booking. Between rentals and equipment is another granted door: the booking appears on the tent's reservations. Each door opens only for what was granted, then closes.</desc>
+<style>
+.fct-dom{--c-bg:var(--surface);--c-deep:var(--sunken);--c-card:var(--surface);--c-line:var(--border-strong);--c-hair:var(--border);--c-ink:var(--text);--c-muted:var(--text-2);--c-accent:var(--accent);--c-accent-ink:var(--accent-ink);--c-on-accent:var(--on-accent);--c-soft:var(--accent-weak);--c-ok:var(--ok);--c-ok-soft:var(--ok-weak);--c-alert:var(--danger);}
+.fct-dom text{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;fill:var(--c-ink);}
+.fct-dom .card{fill:var(--c-card);stroke:var(--c-line);stroke-width:1.5;}
+@keyframes fct-dom-jig{0%,100%{transform:translate(0,0)}25%{transform:translate(1.5px,-1px)}50%{transform:translate(-1px,1.5px)}75%{transform:translate(1px,1px)}}
+@keyframes fct-dom-slot{0%,23.00%{opacity:1}26.00%,93.00%{opacity:0}96.00%,100%{opacity:1}}
+@keyframes fct-dom-cname{0%,23.00%{opacity:0}25.00%,93.00%{opacity:1}95.00%,100%{opacity:0}}
+@keyframes fct-dom-slot2{0%,58.00%{opacity:1}61.00%,93.00%{opacity:0}96.00%,100%{opacity:1}}
+@keyframes fct-dom-res{0%,58.00%{opacity:0}60.00%,93.00%{opacity:1}95.00%,100%{opacity:0}}
+@keyframes fct-dom-gl330{0%,10.00%{opacity:0}13.00%,32.00%{opacity:1}35.00%,100%{opacity:0}}
+@keyframes fct-dom-leaf330{0%,10.00%{transform:translateY(0)}14.00%,32.00%{transform:translateY(-56px)}36.00%,100%{transform:translateY(0)}}
+@keyframes fct-dom-key330{0%,9.00%{opacity:0}12.00%,32.00%{opacity:1}35.00%,100%{opacity:0}}
+@keyframes fct-dom-gl630{0%,44.00%{opacity:0}47.00%,66.00%{opacity:1}69.00%,100%{opacity:0}}
+@keyframes fct-dom-leaf630{0%,44.00%{transform:translateY(0)}48.00%,66.00%{transform:translateY(-56px)}70.00%,100%{transform:translateY(0)}}
+@keyframes fct-dom-key630{0%,43.00%{opacity:0}46.00%,66.00%{opacity:1}69.00%,100%{opacity:0}}
+@keyframes fct-dom-t1{0%,14.00%{transform:translate(0,0);opacity:0}15.50%{transform:translate(0,0);opacity:1}19.00%{transform:translate(40px,6px)}24.00%{transform:translate(90px,-14px);opacity:1}26.00%,100%{transform:translate(90px,-14px);opacity:0}}
+@keyframes fct-dom-t2{0%,48.00%{transform:translate(0,0);opacity:0}49.50%{transform:translate(0,0);opacity:1}53.00%{transform:translate(60px,-12px)}58.00%{transform:translate(140px,-6px);opacity:1}60.00%,100%{transform:translate(140px,-6px);opacity:0}}
+@media (prefers-reduced-motion:reduce){.fct-dom *{animation:none!important}.fct-dom .smil{display:none}}
+</style>
+<rect x="40" y="60" width="880" height="312" rx="18" fill="var(--c-deep)" stroke="var(--c-line)" stroke-width="3"/>
+<g transform="translate(66,94)"><path d="M-7 8 V-7 H3 V8 M3 -2 H8 V8 M-9 8 H10 M-4 -3 H0 M-4 1 H0" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="84" y="99" font-size="16" font-weight="700" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">clients</text>
+<text x="84" y="118" font-size="12.5" style="fill:var(--c-muted)">companies and contacts</text>
+<g style="animation:fct-dom-jig 4s ease-in-out -1.0s infinite"><rect x="68" y="132" width="234" height="48" rx="10" fill="var(--c-card)" stroke="var(--c-line)" stroke-width="1.5"/>
+<circle cx="92" cy="156" r="13" fill="var(--c-bg)"/><g transform="translate(92,156) scale(.8)"><path d="M-7 8 V-7 H3 V8 M3 -2 H8 V8 M-9 8 H10 M-4 -3 H0 M-4 1 H0" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="114" y="161" font-size="14" font-weight="650">Salle Bellecour</text></g>
+<g><rect x="68" y="202" width="234" height="48" rx="10" fill="var(--c-card)" stroke="var(--c-accent)" stroke-width="1.5"/>
+<circle cx="92" cy="226" r="13" fill="var(--c-bg)"/><g transform="translate(92,226) scale(.8)"><path d="M-7 8 V-7 H3 V8 M3 -2 H8 V8 M-9 8 H10 M-4 -3 H0 M-4 1 H0" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="114" y="231" font-size="14" font-weight="650">Domaine des Pins</text></g>
+<g style="animation:fct-dom-jig 4s ease-in-out -2.4s infinite"><rect x="68" y="272" width="234" height="48" rx="10" fill="var(--c-card)" stroke="var(--c-line)" stroke-width="1.5"/>
+<circle cx="92" cy="296" r="13" fill="var(--c-bg)"/><g transform="translate(92,296) scale(.8)"><path d="M-7 8 V-7 H3 V8 M3 -2 H8 V8 M-9 8 H10 M-4 -3 H0 M-4 1 H0" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="114" y="301" font-size="14" font-weight="650">Lyon Jazz Fest</text></g>
+<g style="animation:fct-dom-jig 5s ease-in-out -.7s infinite"><rect x="68" y="330" width="96" height="24" rx="12" fill="var(--c-card)" stroke="var(--c-line)"/><circle cx="84" cy="342" r="5" fill="var(--c-muted)"/><rect x="95" y="339" width="56" height="6" rx="3" fill="var(--c-line)"/></g>
+<g style="animation:fct-dom-jig 5s ease-in-out -3s infinite"><rect x="174" y="330" width="96" height="24" rx="12" fill="var(--c-card)" stroke="var(--c-line)"/><circle cx="190" cy="342" r="5" fill="var(--c-muted)"/><rect x="201" y="339" width="56" height="6" rx="3" fill="var(--c-line)"/></g>
+<g transform="translate(356,94)"><rect x="-8" y="-7" width="16" height="15" rx="2" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M-8 -2 H8 M-4 -10 V-5 M4 -10 V-5" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="374" y="99" font-size="16" font-weight="700" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">rentals</text>
+<text x="374" y="118" font-size="12.5" style="fill:var(--c-muted)">bookings</text>
+<rect x="362" y="122" width="248" height="200" rx="12" fill="var(--c-card)" stroke="var(--c-line)" stroke-width="1.5"/>
+<text x="380" y="148" font-size="12.5" font-weight="650" style="fill:var(--c-muted)">Booking · BK-0412</text>
+<line x1="362" y1="160" x2="610" y2="160" stroke="var(--c-hair)"/>
+<text x="380" y="180" font-size="11.5" style="fill:var(--c-muted)">Client</text>
+<text x="380" y="230" font-size="11.5" style="fill:var(--c-muted)">Item</text>
+<text x="380" y="274" font-size="11.5" style="fill:var(--c-muted)">Date</text>
+<rect x="376" y="188" width="220" height="26" rx="6" fill="none" stroke="var(--c-line)" stroke-dasharray="4 4" style="animation:fct-dom-slot 10.0s ease-in-out infinite"/>
+<g style="opacity:0;animation:fct-dom-cname 10.0s ease-in-out infinite"><rect x="376" y="188" width="220" height="26" rx="6" fill="var(--c-soft)" stroke="var(--c-accent)"/><text x="388" y="206" font-size="14" font-weight="650">Domaine des Pins</text><g transform="translate(578,201)"><path d="M-5 -4 H3 M1 -7 L4 -4 L1 -1 M5 4 H-3 M-1 1 L-4 4 L-1 7" fill="none" stroke="var(--c-accent-ink)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></g></g>
+<text x="380" y="252" font-size="14" font-weight="650">Marquee tent 6 × 12 m</text>
+<text x="380" y="296" font-size="14" font-weight="650">14 June</text>
+<g style="animation:fct-dom-jig 5s ease-in-out -1.5s infinite"><rect x="362" y="332" width="120" height="24" rx="12" fill="var(--c-card)" stroke="var(--c-line)"/><circle cx="378" cy="344" r="5" fill="var(--c-muted)"/><rect x="389" y="341" width="76" height="6" rx="3" fill="var(--c-line)"/></g>
+<g style="animation:fct-dom-jig 5s ease-in-out -3.6s infinite"><rect x="490" y="332" width="120" height="24" rx="12" fill="var(--c-card)" stroke="var(--c-line)"/><circle cx="506" cy="344" r="5" fill="var(--c-muted)"/><rect x="517" y="341" width="76" height="6" rx="3" fill="var(--c-line)"/></g>
+<g transform="translate(656,94)"><path d="M0 -8 L8 -4 V4 L0 8 L-8 4 V-4 Z M-8 -4 L0 0 L8 -4 M0 0 V8" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g>
+<text x="674" y="99" font-size="16" font-weight="700" font-family="ui-monospace,SFMono-Regular,Menlo,monospace">equipment</text>
+<text x="674" y="118" font-size="12.5" style="fill:var(--c-muted)">items and repairs</text>
+<rect x="662" y="122" width="240" height="176" rx="12" fill="var(--c-card)" stroke="var(--c-line)" stroke-width="1.5"/>
+<text x="680" y="148" font-size="14" font-weight="650">Marquee tent 6 × 12 m</text>
+<line x1="662" y1="160" x2="902" y2="160" stroke="var(--c-hair)"/>
+<text x="680" y="182" font-size="11.5" style="fill:var(--c-muted)">Reservations</text>
+<rect x="676" y="192" width="212" height="26" rx="6" fill="var(--c-deep)"/><text x="688" y="210" font-size="13" font-weight="600">2 June · BK-0398</text>
+<rect x="676" y="226" width="212" height="26" rx="6" fill="none" stroke="var(--c-line)" stroke-dasharray="4 4" style="animation:fct-dom-slot2 10.0s ease-in-out infinite"/>
+<g style="opacity:0;animation:fct-dom-res 10.0s ease-in-out infinite"><rect x="676" y="226" width="212" height="26" rx="6" fill="var(--c-soft)" stroke="var(--c-accent)"/><text x="688" y="244" font-size="13" font-weight="600">14 June · BK-0412</text></g>
+<text x="680" y="282" font-size="12" style="fill:var(--c-muted)">4 in stock</text>
+<g style="animation:fct-dom-jig 5s ease-in-out -2s infinite"><rect x="662" y="310" width="240" height="44" rx="10" fill="var(--c-card)" stroke="var(--c-line)" stroke-width="1.5"/><g transform="translate(684,332) scale(.85)"><path d="M-6 6 L3 -3 M2 -8 a5 5 0 0 0 6 6 L5 1 L-1 -5 Z" fill="none" stroke="var(--c-ink)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></g><text x="702" y="337" font-size="13" font-weight="600">Repair · stage deck</text></g>
+<rect x="326" y="61" width="8" height="135" fill="var(--c-line)"/>
+<rect x="326" y="256" width="8" height="115" fill="var(--c-line)"/>
+<rect x="321" y="192" width="18" height="68" rx="6" fill="none" stroke="var(--c-accent)" stroke-width="2" style="opacity:0;animation:fct-dom-gl330 10.0s ease-in-out infinite"/>
+<rect x="327" y="196" width="6" height="60" rx="2" fill="var(--c-muted)" style="animation:fct-dom-leaf330 10.0s ease-in-out infinite"/>
+<g style="opacity:0;animation:fct-dom-key330 10.0s ease-in-out infinite"><circle cx="330" cy="278" r="13" fill="var(--c-accent)"/><g transform="translate(330,278)"><circle cx="-3" cy="-3" r="3.2" fill="none" stroke="var(--c-on-accent)" stroke-width="1.7"/><path d="M-0.5 -0.5 L5 5 M2.5 2.5 L4 1" fill="none" stroke="var(--c-on-accent)" stroke-width="1.7" stroke-linecap="round"/></g></g>
+<text x="330" y="406" text-anchor="middle" font-size="12" font-weight="700" letter-spacing="1" style="fill:var(--c-accent-ink)">GRANTED DOOR</text>
+<text x="330" y="426" text-anchor="middle" font-size="13.5" style="fill:var(--c-muted)">the client's name rides onto the booking</text>
+<line x1="330" y1="374" x2="330" y2="390" stroke="var(--c-line)" stroke-width="1.5" stroke-dasharray="3 3"/>
+<rect x="626" y="61" width="8" height="135" fill="var(--c-line)"/>
+<rect x="626" y="256" width="8" height="115" fill="var(--c-line)"/>
+<rect x="621" y="192" width="18" height="68" rx="6" fill="none" stroke="var(--c-accent)" stroke-width="2" style="opacity:0;animation:fct-dom-gl630 10.0s ease-in-out infinite"/>
+<rect x="627" y="196" width="6" height="60" rx="2" fill="var(--c-muted)" style="animation:fct-dom-leaf630 10.0s ease-in-out infinite"/>
+<g style="opacity:0;animation:fct-dom-key630 10.0s ease-in-out infinite"><circle cx="630" cy="278" r="13" fill="var(--c-accent)"/><g transform="translate(630,278)"><circle cx="-3" cy="-3" r="3.2" fill="none" stroke="var(--c-on-accent)" stroke-width="1.7"/><path d="M-0.5 -0.5 L5 5 M2.5 2.5 L4 1" fill="none" stroke="var(--c-on-accent)" stroke-width="1.7" stroke-linecap="round"/></g></g>
+<text x="630" y="406" text-anchor="middle" font-size="12" font-weight="700" letter-spacing="1" style="fill:var(--c-accent-ink)">GRANTED DOOR</text>
+<text x="630" y="426" text-anchor="middle" font-size="13.5" style="fill:var(--c-muted)">bookings drive stock</text>
+<line x1="630" y1="374" x2="630" y2="390" stroke="var(--c-line)" stroke-width="1.5" stroke-dasharray="3 3"/>
+<g style="animation:fct-dom-t1 10.0s cubic-bezier(.45,0,.25,1) infinite;opacity:0"><rect x="260" y="209" width="128" height="24" rx="12" fill="var(--c-accent)"/><text x="324" y="226" text-anchor="middle" font-size="12.5" font-weight="700" style="fill:var(--c-on-accent)">Domaine des Pins</text></g>
+<g style="animation:fct-dom-t2 10.0s cubic-bezier(.45,0,.25,1) infinite;opacity:0"><rect x="540" y="236" width="128" height="24" rx="12" fill="var(--c-accent)"/><text x="604" y="253" text-anchor="middle" font-size="12.5" font-weight="700" style="fill:var(--c-on-accent)">14 June · BK-0412</text></g>
+</svg>

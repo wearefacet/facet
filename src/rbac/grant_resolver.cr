@@ -19,11 +19,11 @@ module Facet
     #   required action rejects the role. Optional actions never reject.
     #
     # - `resolve(app, role)` — the granular intersection. For every grant
-    #   entry, finds the role permissions whose `(domain, path)` the grant
-    #   covers, then for each declared action emits the role permissions
-    #   that actually grant it. Required and optional actions participate
-    #   symmetrically in `resolve` — the required/optional distinction is
-    #   a usability gate, not a resolution filter.
+    #   entry, finds the role permissions whose reach overlaps the grant's
+    #   (`Grant#intersects_reach?`), then for each declared action emits the
+    #   role permissions that actually grant it. Required and optional
+    #   actions participate symmetrically in `resolve` — the required/optional
+    #   distinction is a usability gate, not a resolution filter.
     #
     # Both functions are pure: no HTTP, no DB, no `Doctype::DefinitionStore`,
     # no `ScopeExpander`. Resource scope (named scopes, context sets)
@@ -68,9 +68,15 @@ module Facet
       #
       # For each grant entry:
       #
-      # 1. Find every role permission whose `(domain, path)` the grant
-      #    covers (`Grant#covers?`). A `crm.*` grant collects role
-      #    permissions on every `crm.X` doctype the role holds.
+      # 1. Find every role permission whose reach overlaps the grant's reach
+      #    (`Grant#intersects_reach?`). A `crm.*` grant collects role
+      #    permissions across the whole crm domain — concrete lines, descendant
+      #    lines, and the domain-wide bare-`crm` line alike; a `crm.Contact`
+      #    grant also matches a role permission on a descendant path (e.g.
+      #    `crm.Contact.Comment`) and on an ancestor path (bare `crm`, or
+      #    `crm`-wide lines). A role permission on `*.*` (admin) matches every
+      #    grant target — the admin role reaches every doctype, and the grant
+      #    is strictly a ceiling.
       # 2. If no role permission matches, the grant is absent from the
       #    result entirely (whether this rejected the role was already
       #    decided by `role_usable?` based on required actions).
@@ -130,18 +136,21 @@ module Facet
       # Resolves a single grant into zero or more `Entry`s.
       #
       # A wildcard grant (`domain.*`) may produce multiple entries — one
-      # per concrete doctype the role actually holds a permission on.
+      # per concrete doctype the role actually holds a permission on, or a
+      # single domain-wide entry when the role only holds a domain-wide line.
       # A concrete grant (`domain.Doctype`) produces at most one entry.
       #
-      # When a matching role permission is itself wildcard (`*.*` admin),
+      # When a matching role permission is itself wildcard (`*.*` admin) or
+      # an ancestor of the grant target (bare domain, or a shorter prefix),
       # the entry's concrete `(domain, path)` is taken from the grant
       # target — the grant is strictly a ceiling, so a `crm.Contact` grant
-      # combined with an admin `*.*` permission collapses to a single
-      # entry on `crm.Contact`, NOT a wildcard entry on `*`.
+      # combined with an admin `*.*` permission or a domain-wide `crm` line
+      # collapses to a single entry on `crm.Contact`, NOT a wildcard or
+      # domain-root entry.
       private def self.resolve_grant(grant : Grant, role : ActiveRole) : Array(EffectiveScope::Entry)
-        # 1. Role permissions this grant covers.
+        # 1. Role permissions whose reach overlaps the grant's reach.
         matching = role.permissions.select do |perm|
-          grant.covers?(perm.domain, perm.path)
+          grant.intersects_reach?(perm.domain, perm.path)
         end
 
         return [] of EffectiveScope::Entry if matching.empty?
@@ -173,34 +182,42 @@ module Facet
       # The concrete `(domain, path)` coordinates of the entry a matching
       # permission contributes to.
       #
-      # - When the permission is concrete (e.g. role perm on
-      #   `crm.Contact.Comment` matched by grant `crm.Contact`), the entry
-      #   takes the permission's coordinates — descendant paths survive.
-      # - When the permission is wildcard (`*.*` admin or `domain.*`),
-      #   the entry takes the grant's de-wildcarded target — the grant is
-      #   strictly a ceiling, so a `crm.Contact` grant + admin permission
-      #   emits an entry on `crm.Contact`, not on `*`.
+      # - When the permission is concrete and at or below the grant target
+      #   (e.g. role perm on `crm.Contact.Comment` matched by grant
+      #   `crm.Contact`), the entry takes the permission's coordinates —
+      #   descendant paths survive.
+      # - When the permission is wildcard (`*.*` admin or `domain.*`) or an
+      #   ancestor of the grant target (bare domain, or a shorter prefix —
+      #   a domain-wide line has no concrete doctype coordinate of its
+      #   own), the entry takes the grant's de-wildcarded target — the
+      #   grant is strictly a ceiling, so a `crm.Contact` grant + admin
+      #   permission or bare-`crm` line emits an entry on `crm.Contact`,
+      #   not on `*` or the domain root.
       private def self.entry_coordinates(
         grant : Grant,
         perm : Permission,
       ) : {String, Array(String)}
-        if perm.domain == Permission::WILDCARD_DOMAIN || perm.path == [Permission::WILDCARD_DOCTYPE]
+        if perm.domain == Permission::WILDCARD_DOMAIN ||
+           perm.path == [Permission::WILDCARD_DOCTYPE] ||
+           perm.path.size < grant.path.size
           {grant.domain, grant.path}
         else
           {perm.domain, perm.path}
         end
       end
 
-      # True if the role covers the grant's target (possibly a wildcard)
-      # and grants the given action.
+      # True if the role's reach overlaps the grant's target (possibly a
+      # wildcard) and grants the given action.
       #
-      # A wildcard grant (`domain.*`) is satisfied when the role holds, on
-      # at least one `domain.X` doctype, a permission whose action covers
-      # `action`. (`*` matches any concrete action — see
+      # A domain-wide role line (`{"on": "crm"}`) qualifies for any grant
+      # inside `crm` — its reach contains the grant target. A wildcard
+      # grant (`domain.*`) is satisfied when the role holds, on at least
+      # one `domain.X` doctype (or domain-wide), a permission whose action
+      # covers `action`. (`*` matches any concrete action — see
       # `Permission#matches_action?`.)
       private def self.role_covers_action?(grant : Grant, action : String, role : ActiveRole) : Bool
         role.permissions.any? do |perm|
-          grant.covers?(perm.domain, perm.path) &&
+          grant.intersects_reach?(perm.domain, perm.path) &&
             perm.matches_action?(action) &&
             line_reaches_grant_target?(perm, grant)
         end

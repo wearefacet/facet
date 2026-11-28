@@ -1,0 +1,36 @@
+---
+content:
+  icon: user-round
+  color: "#2563EB"
+  domain: clients
+  fields:
+    full_name:
+      type: string
+      title: Full name
+      required: true
+      filters:
+        - equality
+        - text_search
+      description: "The contact person's name."
+    email:
+      type: string
+      title: Email
+      filters:
+        - equality
+      description: "The contact's email address."
+    phone:
+      type: phone
+      title: Phone
+      description: "The contact's phone number."
+    role:
+      type: string
+      title: Role
+      description: "What the contact does at the company, e.g. 'Events lead'."
+  doctype: Contact
+  member_of: Company
+  description: "One person at a client company."
+  display_name: "{{ full_name }}"
+  search: "{{ full_name }} {{ email }}"
+  schema_version: 1
+meta:
+  parent_id: clients.Company

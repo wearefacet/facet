@@ -1,11 +1,12 @@
 ---
+type: reference
 title: Contexte des modèles Jinja2
 description: Variables et filtres disponibles dans les modèles Jinja2.
 audience: [author, developer]
 features: [DOM-22, DOM-23]
 sidebar:
-  order: 6
-verified_at: 008dd880
+  order: 13
+verified_at: eee55a2
 ---
 
 Utilisez cette page pour écrire un modèle et vérifier les variables et les
@@ -43,6 +44,9 @@ Règles que le validateur impose à l’enregistrement :
   réservée. `{{ id }}` est refusé — l’id du document n’est pas une
   variable. Déclarez un champ de type string pour un code lisible par un
   humain et affichez ce champ.
+- Un modèle ne doit pas référencer un champ qui porte (ou contient) une valeur
+  secrète : l’enregistrement le refuse avec `search template must not
+  reference the secret field '…'` (même formulation pour `display_name`).
 - Les variables utilisées uniquement dans les arguments de `{% if %}` ou
   `{% for %}` ne sont pas validées.
 
@@ -112,6 +116,7 @@ nommés, par exemple `{{ tags | join(', ') }}` ou `{{ price | round(2) }}`.
 | `selectattr` | — | Garde les éléments dont un test accepte l’attribut. |
 | `slice` | `slices`, `fill_with` | Découpe un tableau en `slices` parts à peu près égales. |
 | `sort` | `reverse`, `case_sensitive`, `attribute` | Trie un tableau, éventuellement par un attribut. |
+| `string` | — | Convertit n’importe quelle valeur en sa forme chaîne. Utile avant `upper` ou `length` sur une valeur qui n’est pas une chaîne. |
 | `striptags` | — | Retire les balises HTML et réduit les espaces. |
 | `sum` | `attribute`, `start` | Additionne les éléments, ou leur `attribute`. |
 | `title` | — | Met chaque mot en majuscule initiale. |
@@ -194,6 +199,8 @@ personne référencée ; les deux modèles ci-dessus ne l’utilisent pas.
 
 ## Voir aussi
 
-- [Noms d’affichage et texte de recherche (Jinja2)](/fr/build/display-names-search-text/) — écrire les deux modèles du doctype.
-- [Modèles de vue](/fr/build/view-templates/) — les modèles de vue structurés, un format séparé.
-- [Champs calculés](/fr/build/computed-fields/) — des fonctions Lua, pas des modèles.
+- [Libellés et texte de recherche (Jinja2)](/fr/build/model/views/names-and-search/) — écrire les deux modèles du doctype.
+- [Modèles de vue](/fr/build/model/views/document-pages/) — les modèles de vue structurés, un format séparé.
+- [Schéma du modèle DVT](/fr/reference/dvt-schema/) — la liste complète des variables liées par un modèle de vue.
+- [Champs calculés](/fr/build/model/data/computed-fields/) — des fonctions Lua, pas des modèles.
+- [Champs secrets](/fr/build/model/data/secret-fields/) — pourquoi un champ secret ne peut pas apparaître dans un modèle.

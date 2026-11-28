@@ -1,0 +1,15 @@
+---
+content:
+  kind: card
+  template:
+    type: col
+    children:
+      - type: field
+        label: State
+        value: $status
+      - type: field
+        label: Assignee
+        value: $assignee
+  parent_doctype: equipment.MaintenanceTicket
+meta:
+  parent_id: equipment.MaintenanceTicket

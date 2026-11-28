@@ -325,6 +325,17 @@ Spec.before_suite do
   # Set up an InProcessManager so specs that touch Publisher.enqueue/flush
   # work without a real Redis connection. Events are stored in memory.
   Facet::Event::Publisher.manager = Facet::Event::InProcessManager.new
+
+  # Snapshot the managed indexes and statistics objects present at suite
+  # start. The per-example `reset_managed_indexes` drops only what this
+  # snapshot does not contain, so a seeded index (and its `doctype_indexes`
+  # row) survives — `sync` then keeps it `active` and never re-creates a
+  # physical unique index over seeded rows (which would reject a legitimate
+  # duplicate insert, e.g. two `test@example.com` accounts). See
+  # `reset_managed_indexes`.
+  DB.open(ENV.fetch("DATABASE_URL")) do |db|
+    ManagedIndexBaseline.capture(db)
+  end
 end
 
 Spec.before_each do
@@ -333,17 +344,13 @@ Spec.before_each do
   # This is a global hook that fires before every spec example, including
   # any local before_each hooks defined in describe blocks.
   #
-  # NOTE: doctype_indexes is NOT truncated here — the actual PG indexes on
-  # projections survive the TRUNCATE (they are separate DB objects created
-  # via CREATE INDEX). Keeping doctype_indexes intact prevents
-  # Index::Manager.sync from trying to recreate indexes that already exist.
-  #
   # In synchronous mode (`@synchronous = true` above) `Index::Manager.sync`
   # runs DDL inline on the caller's stack — no background fibers, no SHARE
   # lock, no concurrent path that could still be in flight. The
   # `truncate_with_retry` deadlock-retry below is therefore a defensive
   # fallback rather than the main code path; it costs nothing when not
-  # engaged.
+  # engaged. It also resets the accumulated managed indexes and statistics
+  # objects before truncating; see `reset_managed_indexes`.
   truncate_with_retry
 
   # Clear the fiber-local doctype definition cache to prevent tests from
@@ -437,8 +444,101 @@ end
 # measurable share of the suite's runtime. One long-lived connection keeps
 # the same isolation guarantee because `TRUNCATE` is autocommitted here
 # (no surrounding transaction), so no state carries between examples.
+#
+# ── Managed-index reset ─────────────────────────────────────────────────
+#
+# `Index::Manager.sync` creates a physical partial index (and, for btree
+# fields, an extended statistics object) on the shared `projections` table
+# for every indexed field a spec's doctype declares. Those are DDL objects,
+# so the per-example `TRUNCATE` does not remove them: they pile up across
+# the run. `TRUNCATE` must open a new relfilenode for the table *and every
+# one of its indexes*, so the cost of every later example grows with the
+# total left behind (measured: ~0.26 ms per index — 7 indexes = 6 ms, 207
+# indexes = 60 ms; the complete suite reached 207). The statistics objects
+# also slow every query, because the planner loads each one on `projections`.
+#
+# `reset_managed_indexes` drops the managed indexes and statistics objects
+# that appeared *after* the suite started, together with their
+# `doctype_indexes` rows. The baseline captured in `before_suite` is left
+# untouched, so a seeded index keeps its tracking row and `sync` never
+# re-creates a physical unique index over seeded rows. That matters: the
+# unique enforcement on a seeded doctype (e.g. `iam.Account.email`) is
+# validation-level in the template, and a freshly created physical unique
+# index would reject legitimate spec data (two `test@example.com` accounts).
+# Dropping a spec-created index with its row is safe — `sync` re-creates
+# whatever the next spec actually needs.
+#
+# Only used by the spec hook — production drops a domain's indexes through
+# `Index::Manager.dispose_domain_indexes` (see `Domain::Scratch`).
+module ManagedIndexBaseline
+  @@index_names = Set(String).new
+  @@statistics_names = Set(String).new
+
+  # Records the managed indexes and statistics objects present at suite
+  # start. Called once, in `before_suite`.
+  def self.capture(db : DB::Database) : Nil
+    @@index_names = db.query_all(
+      "SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'projections' AND indexname LIKE 'idx_env_%'",
+      as: String,
+    ).to_set
+    @@statistics_names = db.query_all(
+      "SELECT stxname FROM pg_statistic_ext WHERE stxrelid = 'projections'::regclass AND stxname LIKE 'idx_env_%'",
+      as: String,
+    ).to_set
+  end
+
+  def self.index_names : Set(String)
+    @@index_names
+  end
+
+  def self.statistics_names : Set(String)
+    @@statistics_names
+  end
+end
+
+# Drops the managed indexes and statistics objects created after the suite
+# started (everything not in `ManagedIndexBaseline`), plus their
+# `doctype_indexes` rows. The `doctype_indexes` rows go with the indexes: a
+# dropped index left marked `active` would make `sync` skip re-creating it.
+private def reset_managed_indexes(db : DB::Database) : Nil
+  baseline_indexes = ManagedIndexBaseline.index_names
+  baseline_stats = ManagedIndexBaseline.statistics_names
+
+  db.using_connection do |conn|
+    stale_indexes = conn.query_all(
+      "SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'projections' AND indexname LIKE 'idx_env_%'",
+      as: String,
+    ).reject { |name| baseline_indexes.includes?(name) }
+
+    stale_stats = conn.query_all(
+      "SELECT stxname FROM pg_statistic_ext WHERE stxrelid = 'projections'::regclass AND stxname LIKE 'idx_env_%'",
+      as: String,
+    ).reject { |name| baseline_stats.includes?(name) }
+
+    return if stale_indexes.empty? && stale_stats.empty?
+
+    stale_indexes.each do |name|
+      conn.exec("DROP INDEX IF EXISTS #{quote_ident(name)}")
+    end
+    stale_stats.each do |name|
+      conn.exec("DROP STATISTICS IF EXISTS #{quote_ident(name)}")
+    end
+
+    # Delete the tracking rows for the dropped indexes. `doctype_indexes`
+    # stores `index_name`, so the deleted rows match exactly what was dropped.
+    stale_indexes.each do |name|
+      conn.exec("DELETE FROM doctype_indexes WHERE index_name = $1", name)
+    end
+  end
+end
+
+private def quote_ident(name : String) : String
+  %("#{name.gsub('"', "\"\"")}")
+end
+
 private def truncate_with_retry(max_attempts : Int = 5) : Nil
   db = truncate_db
+  reset_managed_indexes(db)
   attempts = 0
   loop do
     db.exec(SeededBaseline::TRUNCATE_SQL)

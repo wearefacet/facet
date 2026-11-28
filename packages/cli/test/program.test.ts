@@ -11,6 +11,10 @@ const PACKAGE_VERSION = JSON.parse(
 ).version as string;
 
 vi.mock('../src/commands/init.js', () => ({ runInit: vi.fn() }));
+vi.mock('../src/commands/setup-dev.js', () => ({ runSetupDev: vi.fn() }));
+vi.mock('../src/commands/connect.js', () => ({ runConnect: vi.fn() }));
+vi.mock('../src/commands/apikey.js', () => ({ runApikey: vi.fn() }));
+vi.mock('../src/commands/host.js', () => ({ runHost: vi.fn() }));
 vi.mock('../src/commands/login.js', () => ({ runLogin: vi.fn() }));
 vi.mock('../src/commands/logout.js', () => ({ runLogout: vi.fn() }));
 vi.mock('../src/commands/whoami.js', () => ({ runWhoami: vi.fn() }));
@@ -19,6 +23,10 @@ vi.mock('../src/commands/releases.js', () => ({ runReleases: vi.fn() }));
 vi.mock('../src/commands/rollback.js', () => ({ runRollback: vi.fn() }));
 
 import { runInit } from '../src/commands/init.js';
+import { runSetupDev } from '../src/commands/setup-dev.js';
+import { runConnect } from '../src/commands/connect.js';
+import { runApikey } from '../src/commands/apikey.js';
+import { runHost } from '../src/commands/host.js';
 import { runLogin } from '../src/commands/login.js';
 import { runLogout } from '../src/commands/logout.js';
 import { runWhoami } from '../src/commands/whoami.js';
@@ -26,7 +34,19 @@ import { runDeploy } from '../src/commands/deploy.js';
 import { runReleases } from '../src/commands/releases.js';
 import { runRollback } from '../src/commands/rollback.js';
 
-const COMMANDS = ['init', 'login', 'logout', 'whoami', 'deploy', 'releases', 'rollback'] as const;
+const COMMANDS = [
+	'init',
+	'setup-dev',
+	'connect',
+	'apikey',
+	'host',
+	'login',
+	'logout',
+	'whoami',
+	'deploy',
+	'releases',
+	'rollback'
+] as const;
 
 function findCommand(program: Command, name: string): Command {
 	const command = program.commands.find((candidate) => candidate.name() === name);
@@ -51,7 +71,7 @@ async function run(...args: string[]): Promise<void> {
 }
 
 describe('cli program', () => {
-	it('registers the seven commands in order', () => {
+	it('registers the ten commands in order', () => {
 		const program = createProgram();
 		expect(program.commands.map((command) => command.name())).toEqual([...COMMANDS]);
 	});
@@ -75,13 +95,39 @@ describe('cli program', () => {
 		expect(flags).toContain('--server <url>');
 	});
 
+	it('declares the setup-dev flags', () => {
+		const flags = findCommand(createProgram(), 'setup-dev').options.map((option) => option.flags);
+		for (const flag of [
+			'--dir <path>',
+			'--hostname <name>',
+			'--port <n>',
+			'--watch <dir>',
+			'--no-watch',
+			'--no-start',
+			'--no-key',
+			'--force',
+			'--yes'
+		]) {
+			expect(flags).toContain(flag);
+		}
+	});
+
 	it('expects a required revision argument on rollback', () => {
 		const [revisionArg] = findCommand(createProgram(), 'rollback')._args;
 		expect(revisionArg?.required).toBe(true);
 	});
 
 	it('exposes the --target flag on the instance commands', () => {
-		for (const name of ['login', 'logout', 'whoami', 'releases', 'rollback'] as const) {
+		for (const name of [
+			'connect',
+			'apikey',
+			'host',
+			'login',
+			'logout',
+			'whoami',
+			'releases',
+			'rollback'
+		] as const) {
 			const flags = findCommand(createProgram(), name).options.map((option) => option.flags);
 			expect(flags).toContain('--target <name>');
 		}
@@ -149,6 +195,48 @@ describe('cli program', () => {
 			expect(runLogin).toHaveBeenCalledWith(process.cwd(), 'staging');
 			expect(runLogout).toHaveBeenCalledWith(process.cwd(), undefined);
 			expect(runWhoami).toHaveBeenCalledWith(process.cwd(), undefined);
+		});
+
+		it('routes connect, apikey and host to their runners', async () => {
+			await run('connect', '--target', 'prod');
+			await run('apikey');
+			await run('host', '--target', 'prod');
+			expect(runConnect).toHaveBeenCalledWith(process.cwd(), 'prod', { role: undefined });
+			expect(runApikey).toHaveBeenCalledWith(process.cwd(), undefined);
+			expect(runHost).toHaveBeenCalledWith(process.cwd(), 'prod');
+		});
+
+		it('routes the connect --role flag to its runner', async () => {
+			await run('connect', '--target', 'prod', '--role', 'warehouse');
+			expect(runConnect).toHaveBeenCalledWith(process.cwd(), 'prod', { role: 'warehouse' });
+		});
+
+		it('routes setup-dev and its flags to its runner', async () => {
+			await run('setup-dev', '--dir', '/tmp/x', '--port', '3444', '--no-watch', '--no-start');
+			expect(runSetupDev).toHaveBeenCalledWith({
+				dir: '/tmp/x',
+				hostname: undefined,
+				port: 3444,
+				watch: false,
+				noStart: true,
+				noKey: false,
+				force: undefined,
+				yes: undefined
+			});
+		});
+
+		it('defaults setup-dev to start and key', async () => {
+			await run('setup-dev', '--yes');
+			expect(runSetupDev).toHaveBeenCalledWith({
+				dir: undefined,
+				hostname: undefined,
+				port: undefined,
+				watch: undefined,
+				noStart: false,
+				noKey: false,
+				force: undefined,
+				yes: true
+			});
 		});
 
 		it('prints command failures to stderr and fails the run', async () => {

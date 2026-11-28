@@ -126,8 +126,8 @@ function classes(t) {
  *
  * Direction defaults to `down`. The content column is narrow (50rem), so a
  * vertical flow stays readable at full size while a horizontal one is scaled
- * down or scrolled. A page that sets `direction:` keeps it — use `right` for a
- * short branching flow, where the branches read better side by side.
+ * down to the column. A page that sets `direction:` keeps it — use `right` for
+ * a short branching flow, where the branches read better side by side.
  *
  * A node with no `class` gets `node`, so a page never renders D2's own default
  * box (sharp corners, a heavy stroke).
@@ -169,9 +169,18 @@ function defaultNodeClass(source) {
 		.join('\n');
 }
 
+// `scale: 1` and `center: true` are load-bearing. Without `scale`, D2 sizes the
+// SVG to fit its own viewbox, which blows a small diagram up to the full column
+// and pushes the label text far past the 15px the style asks for. With
+// `scale: 1` the SVG keeps its natural pixel size (one CSS pixel per SVG unit),
+// and `center: true` puts a diagram narrower than its viewbox on the middle.
+// CSS then caps a wide diagram at the column width. See doc/site-docs.md →
+// Diagrams.
 export const RENDER_OPTIONS = {
 	layout: 'dagre',
 	pad: 16,
+	scale: 1,
+	center: true,
 	noXMLTag: true,
 };
 

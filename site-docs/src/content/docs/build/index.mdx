@@ -1,0 +1,135 @@
+---
+type: overview
+title: Build
+description: Model your business data in domains, and build apps on it — in the app or in files, by hand or with an agent.
+audience: [author, developer]
+features: []
+verified_at: eee55a2
+sidebar:
+  order: 0
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Two kinds of builder meet in this tab. The **author** models the business:
+record types, fields, views, and rules, built in the app or in files. The
+**developer** builds the apps that use that data: browser apps, backend
+services, and AI agents. The tutorials below take both of you from an empty
+server to a working domain and a shipped app.
+
+If you are still deciding whether Facet fits, start with
+[The big picture](/discover/how-it-works/) instead.
+
+## What do you want to do?
+
+<CardGrid>
+	<LinkCard title="Try it in an hour" description="Run Facet, build a domain, ship an app. One tutorial track, one running example." href="/build/first-hour/" />
+	<LinkCard title="Model your data" description="Doctypes, fields, views, rules, and automation. Choose how you build first." href="/build/model/" />
+	<LinkCard title="Build an app" description="Sign users in, read and write data, host the app on Facet." href="/build/apps/" />
+</CardGrid>
+
+## All pages in this section
+
+**Your first hour** — the golden path, one running example:
+
+- [Your first hour](/build/first-hour/) — the plan, the time, what you need.
+- [Run Facet](/build/first-hour/run-facet/)
+- [Model your first domain](/build/first-hour/first-domain/)
+- [The same domain in files](/build/first-hour/first-domain-in-files/)
+- [Ship your first app](/build/first-hour/first-app/)
+- [Give your team access](/build/first-hour/team-access/)
+- [Connect an AI agent](/build/first-hour/connect-an-agent/)
+
+**Set up a dev environment**:
+
+- [Set up a dev environment](/build/dev-environment/) — for files mode and app work.
+
+**Model your data** — start at [Choose how you build](/build/model/), the decision page for the two build modes:
+
+- [Choose how you build](/build/model/) — in the app with drafts, or in files on a dev server.
+- [How drafts work](/build/model/in-app/how-drafts-work/)
+- [Drafts, editors and publishing](/build/model/in-app/drafts-and-publishing/)
+- [Build with the assistant](/build/model/in-app/build-with-assistant/)
+- [Check before you publish](/build/model/in-app/check-before-publish/)
+- [The domain watcher](/build/model/in-files/domain-watcher/)
+- [The domain file layout](/build/model/in-files/domain-files/)
+- [Build domains with a coding agent](/build/model/in-files/with-a-coding-agent/)
+- [From dev to production](/build/model/dev-to-production/)
+- [Move domains with bundles](/build/model/bundles/)
+- [Change a live domain safely](/build/model/change-a-live-domain/)
+
+*Data — doctypes and fields:*
+
+- [Design a doctype](/build/model/data/design-doctypes/)
+- [Choose field types](/build/model/data/field-types/)
+- [Reference numbers and uniqueness](/build/model/data/identifiers-uniqueness/)
+- [Computed fields](/build/model/data/computed-fields/)
+- [Secret and write-only fields](/build/model/data/secret-fields/)
+- [Files in fields](/build/model/data/files/)
+
+*Relations:*
+
+- [Link documents together](/build/model/relations/references-links/)
+- [Parent and child documents](/build/model/relations/parent-child/)
+- [Share data across domains](/build/model/relations/across-domains/)
+- [Add comments and attachments](/build/model/relations/comments-attachments/)
+
+*Views:*
+
+- [Display names and search text](/build/model/views/names-and-search/)
+- [Design document pages](/build/model/views/document-pages/)
+- [Lists, boards and calendars](/build/model/views/lists-boards-calendars/)
+- [See your domain as a diagram](/build/model/views/schematic/)
+
+*Behaviour:*
+
+- [Add actions to a doctype](/build/model/behaviour/named-actions/)
+- [Scripts and guards](/build/model/behaviour/scripts-and-guards/)
+
+*Automation:*
+
+- [React to events and schedules](/build/model/automation/event-hooks/)
+- [Send webhooks](/build/model/automation/webhooks/)
+- [Notifications and mentions](/build/model/automation/notifications/)
+
+*Access rules:*
+
+- [Write row rules for roles](/build/model/access/named-scopes/)
+
+**Build apps** — start at [Build apps](/build/apps/) to pick how your app signs in:
+
+- [Build apps](/build/apps/) — browser app, backend service, or AI agent.
+- [How apps work on Facet](/build/apps/how-apps-work/)
+- [Quickstart](/build/apps/quickstart/)
+- [Register an app](/build/apps/connect/register/)
+- [Sign users in](/build/apps/connect/user-login/)
+- [Bind tokens to your app (DPoP)](/build/apps/connect/dpop/)
+- [Allowed origins and CORS](/build/apps/connect/cors/)
+- [Backend apps and service accounts](/build/apps/connect/backend-apps/)
+- [Show only what the user can do](/build/apps/connect/permission-manifest/)
+- [Apps, grants and roles](/build/apps/connect/what-an-app-can-do/)
+- [Use the REST API](/build/apps/data/rest-api/)
+- [The TypeScript SDK](/build/apps/data/sdk/)
+- [Search from an app](/build/apps/data/search/)
+- [Live updates](/build/apps/data/realtime/)
+- [Upload and serve files](/build/apps/data/files/)
+- [Bulk import and export](/build/apps/data/bulk-import-export/)
+- [Deploy your app on Facet](/build/apps/host/deploy/)
+- [Embed the assistant in your app](/build/apps/host/embed-assistant/)
+- [Build apps with a coding agent](/build/apps/agents/coding-agents/)
+- [Connect agents over MCP](/build/apps/agents/mcp/)
+- [What agents can do](/build/apps/agents/agent-tools/)
+
+**How it works (deeper)** — the L3 pages, for when you need the exact model:
+
+- [How it works (deeper)](/build/deeper/)
+- [Documents, doctypes and projections](/build/deeper/documents-and-projections/)
+- [Schema evolution and lazy migration](/build/deeper/schema-evolution/)
+- [Cross-domain replication](/build/deeper/cross-domain-replication/)
+- [How domains stay isolated](/build/deeper/domain-isolation/)
+
+## Related
+
+- [The big picture](/discover/how-it-works/) — the five ideas behind domains, roles, and apps.
+- [Administer](/admin/) — who may use what you build: roles, grants, and keys.
+- [Reference](/reference/) — the exact field types, filter operators, and schemas.

@@ -139,9 +139,18 @@
 			helper={template.helper}
 			prefix={effectivePrefix}
 			{error}
-			oninput={() => (urlCommitError = null)}
-			onchange={commitUrlValue}
-			bind:value={values[template.field] as string}
+			oninput={(e: Event) => {
+				// Mirror the keystroke into the bag immediately: the prefix and the
+				// URL-completion verdict read the bag during render, and `change`
+				// fires only on commit (blur / Enter), too late for both.
+				if (values) values[template.field] = (e.currentTarget as HTMLInputElement).value;
+				urlCommitError = null;
+			}}
+			onchange={(e: Event) => {
+				if (values) values[template.field] = (e.currentTarget as HTMLInputElement).value;
+				commitUrlValue();
+			}}
+			value={values[template.field] as string}
 		/>
 	{:else}
 		<div class="dvt-input-text-readonly">

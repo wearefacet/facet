@@ -684,6 +684,76 @@ describe Facet::Document::List do
     end
   end
 
+  it "filters by created_at with a relative date" do
+    with_temp_doctype("listrelativedt") do |db, domain, doctype|
+      ensure_domain(db, domain)
+      create_schema = %({"doctype": "#{doctype}", "domain": "#{domain}", "fields": {"name": {"type": "string"}}})
+      expect_create_success(Facet::Document::Create.call(db, "core", "DocType", create_schema, Facet::RBAC::AuthContext.system))
+
+      alice = Facet::Document::Create.call(db, domain, doctype, %({"name": "Alice"}), Facet::RBAC::AuthContext.system)
+      expect_create_success(alice)
+      alice_id = alice.as(Facet::Document::Create::Result).projection.id
+      db.exec("UPDATE projections SET created_at = now() - interval '2 days' WHERE id = $1", alice_id)
+      bob = Facet::Document::Create.call(db, domain, doctype, %({"name": "Bob"}), Facet::RBAC::AuthContext.system)
+      expect_create_success(bob)
+
+      # `-1d` covers the last 24 hours: only Bob, created now.
+      list = Facet::Document::List.call(
+        db, domain, doctype,
+        filters: {"created_at__gte" => JSON::Any.new("-1d")},
+        auth_context: Facet::RBAC::AuthContext.system
+      )
+      list.as(Facet::Document::List::Result).items.map(&.content["name"].as_s).should eq(["Bob"])
+
+      # `-3d` covers both rows.
+      wide = Facet::Document::List.call(
+        db, domain, doctype,
+        filters: {"created_at__gte" => JSON::Any.new("-3d")},
+        auth_context: Facet::RBAC::AuthContext.system
+      )
+      wide.as(Facet::Document::List::Result).items.size.should eq(2)
+    end
+  end
+
+  it "filters a date field with a relative date truncated to the day" do
+    with_temp_doctype("listrelativedate") do |db, domain, doctype|
+      ensure_domain(db, domain)
+      create_schema = %({"doctype": "#{doctype}", "domain": "#{domain}", "fields": {"name": {"type": "string"}, "due": {"type": "date", "filters": ["comparison"]}}})
+      expect_create_success(Facet::Document::Create.call(db, "core", "DocType", create_schema, Facet::RBAC::AuthContext.system))
+
+      yesterday = (Time.utc - 1.day).to_s("%F")
+      last_year = (Time.utc - 1.year).to_s("%F")
+      [{"Alice", last_year}, {"Bob", yesterday}].each do |(name, due)|
+        expect_create_success(Facet::Document::Create.call(db, domain, doctype, %({"name": "#{name}", "due": "#{due}"}), Facet::RBAC::AuthContext.system))
+      end
+
+      # `-1d` truncates to yesterday's calendar day: only Bob.
+      list = Facet::Document::List.call(
+        db, domain, doctype,
+        filters: {"due__gte" => JSON::Any.new("-1d")},
+        auth_context: Facet::RBAC::AuthContext.system
+      )
+      list.as(Facet::Document::List::Result).items.map(&.content["name"].as_s).should eq(["Bob"])
+    end
+  end
+
+  it "refuses a relative time unit on a date field with a 422" do
+    with_temp_doctype("listrelativedateunit") do |db, domain, doctype|
+      ensure_domain(db, domain)
+      create_schema = %({"doctype": "#{doctype}", "domain": "#{domain}", "fields": {"due": {"type": "date", "filters": ["comparison"]}}})
+      expect_create_success(Facet::Document::Create.call(db, "core", "DocType", create_schema, Facet::RBAC::AuthContext.system))
+
+      result = Facet::Document::List.call(
+        db, domain, doctype,
+        filters: {"due__gte" => JSON::Any.new("-2h")},
+        auth_context: Facet::RBAC::AuthContext.system
+      )
+      error = result.as(Facet::ServiceError)
+      error.status.should eq(422)
+      error.message.should contain("carries a time unit")
+    end
+  end
+
   it "filters by updated_at__between with an ISO-8601 array" do
     with_temp_doctype("listupdatedatbetween") do |db, domain, doctype|
       ensure_domain(db, domain)
@@ -952,6 +1022,64 @@ describe Facet::Document::List do
         expected = column.starts_with?("-") ? created.reverse : created
         result.items.map(&.id).should eq(expected)
       end
+    end
+  end
+
+  it "builds the order clause with the id tie-breaker" do
+    with_temp_doctype("listsortclause") do |db, domain, doctype|
+      ensure_domain(db, domain)
+      create_schema = %({"doctype": "#{doctype}", "domain": "#{domain}", "fields": {"name": {"type": "string"}, "age": {"type": "integer"}}})
+      expect_create_success(Facet::Document::Create.call(db, "core", "DocType", create_schema, Facet::RBAC::AuthContext.system))
+      defn = Facet::Doctype::DefinitionStore.fetch!(db, "#{domain}.#{doctype}").as(Facet::Doctype::DoctypeDefinition)
+
+      # A field sort ends with the id tie-breaker — the type-appropriate
+      # expression first, then the stable row id.
+      Facet::Document::List.build_order_clause(["-name"], defn).should eq("content->>'name' DESC, id ASC")
+      Facet::Document::List.build_order_clause(["age"], defn).should eq("jsonb_as_numeric(content->'age') ASC, id ASC")
+      # An id entry the caller authored is left where it stands, never doubled.
+      Facet::Document::List.build_order_clause(["name", "id"], defn).should eq("content->>'name' ASC, id ASC")
+      Facet::Document::List.build_order_clause(["-id"], defn).should eq("id DESC")
+      # An empty sort keeps the bare default.
+      Facet::Document::List.build_order_clause([] of String, defn).should eq("id ASC")
+    end
+  end
+
+  it "keeps offset paging stable when every sort key ties (id tie-breaker)" do
+    with_temp_doctype("listsorttie") do |db, domain, doctype|
+      ensure_domain(db, domain)
+      create_schema = %({"doctype": "#{doctype}", "domain": "#{domain}", "fields": {"name": {"type": "string"}}})
+      expect_create_success(Facet::Document::Create.call(db, "core", "DocType", create_schema, Facet::RBAC::AuthContext.system))
+
+      ids = (1..5).map do
+        result = Facet::Document::Create.call(db, domain, doctype, %({"name": "same"}), Facet::RBAC::AuthContext.system)
+        expect_create_success(result)
+        result.as(Facet::Document::Create::Result).projection.id
+      end
+
+      # Five rows share one sort key; two rows per page. Without the
+      # tie-breaker the order inside the tie is unspecified and offset pages
+      # could duplicate or skip rows; with it the union of the pages is
+      # exactly the document set.
+      collected = [] of String
+      totals = [] of Int64
+      [1, 2, 3].each do |page|
+        list = Facet::Document::List.call(
+          db, domain, doctype,
+          sort: ["name"], page: page, items_per_page: 2,
+          auth_context: Facet::RBAC::AuthContext.system
+        )
+        list.should be_a(Facet::Document::List::Result)
+        result = list.as(Facet::Document::List::Result)
+        result.items.each { |item| collected << item.id }
+        totals << result.total
+      end
+
+      # The count window is offset-relative (5 → 3 → 1), so each page saw
+      # its remaining share and no page duplicated or skipped a row.
+      totals.should eq([5, 3, 1] of Int64)
+      collected.size.should eq(5)
+      collected.uniq.size.should eq(5)
+      collected.sort.should eq(ids.sort)
     end
   end
 

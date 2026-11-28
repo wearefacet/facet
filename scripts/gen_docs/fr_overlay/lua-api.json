@@ -15,7 +15,7 @@
   "col_signature": "Signature",
   "col_purpose": "Rôle",
   "related_heading": "Voir aussi",
-  "related_lifecycle": "- [Scripts de cycle de vie et garde-fous](/fr/build/lifecycle-scripts-guards/) — où s’exécutent create, update, delete et les actions.",
-  "related_event_hooks": "- [Hooks d’événements](/fr/build/event-hooks/) — les hooks de domaine qui partagent cette surface.",
-  "related_sidecars": "- [Sidecars](/fr/build/sidecars/) — doctypes de pièces jointes gérés par le système, avec leurs propres hooks."
+  "related_lifecycle": "- [Scripts de cycle de vie et garde-fous](/fr/build/model/behaviour/scripts-and-guards/) — où s’exécutent create, update, delete et les actions.",
+  "related_event_hooks": "- [Hooks d’événements](/fr/build/model/automation/event-hooks/) — les hooks de domaine qui partagent cette surface.",
+  "related_sidecars": "- [Sidecars](/fr/build/model/relations/comments-attachments/) — doctypes de pièces jointes gérés par le système, avec leurs propres hooks."
 }

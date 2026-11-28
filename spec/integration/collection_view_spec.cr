@@ -177,13 +177,14 @@ describe "core.CollectionView" do
       fields.has_key?("owner_id").should be_true
     end
 
-    it "surface is an enum with table, calendar, and kanban" do
+    it "surface is an enum with table, calendar, kanban, and grid" do
       field = cv_defn.fields["surface"]
       field.type.not_nil!.type_name.should eq("enum")
       field.values.not_nil!.map(&.key).should contain("table")
       field.values.not_nil!.map(&.key).should contain("calendar")
       field.values.not_nil!.map(&.key).should contain("kanban")
-      field.values.not_nil!.size.should eq(3)
+      field.values.not_nil!.map(&.key).should contain("grid")
+      field.values.not_nil!.size.should eq(4)
     end
 
     it "name is a required string" do
@@ -253,6 +254,15 @@ describe "core.CollectionView" do
       Facet::Document::Validation.validate(doc, cv_defn).should be_empty
     end
 
+    it "accepts a grid CollectionView with columns and grid settings" do
+      doc = JSON.parse(%({
+        "name": "Sheet",
+        "surface": "grid",
+        "config": { "columns": [{ "key": "name" }], "grid": { "frozen": 1 } }
+      }))
+      Facet::Document::Validation.validate(doc, cv_defn).should be_empty
+    end
+
     it "rejects missing name" do
       doc = JSON.parse(%({"surface": "table"}))
       errs = Facet::Document::Validation.validate(doc, cv_defn)
@@ -266,9 +276,9 @@ describe "core.CollectionView" do
     end
 
     it "rejects an unknown surface" do
-      doc = JSON.parse(%({"name": "All", "surface": "grid"}))
+      doc = JSON.parse(%({"name": "All", "surface": "matrix"}))
       errs = Facet::Document::Validation.validate(doc, cv_defn)
-      errs.any? { |e| e.field == "surface" && e.message.includes?("grid") }.should be_true
+      errs.any? { |e| e.field == "surface" && e.message.includes?("matrix") }.should be_true
     end
   end
 

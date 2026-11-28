@@ -1,0 +1,136 @@
+---
+type: overview
+title: Construire
+description: Modélisez vos données métier en domaines et créez des apps dessus — dans l’app ou en fichiers, à la main ou avec un agent.
+audience: [author, developer]
+features: []
+verified_at: eee55a2
+sidebar:
+  order: 0
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Cet onglet réunit deux types de bâtisseurs. **L’auteur** modélise le métier :
+types d’enregistrements, champs, vues et règles, construits dans l’app ou en
+fichiers. **Le développeur** construit les apps qui utilisent ces données :
+apps navigateur, services backend et agents IA. Les tutoriels ci-dessous vous
+mènent l’un et l’autre d’un serveur vide à un domaine fonctionnel et à une app
+livrée.
+
+Si vous hésitez encore sur Facet, commencez plutôt par
+[Architecture en un coup d’œil](/fr/discover/how-it-works/).
+
+## Que voulez-vous faire ?
+
+<CardGrid>
+	<LinkCard title="Essayer en une heure" description="Lancez Facet, construisez un domaine, livrez une app. Un parcours de tutoriel, un exemple filé." href="/fr/build/first-hour/" />
+	<LinkCard title="Modéliser vos données" description="Doctypes, champs, vues, règles et automatisation. Choisissez d’abord votre façon de construire." href="/fr/build/model/" />
+	<LinkCard title="Créer une app" description="Faites signer les utilisateurs, lisez et écrivez des données, hébergez l’app sur Facet." href="/fr/build/apps/" />
+</CardGrid>
+
+## Toutes les pages de cette section
+
+**Votre première heure** — le parcours de référence, un seul exemple filé :
+
+- [Votre première heure](/fr/build/first-hour/) — le plan, le temps, ce qu’il vous faut.
+- [Lancer Facet](/fr/build/first-hour/run-facet/)
+- [Modéliser votre premier domaine](/fr/build/first-hour/first-domain/)
+- [Le même domaine en fichiers](/fr/build/first-hour/first-domain-in-files/)
+- [Livrer votre première app](/fr/build/first-hour/first-app/)
+- [Donner accès à votre équipe](/fr/build/first-hour/team-access/)
+- [Connecter un agent IA](/fr/build/first-hour/connect-an-agent/)
+
+**Installer l’environnement de dev** :
+
+- [Installer l’environnement de dev](/fr/build/dev-environment/) — pour le mode fichiers et le travail sur les apps.
+
+**Modéliser vos données** — commencez par [Choisir sa façon de construire](/fr/build/model/), la page de décision entre les deux modes de construction :
+
+- [Choisir sa façon de construire](/fr/build/model/) — dans l’app avec des brouillons, ou en fichiers sur un serveur de dev.
+- [Le fonctionnement des brouillons](/fr/build/model/in-app/how-drafts-work/)
+- [Brouillons, éditeurs et publication](/fr/build/model/in-app/drafts-and-publishing/)
+- [Construire avec l’assistant](/fr/build/model/in-app/build-with-assistant/)
+- [Vérifier avant de publier](/fr/build/model/in-app/check-before-publish/)
+- [Le watcher de domaines](/fr/build/model/in-files/domain-watcher/)
+- [La disposition des fichiers d’un domaine](/fr/build/model/in-files/domain-files/)
+- [Bâtir des domaines avec un agent de code](/fr/build/model/in-files/with-a-coding-agent/)
+- [De la dev à la production](/fr/build/model/dev-to-production/)
+- [Déplacer des domaines avec des bundles](/fr/build/model/bundles/)
+- [Modifier un domaine réel sans risque](/fr/build/model/change-a-live-domain/)
+
+*Données — doctypes et champs :*
+
+- [Concevoir des doctypes](/fr/build/model/data/design-doctypes/)
+- [Choisir les types de champs](/fr/build/model/data/field-types/)
+- [Identifiants et contraintes d’unicité](/fr/build/model/data/identifiers-uniqueness/)
+- [Champs calculés](/fr/build/model/data/computed-fields/)
+- [Champs secrets et en écriture seule](/fr/build/model/data/secret-fields/)
+- [Des fichiers dans les champs](/fr/build/model/data/files/)
+
+*Relations :*
+
+- [Relier des documents entre eux](/fr/build/model/relations/references-links/)
+- [Composition parent/enfant](/fr/build/model/relations/parent-child/)
+- [Partager des données entre domaines](/fr/build/model/relations/across-domains/)
+- [Sidecars (commentaires, pièces jointes)](/fr/build/model/relations/comments-attachments/)
+
+*Vues :*
+
+- [Libellés et texte de recherche](/fr/build/model/views/names-and-search/)
+- [Concevoir les pages document](/fr/build/model/views/document-pages/)
+- [Listes, kanban et calendriers](/fr/build/model/views/lists-boards-calendars/)
+- [Votre domaine en schéma](/fr/build/model/views/schematic/)
+
+*Comportement :*
+
+- [Ajouter des actions à un doctype](/fr/build/model/behaviour/named-actions/)
+- [Scripts et garde-fous](/fr/build/model/behaviour/scripts-and-guards/)
+
+*Automatisation :*
+
+- [Réagir aux événements et aux planifications](/fr/build/model/automation/event-hooks/)
+- [Envoyer des webhooks](/fr/build/model/automation/webhooks/)
+- [Notifications et mentions](/fr/build/model/automation/notifications/)
+
+*Règles d’accès :*
+
+- [Écrire des règles de lignes pour les rôles](/fr/build/model/access/named-scopes/)
+
+**Créer des apps** — commencez par [Créer des apps](/fr/build/apps/) pour choisir comment votre app connecte ses utilisateurs :
+
+- [Créer des apps](/fr/build/apps/) — app navigateur, service backend, ou agent IA.
+- [Comment fonctionnent les apps sur Facet](/fr/build/apps/how-apps-work/)
+- [Démarrage rapide](/fr/build/apps/quickstart/)
+- [Enregistrer une app](/fr/build/apps/connect/register/)
+- [Connecter les utilisateurs](/fr/build/apps/connect/user-login/)
+- [Lier les tokens à votre app (DPoP)](/fr/build/apps/connect/dpop/)
+- [Origines autorisées et CORS](/fr/build/apps/connect/cors/)
+- [Apps backend et comptes de service](/fr/build/apps/connect/backend-apps/)
+- [Ne montrer que ce que l’utilisateur peut faire](/fr/build/apps/connect/permission-manifest/)
+- [Apps, attributions et rôles](/fr/build/apps/connect/what-an-app-can-do/)
+- [Utiliser l’API REST](/fr/build/apps/data/rest-api/)
+- [Le SDK TypeScript](/fr/build/apps/data/sdk/)
+- [Rechercher depuis une app](/fr/build/apps/data/search/)
+- [Mises à jour en direct](/fr/build/apps/data/realtime/)
+- [Téléverser et servir des fichiers](/fr/build/apps/data/files/)
+- [Import et export en masse](/fr/build/apps/data/bulk-import-export/)
+- [Déployer votre app sur Facet](/fr/build/apps/host/deploy/)
+- [Intégrer l’assistant à votre app](/fr/build/apps/host/embed-assistant/)
+- [Bâtir des apps avec un agent de code](/fr/build/apps/agents/coding-agents/)
+- [Connecter des agents par MCP](/fr/build/apps/agents/mcp/)
+- [Ce que les agents peuvent faire](/fr/build/apps/agents/agent-tools/)
+
+**Le fonctionnement en profondeur** — les pages L3, pour quand vous avez besoin du modèle exact :
+
+- [Le moteur en profondeur](/fr/build/deeper/)
+- [Documents, doctypes et projections](/fr/build/deeper/documents-and-projections/)
+- [Évolution du schéma et migration à la demande](/fr/build/deeper/schema-evolution/)
+- [Réplication entre domaines](/fr/build/deeper/cross-domain-replication/)
+- [Comment les domaines restent isolés](/fr/build/deeper/domain-isolation/)
+
+## Voir aussi
+
+- [Architecture en un coup d’œil](/fr/discover/how-it-works/) — les cinq idées derrière les domaines, les rôles et les apps.
+- [Administrer](/fr/admin/) — qui peut utiliser ce que vous construisez : rôles, attributions, et clés.
+- [Référence](/fr/reference/) — les types de champs, les opérateurs de filtre et les schémas exacts.

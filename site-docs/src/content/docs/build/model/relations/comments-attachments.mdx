@@ -1,0 +1,143 @@
+---
+type: how-to
+title: Add comments and attachments
+description: Attach comment and attachment panels to a doctype and control who may use them.
+audience: [author]
+features: [DOM-06]
+sidebar:
+  order: 3
+verified_at: eee55a2
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+A Brightwater maintenance ticket needs a place for the warehouse to discuss
+the repair and to keep the photos of the damage. Facet puts both beside the
+document: a **comments** panel and an **attachments** panel. The records live
+in their own doctypes in the `core` domain — the engine calls this shape a
+**sidecar**, and that is the last time this page uses the word. The host
+doctype declares which panels it carries; one declaration serves every
+doctype that wants the panel, so you never copy the comment logic into your
+domain.
+
+## When to use this
+
+Add the `comments` panel when people discuss a record. Add the `attachments`
+panel when people keep files with a record. Both panels are declared on the
+doctype, so you can give them to any doctype in your domain.
+
+## Before you start
+
+- **A draft domain.** You edit the host doctype in a [draft domain](/build/model/in-app/how-drafts-work/), or in the
+  [domain folder on a dev server](/build/model/in-files/domain-files/).
+- **Nothing to create.** The panel doctypes `core.Comment` and
+  `core.Attachment` exist on every instance. You declare them on your host;
+  you do not create them.
+- **A free segment name.** A segment name (the panel's route segment, such as
+  `comments`) cannot collide with a `children` relationship of the same name.
+
+## Steps
+
+<Tabs syncKey="build-mode">
+<TabItem label="Builder">
+
+1. Open the doctype in the **Builder** and find the **Sidecars** section.
+2. Add an entry per panel: the segment name (`comments`, `attachments`) and
+   the panel doctype (`core.Comment`, `core.Attachment`).
+3. Optionally set a **Label** (for example `Notes`) and an **Order** for the
+   tab.
+
+</TabItem>
+<TabItem label="Files">
+
+The Brightwater ticket carries both panels, exactly as the bundle ships it:
+
+```yaml
+# equipment/doctypes/equipment.MaintenanceTicket.yml (extract)
+sidecars:
+  comments:
+    doctype: core.Comment
+    column: target
+  attachments:
+    doctype: core.Attachment
+    column: target
+```
+
+The `column` names the reference field on the panel doctype that points back
+at the host. `target` is the default and almost always right.
+
+</TabItem>
+</Tabs>
+
+### Check the rights
+
+A nested panel grant follows the host path. In practice:
+
+| Caller right | What it allows |
+| --- | --- |
+| read on `equipment.MaintenanceTicket` | Read the comments and attachments. |
+| create on `equipment.MaintenanceTicket` | Write comments and attach files. |
+| create on `equipment.MaintenanceTicket.Comment` | Comment as a read-only user. |
+
+That last line is how you let a viewer comment: keep their host rights
+read-only and add the explicit nested line for the action.
+
+### See the panel
+
+Open a document. The panel stands beside the page and shows one tab per
+declared panel, with a count per tab. Comments take markdown, support
+replies, and notify a person when you mention them. Attachments show type,
+size, uploader, and time.
+
+A mention is a link to an account. Both forms work in a comment body:
+
+```markdown
+Ping [Tom](urn:facet:iam:Account:tom@brightwater.example) about the pole set.
+```
+
+## Example
+
+The panel API creates a comment through the host path:
+
+```sh
+curl -k -X POST "https://facet.localhost:3443/Api/equipment/MaintenanceTicket/MT-2026-0001/comments" \
+  -H "Authorization: Bearer $FACET_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"body": "Pole set frayed at the joint — photos attached."}'
+```
+
+`-k` skips the certificate check of the local development address. Facet sets
+the `target` from the path and the `author` from the caller. A `target` key
+in the body answers `400` — the route owns that field.
+
+## Troubleshooting
+
+### The panel does not show
+
+The doctype carries no `sidecars` map, or the doctype was edited after the
+page was opened. Check the definition and reload.
+
+### Commenting answers `403`
+
+Your role can read the host but holds no create right on the host path and no
+explicit nested line. Ask the domain author for `create` on the host, or for
+the nested line shown in the rights table.
+
+### A flat create of `core.Comment` answers `422`
+
+Panel records are created through the host document, never through the flat
+route. Use the nested path shown in the example.
+
+### The comments are gone after a delete
+
+Deleting the host removes its panel records through an event-driven sweep. If
+the host document itself is rolled back, the sweep's removals stay — the
+comments do not come back with the host.
+
+## Related
+
+- [Sidecar doctypes (engineering doc)](https://github.com/wearefacet/facet/blob/main/doc/backend/sidecar.md) — the full sidecar contract.
+- [Files in fields](/build/model/data/files/) — store files in fields, not only in the panel.
+- [Notifications and mentions](/build/model/automation/notifications/) — what a mention triggers.
+- [Authorization enforcement](/admin/under-the-hood/how-access-is-enforced/) — the two gates behind every panel action.
+- [Documents: records with a memory](/discover/how-it-works/documents/)

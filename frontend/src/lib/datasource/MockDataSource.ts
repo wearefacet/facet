@@ -334,6 +334,9 @@ function asMoneyFilter(raw: unknown): { amount: number; currency: string | null 
 		const amount = Number(m[2]);
 		return Number.isFinite(amount) ? { amount, currency: m[1] } : null;
 	}
+	// A bare amount only — a non-numeric string is not a money filter (it
+	// would otherwise compare as `NaN` and reject every stored row).
+	if (!/^-?\d+(\.\d+)?$/.test(trimmed)) return null;
 	const amount = Number(trimmed);
 	return Number.isFinite(amount) ? { amount, currency: null } : null;
 }

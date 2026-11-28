@@ -568,14 +568,18 @@
 
 		// A route change rebuilds the keyed dialog block. The tour stays closed
 		// for the session, and no overlay element may stay behind to catch clicks.
-		page.route = { id: '/' };
-		await new Promise((r) => setTimeout(r, 100));
-		expect(document.querySelector('.welcome-overlay')).toBeNull();
-		expect(document.querySelector('.welcome-content')).toBeNull();
-		expect(document.body.style.pointerEvents).not.toBe('none');
-
-		// The mock page state is shared across stories — put it back.
-		page.route = { id: null };
+		// The mock page state is shared across stories: the reset sits in a
+		// `finally` so a failed assertion above cannot leave `page.route` on
+		// '/' for the rest of the suite.
+		try {
+			page.route = { id: '/' };
+			await new Promise((r) => setTimeout(r, 100));
+			expect(document.querySelector('.welcome-overlay')).toBeNull();
+			expect(document.querySelector('.welcome-content')).toBeNull();
+			expect(document.body.style.pointerEvents).not.toBe('none');
+		} finally {
+			page.route = { id: null };
+		}
 	}}
 >
 	{#snippet template(args)}
@@ -599,20 +603,23 @@
 		await waitFor(() => expect(body.getByText('A governance layer')).toBeVisible());
 
 		// A route change mid-tour rebuilds the dialog: exactly one overlay may
-		// remain, and the tour must stay open at the same step.
-		page.route = { id: '/' };
-		await waitFor(() => expect(document.querySelectorAll('.welcome-overlay').length).toBe(1));
-		await expect(body.getByText('A governance layer')).toBeVisible();
+		// remain, and the tour must stay open at the same step. The mock page
+		// state is shared across stories: the reset sits in a `finally` so a
+		// failed assertion cannot leave `page.route` on '/' for the suite.
+		try {
+			page.route = { id: '/' };
+			await waitFor(() => expect(document.querySelectorAll('.welcome-overlay').length).toBe(1));
+			await expect(body.getByText('A governance layer')).toBeVisible();
 
-		// The rebuilt dialog is interactive; Esc then closes it for the session.
-		await userEvent.click(body.getByRole('button', { name: 'Next' }));
-		await userEvent.keyboard('{Escape}');
-		await waitFor(() => expect(document.querySelector('.welcome-overlay')).toBeNull());
-		await waitFor(() => expect(document.body.style.pointerEvents).not.toBe('none'));
-		await expect(saveCalls).toEqual([]);
-
-		// The mock page state is shared across stories — put it back.
-		page.route = { id: null };
+			// The rebuilt dialog is interactive; Esc then closes it for the session.
+			await userEvent.click(body.getByRole('button', { name: 'Next' }));
+			await userEvent.keyboard('{Escape}');
+			await waitFor(() => expect(document.querySelector('.welcome-overlay')).toBeNull());
+			await waitFor(() => expect(document.body.style.pointerEvents).not.toBe('none'));
+			await expect(saveCalls).toEqual([]);
+		} finally {
+			page.route = { id: null };
+		}
 	}}
 >
 	{#snippet template(args)}

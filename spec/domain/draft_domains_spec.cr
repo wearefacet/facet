@@ -668,6 +668,53 @@ module Facet::Domain
         end
       end
 
+      # The managed indexes are partial indexes on the shared `projections`
+      # table, so deleting the `doctype_indexes` tracking rows alone leaves
+      # the real indexes (and their field statistics objects) behind. Nothing
+      # would ever drop them again — every write and query plan would keep
+      # paying for a domain that no longer exists. This asserts the physical
+      # DDL goes with the domain.
+      it "drops the domain's physical indexes and statistics objects" do
+        with_db do |db|
+          draft = create_draft_domain(db)
+
+          # A field with an equality capability plans to a btree index (plus
+          # a statistics object), so `sync` creates real DDL on `projections`.
+          defn = Facet::Doctype::DoctypeDefinition.new(
+            doctype: "Widget", domain: draft,
+            fields: {"code" => Facet::Doctype::FieldDefinition.new(
+              type: Facet::Doctype::FieldType.parse("string"),
+              filters: [Facet::Doctype::FilterCapability::Equality],
+            )},
+          )
+          Facet::Index::Manager.sync(db, defn)
+
+          index_name = Facet::Index::Naming.index_name(draft, "Widget", "code", "btree")
+          stats_name = Facet::Index::Naming.statistics_name(draft, "Widget", "code")
+
+          # Both the index and the statistics object exist before disposal.
+          db.query_one(
+            "SELECT COUNT(*) FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'projections' AND indexname = $1",
+            index_name, as: Int64).should eq(1)
+          db.query_one(
+            "SELECT COUNT(*) FROM pg_statistic_ext WHERE stxname = $1",
+            stats_name, as: Int64).should eq(1)
+
+          Scratch.dispose_definitions!(db, draft)
+
+          # Tracking rows, physical index, and statistics object all gone.
+          db.query_one(
+            "SELECT COUNT(*) FROM doctype_indexes WHERE domain = $1",
+            draft, as: Int64).should eq(0)
+          db.query_one(
+            "SELECT COUNT(*) FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'projections' AND indexname = $1",
+            index_name, as: Int64).should eq(0)
+          db.query_one(
+            "SELECT COUNT(*) FROM pg_statistic_ext WHERE stxname = $1",
+            stats_name, as: Int64).should eq(0)
+        end
+      end
+
       it "leaves view rows of other domains untouched" do
         with_db do |db|
           draft_a = create_draft_domain(db)

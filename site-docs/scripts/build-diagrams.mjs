@@ -7,9 +7,9 @@
 // D2 engine stays a build dependency and readers download only the finished
 // diagrams.
 //
-// Source pages are edited in place. The script is idempotent: it renders a
-// diagram only when its SVG files are missing, and it deletes an SVG that no
-// page references any more.
+// Source pages are edited in place. The script is idempotent: it re-renders a
+// diagram only when its SVG files are missing or older than the house style
+// (diagram-theme.mjs), and it deletes an SVG that no page references any more.
 //
 // A fence that does not compile fails the build, with the page and the line,
 // so a typo never ships as a raw code block.
@@ -18,7 +18,7 @@
 
 import { D2 } from '@terrastruct/d2';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DARK_TOKENS, EDGE_LABEL_COLOR, LIGHT_TOKENS, RENDER_OPTIONS, styleSource } from './diagram-theme.mjs';
@@ -34,6 +34,10 @@ const FENCE_CLOSE = /^```\s*$/;
 const CAPTION = /^\*([^*].*)\*$/;
 // `--force` re-renders every diagram, for a change to the house style.
 const FORCE = process.argv.includes('--force');
+// The house style lives in diagram-theme.mjs. A diagram whose SVG predates the
+// last edit to that file was rendered with an older style, so the build must
+// re-render it rather than keep a stale file.
+const THEME_MTIME = statSync(fileURLToPath(new URL('diagram-theme.mjs', import.meta.url))).mtimeMs;
 
 const d2 = new D2();
 
@@ -60,13 +64,17 @@ function attribute(text) {
 	return text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// The image block carries its own D2 source in an HTML comment. The page
+// The image block carries its own D2 source. On `.md` pages it rides in an
+// HTML comment; on `.mdx` pages the same comment is invalid JSX, so the
+// source rides in a JSX comment instead. The page
 // keeps a readable, copyable source for readers and agents, and the build
 // can regenerate the SVG without a separate source file.
-function imageBlock(id, alt, source) {
+function imageBlock(page, id, alt, source) {
 	const label = attribute(alt);
+	const open = page.endsWith('.mdx') ? '{/* d2' : '<!-- d2';
+	const close = page.endsWith('.mdx') ? '*/}' : '-->';
 	return [
-		`<!-- d2\n${source}\n-->`,
+		`${open}\n${source}\n${close}`,
 		`<div class="d2-diagram">`,
 		`<img class="d2-diagram__img d2-diagram__light" src="${OUTPUT_URL}/${id}-light.svg" alt="${label}" loading="lazy" />`,
 		`<img class="d2-diagram__img d2-diagram__dark" src="${OUTPUT_URL}/${id}-dark.svg" alt="${label}" loading="lazy" />`,
@@ -74,12 +82,27 @@ function imageBlock(id, alt, source) {
 	].join('\n');
 }
 
+// Both comment forms carry the same payload; the id regex is shared.
+const EMBEDDED_MD = /<!-- d2\n([\s\S]*?)\n-->\n<div class="d2-diagram">\n<img[^>]*\/([0-9a-f]{8})-light\.svg/g;
+const EMBEDDED_MDX = /\{\/\* d2\n([\s\S]*?)\n\*\/\}\n<div class="d2-diagram">\n<img[^>]*\/([0-9a-f]{8})-light\.svg/g;
+
 // Source blocks already rendered on a page, keyed by diagram id.
 function embeddedSources(text) {
 	const sources = new Map();
-	const re = /<!-- d2\n([\s\S]*?)\n-->\n<div class="d2-diagram">\n<img[^>]*\/([0-9a-f]{8})-light\.svg/g;
-	for (const match of text.matchAll(re)) sources.set(match[2], match[1]);
+	for (const re of [EMBEDDED_MD, EMBEDDED_MDX]) {
+		for (const match of text.matchAll(re)) sources.set(match[2], match[1]);
+	}
 	return sources;
+}
+
+// `.mdx` pages cannot carry the HTML-comment form; migrate any block an
+// older build wrote before the extension-aware form existed.
+function migrateMdxBlocks(page, text) {
+	if (!page.endsWith('.mdx') || !text.includes('<!-- d2')) return text;
+	return text.replace(EMBEDDED_MD, (whole, source) => {
+		const rest = whole.slice(whole.indexOf('-->') + 3);
+		return `{/* d2\n${source}\n*/}${rest}`;
+	});
 }
 
 // The alt text comes from an italic caption line above the fence, else from
@@ -116,10 +139,14 @@ async function renderPair(source, page) {
 	}
 }
 
+function isFresh(path) {
+	return existsSync(path) && statSync(path).mtimeMs >= THEME_MTIME;
+}
+
 async function ensureRendered(id, source, page, counters) {
 	const lightPath = join(OUTPUT_DIR, `${id}-light.svg`);
 	const darkPath = join(OUTPUT_DIR, `${id}-dark.svg`);
-	if (!FORCE && existsSync(lightPath) && existsSync(darkPath)) return;
+	if (!FORCE && isFresh(lightPath) && isFresh(darkPath)) return;
 	const pair = await renderPair(source, page);
 	writeFileSync(lightPath, pair.light);
 	writeFileSync(darkPath, pair.dark);
@@ -135,7 +162,13 @@ function referencedIds(text) {
 
 async function processPage(page, counters) {
 	const path = join(DOCS_DIR, page);
-	const text = readFileSync(path, 'utf8');
+	let text = readFileSync(path, 'utf8');
+	const migrated = migrateMdxBlocks(page, text);
+	if (migrated !== text) {
+		writeFileSync(path, migrated);
+		text = migrated;
+		counters.migrated = (counters.migrated ?? 0) + 1;
+	}
 	const lines = text.split('\n');
 	const output = [];
 	const used = referencedIds(text);
@@ -167,7 +200,7 @@ async function processPage(page, counters) {
 		// The image carries the caption as its alt text, so drop the line above.
 		if (lines[index - 1]?.trim().match(CAPTION)) output.pop();
 
-		output.push(imageBlock(id, altTextFor(lines, index, source), source));
+		output.push(imageBlock(page, id, altTextFor(lines, index, source), source));
 		index = end;
 	}
 

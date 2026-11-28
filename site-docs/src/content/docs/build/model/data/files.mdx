@@ -1,0 +1,155 @@
+---
+type: how-to
+title: Files in fields
+description: Store files in fields through the artifact store, cap the upload size, and control which file types a field accepts.
+audience: [author]
+features: [PLT-04]
+sidebar:
+  order: 5
+verified_at: eee55a2
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+A `file` field holds a file, not a string of characters. The field stores the
+id of an artifact, and the artifact store keeps the bytes outside the
+document. This keeps documents small and lets two documents share one file
+without copying it.
+
+## When to use this
+
+Use a `file` field when the file is part of the record: a signed contract on
+a booking, a damage photo on a maintenance ticket, a manual on an item. For
+discussion files that belong to no field, use the attachments panel instead
+(see [Add comments and attachments](/build/model/relations/comments-attachments/)).
+
+## Before you start
+
+- **Storage is built in.** The [artifact store](/admin/configure/file-storage/) exists on every instance. You
+  declare the field; you do not configure storage.
+- **A size limit.** One upload is limited to 50 MiB by default
+  (`artifact.max_upload_bytes`, 52,428,800 bytes). Your administrator sets
+  the limit.
+- **A type list, if you want one.** Facet accepts any file type by default.
+  Declare an `accept` list when the field should take only some types.
+
+## Steps
+
+<Tabs syncKey="build-mode">
+<TabItem label="Builder">
+
+1. Open the doctype in the **Builder** and add a field of type **File**.
+2. Optionally enter the **Accept** list as MIME types, for example
+   `application/pdf`.
+3. Save. The form for the doctype now takes files in that field.
+
+</TabItem>
+<TabItem label="Files">
+
+The Brightwater item doctype with a damage photo and a manual added, as a
+complete fields extract:
+
+```yaml
+# equipment/doctypes/equipment.Item.yml (fields extract)
+fields:
+  name:
+    type: string
+    title: Name
+    required: true
+    filters: [equality, text_search]
+  damage_photo:
+    type: file
+    accept: [image/jpeg, image/png]
+    title: Damage photo
+  manual_pdf:
+    type: file
+    accept: [application/pdf]
+    title: Manual
+```
+
+A field without `accept` takes every file type.
+
+</TabItem>
+</Tabs>
+
+### The accept list uses MIME types
+
+Facet decides the type of an upload from the file content, not from the file
+name, and rejects an upload that does not match the list. Renaming a file
+does not get it past the check.
+
+### Upload in the app
+
+In a form, the user picks a file for the field. Facet uploads the bytes,
+stores them, and puts the artifact id into the field. The save and the upload
+are one step: if either fails, nothing is written.
+
+### Upload through the API
+
+Send a multipart body. One part named `$content` carries the document fields,
+and one part per file field carries the bytes, named after the field.
+
+```sh
+curl -k -X POST "https://facet.localhost:3443/Api/equipment/Item" \
+  -H "Authorization: Bearer $FACET_API_KEY" \
+  -F '$content={"name":"Folding table 6ft"}' \
+  -F 'manual_pdf=@./table-manual.pdf'
+```
+
+`-k` skips the certificate check of the local development address.
+
+## What the store does
+
+| Rule | Effect |
+| --- | --- |
+| Same bytes, one copy — mostly | Identical bytes are stored once and reused, when the uploader can already read the stored copy. Two callers who cannot read each other's files each store their own copy. |
+| Access follows documents | A file is readable through the documents that reference it. |
+| Out-of-band uploads | A file pasted into a long text is uploaded first and linked on save. |
+
+A longtext field can embed a file link with the form
+`urn:facet:artifact:<id>`. Every reader of that document gains access to the
+file.
+
+## Example
+
+The declaration above gives every item a photo and a manual field. A create
+with a manual stores:
+
+```json
+{
+  "name": "Folding table 6ft",
+  "manual_pdf": "01HQ2F5WX8K4M3PZC6NRB9TJVA"
+}
+```
+
+The value is the artifact id — a 26-character ULID. The document page renders
+it as a download link.
+
+## Troubleshooting
+
+### The upload answers `413`
+
+The file is larger than the size limit. Use a smaller file, or ask your
+administrator to raise the limit.
+
+### The upload answers `422` with a MIME error
+
+The file content does not match the `accept` list. Convert the file or widen
+the list; changing the file name alone does not help, because Facet reads the
+content.
+
+### An export carries a short id instead of the file
+
+That is the artifact id. The file content does not travel with a CSV or JSON
+export; download files from the document page.
+
+### A file link in a document shows as dead
+
+The file was destroyed by an administrator. The reference stays in the text
+but the bytes are gone.
+
+## Related
+
+- [Artifacts (engineering doc)](https://github.com/wearefacet/facet/blob/main/doc/backend/artifact.md) — the artifact store in full.
+- [Add comments and attachments](/build/model/relations/comments-attachments/) — files that belong to a discussion, not a field.
+- [How domains stay isolated](/build/deeper/domain-isolation/) — how the store sits outside your domain.

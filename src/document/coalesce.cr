@@ -106,7 +106,7 @@ module Facet
         Event::Publisher.enqueue(
           domain: domain, doc_type: doc_type, doc_id: doc_id,
           event: "updated", mutation_id: mut_id, actioner_id: actioner_id,
-          cause: (cause || Mutation::Cause.root(Mutation::CauseKind::Request)).resolve(mut_id).to_json_any,
+          cause_struct: (cause || Mutation::Cause.root(Mutation::CauseKind::Request)).resolve(mut_id),
           reentrant: reentrant,
         )
 
@@ -299,8 +299,15 @@ module Facet
           # GUCs the trigger would have read.
           Document::ProjectionGucs.set_all(txn, defn, merged)
 
-          # Delete the folded row second.
-          txn.exec("DELETE FROM mutations WHERE id = $1", target.id)
+          # Delete the folded row second. The predicate names the primary
+          # key's leading columns: `mutations_pkey` is `(domain, doc_type,
+          # id)`, so `WHERE id = $1` alone cannot use it and plans to a
+          # full index scan (254 ms for one row on a 2.6 M-row log). With
+          # `domain` and `doc_type` the delete is a primary-key lookup.
+          txn.exec(
+            "DELETE FROM mutations WHERE domain = $1 AND doc_type = $2 AND id = $3",
+            domain, doc_type, target.id,
+          )
 
           # Advance the projection manually, mirroring `projection_from_update`:
           # `content` is the new content (in memory); `meta` advances with the

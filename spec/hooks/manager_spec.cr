@@ -137,27 +137,31 @@ module Facet::Hooks
           service_id: "test-subs",
           event_manager: stub,
         )
-        mgr.start(db)
+        begin
+          mgr.start(db)
 
-        subs = stub.subscriptions
-        subs.size.should eq(2)
+          subs = stub.subscriptions
+          subs.size.should eq(2)
 
-        sales_sub = subs.find { |s| s.domain == "sales" }
-        sales_sub.should_not be_nil
-        sales_sub.not_nil!.channel.should eq("FACET:RESOURCE:accountancy:Contract")
+          sales_sub = subs.find { |s| s.domain == "sales" }
+          sales_sub.should_not be_nil
+          sales_sub.not_nil!.channel.should eq("FACET:RESOURCE:accountancy:Contract")
 
-        hr_sub = subs.find { |s| s.domain == "hr" }
-        hr_sub.should_not be_nil
-        hr_sub.not_nil!.channel.should eq("FACET:RESOURCE:identity:Account")
+          hr_sub = subs.find { |s| s.domain == "hr" }
+          hr_sub.should_not be_nil
+          hr_sub.not_nil!.channel.should eq("FACET:RESOURCE:identity:Account")
 
-        # Channel providers and add callbacks installed for each owning
-        # domain — the add callback pairs runtime-added source channels
-        # with dispatch registrations (without it the messages on the new
-        # channel are read and silently dropped).
-        stub.channel_providers.has_key?("sales").should be_true
-        stub.channel_providers.has_key?("hr").should be_true
-        stub.channel_add_callbacks.has_key?("sales").should be_true
-        stub.channel_add_callbacks.has_key?("hr").should be_true
+          # Channel providers and add callbacks installed for each owning
+          # domain — the add callback pairs runtime-added source channels
+          # with dispatch registrations (without it the messages on the new
+          # channel are read and silently dropped).
+          stub.channel_providers.has_key?("sales").should be_true
+          stub.channel_providers.has_key?("hr").should be_true
+          stub.channel_add_callbacks.has_key?("sales").should be_true
+          stub.channel_add_callbacks.has_key?("hr").should be_true
+        ensure
+          mgr.stop
+        end
       end
     end
 
@@ -176,22 +180,26 @@ module Facet::Hooks
           service_id: "test-refresh",
           event_manager: stub,
         )
-        mgr.start(db)
+        begin
+          mgr.start(db)
 
-        provider = stub.channel_providers["sales"]
-        provider.call.should eq(["FACET:RESOURCE:accountancy:Contract"])
+          provider = stub.channel_providers["sales"]
+          provider.call.should eq(["FACET:RESOURCE:accountancy:Contract"])
 
-        # Add a second source doctype hook on the same owning domain.
-        upsert_domain_with_hooks(db, "sales", [
-          {"id": "h1", "kind": "event", "script": "local e={} function e.on_event(ctx) end return e", "source": {"domain": "accountancy", "doc_type": "Contract"}},
-          {"id": "h2", "kind": "event", "script": "local e={} function e.on_event(ctx) end return e", "source": {"domain": "accountancy", "doc_type": "Invoice"}},
-        ])
-        mgr.mark_registry_stale
+          # Add a second source doctype hook on the same owning domain.
+          upsert_domain_with_hooks(db, "sales", [
+            {"id": "h1", "kind": "event", "script": "local e={} function e.on_event(ctx) end return e", "source": {"domain": "accountancy", "doc_type": "Contract"}},
+            {"id": "h2", "kind": "event", "script": "local e={} function e.on_event(ctx) end return e", "source": {"domain": "accountancy", "doc_type": "Invoice"}},
+          ])
+          mgr.mark_registry_stale
 
-        # The provider reflects the new channel set on the next call —
-        # no restart, no re-subscribe.
-        channels = provider.call.sort
-        channels.should eq(["FACET:RESOURCE:accountancy:Contract", "FACET:RESOURCE:accountancy:Invoice"])
+          # The provider reflects the new channel set on the next call —
+          # no restart, no re-subscribe.
+          channels = provider.call.sort
+          channels.should eq(["FACET:RESOURCE:accountancy:Contract", "FACET:RESOURCE:accountancy:Invoice"])
+        ensure
+          mgr.stop
+        end
       end
     end
 
@@ -214,12 +222,16 @@ module Facet::Hooks
           service_id: "test-empty",
           event_manager: stub,
         )
-        mgr.start(db)
+        begin
+          mgr.start(db)
 
-        stub.subscriptions.should be_empty
-        stub.channel_providers.should be_empty
-        stub.channel_add_callbacks.should be_empty
-        mgr.started?.should be_true
+          stub.subscriptions.should be_empty
+          stub.channel_providers.should be_empty
+          stub.channel_add_callbacks.should be_empty
+          mgr.started?.should be_true
+        ensure
+          mgr.stop
+        end
       end
     end
 

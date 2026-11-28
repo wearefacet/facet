@@ -15,7 +15,7 @@
   "col_what": "Ce qu’elle implique",
   "col_sources": "Sources",
   "related_heading": "Voir aussi",
-  "related_designing": "- [Concevoir des doctypes](/fr/build/designing-doctypes/) — comment modéliser un domaine avec ces clés.",
-  "related_evolving": "- [Faire évoluer un schéma](/fr/build/evolving-schema/) — versions de schéma et migrations.",
-  "related_parent_child": "- [Composition parent et enfant](/fr/build/parent-child-composition/) — la paire children et member_of."
+  "related_designing": "- [Concevoir des doctypes](/fr/build/model/data/design-doctypes/) — comment modéliser un domaine avec ces clés.",
+  "related_evolving": "- [Faire évoluer un schéma](/fr/build/model/change-a-live-domain/) — versions de schéma et migrations.",
+  "related_parent_child": "- [Composition parent et enfant](/fr/build/model/relations/parent-child/) — la paire children et member_of."
 }

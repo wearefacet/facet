@@ -47,6 +47,7 @@
 	import { valueEquals, coercePaste } from './coerce.js';
 	import { WRITABLE_FIELD_TYPES } from './fieldTypes.js';
 	import { missingRequired, newRowBody, newRowDefaults, draftDirty } from './newRow.js';
+	import { placeFloater } from './floatPlacement.js';
 	import { renderValidationError } from '$lib/datasource/validationMessages.js';
 	import CellEditor from './editors/CellEditor.svelte';
 	import type { CommitMove } from './editors/types.js';
@@ -323,10 +324,16 @@
 		list closes its editor under the held button, and the cells exposed
 		underneath must not sweep-select. */
 	function cellMouseEnter(r: number, c: number, e: MouseEvent) {
+		tipHover = { r, c };
 		if (!pressArmed) return;
 		if ((e.buttons & 1) === 0) return;
 		if (e.shiftKey) return;
 		selection.extendTo(r, c, navMaxRow, maxCol);
+	}
+
+	/** The pointer left the cell — its hover-held failure label drops. */
+	function cellMouseLeave(r: number, c: number): void {
+		if (tipHover && tipHover.r === r && tipHover.c === c) tipHover = null;
 	}
 
 	/** Gutter click selects the whole row (all data columns of the row). */
@@ -610,6 +617,36 @@
 		return set;
 	});
 
+	/** Rows with a failed write — their gutter reads danger while the
+	 *  failing cells carry the frames. */
+	const errorRows = $derived.by(() => {
+		const set = new Set<string>();
+		for (const [rowId, inner] of pending) {
+			for (const entry of inner.values()) {
+				if (entry.status === 'error') {
+					set.add(rowId);
+					break;
+				}
+			}
+		}
+		return set;
+	});
+
+	/** The first failed cell's message — the gutter tooltip's text. */
+	function rowErrorTitle(rowId: string): string | undefined {
+		const inner = pending.get(rowId);
+		if (!inner) return undefined;
+		for (const entry of inner.values()) {
+			if (entry.status === 'error') return entry.message;
+		}
+		return undefined;
+	}
+
+	/** The failure label's pointer position — the hovered cell. The label
+	 *  shows only under the pointer: it appears when the pointer enters the
+	 *  failing cell and drops the moment it leaves (the frame stays). */
+	let tipHover = $state<{ r: number; c: number } | null>(null);
+
 	/** Whether the column's field is writable at all — the column flag
 	 *  (`editable: false`) and the system timestamp columns also gate. */
 	function colEditable(col: GridColumn): boolean {
@@ -724,12 +761,27 @@
 				lockedRows = next;
 				toast({ message: errorMessage(err, m.common_save_failed()), variant: 'error' });
 			} else {
+				// The cells the 422 details name speak through the validation
+				// catalogue (the create path's rule); the other written cells
+				// keep the generic failure text — nothing on the PATCH landed.
+				const details = err instanceof DataSourceError ? err.details : undefined;
+				const marks = new Map<string, string>();
+				if (details) {
+					for (const detail of details) {
+						if (!detail.field) continue;
+						const key = detail.field.split('.')[0];
+						if (key in effective && columns.some((column) => column.key === key)) {
+							marks.set(key, renderValidationError(detail));
+						}
+					}
+				}
+				const fallback = errorMessage(err, m.common_save_failed());
 				for (const key of Object.keys(effective)) {
 					setPending(rowId, key, {
 						status: 'error',
 						value: effective[key],
 						before: before[key],
-						message: errorMessage(err, m.common_save_failed())
+						message: marks.get(key) ?? fallback
 					});
 				}
 			}
@@ -1385,11 +1437,17 @@
 					<div
 						class="g-cell gutter frozen"
 						class:frozen-last={lastSticky === 'gutter'}
+						class:gutter-error={errorRows.has(rowKey(item))}
 						style="left: 0"
 						aria-hidden="true"
+						title={rowErrorTitle(rowKey(item))}
 						onmousedown={(e) => gutterMouseDown(r, e)}
 					>
-						{r + 1}
+						{#if savingRows.has(rowKey(item))}
+							<span class="gutter-spin"></span>
+						{:else}
+							{r + 1}
+						{/if}
 					</div>
 					{#if selectable}
 						<div
@@ -1432,6 +1490,8 @@
 							selRange!.colEnd === c}
 						{@const cellEntry = pendingFor(rowKey(item), col.key)}
 						{@const isEditing = editing?.r === r && editing?.c === c}
+						{@const showTip =
+							cellEntry?.status === 'error' && tipHover?.r === r && tipHover?.c === c}
 						<div
 							class="g-cell {colAlign(col)}"
 							class:frozen={sticky != null}
@@ -1442,6 +1502,7 @@
 							class:saving={cellEntry?.status === 'saving'}
 							class:cell-error={cellEntry?.status === 'error'}
 							class:cell-fading={cellEntry?.fading === true}
+							class:cell-tip-open={showTip}
 							class:stale={isComputed(col) && savingRows.has(rowKey(item))}
 							class:editing={isEditing}
 							style={sticky != null ? `left: ${sticky}px` : ''}
@@ -1451,9 +1512,9 @@
 							aria-colindex={c + 1}
 							data-row={r}
 							data-col={c}
-							title={cellEntry?.status === 'error' ? cellEntry.message : undefined}
 							onmousedown={(e) => cellMouseDown(r, c, e)}
 							onmouseenter={(e) => cellMouseEnter(r, c, e)}
+							onmouseleave={() => cellMouseLeave(r, c)}
 							ondblclick={() => openEditor(null)}
 						>
 							{#if isEditing}
@@ -1470,6 +1531,9 @@
 							{:else}
 								{@render dataCell(item, col, r, c)}
 							{/if}
+							{#if showTip && cellEntry}
+								<span class="error-tip" use:placeFloater>{cellEntry.message}</span>
+							{/if}
 						</div>
 					{/each}
 				</div>
@@ -1485,16 +1549,23 @@
 				<div
 					class="g-row g-new"
 					class:g-new-creating={creating}
+					class:g-new-pending={newDirty || newErrors.size > 0}
 					role="row"
 					aria-rowindex={items.length + 1}
 				>
 					<div
 						class="g-cell gutter new-gutter frozen"
 						class:frozen-last={lastSticky === 'gutter'}
+						class:gutter-error={newErrors.size > 0}
 						style="left: 0"
 						aria-hidden="true"
+						title={newErrors.values().next().value}
 					>
-						+
+						{#if creating}
+							<span class="gutter-spin"></span>
+						{:else}
+							+
+						{/if}
 					</div>
 					{#if selectable}
 						<div
@@ -1526,6 +1597,7 @@
 						{@const value = newCellValue(col.key)}
 						{@const hasValue = value !== undefined && value !== null && value !== ''}
 						{@const isEditing = editing?.r === newRow && editing?.c === c}
+						{@const showTip = errText != null && tipHover?.r === newRow && tipHover?.c === c}
 						<div
 							class="g-cell new-cell {colAlign(col)}"
 							class:frozen={sticky != null}
@@ -1533,6 +1605,7 @@
 							class:in-range={inRange && !isFocus}
 							class:focused={isFocus}
 							class:cell-error={errText != null}
+							class:cell-tip-open={showTip}
 							class:editing={isEditing}
 							style={sticky != null ? `left: ${sticky}px` : ''}
 							role="gridcell"
@@ -1541,9 +1614,9 @@
 							aria-colindex={c + 1}
 							data-row={newRow}
 							data-col={c}
-							title={errText ?? undefined}
 							onmousedown={(e) => cellMouseDown(newRow, c, e)}
 							onmouseenter={(e) => cellMouseEnter(newRow, c, e)}
+							onmouseleave={() => cellMouseLeave(newRow, c)}
 							ondblclick={() => openEditor(null)}
 						>
 							{#if isEditing}
@@ -1567,13 +1640,16 @@
 								<!-- The invalid state's inline cue: the row stages values
 								     but cannot create until the required field is named
 								     (the design's "created once named"). -->
-								<span class="new-hint">
+								<span class="new-hint new-hint-missing">
 									{m.grid_new_row_missing({ field: col.label ?? col.key })}
 								</span>
 							{:else if c === newPromptCol && !newDirty}
 								<span class="new-hint">
 									{m.grid_new_row_prompt({ doctype: newRowLabel })}
 								</span>
+							{/if}
+							{#if showTip && errText}
+								<span class="error-tip" use:placeFloater>{errText}</span>
 							{/if}
 						</div>
 					{/each}
@@ -1751,12 +1827,17 @@
 {/snippet}
 
 <style>
+	/* Fill chain: the list-view host gives the grid its height on the grid
+	   surface. The toolbar and the footer keep their content height. The row
+	   frame takes the rest, and its rows scroll inside. Outside a flex column
+	   parent (stories), flex does nothing and the grid keeps content height. */
 	.grid-wrap {
 		display: flex;
 		flex-direction: column;
 		gap: 0;
 		min-width: 0;
 		min-height: 0;
+		flex: 1;
 	}
 
 	.grid-error {
@@ -1920,9 +2001,18 @@
 
 	/* ── Body ── */
 
-	.g-row:not(.g-head):not(.g-foot) .g-cell:hover {
+	.g-row:not(.g-head):not(.g-foot):not(.g-new-pending) .g-cell:hover {
 		background: var(--surface-2);
 	}
+
+	/* The failed row's gutter keeps its danger tint under the pointer — the
+	   failure signal outranks the hover feedback there. */
+	.g-row:not(.g-head):not(.g-foot) .g-cell.gutter.gutter-error:hover {
+		background: var(--danger-weak);
+	}
+
+	/* The pending ghost line keeps its tint under the pointer — the "not
+	   saved" signal outranks the hover feedback there. */
 
 	.g-cell.in-range {
 		background: var(--accent-weak);
@@ -1953,10 +2043,86 @@
 		opacity: 0.55;
 	}
 
+	/* ── Gutter commit status ── */
+
+	/* The gutter is the row's commit-status column: the number yields to a
+	   spinner while a write flies, and reads danger when the write failed
+	   (the failing cells carry the frames and the tooltip). The spinner
+	   copies the DeployPanel's — slowed, not stopped, under reduced motion. */
+	.gutter-spin {
+		width: 12px;
+		height: 12px;
+		border: 2px solid var(--border-strong);
+		border-top-color: var(--accent-ink);
+		border-radius: 50%;
+		animation: gutter-spin 0.7s linear infinite;
+	}
+
+	@keyframes gutter-spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	.g-cell.gutter.gutter-error {
+		background: var(--danger-weak);
+		color: var(--danger);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.gutter-spin {
+			animation-duration: 1.4s;
+		}
+	}
+
 	/* A rejected cell keeps the typed value under an error frame; the
-		tooltip (the cell's title) carries the 422's message. */
+		floating failure label carries the 422's message. */
 	.g-cell.cell-error {
 		box-shadow: inset 0 0 0 2px var(--danger);
+	}
+
+	/* The failing cell's reason — a floating label under the cell. It shows
+	   only while the pointer sits on the failing cell, and hides the moment
+	   the pointer leaves (the frame stays). Text renders through the
+	   validation catalogue when the 422 names the field. The placeFloater
+	   action flips it above the cell when the grid's box would cut it. */
+	.error-tip {
+		position: absolute;
+		top: calc(100% + 6px);
+		left: 0;
+		z-index: 6;
+		max-width: 280px;
+		padding: 6px 10px;
+		border: 1px solid var(--danger);
+		border-radius: var(--r-sm);
+		background: var(--surface);
+		box-shadow: var(--sh-1);
+		color: var(--danger);
+		font-size: 12px;
+		line-height: 1.45;
+		white-space: normal;
+		text-align: left;
+		pointer-events: none;
+	}
+
+	/* The label escapes the cell's own clipping — only while it shows, so a
+	   long rejected value never paints over its neighbours in the idle
+	   state. */
+	.g-cell.cell-tip-open {
+		overflow: visible;
+	}
+
+	/* The flip classes come from the placeFloater action at runtime — they
+	   never appear in this template, so the selectors target them through
+	   `:global` (a plain class selector would be pruned as unused). */
+	.error-tip:global(.open-up) {
+		top: auto;
+		bottom: calc(100% + 6px);
+	}
+
+	.error-tip:global(.open-right) {
+		left: auto;
+		right: 0;
 	}
 
 	/* A paste mark's fade phase — the frame eases out over the fade window
@@ -2021,9 +2187,28 @@
 		text-overflow: ellipsis;
 	}
 
+	/* The missing-required hint sits on the blocking cell — danger ink. */
+	.new-hint-missing {
+		color: var(--danger);
+	}
+
 	/* A create in flight dims the whole line — the values are not settled. */
 	.g-new-creating .g-cell {
 		opacity: 0.55;
+	}
+
+	/* The unsaved line reads red: the draft is staged but the row does not
+	   exist yet (the required gate, a create in flight, or a refused 422
+	   holds it). The faint danger tint sits on every cell, and it drops
+	   when the create lands or Esc clears the draft. This rule sits after
+	   `.in-range` above, so the red wins the specificity tie when the
+	   pending line sits inside a selection range. */
+	.g-new-pending .g-cell {
+		background: var(--danger-weak);
+	}
+
+	.g-new-pending .new-gutter {
+		color: var(--danger);
 	}
 
 	/* ── Σ row ── */

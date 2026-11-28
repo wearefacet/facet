@@ -96,6 +96,15 @@ module Facet
         end
       end
 
+      # Returns `true` when the named field is a calendar `date` field — the
+      # scalar date kind, never `dateperiod`. Relative filter bounds resolve
+      # against it differently from a datetime: a `date` carries no clock,
+      # so a resolved instant truncates to its UTC calendar day and a
+      # relative value with a time unit (`h`, `m`, `s`) is refused.
+      def self.date_field?(definition : Doctype::DoctypeDefinition, field_name : String) : Bool
+        definition.fields[field_name]?.try(&.type).try(&.type_name) == "date"
+      end
+
       # Returns true if the named field is a `money` field on the doctype
       # definition.
       def self.money_field?(
@@ -536,11 +545,11 @@ module Facet
 
         case op_suffix
         when "contains"
-          rhs, vals = contains_rhs(value, range_ctor, cast_type, bounds, n)
+          rhs, vals = contains_rhs(value, range_ctor, cast_type, bounds, n, range_kind)
           {"#{lhs} @> #{rhs}", vals}
         when "eq", "overlaps", "within"
           sql_op = {"eq" => "=", "overlaps" => "&&", "within" => "<@"}[op_suffix]
-          rhs, vals = interval_rhs(value, range_ctor, cast_type, bounds, n)
+          rhs, vals = interval_rhs(value, range_ctor, cast_type, bounds, n, range_kind)
           if rhs.nil?
             {"FALSE", [] of ::DB::Any}
           else
@@ -554,18 +563,22 @@ module Facet
       # Builds the RHS range expression for `contains`: either a point
       # (single ISO string value cast to the inner type) or an interval
       # (two-element array wrapped in the same range constructor).
+      #
+      # Relative bounds (`-7d`) resolve against the request's reference
+      # instant; a `dateperiod` bound truncates to its UTC calendar day.
       private def self.contains_rhs(
         value : JSON::Any,
         range_ctor : String,
         cast_type : String,
         bounds : String,
         n : Int32,
+        range_kind : String,
       ) : {String, Array(::DB::Any)}
         if arr = value.as_a?
           if arr.size == 2
             # interval contains point/interval — use the range constructor.
-            lo = arr[0].raw.to_s
-            hi = arr[1].raw.to_s
+            lo = bound_value(arr[0].raw, range_kind)
+            hi = bound_value(arr[1].raw, range_kind)
             clause = "#{range_ctor}($#{n}::#{cast_type}, $#{n + 1}::#{cast_type}, #{bounds})"
             return {clause, [lo, hi] of ::DB::Any}
           end
@@ -574,8 +587,7 @@ module Facet
 
         # Single point — cast the scalar directly to the inner type.
         # PostgreSQL supports `range @> element` natively.
-        v = value.raw.to_s
-        {"$#{n}::#{cast_type}", [v] of ::DB::Any}
+        {"$#{n}::#{cast_type}", [bound_value(value.raw, range_kind)] of ::DB::Any}
       end
 
       # Builds the RHS interval range for `eq`, `overlaps`, and `within`.
@@ -587,13 +599,27 @@ module Facet
         cast_type : String,
         bounds : String,
         n : Int32,
+        range_kind : String,
       ) : {String?, Array(::DB::Any)}
         arr = value.as_a?
         return {nil, [] of ::DB::Any} if arr.nil? || arr.size != 2
 
-        lo = arr[0].raw.to_s
-        hi = arr[1].raw.to_s
+        lo = bound_value(arr[0].raw, range_kind)
+        hi = bound_value(arr[1].raw, range_kind)
         {"#{range_ctor}($#{n}::#{cast_type}, $#{n + 1}::#{cast_type}, #{bounds})", [lo, hi] of ::DB::Any}
+      end
+
+      # Resolves one range-bound value for binding. A well-formed relative
+      # date (`-7d`) resolves against now; a `dateperiod` bound truncates to
+      # its UTC calendar day. Anything else binds as its raw text — the
+      # historical lenient contract (PostgreSQL casts it, or the row simply
+      # does not match).
+      private def self.bound_value(raw : JSON::Any::Type, range_kind : String) : ::DB::Any
+        return raw.to_s unless raw.is_a?(String)
+        return raw unless Util::TimeHelper.relative?(raw)
+
+        resolved = Util::TimeHelper.apply_relative(raw)
+        range_kind == "daterange" ? resolved.to_s("%F") : resolved.to_rfc3339
       end
 
       # Coerces a raw filter value to a JSON-encoded array string for

@@ -1,16 +1,16 @@
 ---
+type: reference
 title: Jinja2 template context
 description: Variables and filters available inside Jinja2 templates.
 audience: [author, developer]
 features: [DOM-22, DOM-23]
 sidebar:
-  order: 6
-verified_at: 008dd880
+  order: 13
+verified_at: eee55a2
 ---
 
-Use this page to write a template and check which variables and filters you can use.
-
-Facet renders Jinja2 templates in three places: the `display_name` label
+You write a template and need to know which variables and filters the engine
+binds. Facet renders Jinja2 templates in three places: the `display_name` label
 and the `search` text of a doctype, both on the server, and the calendar
 chip title of a collection view, in the browser.
 
@@ -41,6 +41,9 @@ Rules the validator enforces at save time:
 - Every root variable must be a declared field or a reserved variable.
   `{{ id }}` is rejected — the document id is not a variable. Declare a
   string field for a human-facing code and print that field.
+- A template must not reference a field that carries (or contains) a
+  secret value: the save rejects it with `search template must not
+  reference the secret field '…'` (same wording for `display_name`).
 - Variables used only inside `{% if %}` or `{% for %}` arguments are not
   validated.
 
@@ -111,6 +114,7 @@ arguments, for example `{{ tags | join(', ') }}` or
 | `selectattr` | — | Keeps the items whose attribute a test accepts. |
 | `slice` | `slices`, `fill_with` | Slices an array into `slices` roughly even parts. |
 | `sort` | `reverse`, `case_sensitive`, `attribute` | Sorts an array, optionally by an attribute. |
+| `string` | — | Converts any value to its string form. Useful before `upper` or `length` on a non-string value. |
 | `striptags` | — | Removes HTML tags and collapses whitespace. |
 | `sum` | `attribute`, `start` | Sums the items, or their `attribute`. |
 | `title` | — | Title-cases each word. |
@@ -192,6 +196,8 @@ stored label; the two templates above do not use it.
 
 ## Related
 
-- [Display names and search text (Jinja2)](/build/display-names-search-text/) — write the two doctype templates.
-- [View templates](/build/view-templates/) — the structured view templates, a separate format.
-- [Computed fields](/build/computed-fields/) — Lua functions, not templates.
+- [Display names and search text (Jinja2)](/build/model/views/names-and-search/) — write the two doctype templates.
+- [View templates](/build/model/views/document-pages/) — the structured view templates, a separate format.
+- [View template schema](/reference/dvt-schema/) — the full variable list a view template binds.
+- [Computed fields](/build/model/data/computed-fields/) — Lua functions, not templates.
+- [Secret fields](/build/model/data/secret-fields/) — why a secret field cannot appear in a template.

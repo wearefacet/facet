@@ -1,0 +1,105 @@
+---
+type: overview
+title: Administrer
+description: Installez Facet, décidez qui voit quoi, suivez chaque changement et gardez l’installation en bon état — le guide de l’administrateur et de l’opérateur.
+audience: [admin, operator]
+features: []
+verified_at: eee55a2
+sidebar:
+  order: 0
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Cet onglet s’adresse à l’administrateur et à l’opérateur — souvent la même
+personne dans une petite organisation. Il couvre tout le guide
+d’exploitation : installer Facet, le configurer, décider qui voit et qui fait
+quoi, suivre chaque changement, et garder l’installation en bonne santé.
+Chaque page se lit seule ; les liens croisés complètent le modèle.
+
+Vous évaluez d’abord Facet ?
+[Sécurité et gouvernance](/fr/discover/security/) répond aux mêmes questions
+du point de vue de l’auditeur.
+
+## Que voulez-vous faire ?
+
+<CardGrid>
+	<LinkCard title="Installer Facet" description="Prérequis système, dimensionnement, conteneurs, passage en production, et premier démarrage." href="/fr/admin/install/requirements/" />
+	<LinkCard title="Décider qui voit quoi" description="Comptes, rôles, périmètres de lignes, étiquettes de champs, MFA et SSO." href="/fr/admin/people/" />
+	<LinkCard title="Voir ce qui s’est passé" description="Lire la piste d’audit, revenir en arrière, et savoir ce que garde la rétention." href="/fr/admin/history/audit/" />
+	<LinkCard title="Garder le service en marche" description="Santé, tâches de fond, migrations, mises à niveau, index, et sauvegardes." href="/fr/admin/keep-running/" />
+</CardGrid>
+
+## Toutes les pages de cette section
+
+**Installer** :
+
+- [Prérequis système](/fr/admin/install/requirements/) — ce dont Facet a besoin pour fonctionner.
+- [Performances et dimensionnement](/fr/admin/install/performance/) — ce qu’une instance délivre sous charge, et la machine à prévoir.
+- [Exécuter avec des conteneurs](/fr/admin/install/containers/) — les piles compose fournies et TLS.
+- [Passer en production](/fr/admin/install/production/) — la liste de contrôle avant l’arrivée des vrais utilisateurs.
+- [Premier démarrage et amorçage](/fr/admin/install/bootstrap/) — le compte administrateur et les domaines de base.
+
+**Configurer** :
+
+- [Configurer Facet](/fr/admin/configure/) — le groupe en un coup d’œil.
+- [Fichiers de configuration](/fr/admin/configure/configuration-files/) — `config.{env}.yml`, la source unique de vérité.
+- [Paramètres système](/fr/admin/configure/system-settings/) — des réglages qui changent à l’exécution.
+- [Courriel sortant](/fr/admin/configure/email/) — le courrier sortant pour les invitations et les notifications.
+- [Stockage des fichiers](/fr/admin/configure/file-storage/) — disque local ou S3.
+- [Devises](/fr/admin/configure/currencies/) — les monnaies que l’espace de travail peut contenir.
+- [Langues](/fr/admin/configure/languages/) — les langues de l’interface et les formats régionaux.
+
+**Personnes et accès** — commencez par [Personnes et accès](/fr/admin/people/), les neuf étapes dans l’ordre :
+
+- [Personnes et accès](/fr/admin/people/) — comptes, rôles, périmètres, et règles de connexion.
+- [Gérer les comptes](/fr/admin/people/accounts/)
+- [Rôles et lignes de permission](/fr/admin/people/roles-and-permissions/)
+- [Affecter les rôles](/fr/admin/people/assign-roles/)
+- [Ne montrer à chaque rôle que ses lignes](/fr/admin/people/row-scopes/)
+- [Masquer un champ à certains rôles](/fr/admin/people/hidden-fields/)
+- [Qui peut changer les rôles](/fr/admin/people/who-can-change-roles/)
+- [Imposer le MFA](/fr/admin/people/mfa/)
+- [Le SSO avec OIDC](/fr/admin/people/sso/)
+- [Sessions et verrouillages](/fr/admin/people/sessions-lockouts/)
+
+**Apps et accès machine** :
+
+- [Ce que les apps peuvent atteindre](/fr/admin/apps-access/app-grants/) — borne ce qu’une application externe peut tenter.
+- [Clés d’API](/fr/admin/apps-access/api-keys/) — des clés statiques épinglées à un compte et un rôle.
+
+**Historique et audit** :
+
+- [Voir qui a fait quoi](/fr/admin/history/audit/) — le journal des mutations et le journal des connexions.
+- [Revenir en arrière](/fr/admin/history/roll-back/) — annuler jusqu’à une mutation antérieure, restaurer une suppression.
+- [Rétention : ce qui est gardé](/fr/admin/history/retention/) — la durée de conservation de chaque classe de données.
+
+**L’assistant** :
+
+- [Connecter un modèle de langage](/fr/admin/assistant/connect-a-model/) — raccorder l’assistant à un fournisseur.
+- [Gouverner l’assistant](/fr/admin/assistant/govern/) — disponibilité, budgets, instructions, et outils.
+
+**Garder le service en marche** :
+
+- [Maintenir Facet opérationnel](/fr/admin/keep-running/) — le groupe en un coup d’œil.
+- [Santé, métriques et journaux](/fr/admin/keep-running/monitoring/)
+- [Tâches de fond et cron](/fr/admin/keep-running/jobs-cron/)
+- [Migrations de base de données](/fr/admin/keep-running/migrations/)
+- [Mettre à niveau Facet](/fr/admin/keep-running/upgrades/)
+- [Index](/fr/admin/keep-running/indexes/)
+- [Sauvegarde et restauration](/fr/admin/keep-running/backup-restore/)
+
+**Sous le capot** — les pages L3, pour les opérateurs qui veulent le modèle exact :
+
+- [Sous le capot](/fr/admin/under-the-hood/)
+- [Le journal des mutations, en détail](/fr/admin/under-the-hood/change-log/)
+- [Pourquoi un seul rôle à la fois](/fr/admin/under-the-hood/one-role-at-a-time/)
+- [L’application des autorisations](/fr/admin/under-the-hood/how-access-is-enforced/)
+- [Événements et garanties de livraison](/fr/admin/under-the-hood/events-and-delivery/)
+- [L’IA et les permissions, en détail](/fr/admin/under-the-hood/ai-and-permissions/)
+
+## Voir aussi
+
+- [Sécurité et gouvernance](/fr/discover/security/) — le résumé de ce modèle pour l’évaluateur.
+- [Écrire des règles de lignes pour les rôles](/fr/build/model/access/named-scopes/) — la partie écrite par l’auteur des périmètres de lignes.
+- [Référence](/fr/reference/) — les clés de configuration et les réglages système exacts.

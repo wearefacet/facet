@@ -17,6 +17,7 @@
 	import { coerceScalar } from '../coerce.js';
 	import { humanize } from '$lib/doctype/types.js';
 	import * as m from '$lib/paraglide/messages';
+	import { placeFloater } from '../floatPlacement.js';
 
 	let { field, value, seed = null, label, ondraft, oncommit, oncancel }: CellEditorProps = $props();
 
@@ -179,7 +180,7 @@
 	}}
 	onkeydown={handleKeydown}
 />
-<ul class="enum-list" id="grid-enum-listbox" role="listbox">
+<ul class="enum-list" id="grid-enum-listbox" role="listbox" use:placeFloater>
 	{#each options as entry, i (entry.key)}
 		<li role="presentation">
 			<button
@@ -288,6 +289,19 @@
 		border-radius: var(--r-sm, 6px);
 		box-shadow: 0 8px 24px rgba(16, 24, 40, 0.25);
 		z-index: 40;
+	}
+
+	/* The flip classes come from the placeFloater action at runtime — they
+	   never appear in this template, so the selectors target them through
+	   `:global` (a plain class selector would be pruned as unused). */
+	.enum-list:global(.open-up) {
+		top: auto;
+		bottom: calc(100% + 2px);
+	}
+
+	.enum-list:global(.open-right) {
+		left: auto;
+		right: -2px;
 	}
 
 	.enum-opt {

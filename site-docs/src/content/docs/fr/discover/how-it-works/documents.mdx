@@ -1,0 +1,55 @@
+---
+type: explanation
+title: "Documents : enregistrements avec mémoire"
+description: "Découvrez ce qu’est un enregistrement dans Facet, comment chaque modification est mémorisée et comment annuler une erreur."
+audience: [evaluator, author]
+features: [DOC-01, AUD-01, AUD-04, DOM-06]
+verified_at: eee55a2
+sidebar:
+  order: 2
+---
+
+import Illustration from '../../../../../components/Illustration.astro';
+
+Un client, une tente, une réservation — dans Facet, chacun est un **document** : un enregistrement, l’élément réel sur lequel votre équipe travaille. Et chacun se souvient de son passé.
+
+*Chaque modification se pose sur la frise de l’enregistrement, avec un nom et une heure. Annulation comprise.*
+
+<Illustration name="document-timeline" />
+
+## Un enregistrement que vous pouvez façonner
+
+Un document contient ses champs : du texte, des nombres, des dates, des prix, des choix dans une liste. Les enregistrements se désignent mutuellement ; une réservation nomme ainsi son client et liste les tentes qu’elle réserve. Ouvrez n’importe quel enregistrement et vous voyez ses champs, ses liens et sa place dans les listes que votre équipe utilise déjà — tableaux, kanbans, calendriers.
+
+## Chaque modification est mémorisée
+
+Lorsque quelqu’un crée, modifie ou supprime un document, Facet note qui l’a fait, quand, et par quelle porte. La porte est l’espace de travail, une app, une clé ou un agent. Ouvrez **Historique** sur n’importe quel enregistrement pour lire cette frise. Une erreur ? Choisissez **Restaurer cette version**, et l’enregistrement revient à un état antérieur. Restaurer une suppression ramène l’enregistrement.
+
+La mémoire répond aux questions qu’un auditeur pose plus tard : non seulement *ce* qui a changé, mais *qui* l’a changé, *sous quel rôle*, et *ce qui l’a causé*. La cause indique ce qui a déclenché le changement : une modification directe, une action ou une automatisation.
+
+## Conservé aussi longtemps que vous le décidez
+
+Facet enregistre chaque modification et conserve l’historique complet pendant la durée que prévoient vos paramètres de rétention — 180 jours par défaut. Un administrateur peut fixer une autre durée par type d’enregistrement. Quand l’historique dépasse cet âge, Facet le replie en un seul instantané : l’enregistrement demeure, mais l’ancien détail s’efface. [Rétention : ce qui est conservé](/fr/admin/history/retention/) raconte toute l’histoire.
+
+## Discutez là où se fait le travail
+
+Un enregistrement est aussi un lieu de discussion. Les commentaires se placent à côté des données, avec des réponses en fil sous chacun. Les pièces jointes suivent aussi : la photo de la tente endommagée se trouve sur son ticket de maintenance, et non dans le dossier de téléchargement de quelqu’un. Les deux obéissent aux mêmes règles que l’enregistrement auquel ils appartiennent — si vous pouvez lire le ticket, vous pouvez lire ses photos.
+
+## Ce que cela signifie pour vous
+
+- Personne ne doit tenir un journal des changements à la main, et personne ne peut en réécrire un discrètement.
+- Une erreur coûte quelques secondes, pas un ticket d’assistance.
+- La conversation et les documents vivent au même endroit que celui où votre équipe travaille déjà.
+
+## Pour les détails techniques
+
+- [Comment un document est stocké](/fr/build/deeper/documents-and-projections/) — définitions, documents, et comment les lectures restent rapides.
+- [Le journal des mutations en détail](/fr/admin/under-the-hood/change-log/) — ce que contient une modification consignée.
+- [Restaurer une modification](/fr/admin/history/roll-back/) — le mode d’emploi, pour les administrateurs.
+- [Ajouter des commentaires et des pièces jointes](/fr/build/model/relations/comments-attachments/) — placez-les sur vos propres types d’enregistrements.
+
+## Voir aussi
+
+- [Vue d’ensemble](/fr/discover/how-it-works/) — la place de la mémoire parmi les cinq idées.
+- [Les rôles : qui voit quoi et fait quoi](/fr/discover/how-it-works/roles/) — qui peut ouvrir et modifier un enregistrement.
+- [Historique et annulation](/fr/use/documents/history-undo/) — le mode d’emploi au quotidien.

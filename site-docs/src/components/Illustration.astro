@@ -1,0 +1,37 @@
+---
+// Inlines a hand-authored illustration SVG (src/assets/illustrations/).
+//
+// The SVGs carry their own `[data-theme='light'|'dark']` palette overrides, so
+// they follow the site theme only when their CSS sees the page's `data-theme`
+// attribute. An <img> cannot see the parent document, so an inlined SVG is the
+// only form that tracks the light/dark toggle. See doc/site-docs.md →
+// Illustrations.
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+interface Props {
+	name: string;
+}
+
+const { name } = Astro.props;
+const file = join(process.cwd(), 'src', 'assets', 'illustrations', `${name}.svg`);
+const svg = readFileSync(file, 'utf8');
+---
+
+<div class="illustration" set:html={svg} />
+
+<style>
+	.illustration {
+		margin-block: 1.5rem;
+		text-align: center;
+	}
+
+	/* The SVG keeps its own natural size; cap a wide one at the column and
+	 * never enlarge a narrow one. */
+	.illustration :global(svg) {
+		display: block;
+		margin-inline: auto;
+		max-width: 100%;
+		height: auto;
+	}
+</style>

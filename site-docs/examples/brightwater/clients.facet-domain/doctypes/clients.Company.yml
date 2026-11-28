@@ -1,0 +1,50 @@
+---
+content:
+  icon: building-2
+  color: "#1D4ED8"
+  domain: clients
+  fields:
+    name:
+      type: string
+      title: Company name
+      required: true
+      unique: true
+      filters:
+        - equality
+        - text_search
+      description: "The client's legal or trading name."
+    city:
+      type: string
+      title: City
+      filters:
+        - text_search
+      description: "Where the client is based."
+    account_manager:
+      type: reference
+      title: Account manager
+      doctype: iam.Account
+      filters:
+        - equality
+      description: "The salesperson who owns this client."
+  doctype: Company
+  sidecars:
+    comments:
+      doctype: core.Comment
+      column: target
+  children:
+    contacts:
+      doctype: Contact
+      collection: true
+      description: "The people at this company the warehouse talks to."
+  scopes:
+    my_clients:
+      description: "Companies whose account manager is the caller."
+      where:
+        account_manager: "$self"
+  description: "A client organization that rents equipment."
+  display_name: "{{ name }}"
+  search: "{{ name }} {{ city }}"
+  aggregate_root: true
+  schema_version: 1
+meta:
+  parent_id: clients

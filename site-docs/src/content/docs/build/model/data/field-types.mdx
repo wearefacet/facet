@@ -1,0 +1,228 @@
+---
+type: how-to
+title: Choose field types
+description: Pick the type that fits each field, add the constraints, and know how Facet normalizes what users type.
+audience: [author]
+features: [DOM-04, DOC-13]
+sidebar:
+  order: 1
+verified_at: eee55a2
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Every field on a Brightwater item holds a different kind of value: the name is
+short text, the purchase price is an amount with a currency, the serial number
+must stay unique. Each field carries one **type**, and the type decides three
+things: what users can enter, how Facet stores the value, and which filters
+the list pages offer.
+
+## When to use this
+
+You are adding fields to a doctype and choosing between text and long text,
+number and money, date and datetime. This page helps you pick. The full table
+of every type, with every constraint, stays in
+[Field types (reference)](/reference/field-types/).
+
+## Before you start
+
+- **Edit in a draft.** You edit the doctype in a draft domain, or in the
+  domain folder on a dev server.
+- **Choose types with care before you publish.** A type change on a live
+  domain needs a schema-version bump with a migration, because stored values
+  must stay readable. See [Change a live domain safely](/build/model/change-a-live-domain/).
+
+## Which type for which job
+
+| The field holds | Type | Example from Brightwater |
+| --- | --- | --- |
+| A short name or code | `string` | Item `name` |
+| Long text with markdown | `longtext` | Item `notes`, ticket `problem` |
+| A whole number | `integer` | BookingLine `quantity` |
+| True or false | `boolean` | — |
+| An amount with a currency | `money` | Item `purchase_price` |
+| A calendar date | `date` | — |
+| A point in time | `datetime` | — |
+| A date range | `dateperiod` | Booking `dates` |
+| A datetime range | `period` | — |
+| A length of time in seconds | `duration` | — |
+| One value from a fixed list | `enum` | Item `status` |
+| A web address | `url` | — |
+| A phone number | `phone` | Contact `phone` |
+| A color | `color` | — |
+| A link to another document | `reference` | Ticket `item` |
+| A file | `file` | — |
+| A credential | `secret` | — |
+| A value Facet computes | `data` | Booking `total` |
+| Named sub-values | `object` | — |
+| A list of one shape | `array` | — |
+| A string-keyed map of one shape | `dictionary` | — |
+| An inline sub-document | `child` | — |
+
+Two types are special and get their own pages: `data` fields are computed
+(see [Computed fields](/build/model/data/computed-fields/)) and `secret`
+fields store credentials (see [Secret and write-only fields](/build/model/data/secret-fields/)).
+
+## Steps
+
+<Tabs syncKey="build-mode">
+<TabItem label="Builder">
+
+1. Open the doctype in the **Builder** and add a field row.
+2. Pick the **Type** from the list. The editor shows the constraints the type
+   supports.
+3. Set **Required**, a **Default**, or the bounds the type takes.
+4. Tick the **Filters** the list pages should offer. A field without filters
+   still shows in forms and tables; it only stays out of the filter bar.
+5. Save and run **Check**.
+
+</TabItem>
+<TabItem label="Files">
+
+Add the field to the doctype file. These are real fields from the Brightwater
+bundles:
+
+```yaml
+# equipment/doctypes/equipment.Item.yml (extract)
+fields:
+  status:
+    type: enum
+    title: Status
+    default: available
+    filters: [equality]
+    values:
+      - key: available
+        label: Available
+        color: "#15803d"
+      - key: out
+        label: Out
+        color: "#b45309"
+      - key: in_repair
+        label: In repair
+        color: "#b91c1c"
+  purchase_price:
+    type: money
+    title: Purchase price
+    currency: EUR
+    precision: 2
+    tags: [finance]
+    filters: [comparison, currency]
+
+# rentals/doctypes/rentals.BookingLine.yml (extract)
+fields:
+  quantity:
+    type: integer
+    title: Quantity
+    min: 1
+    default: 1
+    filters: [comparison]
+  price:
+    type: money
+    title: Price
+    currency: EUR
+    precision: 2
+    required: true
+    filters: [comparison, currency]
+```
+
+</TabItem>
+</Tabs>
+
+### Add constraints
+
+| Key | Effect |
+| --- | --- |
+| `required: true` | The write fails when the field is missing. |
+| `unique: true` | No two documents of the doctype carry the same value. See [Reference numbers and uniqueness](/build/model/data/identifiers-uniqueness/). |
+| `default` | Facet fills the value when the writer omits the field. |
+| `min`, `max` | A bound: characters for text, a value for numbers, a length for secrets. |
+| `pattern` | The value must match this regular expression. |
+| `title`, `description` | The label and help text the forms show. |
+| `tags` | Sensitivity or sharing tags. See [Hide a field from some roles](/admin/people/hidden-fields/). |
+| `write_only: true` | The value is accepted, read by scripts, and never stored. |
+| `read_only: true` | Only scripts may set the value; user input is rejected. |
+
+### Declare the filters
+
+The capabilities a type supports:
+
+| Capability | Operators it unlocks | Types that take it |
+| --- | --- | --- |
+| `equality` | `eq` (plus `ne`, `in` where the type serves them) | Most scalars, `reference`, the range types |
+| `comparison` | `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `between` | Ordered scalars: numbers, dates, money, text |
+| `text_search` | `match`, `starts_with` | Text-like types only |
+| `interval` | `eq`, `contains`, `overlaps`, `within` | `period`, `dateperiod` |
+| `membership` | `eq`, `contains`, `overlaps` | `array` |
+| `currency` | `currency` | `money` |
+
+The [Filter operators (reference)](/reference/filter-operators/) page gives
+each operator its exact meaning.
+
+## Example
+
+The full field set of the Brightwater item doctype, as it ships:
+
+```json
+{
+  "fields": {
+    "name": { "type": "string", "required": true, "filters": ["equality", "text_search"] },
+    "category": { "type": "reference", "doctype": "equipment.Category", "required": true, "filters": ["equality"] },
+    "status": { "type": "enum", "default": "available", "filters": ["equality"],
+      "values": [
+        { "key": "available", "label": "Available", "color": "#15803d" },
+        { "key": "out", "label": "Out", "color": "#b45309" },
+        { "key": "in_repair", "label": "In repair", "color": "#b91c1c" }
+      ] },
+    "purchase_price": { "type": "money", "currency": "EUR", "precision": 2, "tags": ["finance"], "filters": ["comparison", "currency"] },
+    "serial_number": { "type": "string", "unique": true, "filters": ["equality"] },
+    "notes": { "type": "longtext" }
+  }
+}
+```
+
+## How Facet normalizes values
+
+Facet rewrites some values to one canonical form before it stores them, so
+the same value always reads back the same:
+
+| Type | You send | Facet stores |
+| --- | --- | --- |
+| `money` (with `currency: EUR` declared) | `{"value": "4800.00"}` | `{"value": "4800.00", "currency": "EUR"}` |
+| `money` (no declared currency) | `{"value": "4800.00"}` | `422` — the currency is required |
+| `datetime` | `2026-03-01T15:30:00+01:00` | `2026-03-01T14:30:00Z` |
+| `url` | `www.acme.tld` | `https://www.acme.tld` |
+| `color` | `#1565C0` | `#1565c0ff` |
+| `longtext` | `line one\r\nline two` | `line one\nline two` |
+| `reference` | a bare id, or a `urn:facet:` token | the qualified `domain.Doctype.id` form |
+
+## Troubleshooting
+
+### A write answers `422` on a money field
+
+The amount must be a decimal string, and the currency must be a registered
+ticker. Send `{"value": "54000", "currency": "EUR"}`, not a bare number. If
+the doctype declares `currency`, the writer may omit it.
+
+### A datetime stores a different form than I sent
+
+Facet normalizes every datetime to UTC and stores it ending in `Z`. The value
+is the same moment. Inputs without any zone offset are rejected — send an
+offset or the `Z` form.
+
+### A URL shows a scheme I did not type
+
+Facet completes a bare dotted address such as `www.acme.tld` to
+`https://www.acme.tld`. A value without a dotted host, like `localhost:3000`,
+stays rejected — it must carry its scheme.
+
+### My color changes shape
+
+Facet normalizes colors to the `#RRGGBBAA` form in lowercase. `#1565C0` is
+stored as `#1565c0ff`.
+
+## Related
+
+- [Field types (reference)](/reference/field-types/) — the full table of all types.
+- [Design a doctype](/build/model/data/design-doctypes/) — the whole declaration.
+- [Reference numbers and uniqueness](/build/model/data/identifiers-uniqueness/) — readable ids and uniqueness rules.
+- [Documents, doctypes and projections](/build/deeper/documents-and-projections/) — how field values are stored and re-read.

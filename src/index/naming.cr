@@ -238,6 +238,69 @@ module Facet
         "#{keyword} #{name}"
       end
 
+      # Returns the `CREATE STATISTICS` SQL for the btree index of a field,
+      # or `nil` when the index type has no text-extract expression.
+      #
+      # The planner collects no statistics on a bare `content->>'field'`
+      # expression, so it falls back to the default selectivity estimate
+      # (0.5 %). On a selective equality filter that estimate is far too
+      # large, and the default `ORDER BY id LIMIT n` plan (walk
+      # `projections_pkey`, stop early) looks cheaper than the field index —
+      # PostgreSQL then walks the whole doctype and filters. The extended
+      # statistics object gives the expression real statistics, so the
+      # planner picks the field index.
+      #
+      # One statistics object serves every btree variant of a field (the
+      # text extract is the shared expression), so the object is named after
+      # the field and not the index type. `IF NOT EXISTS` makes a second
+      # variant a no-op. Only the `btree` and `unique_btree` families are
+      # served: they are the equality lookups whose selectivity estimate is
+      # the problem. `gin_trgm` and the GiST/GIN families are left alone —
+      # their operators are not equality lookups over the text extract.
+      def self.create_statistics_sql(
+        domain : String,
+        doc_type : String,
+        field_name : String,
+        index_type : String,
+        *,
+        statistics_target : Int32? = nil,
+      ) : String?
+        return nil unless statistics_expression?(index_type)
+
+        name = statistics_name(domain, doc_type, field_name)
+        access = access_expression(field_name, index_type)
+        target = statistics_target ? " (statistics_target = #{statistics_target})" : ""
+        "CREATE STATISTICS IF NOT EXISTS #{name}#{target} ON (#{access}) FROM projections"
+      end
+
+      # Returns the `DROP STATISTICS` SQL for a field's statistics object.
+      def self.drop_statistics_sql(domain : String, doc_type : String, field_name : String) : String
+        "DROP STATISTICS IF EXISTS #{statistics_name(domain, doc_type, field_name)}"
+      end
+
+      # The deterministic name of a field's extended statistics object. It
+      # embeds the domain slug exactly as `index_name` does, for the same
+      # reason (the name is emitted unquoted).
+      def self.statistics_name(domain : String, doc_type : String, field_name : String) : String
+        hash_input = "#{domain}\0#{doc_type}\0#{field_name}\0statistics"
+        hex_hash = Digest::SHA256.hexdigest(hash_input)
+        domain_slug = domain.downcase.gsub(/[^a-z0-9_]/, '_')
+        base = "#{PREFIX}st_#{domain_slug}_#{hex_hash}"
+        base.byte_slice(0, MAX_IDENTIFIER_LENGTH)
+      end
+
+      # True for the index types whose access expression is the plain text
+      # extract `content->>'field'` — the equality-lookup family the
+      # statistics object serves.
+      private def self.statistics_expression?(index_type : String) : Bool
+        case index_type
+        when "btree", "unique_btree"
+          true
+        else
+          false
+        end
+      end
+
       # Builds the two-leaf range expression for `gist_tstzrange` and
       # `gist_daterange` indexes. The stored JSONB shape for a period /
       # dateperiod field is `{"start": ..., "end": ...}`, so the index

@@ -427,6 +427,53 @@
 	/** Wait long enough for the page fetch + Σ aggregates to settle. */
 	const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
+	/** A body row's gutter cell — the row's commit-status indicator. */
+	function gutterOf(canvasElement: HTMLElement, r: number): HTMLElement {
+		const rows = canvasElement.querySelectorAll('.g-row:not(.g-head):not(.g-foot):not(.g-new)');
+		return rows[r].querySelector('.gutter')!;
+	}
+
+	/**
+	 * The lag stories' arg set — every write and create answers after `lag`
+	 * ms, the client↔server gap made visible. `failOn` shadows both the
+	 * update and the create with the same 422 (details + `unique` code, so
+	 * the message renders through the validation catalogue) for titles
+	 * carrying the trigger word — a duplicate title refuses on either path,
+	 * as the backend would. The lag holds for manual edits too — after the
+	 * play ends, the canvas keeps showing the spinner on every fresh
+	 * commit, and a `boom` create still refuses on the ghost line.
+	 */
+	function lagStoryArgs(lag: number, failOn?: string) {
+		const bundle = editDriver();
+		const ds = Object.create(bundle.ds) as DataSource<Record<string, unknown>>;
+		ds.doc = (id: string) => {
+			const ref = bundle.ds.doc(id);
+			const wrapped = Object.create(ref);
+			wrapped.update = async (diff: unknown) => {
+				await sleep(lag);
+				const title = (diff as Record<string, unknown>).title;
+				if (failOn && typeof title === 'string' && title.toLowerCase().includes(failOn)) {
+					throw new DataSourceError(422, 'Ce titre est déjà pris', [
+						{ field: 'title', message: 'Ce titre est déjà pris', code: 'unique' }
+					]);
+				}
+				return ref.update(diff);
+			};
+			return wrapped;
+		};
+		ds.create = async (content: Record<string, unknown>) => {
+			await sleep(lag);
+			const title = String(content.title ?? '');
+			if (failOn && title.toLowerCase().includes(failOn)) {
+				throw new DataSourceError(422, 'Ce titre est déjà pris', [
+					{ field: 'title', message: 'Ce titre est déjà pris', code: 'unique' }
+				]);
+			}
+			return bundle.ds.create(content);
+		};
+		return { ...storyArgs(bundle, newColumns), datasource: ds, allowCreate: true };
+	}
+
 	const { Story } = defineMeta({
 		title: 'Components/Data/Grid',
 		component: Grid,
@@ -1018,14 +1065,26 @@ its writes never // leak into another story's seed. The edited column is always 
 		await userEvent.keyboard('boom deal');
 		await userEvent.keyboard('{Enter}');
 		await sleep(100);
-		// The cell keeps the typed text under the error frame + tooltip.
+		// The cell keeps the typed text under the error frame. The click left
+		// the pointer on the cell, so the failure label shows as soon as the
+		// refusal lands; it hides the moment the pointer leaves and returns on
+		// hover (the raw driver message — the 422 carries no per-field details
+		// for the catalogue).
 		expect(cell.textContent).toContain('boom deal');
 		expect(cell.className).toContain('cell-error');
-		expect(cell.getAttribute('title')).toContain('pris');
-		// Escape reverts — the typed text drops, the stored value returns.
+		expect(cell.querySelector('.error-tip')?.textContent).toContain('pris');
+		await userEvent.unhover(cell);
+		expect(cell.querySelector('.error-tip')).toBeNull();
+		await userEvent.hover(cell);
+		expect(cell.querySelector('.error-tip')?.textContent).toContain('pris');
+		await userEvent.unhover(cell);
+		expect(cell.querySelector('.error-tip')).toBeNull();
+		// Escape reverts — the typed text drops, the stored value returns,
+		// the label goes with the error.
 		await userEvent.keyboard('{Escape}');
 		await sleep(100);
 		expect(cell.className).not.toContain('cell-error');
+		expect(cell.querySelector('.error-tip')).toBeNull();
 		expect(cell.textContent).not.toContain('boom deal');
 		const row = await stored(args.datasource, 'crm.GridDeal.1');
 		expect(row.title).toBe('Déploiement plateforme qualité Meridian');
@@ -1120,14 +1179,20 @@ its writes never // leak into another story's seed. The edited column is always 
 		Object.defineProperty(event, 'clipboardData', { value: { getData: () => tsv } });
 		cell.dispatchEvent(event);
 		await sleep(150);
-		// The two bad cells keep their values under the error frame, with the
-		// coercion message as the tooltip.
+		// The two bad cells keep their values under the error frame. The
+		// failure label shows on hover with the coercion reason — paste marks
+		// do not auto-show (the error toast counts them; the frames fade).
 		const badEnum = canvasElement.querySelector('[data-row="0"][data-col="1"]')!;
 		expect(badEnum.className).toContain('cell-error');
-		expect(badEnum.getAttribute('title')).toBe('Pick a value from the list');
+		await userEvent.hover(badEnum);
+		expect(badEnum.querySelector('.error-tip')?.textContent).toBe('Pick a value from the list');
 		const badMoney = canvasElement.querySelector('[data-row="0"][data-col="2"]')!;
 		expect(badMoney.className).toContain('cell-error');
-		expect(badMoney.getAttribute('title')).toBe('Enter an amount like 1200.50');
+		await userEvent.hover(badMoney);
+		expect(badMoney.querySelector('.error-tip')?.textContent).toBe('Enter an amount like 1200.50');
+		expect(badEnum.querySelector('.error-tip')).toBeNull();
+		await userEvent.unhover(badMoney);
+		expect(badMoney.querySelector('.error-tip')).toBeNull();
 		// The landed row persisted; the failed cells kept their stored values.
 		const first = await stored(args.datasource, 'crm.GridDeal.1');
 		expect(first.title).toBe('Titre A');
@@ -1304,6 +1369,8 @@ its writes never // leak into another story's seed. The edited column is always 
 		expect(await rowCount(args.datasource)).toBe(8);
 		expect(canvas.getByText('Opportunité required')).toBeTruthy();
 		expect(newCell(canvasElement, 2).textContent).toContain('1,250.50');
+		// The staged line reads red — the document does not exist yet.
+		expect(canvasElement.querySelector('.g-new')!.className).toContain('g-new-pending');
 		// Naming the required field fires the create — the row lands with
 		// both staged values, and the fresh ghost line returns.
 		await userEvent.click(newCell(canvasElement, 0));
@@ -1318,6 +1385,8 @@ its writes never // leak into another story's seed. The edited column is always 
 		expect(bodyRows).toHaveLength(9);
 		expect(bodyRows[8].textContent).toContain('Deal nommée');
 		expect(canvas.getByText(/New GridDeal — type to create/)).toBeTruthy();
+		// The landed row is a real document — the pending red dropped.
+		expect(canvasElement.querySelector('.g-new')!.className).not.toContain('g-new-pending');
 	}}
 />
 
@@ -1338,8 +1407,22 @@ its writes never // leak into another story's seed. The edited column is always 
 		expect(await rowCount(args.datasource)).toBe(8);
 		const ghostTitle = newCell(canvasElement, 0);
 		expect(ghostTitle.className).toContain('cell-error');
-		expect(ghostTitle.getAttribute('title')).toBe('This value is already in use.');
+		// The click left the pointer on the cell, so the failure label shows
+		// with the catalogue text for the details' `unique` code, and hides
+		// when the pointer leaves.
+		expect(ghostTitle.querySelector('.error-tip')?.textContent).toBe(
+			'This value is already in use.'
+		);
+		await userEvent.unhover(ghostTitle);
+		expect(ghostTitle.querySelector('.error-tip')).toBeNull();
+		await userEvent.hover(ghostTitle);
+		expect(ghostTitle.querySelector('.error-tip')?.textContent).toBe(
+			'This value is already in use.'
+		);
+		await userEvent.unhover(ghostTitle);
 		expect(ghostTitle.textContent).toContain('Boom deal');
+		// The refused line holds the pending red with its error frame.
+		expect(canvasElement.querySelector('.g-new')!.className).toContain('g-new-pending');
 		// Fixing the value re-attempts on the next commit — the refusal
 		// frame drops and the row lands.
 		await userEvent.click(newCell(canvasElement, 0));
@@ -1348,6 +1431,7 @@ its writes never // leak into another story's seed. The edited column is always 
 		await sleep(200);
 		expect(await rowCount(args.datasource)).toBe(9);
 		expect(canvasElement.querySelector('.g-new .cell-error')).toBeNull();
+		expect(canvasElement.querySelector('.g-new')!.className).not.toContain('g-new-pending');
 		expect(
 			canvasElement.querySelectorAll('.g-row:not(.g-head):not(.g-foot):not(.g-new)')
 		).toHaveLength(9);
@@ -1373,11 +1457,145 @@ its writes never // leak into another story's seed. The edited column is always 
 		await userEvent.keyboard('{Enter}');
 		await sleep(150);
 		expect(canvas.getByText('Opportunité required')).toBeTruthy();
+		// The staged line carries the pending red before the cancel.
+		expect(canvasElement.querySelector('.g-new')!.className).toContain('g-new-pending');
 		await userEvent.keyboard('{Escape}');
 		await sleep(100);
 		// No create went out, the hint dropped, and the prompt returned.
 		expect(await rowCount(args.datasource)).toBe(8);
 		expect(canvas.queryByText('Opportunité required')).toBeNull();
+		expect(canvas.getByText(/New GridDeal — type to create/)).toBeTruthy();
+		// The cancel drops the pending red with the draft.
+		expect(canvasElement.querySelector('.g-new')!.className).not.toContain('g-new-pending');
+	}}
+/>
+
+<Story
+	name="LaggedSave"
+	args={{ ...lagStoryArgs(800) }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		// The slow link: every write answers after 800 ms. Commit a cell —
+		// while the PATCH flies the gutter number yields to the spinner and
+		// the cell dims with the optimistic value; the response settles both
+		// back to the plain number.
+		const cell = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
+		await userEvent.click(cell);
+		await userEvent.keyboard('Deal lenteur');
+		await userEvent.keyboard('{Enter}');
+		await sleep(200);
+		const gutter = gutterOf(canvasElement, 0);
+		expect(gutter.querySelector('.gutter-spin')).toBeTruthy();
+		expect(cell.className).toContain('saving');
+		expect(cell.textContent).toContain('Deal lenteur');
+		// The store still holds the old title mid-flight — the lag is real.
+		const mid = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(mid.title).toBe('Déploiement plateforme qualité Meridian');
+		await sleep(900);
+		expect(gutter.querySelector('.gutter-spin')).toBeNull();
+		expect(gutter.textContent).toContain('1');
+		expect(cell.className).not.toContain('saving');
+		const done = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(done.title).toBe('Deal lenteur');
+	}}
+/>
+
+<Story
+	name="LaggedSaveError"
+	args={{ ...lagStoryArgs(800, 'boom') }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		// The slow link meets a validation refusal. The spinner holds while
+		// the PATCH flies; the refusal then turns the gutter danger (the
+		// number stays — the row keeps its anchor) with the message as its
+		// tooltip, the cell takes the error frame, and the typed value stays
+		// (fix-and-retry — never an auto-revert; Esc is the explicit one).
+		const cell = canvasElement.querySelector('[data-row="0"][data-col="0"]')!;
+		await userEvent.click(cell);
+		await userEvent.keyboard('boom deal');
+		await userEvent.keyboard('{Enter}');
+		await sleep(200);
+		const gutter = gutterOf(canvasElement, 0);
+		expect(gutter.querySelector('.gutter-spin')).toBeTruthy();
+		await sleep(900);
+		expect(gutter.querySelector('.gutter-spin')).toBeNull();
+		expect(gutter.className).toContain('gutter-error');
+		// The click left the pointer on the cell, so the label shows as soon
+		// as the refusal lands; the message renders through the validation
+		// catalogue (the details' `unique` code), and the gutter's native
+		// tooltip carries the same text. It hides when the pointer leaves.
+		expect(cell.querySelector('.error-tip')?.textContent).toBe('This value is already in use.');
+		await userEvent.unhover(cell);
+		expect(cell.querySelector('.error-tip')).toBeNull();
+		await userEvent.hover(cell);
+		expect(cell.querySelector('.error-tip')?.textContent).toBe('This value is already in use.');
+		await userEvent.unhover(cell);
+		expect(cell.querySelector('.error-tip')).toBeNull();
+		expect(gutter.getAttribute('title')).toContain('already in use');
+		expect(gutter.textContent).toContain('1');
+		expect(cell.className).toContain('cell-error');
+		expect(cell.textContent).toContain('boom deal');
+		// Fixing the value lands on the next commit — the frame, the label,
+		// and the danger gutter drop.
+		await userEvent.click(cell);
+		await userEvent.keyboard('Deal corrigée');
+		await userEvent.keyboard('{Enter}');
+		await sleep(1100);
+		expect(cell.className).not.toContain('cell-error');
+		expect(cell.querySelector('.error-tip')).toBeNull();
+		expect(gutter.className).not.toContain('gutter-error');
+		expect(gutter.getAttribute('title')).toBeNull();
+		const done = await stored(args.datasource, 'crm.GridDeal.1');
+		expect(done.title).toBe('Deal corrigée');
+	}}
+/>
+
+<Story
+	name="LaggedCreate"
+	args={{ ...lagStoryArgs(800, 'boom') }}
+	play={async ({ canvasElement, args }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+		// The create flies slow: naming the required field fires the POST —
+		// the `+` gutter carries the spinner while it flies, over the staged
+		// line's pending red. A refused create drops the spinner for the
+		// danger `+`; the draft stays under the error frame. The fix re-fires
+		// the create — slow again, then the row lands and the line resets.
+		await userEvent.click(newCell(canvasElement, 0));
+		await userEvent.keyboard('boom deal');
+		await userEvent.keyboard('{Enter}');
+		await sleep(200);
+		const gutter = canvasElement.querySelector('.g-new .gutter')!;
+		expect(gutter.querySelector('.gutter-spin')).toBeTruthy();
+		expect(canvasElement.querySelector('.g-new')!.className).toContain('g-new-pending');
+		await sleep(900);
+		expect(gutter.querySelector('.gutter-spin')).toBeNull();
+		expect(gutter.className).toContain('gutter-error');
+		expect(newCell(canvasElement, 0).className).toContain('cell-error');
+		// The click left the pointer on the cell, so the refusal's label
+		// shows as soon as the refusal lands; it hides when the pointer
+		// leaves.
+		expect(newCell(canvasElement, 0).querySelector('.error-tip')?.textContent).toBe(
+			'This value is already in use.'
+		);
+		await userEvent.unhover(newCell(canvasElement, 0));
+		expect(newCell(canvasElement, 0).querySelector('.error-tip')).toBeNull();
+		await userEvent.hover(newCell(canvasElement, 0));
+		expect(newCell(canvasElement, 0).querySelector('.error-tip')?.textContent).toBe(
+			'This value is already in use.'
+		);
+		await userEvent.unhover(newCell(canvasElement, 0));
+		expect(await rowCount(args.datasource)).toBe(8);
+		// Fixing the value re-fires the create after the lag.
+		await userEvent.click(newCell(canvasElement, 0));
+		await userEvent.keyboard('Deal lenteur');
+		await userEvent.keyboard('{Enter}');
+		await sleep(200);
+		expect(gutter.querySelector('.gutter-spin')).toBeTruthy();
+		await sleep(900);
+		expect(await rowCount(args.datasource)).toBe(9);
+		expect(canvasElement.querySelector('.g-new')!.className).not.toContain('g-new-pending');
+		expect(gutter.className).not.toContain('gutter-error');
 		expect(canvas.getByText(/New GridDeal — type to create/)).toBeTruthy();
 	}}
 />

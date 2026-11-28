@@ -121,6 +121,13 @@ sandbox_lines.each_with_index do |line, i|
     bindings[name] = Binding.new(name, [] of String, callee_m.[0], false)
   elsif m = line.match(/^\s*engine\.raw_function\("(__[a-z0-9_]+)"\) do/)
     bindings[m.[1]] = Binding.new(m.[1], [] of String, "", true)
+  elsif m = line.match(/^\s*bind_date_function!\("(__[a-z0-9_]+)", \d+\)/)
+    # The date bindings register through the private bind_date_function!
+    # helper, which wraps engine.raw_function; the callee sits in the block
+    # body on the same line.
+    callee_m = line.match(/::Facet::[A-Za-z0-9.:_?]+/)
+    fail!("binding #{m.[1]} carries no ::Facet:: callee in its window") unless callee_m
+    bindings[m.[1]] = Binding.new(m.[1], [] of String, callee_m.[0], true)
   end
 end
 fail!("sandbox.cr carries no engine.function registrations") if bindings.empty?
@@ -156,9 +163,12 @@ sandbox_lines.each do |line|
       # A body line of an inline Lua function. Count every block opener
       # (`then` / `do`) and closer (`end`) on the line; single-line
       # `if ... then ... end` forms net zero. When the counter returns to
-      # zero the function's table entry is complete.
-      inline_depth += line.scan(/\b(?:then|do)\b/).size
-      inline_depth -= line.scan(/\bend\b/).size
+      # zero the function's table entry is complete. String literals are
+      # stripped first — the date block reads period bounds through
+      # p["end"], and the quoted keyword is not a block closer.
+      code = line.gsub(/"(?:[^"\\]|\\.)*"/, "\"\"").gsub(/'(?:[^'\\]|\\.)*'/, "''")
+      inline_depth += code.scan(/\b(?:then|do)\b/).size
+      inline_depth -= code.scan(/\bend\b/).size
     elsif m = line.match(/^\s*([a-z0-9_]+)\s*=\s*(__[a-z0-9_]+)\s*,?\s*$/)
       members << Member.new(current_block[:ns], m.[1], m.[2], nil, current_block[:gate])
     elsif m = line.match(/^\s*([a-z0-9_]+)\s*=\s*function\(([^)]*)\)/)
@@ -166,7 +176,11 @@ sandbox_lines.each do |line|
       members << Member.new(current_block[:ns], m.[1], nil, params, current_block[:gate])
       inline_depth = 1
     elsif !line.matches?(/^\s*(util|date|math)\s=/) && !line.strip.empty?
-      fail!("unrecognized heredoc line in the #{current_block[:ns]} block: #{line.strip.inspect}")
+      # Comment lines document the table in the source (e.g. the `end`
+      # keyword note on the date block); they are not members.
+      unless line.strip.starts_with?("--")
+        fail!("unrecognized heredoc line in the #{current_block[:ns]} block: #{line.strip.inspect}")
+      end
     end
   end
 end
@@ -176,7 +190,19 @@ fail!("the namespace heredocs parsed to zero members") if members.empty?
 # helpers are assigned inside the json_helpers heredoc; the db gates inside
 # the db heredoc — the heredoc scan above covers both.
 assigned = members.compact_map(&.binding)
-unassigned = bindings.keys - assigned
+# The period/dateperiod helper bindings are never namespace members: the
+# date table aliases them with a `local __ovl, __cnt = ...` line and uses
+# them inside the inline period_overlaps / period_contains / dateperiod_*
+# functions. A right-hand name on such an alias line is consumed on
+# purpose, not forgotten.
+internal = Set(String).new
+sandbox_lines.each do |line|
+  if m = line.match(/^\s*local\s+[a-zA-Z0-9_,\s]+=\s*([a-zA-Z0-9_,\s]+)$/)
+    names = m.[1].split(',').map(&.strip).select(&.starts_with?("__"))
+    names.each { |n| internal << n }
+  end
+end
+unassigned = (bindings.keys - assigned).reject { |name| internal.includes?(name) }
 fail!("registered but never assigned to a namespace: #{unassigned.inspect}") unless unassigned.empty?
 unknown_assigned = assigned - bindings.keys
 fail!("assigned but never registered: #{unknown_assigned.inspect}") unless unknown_assigned.empty?
@@ -280,8 +306,12 @@ GATE_NOTES = {
 # documents the same rule. A new inline function must add an entry here or
 # the generation stops.
 INLINE_PURPOSE_MAP = {
-  "is_empty" => "empty?",
-  "coalesce" => "coalesce",
+  "is_empty"            => "empty?",
+  "coalesce"            => "coalesce",
+  "period_overlaps"     => "period_overlaps?",
+  "period_contains"     => "period_contains?",
+  "dateperiod_overlaps" => "dateperiod_overlaps?",
+  "dateperiod_contains" => "dateperiod_contains?",
 }
 
 def lua_signature(ns : String, name : String, binding : Binding?) : String
@@ -303,7 +333,10 @@ members.each do |member|
               elsif binding && !binding.params.empty?
                 binding.params.join(", ")
               elsif binding && binding.raw
-                key = "util.#{member.name}"
+                # Signature rows in lua-engine.md are keyed by the member's
+                # own namespace (util.json_encode, date.diff) — raw bindings
+                # exist in both tables.
+                key = "#{member.ns}.#{member.name}"
                 doc = doc_rows[key]?
                 fail!("no lua-engine.md signature for the raw binding #{key}") unless doc
                 doc.signature
@@ -355,11 +388,13 @@ parts << <<-FRONTMATTER
   title: Lua API
   description: "The tables and functions Lua scripts can call: document, notification, util, date, and math."
   audience: [developer]
+  type: reference
   features: [AUT-08, DOM-08]
   verified_at: f1409cdc
   ---
   FRONTMATTER
 parts << "> Generated from `src/lua` by `make gen-docs-lua`. Do not edit this file by hand."
+parts << "You write a lifecycle hook, a named action, or a computed field and need the exact surface the sandbox offers. The tables below list every global, function, and gate per script context. [Scripts and guards](/build/model/behaviour/scripts-and-guards/) explains where each script runs and when; this page is the exhaustive function reference generated from the source."
 parts << "Lua scripts run in a sandbox with a fixed set of globals. Lifecycle hooks, named actions, and domain hooks get the full surface: `document`, `notification`, `util`, `date`, and `math.clamp`. Computed fields get `util` and `date` plus a read-only `document` table. They get no `notification` and no query-backed `util` gates. Scripts also receive the `ctx` object and an `error(msg)` collector; see lifecycle scripts and guards."
 parts << "## document"
 parts << "Reads accept a qualified `domain.Doctype` first argument. A foreign read needs an active domain grant; the returned content is reduced to the covered fields."
@@ -375,9 +410,9 @@ parts << "## math"
 parts << md_table(math_rows)
 parts << "## Related"
 parts << [
-  "- [Lifecycle scripts and guards](/build/lifecycle-scripts-guards/) — where create, update, delete, and actions run.",
-  "- [Event hooks](/build/event-hooks/) — the domain hooks that share this surface.",
-  "- [Sidecars](/build/sidecars/) — system-managed attachment doctypes with their own hooks.",
+  "- [Lifecycle scripts and guards](/build/model/behaviour/scripts-and-guards/) — where create, update, delete, and actions run.",
+  "- [Event hooks](/build/model/automation/event-hooks/) — the domain hooks that share this surface.",
+  "- [Sidecars](/build/model/relations/comments-attachments/) — system-managed attachment doctypes with their own hooks.",
 ].join("\n")
 
 # ── French page ──────────────────────────────────────────────────────────
@@ -390,6 +425,7 @@ fr_parts << <<-FRONTMATTER
   title: API Lua
   description: "#{GenDocs::FrOverlay.fetch(ov, "description", "")}"
   audience: [developer]
+  type: reference
   features: [AUT-08, DOM-08]
   verified_at: f1409cdc
   ---

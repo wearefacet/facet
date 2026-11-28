@@ -1,0 +1,185 @@
+---
+type: how-to
+title: Share data across domains
+description: Let one domain read another's fields through a grant, and copy values with replicated fields.
+audience: [author, admin]
+features: [DOM-14, DOM-25]
+sidebar:
+  order: 2
+verified_at: eee55a2
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Domains keep their data apart. Brightwater's `rentals` domain shows a booking
+with the client's name on it, but the client lives in the `clients` domain.
+Two tools open a controlled door between domains. A **domain grant** is a
+consent contract: the producing domain names a consumer and the resources it
+may read. A **replicated field** copies one value from a source document into
+the consumer's document, so the consumer shows it without a lookup.
+
+## When to use this
+
+- A doctype references documents in another domain and its scripts must read
+  them.
+- A list in the `rentals` domain should show a value that lives in
+  `clients`, such as the client's name.
+- You want the copy to follow the source automatically.
+
+## Before you start
+
+- **Two sides.** Decide which side holds the contract: the **producer** gives
+  data, the **consumer** receives it.
+- **Tags.** [Tag](/admin/people/hidden-fields/) the producer fields you share. A field without tags carries
+  the implicit tag `default`.
+- **Read only.** Grants give read access only. No grant ever allows a write.
+- **Same domain needs none.** Two doctypes inside one domain read each other
+  without a grant. The grant is the contract between domains.
+
+## Steps
+
+A grant is a document, not a definition, so domain files carry none — the
+steps below are the same work in the app and through the API.
+
+<Tabs syncKey="build-mode">
+<TabItem label="Builder">
+
+1. Open the producer domain's document page — the grant lives there, as a
+   child of the domain.
+2. Create one grant per consumer domain. Name the consumer, and add one
+   resource entry per doctype with the tags the consumer may read.
+3. Have a holder of the producer's **Activate** right turn the grant on.
+
+</TabItem>
+<TabItem label="API">
+
+The grant is a document under the producer domain. Brightwater files one so
+`rentals` may read `clients`:
+
+```sh
+curl -k -X POST "https://facet.localhost:3443/Api/core/Domain/clients/grants" \
+  -H "Authorization: Bearer $FACET_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "consumer_domain": "core.Domain.rentals",
+    "resources": [
+      { "doctype": "Company", "tags": ["default"] }
+    ]
+  }'
+
+curl -k -X POST "https://facet.localhost:3443/Api/core/DomainGrant/<grant-id>/activate" \
+  -H "Authorization: Bearer $FACET_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+`-k` skips the certificate check of the local development address. A new
+grant starts inactive; an inactive grant admits nothing. Facet refuses a
+self-grant: a domain needs no contract to read itself.
+
+</TabItem>
+</Tabs>
+
+### Declare the replicated field on the consumer
+
+On the consumer doctype, add two fields: a reference to the source doctype,
+and a field that holds the copy. This is the real Brightwater booking:
+
+```yaml
+# rentals/doctypes/rentals.Booking.yml (extract)
+fields:
+  client:
+    type: reference
+    title: Client
+    doctype: clients.Company
+    required: true
+    filters: [equality]
+  client_name:
+    type: string
+    title: Client name
+    replicate:
+      via: client
+      field: name
+    filters: [text_search]
+```
+
+Rules for the pair:
+
+- `via` names the reference field on the same doctype.
+- The source field must not be a secret, and a copy cannot feed another copy.
+- The copy must carry every tag its source carries.
+- `on_source_delete` is `keep` (the default) or `unset`. `keep` leaves the
+  copied value; `unset` clears it when the source is deleted.
+- Users cannot write a copied field. It cannot be required or unique.
+
+### Watch the copies behave
+
+Facet pulls the initial value when a consumer document is created or its
+reference changes. Later changes on the source push to every consumer that
+references it. Each push is a real, audited update on the consumer document.
+
+:::caution
+A cross-domain edge without an active grant stays inert. The check reports
+the missing grant, and the copy stays empty until the producer activates the
+contract.
+:::
+
+## Example
+
+The example instance carries the working pair. A booking references
+`clients.Company.06H1FM1B3MXBPS0JYVM3BDD154`, whose name is `Maison
+Lumière`. The booking shows the copy:
+
+```json
+{
+  "client": "clients.Company.06H1FM1B3MXBPS0JYVM3BDD154",
+  "client_name": "Maison Lumière",
+  "status": "confirmed"
+}
+```
+
+The client later renames. The copy on the booking updates without anyone
+touching the booking, and the history shows the update as an automated
+change on the booking.
+
+{/* d2
+*One consent, one copy*
+producer: "clients (producer)" {class: node}
+consumer: "rentals (consumer)" {class: node}
+grant: "Grant: reads Company" {class: store}
+source: "Company.name" {class: node}
+replica: "Booking.client_name" {class: node}
+
+producer -> grant: files and activates
+consumer -> grant: named in
+source -> replica: pushed on change
+*/}
+<div class="d2-diagram">
+<img class="d2-diagram__img d2-diagram__light" src="/diagrams/71054885-light.svg" alt="clients (producer)" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/71054885-dark.svg" alt="clients (producer)" loading="lazy" />
+</div>
+
+## Troubleshooting
+
+**The copy stays empty.**
+
+Walk the chain: the grant must be active, it must name the source doctype,
+and its tags must cover the source field. The doctype check names the
+missing piece.
+
+**The copy did not follow a source change.**
+
+The reference must point at the source document. An empty or dangling
+reference has no source to pull from.
+
+**The grant disappeared from the consumer's view.**
+
+A widened grant returns to inactive until the producer accepts it again. The
+publish dialog reports this when it happens.
+
+## Related
+
+- [Domain grants (engineering doc)](https://github.com/wearefacet/facet/blob/main/doc/backend/domain-grants.md) — the grant contract and its gates.
+- [Cross-domain replication](/build/deeper/cross-domain-replication/) — how copies flow between domains, one layer deeper.
+- [Link documents together](/build/model/relations/references-links/) — the reference field the copy rides on.
+- [Domains: where your data lives](/discover/how-it-works/domains/)

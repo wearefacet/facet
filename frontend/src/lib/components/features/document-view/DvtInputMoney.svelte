@@ -52,6 +52,17 @@
 	}
 
 	const fieldRawValue = $derived(content[template.field]);
+
+	/**
+	 * The editor reports the committed money object; this node owns the write into
+	 * the values bag. A `bind:` on `values[...]` makes the child write through a
+	 * prop it does not own (Svelte's `ownership_invalid_binding`), and it only
+	 * holds when the bag is the node's own state — the bag is passed through the
+	 * template dispatcher, so the owner is two levels up.
+	 */
+	function onMoneyChange(next: MoneyValue | ''): void {
+		if (values) values[template.field] = next;
+	}
 </script>
 
 <div class="dvt-input-money" {...rest}>
@@ -64,7 +75,8 @@
 			required={template.required}
 			preferredCurrency={fieldDef?.currency}
 			{error}
-			bind:value={values[template.field] as MoneyValue | ''}
+			value={values[template.field] as MoneyValue | ''}
+			onchange={onMoneyChange}
 		/>
 	{:else}
 		<div class="dvt-input-money-readonly">

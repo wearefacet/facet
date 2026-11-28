@@ -632,97 +632,99 @@
 	{#if error}
 		<div class="table-error">{error}</div>
 	{/if}
-	<table>
-		<thead>
-			<tr>
-				{#if selectable}
-					<th class="th-checkbox" aria-label={m.table_select_all_aria()}>
-						<Checkbox.Root
-							checked={allSelected}
-							indeterminate={someSelected}
-							onclick={onSelectAll}
-							class="cbx"
-							aria-label={m.table_select_all_aria()}
-						/>
-					</th>
-				{/if}
-
-				{#each columns as col, colIndex (col.key)}
-					<th
-						class={thClass(col)}
-						style={col.width ? `width: ${col.width}` : ''}
-						aria-sort={sortState?.key === col.key
-							? sortState.desc
-								? 'descending'
-								: 'ascending'
-							: undefined}
-						onclick={col.sortable ? () => handleSort(col.key) : undefined}
-						tabindex={col.sortable ? 0 : undefined}
-						onkeydown={col.sortable
-							? (e) => {
-									if (e.key === 'Enter' || e.key === ' ') {
-										e.preventDefault();
-										handleSort(col.key);
-									}
-								}
-							: undefined}
-						draggable={columnsReorderable}
-						ondragstart={(e) => handleColumnDragStart(colIndex, e)}
-						ondragover={(e) => handleColumnDragOver(colIndex, e)}
-						ondrop={(e) => handleColumnDrop(colIndex, e)}
-						ondragend={handleColumnDragEnd}
-					>
-						{#if col.sortable}
-							<span class="sort-wrap">{col.label} <span class="sort-arrow">▲</span></span>
-						{:else}
-							{col.label}
-						{/if}
-					</th>
-				{/each}
-			</tr>
-		</thead>
-		<tbody bind:this={tbodyEl}>
-			{#each items as item (rowKey(item))}
-				<tr
-					class="row"
-					class:clickable={!!onRowClick}
-					class:active={rowKey(item) === activeKey}
-					onclick={onRowClick ? () => onRowClick(item) : undefined}
-				>
+	<div class="table-scroll">
+		<table>
+			<thead>
+				<tr>
 					{#if selectable}
-						<td class="td-checkbox">
+						<th class="th-checkbox" aria-label={m.table_select_all_aria()}>
 							<Checkbox.Root
-								checked={selected.has(rowKey(item))}
-								onclick={() => onSelect?.(rowKey(item))}
+								checked={allSelected}
+								indeterminate={someSelected}
+								onclick={onSelectAll}
 								class="cbx"
-								aria-label={m.table_select_row_aria()}
+								aria-label={m.table_select_all_aria()}
 							/>
-						</td>
+						</th>
 					{/if}
 
-					{#each columns as col (col.key)}
-						<td class={tdClass(col)}>
-							{#if col.render}
-								{@render col.render(item, col)}
+					{#each columns as col, colIndex (col.key)}
+						<th
+							class={thClass(col)}
+							style={col.width ? `width: ${col.width}` : ''}
+							aria-sort={sortState?.key === col.key
+								? sortState.desc
+									? 'descending'
+									: 'ascending'
+								: undefined}
+							onclick={col.sortable ? () => handleSort(col.key) : undefined}
+							tabindex={col.sortable ? 0 : undefined}
+							onkeydown={col.sortable
+								? (e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											handleSort(col.key);
+										}
+									}
+								: undefined}
+							draggable={columnsReorderable}
+							ondragstart={(e) => handleColumnDragStart(colIndex, e)}
+							ondragover={(e) => handleColumnDragOver(colIndex, e)}
+							ondrop={(e) => handleColumnDrop(colIndex, e)}
+							ondragend={handleColumnDragEnd}
+						>
+							{#if col.sortable}
+								<span class="sort-wrap">{col.label} <span class="sort-arrow">▲</span></span>
 							{:else}
-								{@render defaultCell(item, col)}
+								{col.label}
 							{/if}
-						</td>
+						</th>
 					{/each}
 				</tr>
-			{:else}
-				{#if !loading && !error}
-					<tr class="row-empty">
-						<td colspan={columns.length + (selectable ? 1 : 0)}>{m.table_records_empty()}</td>
-					</tr>
-				{/if}
-			{/each}
-		</tbody>
-	</table>
+			</thead>
+			<tbody bind:this={tbodyEl}>
+				{#each items as item (rowKey(item))}
+					<tr
+						class="row"
+						class:clickable={!!onRowClick}
+						class:active={rowKey(item) === activeKey}
+						onclick={onRowClick ? () => onRowClick(item) : undefined}
+					>
+						{#if selectable}
+							<td class="td-checkbox">
+								<Checkbox.Root
+									checked={selected.has(rowKey(item))}
+									onclick={() => onSelect?.(rowKey(item))}
+									class="cbx"
+									aria-label={m.table_select_row_aria()}
+								/>
+							</td>
+						{/if}
 
-	{#if loading && items.length === 0}
-		<div class="table-loading">{m.common_loading()}</div>
-	{/if}
+						{#each columns as col (col.key)}
+							<td class={tdClass(col)}>
+								{#if col.render}
+									{@render col.render(item, col)}
+								{:else}
+									{@render defaultCell(item, col)}
+								{/if}
+							</td>
+						{/each}
+					</tr>
+				{:else}
+					{#if !loading && !error}
+						<tr class="row-empty">
+							<td colspan={columns.length + (selectable ? 1 : 0)}>{m.table_records_empty()}</td>
+						</tr>
+					{/if}
+				{/each}
+			</tbody>
+		</table>
+
+		{#if loading && items.length === 0}
+			<div class="table-loading">{m.common_loading()}</div>
+		{/if}
+	</div>
 
 	{#if total != null}
 		<div class="tfoot">
@@ -828,14 +830,32 @@
 {/snippet}
 
 <style>
-	/* ---- table element ---- */
+	/* ---- layout ---- */
+	/* The toolbar and the footer stay pinned. The rows scroll inside
+	   `.table-scroll`. The list-view fill chain gives `.table-wrap` its
+	   height; outside a flex column parent (stories), flex does nothing and
+	   the table keeps content height. */
 	.table-wrap {
-		overflow-x: auto;
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		min-height: 0;
+		flex: 1;
 	}
 
+	.table-scroll {
+		overflow: auto;
+	}
+
+	/* ---- table element ---- */
 	.table-wrap table {
 		width: 100%;
-		border-collapse: collapse;
+		/* Separate borders keep the sticky header's bottom line on the cell;
+		   collapsed borders paint on the table and stay behind when the
+		   header pins. Only border-bottom is in use, so the rendering does
+		   not change. */
+		border-collapse: separate;
+		border-spacing: 0;
 		font-size: 13px;
 	}
 

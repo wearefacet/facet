@@ -1,0 +1,85 @@
+---
+content:
+  icon: calendar-check
+  color: "#B45309"
+  domain: rentals
+  fields:
+    client:
+      type: reference
+      title: Client
+      doctype: clients.Company
+      required: true
+      filters:
+        - equality
+      description: "The client the booking is for."
+    client_name:
+      type: string
+      title: Client name
+      replicate:
+        via: client
+        field: name
+      filters:
+        - text_search
+      description: "The client's name, copied from the clients domain. Stays current without re-typing."
+    dates:
+      type: dateperiod
+      title: Dates
+      filters:
+        - equality
+      description: "From set-up start to pick-up end. The calendar view plots this period."
+    status:
+      type: enum
+      title: State
+      values:
+        - key: draft
+          color: "#64748b"
+          label: Draft
+        - key: confirmed
+          color: "#15803d"
+          label: Confirmed
+        - key: returned
+          color: "#0e7490"
+          label: Returned
+      default: draft
+      filters:
+        - equality
+      description: "Draft until the client signs; confirmed marks the items out; returned brings them back."
+    total:
+      type: data
+      title: Total
+      compute: booking_total
+      compute_when:
+        - lines
+      description: "Sum of line quantity x price, computed from the booking's lines."
+    notes:
+      type: longtext
+      title: Notes
+      description: "Delivery instructions, site contact, anything the warehouse needs."
+  script: !read_file rentals.Booking.lua
+  actions:
+    confirm:
+      args: {}
+      event_name: booking_confirmed
+    mark_returned:
+      args: {}
+      event_name: booking_returned
+  doctype: Booking
+  sidecars:
+    comments:
+      doctype: core.Comment
+      column: target
+  children:
+    lines:
+      doctype: BookingLine
+      collection: true
+      description: "The equipment lines on this booking."
+  identifier:
+    genonly: false
+    template: "BK-{year}-####"
+  description: "One rental agreement: what goes out, to whom, when, and for how much."
+  display_name: "{{ client_name }}"
+  search: "{{ client_name }} {{ notes }}"
+  aggregate_root: true
+  schema_version: 1
+meta:
+  parent_id: rentals

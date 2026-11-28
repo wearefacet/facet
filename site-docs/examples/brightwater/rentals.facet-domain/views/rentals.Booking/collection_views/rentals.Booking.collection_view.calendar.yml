@@ -1,0 +1,11 @@
+---
+content:
+  name: Calendar
+  config:
+    calendar:
+      color_by: status
+      week_start: monday
+      discriminator: dates
+  surface: calendar
+meta:
+  parent_id: rentals.Booking

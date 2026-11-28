@@ -101,6 +101,48 @@ describe Facet::Index::Manager do
       end
     end
 
+    it "creates the field's extended statistics object with the btree index" do
+      with_db do |db|
+        defn = Facet::Doctype::DoctypeDefinition.new(
+          doctype: "StatsDoc", domain: "test",
+          fields: {"number" => make_field("string", ["eq"])}
+        )
+
+        Facet::Index::Manager.sync(db, defn)
+
+        stats_name = Facet::Index::Naming.statistics_name("test", "StatsDoc", "number")
+        exists = db.query_one?(
+          "SELECT 1 FROM pg_statistic_ext WHERE stxname = $1",
+          stats_name,
+          as: Int32
+        )
+        exists.should_not be_nil
+      end
+    end
+
+    it "drops the statistics object with the last btree variant of a field" do
+      with_db do |db|
+        full = Facet::Doctype::DoctypeDefinition.new(
+          doctype: "StatsDropDoc", domain: "test",
+          fields: {"number" => make_field("string", ["eq"])}
+        )
+        Facet::Index::Manager.sync(db, full)
+
+        stats_name = Facet::Index::Naming.statistics_name("test", "StatsDropDoc", "number")
+        db.query_one?("SELECT 1 FROM pg_statistic_ext WHERE stxname = $1", stats_name, as: Int32).should_not be_nil
+
+        # Removing the field from the definition drops its btree index and
+        # with it the statistics object.
+        empty = Facet::Doctype::DoctypeDefinition.new(
+          doctype: "StatsDropDoc", domain: "test",
+          fields: {} of String => Facet::Doctype::FieldDefinition,
+        )
+        Facet::Index::Manager.sync(db, empty)
+
+        db.query_one?("SELECT 1 FROM pg_statistic_ext WHERE stxname = $1", stats_name, as: Int32).should be_nil
+      end
+    end
+
     it "is idempotent — calling sync twice does not create duplicate rows" do
       with_db do |db|
         defn = Facet::Doctype::DoctypeDefinition.new(

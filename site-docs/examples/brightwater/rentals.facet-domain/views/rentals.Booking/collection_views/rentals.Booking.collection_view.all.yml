@@ -1,0 +1,15 @@
+---
+content:
+  name: All bookings
+  config:
+    columns:
+      - key: client_name
+      - key: dates
+        width: 240px
+      - key: status
+        width: 120px
+      - key: total
+        width: 120px
+  surface: table
+meta:
+  parent_id: rentals.Booking

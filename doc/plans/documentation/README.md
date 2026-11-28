@@ -1,5 +1,7 @@
 # Documentation site — dispatch plans
 
+> **Superseded for information architecture and voice by [`documentation-v2/`](documentation-v2/README.md).** Kept as history: the v2 plan rebuilt the site around five reader-sorted tabs, so this plan's section map (`start/`, `tutorials/`, `concepts/`, `govern/`, `apps/`, `operate/`, `compare/`) no longer describes the site. The per-page style rules in `00-conventions.md` live on in `doc/documentation.md` (Rule 2, 2a, 2b).
+
 Work packages (WPs) that implement [`whole-doc.md`](whole-doc.md), the plan for the Facet documentation website (`site-docs/`, Astro + Starlight). Each WP is a self-contained dispatch for one agent.
 
 - WP numbering is dispatch order, not execution order — see the table.

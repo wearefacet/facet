@@ -8,6 +8,10 @@ import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { errorMessage } from './util.js';
 import { runInit, type InitOptions } from './commands/init.js';
+import { runSetupDev } from './commands/setup-dev.js';
+import { runConnect } from './commands/connect.js';
+import { runApikey } from './commands/apikey.js';
+import { runHost } from './commands/host.js';
 import { runLogin } from './commands/login.js';
 import { runLogout } from './commands/logout.js';
 import { runWhoami } from './commands/whoami.js';
@@ -53,6 +57,66 @@ export function createProgram(): Command {
 		.option('--build <dir>', 'Build folder to upload (default: dist).')
 		.option('--server <url>', 'Facet instance URL to add as the default target.')
 		.action(action((opts: InitOptions) => runInit(process.cwd(), opts)));
+
+	program
+		.command('setup-dev')
+		.description('Scaffold, start, and seed a local dev instance, then fetch an API key.')
+		.option('--dir <path>', 'Folder to scaffold (default: current directory).')
+		.option('--hostname <name>', 'Edge hostname (default: facet.localhost).')
+		.option('--port <n>', 'Edge HTTPS port (default: 3443).')
+		.option('--watch <dir>', 'Folder to watch for domain bundles (default: domains).')
+		.option('--no-watch', 'Do not set up the domain watcher.')
+		.option('--no-start', 'Write the stack files but do not start it.')
+		.option('--no-key', 'Do not fetch an API key after the stack starts.')
+		.option('--force', 'Overwrite an existing dev stack in the folder.')
+		.option('--yes', 'Non-interactive: take every default.')
+		.action(
+			action(
+				(opts: {
+					dir?: string;
+					hostname?: string;
+					port?: string;
+					watch?: string | boolean;
+					start?: boolean;
+					key?: boolean;
+					force?: boolean;
+					yes?: boolean;
+				}) =>
+					runSetupDev({
+						dir: opts.dir,
+						hostname: opts.hostname,
+						port: opts.port === undefined ? undefined : Number.parseInt(opts.port, 10),
+						watch: opts.watch === false ? false : (opts.watch as string | undefined),
+						noStart: opts.start === false,
+						noKey: opts.key === false,
+						force: opts.force,
+						yes: opts.yes
+					})
+			)
+		);
+
+	program
+		.command('connect')
+		.description('Sign in to a Facet instance and optionally store a project API key.')
+		.option('--target <name>', 'Named target from facet.config.json to connect to.')
+		.option('--role <name>', 'Role to pin the key to (id or name; default: your active role).')
+		.action(
+			action((opts: TargetOptions & { role?: string }) =>
+				runConnect(process.cwd(), opts.target, { role: opts.role })
+			)
+		);
+
+	program
+		.command('apikey')
+		.description('Print the stored API key for this project (for Authorization: Bearer).')
+		.option('--target <name>', 'Named target from facet.config.json to read the key for.')
+		.action(action((opts: TargetOptions) => runApikey(process.cwd(), opts.target)));
+
+	program
+		.command('host')
+		.description('Print the instance URL for this project (for building request URLs).')
+		.option('--target <name>', 'Named target from facet.config.json to read the URL for.')
+		.action(action((opts: TargetOptions) => runHost(process.cwd(), opts.target)));
 
 	program
 		.command('login')

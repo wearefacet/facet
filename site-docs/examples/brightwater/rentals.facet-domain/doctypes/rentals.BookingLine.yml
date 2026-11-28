@@ -1,0 +1,40 @@
+---
+content:
+  icon: package-check
+  color: "#D97706"
+  domain: rentals
+  fields:
+    item:
+      type: reference
+      title: Item
+      doctype: equipment.Item
+      required: true
+      filters:
+        - equality
+      description: "The piece of equipment on this line."
+    quantity:
+      type: integer
+      title: Quantity
+      min: 1
+      default: 1
+      filters:
+        - comparison
+      description: "How many of the item the booking takes."
+    price:
+      type: money
+      title: Price
+      currency: EUR
+      precision: 2
+      required: true
+      filters:
+        - comparison
+        - currency
+      description: "The line's rental price, per booking (not per day)."
+  doctype: BookingLine
+  member_of: Booking
+  description: "One line on a booking: which item, how many, at what price."
+  display_name: "{{ item }}"
+  search: "{{ item }}"
+  schema_version: 1
+meta:
+  parent_id: rentals.Booking

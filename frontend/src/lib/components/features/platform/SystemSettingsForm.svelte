@@ -776,14 +776,16 @@
 	// `createChapterScroll` helper (primitives/surfaces) — the same
 	// mechanism the personal settings page uses.
 
-	const chapters: Chapter[] = [
+	// A raw state array: `createChapterScroll` reads it through `ids()` inside
+	// its spy, and a raw read of a reactive array tracks the spy as a consumer.
+	const chapters = $state<Chapter[]>([
 		{ id: 'assistant', label: m.system_settings_group_assistant(), icon: Bot },
 		{ id: 'mail', label: m.system_settings_group_mail(), icon: Mail },
 		{ id: 'localization', label: m.system_settings_group_localization(), icon: Globe },
 		{ id: 'security', label: m.system_settings_group_security(), icon: KeyRound },
 		{ id: 'artifacts', label: m.system_settings_group_artifacts(), icon: Package },
 		{ id: 'retention', label: m.system_settings_group_retention(), icon: History }
-	];
+	]);
 
 	let rootEl: HTMLElement | undefined = $state();
 

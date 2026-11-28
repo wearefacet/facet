@@ -1,0 +1,23 @@
+---
+content:
+  icon: tags
+  color: "#0d9488"
+  domain: equipment
+  fields:
+    name:
+      type: string
+      title: Name
+      required: true
+      unique: true
+      filters:
+        - equality
+        - text_search
+      description: "Category name, e.g. 'Tents', 'Sound', 'Lighting'."
+  doctype: Category
+  description: "A family of rental equipment."
+  display_name: "{{ name }}"
+  search: "{{ name }}"
+  aggregate_root: true
+  schema_version: 1
+meta:
+  parent_id: equipment

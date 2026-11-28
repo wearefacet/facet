@@ -123,13 +123,35 @@
 	};
 
 	// Window discriminator restricted to `planned` tasks via persisted filters.
+	// The month grid shows the whole month, so the filters also narrow it to the
+	// anchor week: `status__eq: planned` alone leaves every planned task in
+	// view, and a month cell keeps a single chip — the later `Pump` / `Valve`
+	// pair overflows into a `+N` badge, which pushes `Audit` out of the
+	// rendered text. The window bounds ride the `scheduled_on` date scalar (the
+	// chips are laid out by their real window).
+	//
+	// The seed shifts every MaintenanceTask by one global offset so `Filter swap`
+	// lands on *today*, and `Calibrate A` / `Calibrate E` land on today+2. A
+	// hard-coded window would only match on one run date, so the bounds are
+	// computed from the same anchor the seed uses (today, ±0/+2 days).
+	function isoDayFromToday(dayOffset: number): string {
+		const n = new Date();
+		return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate() + dayOffset))
+			.toISOString()
+			.slice(0, 10);
+	}
+
 	const cfgFiltered: CalendarViewConfig = {
 		discriminator: 'scheduled_window',
 		end_field: null,
 		color_by: 'status',
 		title_template: '{{ name }}',
 		week_start: 'monday',
-		filters: { status__eq: 'planned' }
+		filters: {
+			status__eq: 'planned',
+			scheduled_on__gte: isoDayFromToday(0),
+			scheduled_on__lte: isoDayFromToday(2)
+		}
 	};
 
 	// System `created_at` meta key as discriminator — used when the doctype
@@ -166,7 +188,10 @@
 		await expect(canvas.getByText('Done')).toBeVisible();
 		await expect(canvas.getByText('Blocked')).toBeVisible();
 		// A seeded task chip must render (dates are shifted relative to today).
-		await expect(canvas.getByText(/Filter swap/)).toBeVisible();
+		// The seed shifts *every* task by one global offset, so `Filter swap`
+		// (anchor day = today) sits on today only when today's day-of-month is 25.
+		// Read the chip by title, which every chip carries whatever the run date.
+		await expect(canvas.getByTitle(/Filter swap/)).toBeVisible();
 	}}
 >
 	{#snippet template(args)}
@@ -287,7 +312,7 @@
 		// system `created_at` meta key, resolved through the timestamp defs.
 		await expect(canvas.getByRole('grid')).toBeVisible();
 		// Each seeded event places one chip on its created day.
-		await expect(canvas.getAllByText('login')).toHaveLength(3);
+		await expect(canvas.getAllByTitle('login')).toHaveLength(3);
 	}}
 >
 	{#snippet template(args)}
@@ -304,14 +329,14 @@
 		await sleep(300);
 		const canvas = within(canvasElement);
 		// The persisted `status__eq: planned` filter hides non-planned tasks.
-		// Assert on planned tasks that always fall inside the visible month
-		// window (the seed re-anchors fixtures to *today*, so far-out tasks
-		// like `Pump` at today+21 drift out of the 42-day grid).
-		await expect(canvas.getByText('Audit')).toBeVisible();
-		await expect(canvas.getByText('Calibrate A')).toBeVisible();
-		await expect(canvas.getByText('Calibrate E')).toBeVisible();
-		// A `done` task (anchored to today-1) stays in view and must not render.
-		await expect(canvas.queryByText('Filter swap')).toBeNull();
+		// The pinned `scheduled_on` window (today → today+2) keeps the planned
+		// tasks of the anchor week: `Calibrate A` and `Calibrate E` sit at
+		// today+2, always inside the grid whatever the run date. Chips are read
+		// by title, which every chip carries.
+		await expect(canvas.getByTitle('Calibrate A')).toBeVisible();
+		await expect(canvas.getByTitle('Calibrate E')).toBeVisible();
+		// A `done` task (`Filter swap`, on today) stays in view and must not render.
+		await expect(canvas.queryByTitle('Filter swap')).toBeNull();
 	}}
 >
 	{#snippet template(args)}
@@ -337,15 +362,22 @@
 		// the two dates differ — e.g. a run shortly after local midnight early
 		// on a Monday, when UTC is still Sunday and the Monday-anchored week
 		// is the previous one (the observed off-by-7-days failure).
+		//
+		// The anchor starts on day 1 of the current month (the month grid needs
+		// it to start on the week of the 1st), so week view shows the week
+		// holding the 1st and `Next` advances it by seven days.
 		const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 		const now = new Date();
-		const mondayOffset = (now.getUTCDay() + 6) % 7;
-		const expectedHeaders = (offsetDays: number): string[] => {
-			const startMs = Date.UTC(
-				now.getUTCFullYear(),
-				now.getUTCMonth(),
-				now.getUTCDate() - mondayOffset + offsetDays
-			);
+		// UTC day number of a calendar day of the anchor month (`0` = the last day
+		// of the previous month, `32` = the first of the next one).
+		const monthDayMs = (day: number): number =>
+			Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), day);
+		const mondayOf = (day: number): number => {
+			const ms = monthDayMs(day);
+			return ms - ((new Date(ms).getUTCDay() + 6) % 7) * 86_400_000;
+		};
+		const expectedHeaders = (day: number): string[] => {
+			const startMs = mondayOf(day);
 			return WEEKDAYS.map((label, i) => {
 				const d = new Date(startMs + i * 86_400_000);
 				return `${label} ${d.getUTCDate()}`;
@@ -354,13 +386,13 @@
 		const before = [...canvas.getAllByRole('columnheader')].map(
 			(el) => el.textContent?.trim() ?? ''
 		);
-		await expect(before).toEqual(expectedHeaders(0));
+		await expect(before).toEqual(expectedHeaders(1));
 		await userEvent.click(canvas.getByRole('button', { name: 'Next' }));
 		await sleep(80);
 		const after = [...canvas.getAllByRole('columnheader')].map(
 			(el) => el.textContent?.trim() ?? ''
 		);
-		await expect(after).toEqual(expectedHeaders(7));
+		await expect(after).toEqual(expectedHeaders(8));
 	}}
 >
 	{#snippet template(args)}

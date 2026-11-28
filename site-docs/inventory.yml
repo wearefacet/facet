@@ -1,10 +1,12 @@
-# Facet feature inventory: 138 features in 10 areas.
-# Pinned to envelope@c2f1427e (features/road-to-beta, 2026-11-03).
+# Facet feature inventory: 158 features in 10 areas.
+# Pinned to facet@8fb69df (master, 2026-11-26). The previous pin c2f1427e is
+# not reachable in this repository (history squashed at the 0.2.0-beta
+# archive); the WP 10 refresh re-derived every row from source at the new pin.
 # Source export: doc/plans/documentation/feature-list.md (decision D9, option A).
 # Consumed by site-docs/scripts/check-coverage.mjs. Do not rename or reuse IDs.
 # Re-derive this file when the platform moves; record the new commit here.
 
-# area: AI (assistants, agent tools, MCP) — 9 features
+# area: AI (assistants, agent tools, MCP) — 11 features
 - id: AI-01
   name: Workspace assistant
   area: AI
@@ -32,8 +34,14 @@
 - id: AI-09
   name: Stale-turn sweep
   area: AI
+- id: AI-10
+  name: Conversation titles
+  area: AI
+- id: AI-11
+  name: Reply-language directive
+  area: AI
 
-# area: APP (registered apps, OAuth, hosting, SDKs) — 11 features
+# area: APP (registered apps, OAuth, hosting, SDKs) — 12 features
 - id: APP-01
   name: App registry
   area: APP
@@ -67,8 +75,11 @@
 - id: APP-11
   name: Chat embed
   area: APP
+- id: APP-12
+  name: Dashboard app launcher
+  area: APP
 
-# area: AUD (mutation log, audit, rollback) — 8 features
+# area: AUD (mutation log, audit, rollback) — 9 features
 - id: AUD-01
   name: Append-only mutation log
   area: AUD
@@ -93,8 +104,11 @@
 - id: AUD-08
   name: Provenance and cause metadata
   area: AUD
+- id: AUD-09
+  name: Cluster-scope rollback
+  area: AUD
 
-# area: AUT (events, hooks, webhooks, jobs, notifications, mail) — 8 features
+# area: AUT (events, hooks, webhooks, jobs, notifications, mail) — 10 features
 - id: AUT-01
   name: Event bus
   area: AUT
@@ -119,8 +133,14 @@
 - id: AUT-08
   name: Lua scripting engine
   area: AUT
+- id: AUT-09
+  name: Aggregate child-change events
+  area: AUT
+- id: AUT-10
+  name: Cron task listing CLI
+  area: AUT
 
-# area: DOC (document data plane) — 13 features
+# area: DOC (document data plane) — 15 features
 - id: DOC-01
   name: Document CRUD
   area: DOC
@@ -160,8 +180,14 @@
 - id: DOC-13
   name: Field defaults and normalization
   area: DOC
+- id: DOC-14
+  name: Child-list list grammar
+  area: DOC
+- id: DOC-15
+  name: App tokens on WebSocket
+  area: DOC
 
-# area: DOM (domains, doctypes, schema authoring) — 25 features
+# area: DOM (domains, doctypes, schema authoring) — 32 features
 - id: DOM-01
   name: Domains
   area: DOM
@@ -237,8 +263,29 @@
 - id: DOM-25
   name: Cross-domain field replication
   area: DOM
+- id: DOM-26
+  name: Doctype maintenance console
+  area: DOM
+- id: DOM-27
+  name: Eager document migration
+  area: DOM
+- id: DOM-28
+  name: Migration retry CLI
+  area: DOM
+- id: DOM-29
+  name: Collection view starter screen
+  area: DOM
+- id: DOM-30
+  name: Collection view pinning
+  area: DOM
+- id: DOM-31
+  name: Draft from live domain
+  area: DOM
+- id: DOM-32
+  name: Kanban lane control
+  area: DOM
 
-# area: FE (workspace SPA surfaces) — 22 features
+# area: FE (workspace SPA surfaces) — 25 features
 - id: FE-01
   name: Auth screens
   area: FE
@@ -305,8 +352,17 @@
 - id: FE-22
   name: Assistant chat UI
   area: FE
+- id: FE-23
+  name: Grid view
+  area: FE
+- id: FE-24
+  name: Peek drawer
+  area: FE
+- id: FE-25
+  name: Trash mode and restore
+  area: FE
 
-# area: IAM (identity and authentication) — 14 features
+# area: IAM (identity and authentication) — 15 features
 - id: IAM-01
   name: Password login and sessions
   area: IAM
@@ -348,6 +404,9 @@
   area: IAM
 - id: IAM-14
   name: Caller identity endpoint
+  area: IAM
+- id: IAM-15
+  name: Service accounts
   area: IAM
 
 # area: PLT (platform, operations, observability) — 17 features
@@ -403,7 +462,7 @@
   name: Account settings store
   area: PLT
 
-# area: RBC (authorization and governance) — 11 features
+# area: RBC (authorization and governance) — 12 features
 - id: RBC-01
   name: Roles
   area: RBC
@@ -436,4 +495,7 @@
   area: RBC
 - id: RBC-11
   name: Permission manifest
+  area: RBC
+- id: RBC-12
+  name: Role connectivity channels
   area: RBC

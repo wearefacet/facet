@@ -1,0 +1,73 @@
+---
+type: explanation
+title: Pourquoi Facet
+description: "Voyez les problèmes que Facet résout et l’idée unique qui le sous-tend : les apps sont jetables, vos données non."
+audience: [evaluator]
+features: []
+verified_at: eee55a2
+sidebar:
+  order: 1
+---
+
+import Illustration from '../../../../components/Illustration.astro';
+
+*Les apps vont et viennent. Les enregistrements, les règles et l’historique restent.*
+
+<Illustration name="start-here-hero" />
+
+## Le problème quotidien
+
+Chez Brightwater, la liste du matériel se trouve dans un tableur, les réservations dans un agenda, les clients dans un CRM. Chaque outil a du sens isolément. Ensemble, ils coûtent à l’entreprise de cinq manières :
+
+- **Les données sont dispersées.** Un client existe trois fois sous trois orthographes. Personne ne sait quelle copie est la bonne.
+- **Personne ne peut dire qui voit quoi.** Le tableur ne porte aucune règle indiquant qu’un commercial ne peut voir que ses propres clients. La confiance comble le manque, jusqu’à ce qu’elle n’en soit plus capable.
+- **Les passerelles se rompent.** L’agenda des réservations envoie chaque matin une liste par courriel à l’entrepôt. Quand quelqu’un renomme une feuille, le courriel est faux et personne ne le remarque.
+- **L’informatique dit non, pour de bonnes raisons.** Un outil fabriqué sur mesure exige hébergement, comptes, sauvegardes et piste d’audit. C’est un mois de travail avant le premier écran utile ; la file d’attente s’allonge donc.
+- **Les prix montent sans issue.** Les outils vous relouent vos propres données, par siège, par mois, indéfiniment.
+
+## L’idée
+
+Facet est un foyer unique et encadré pour vos données métier, avec les apps qui fonctionnent dessus. Le foyer conserve les enregistrements, les règles sur qui peut les voir et les modifier, et la mémoire de chaque changement. Une app n’est qu’un visage par-dessus — un écran, un outil mobile, une fenêtre de chat.
+
+Une app ne touche jamais la base de données et ne s’exécute jamais dans Facet. Elle se connecte comme le fait une personne et ne reçoit pas plus de droits qu’on ne lui en a donnés. Supprimez l’app et rien de ce qui vous appartient ne se perd : les enregistrements, les règles et l’historique restent. **Les apps sont jetables ; vos données ne le sont pas.**
+
+Voilà tout le pari. Les outils s’usent ; vos clients, votre stock et vos réservations ne s’usent pas.
+
+## Ce que chaque app obtient gratuitement
+
+Le foyer porte les parties difficiles, si bien que chaque app reste petite :
+
+| Ce que vous obtenez | Ce que cela signifie |
+|---|---|
+| Comptes | Connexion, mots de passe, MFA, SSO, gérés en un seul endroit |
+| Droits | Règles sur les lignes et les champs, vérifiées à chaque lecture et à chaque écriture |
+| Mémoire | Chaque modification consignée : qui, quand, et par quoi ; annulation comprise |
+| Hébergement | Facet sert les écrans de l’app et connecte ses utilisateurs |
+
+## Trois manières de créer
+
+- **Décrivez-le.** Dites à un agent de codage ce dont l’équipe a besoin. Il écrit l’app et se connecte à la porte d’entrée de Facet. La plateforme vérifie chaque appel, exactement comme elle vérifie une personne.
+- **Demandez à l’assistant.** Dans l’espace de travail, l’assistant rédige des types d’enregistrements et des écrans à partir d’une phrase, et vous ajustez.
+- **Écrivez-le à la main.** Un SDK typé et une CLI couvrent les appels ; Facet héberge le résultat.
+
+## Ce que Facet n’est pas
+
+- **Pas une plateforme d’apps publique.** Les comptes proviennent d’invitations ; il n’existe pas d’inscription en libre-service pour vos clients.
+- **Pas un outil d’analytique.** Les listes et les filtres servent le travail quotidien, et non des statistiques à l’échelle de l’entreprise.
+- **Pas fait pour les charges de données lourdes.** Chaque écriture est vérifiée et consignée, ce qui coûte un peu par ligne.
+- **Pas pour plusieurs entreprises à la fois.** Une installation dessert une seule organisation.
+- **Pas un service hébergé.** Vous l’exécutez sur vos serveurs, et les données restent dans votre PostgreSQL.
+
+La page des limites donne des chiffres et des solutions de contournement pour chaque ligne : [Facet est-il fait pour vous ?](/fr/discover/is-it-right-for-you/).
+
+## Pour les détails techniques
+
+- [Comment l’accès est contrôlé](/fr/admin/under-the-hood/how-access-is-enforced/) — les vérifications exactes derrière « qui peut voir et modifier quoi ».
+- [Le journal des mutations en détail](/fr/admin/under-the-hood/change-log/) — comment la mémoire est stockée et pendant combien de temps.
+- [Comment les domaines restent isolés](/fr/build/deeper/domain-isolation/) — la limite, ligne par ligne.
+
+## Voir aussi
+
+- [Vue d’ensemble](/fr/discover/how-it-works/) — un schéma et les cinq idées qui le sous-tendent.
+- [Sécurité et gouvernance](/fr/discover/security/) — le même récit, raconté pour un audit.
+- [Comparaison](/fr/discover/compare/) — Facet à côté des outils que vous connaissez.

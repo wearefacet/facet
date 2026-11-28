@@ -155,18 +155,22 @@ module Facet
           service_id: "test-subs",
           event_manager: stub,
         )
-        mgr.start(db)
+        begin
+          mgr.start(db)
 
-        # One subscription per source doctype, all under `core`.
-        subs = stub.subscriptions
-        subs.size.should eq(1)
-        subs.first.domain.should eq("core")
-        subs.first.channel.should eq("FACET:RESOURCE:sales:Invoice")
+          # One subscription per source doctype, all under `core`.
+          subs = stub.subscriptions
+          subs.size.should eq(1)
+          subs.first.domain.should eq("core")
+          subs.first.channel.should eq("FACET:RESOURCE:sales:Invoice")
 
-        # The channel provider is installed on `core` — the single owning
-        # domain behind the `cg:webhooks:core` consumer group.
-        stub.channel_providers.has_key?("core").should be_true
-        stub.channel_providers["core"].call.should eq(["FACET:RESOURCE:sales:Invoice"])
+          # The channel provider is installed on `core` — the single owning
+          # domain behind the `cg:webhooks:core` consumer group.
+          stub.channel_providers.has_key?("core").should be_true
+          stub.channel_providers["core"].call.should eq(["FACET:RESOURCE:sales:Invoice"])
+        ensure
+          mgr.stop
+        end
       end
     end
 
@@ -184,24 +188,28 @@ module Facet
           service_id: "test-refresh",
           event_manager: stub,
         )
-        mgr.start(db)
+        begin
+          mgr.start(db)
 
-        provider = stub.channel_providers["core"]
-        provider.call.should eq(["FACET:RESOURCE:sales:Invoice"])
+          provider = stub.channel_providers["core"]
+          provider.call.should eq(["FACET:RESOURCE:sales:Invoice"])
 
-        # Add a second webhook on another source doctype.
-        Facet::Mutation::Client.create(
-          db, "core", "DocType", doc_id: "sales.Quote",
-          content: %({"doctype": "Quote", "domain": "sales", "schema_version": 1, "aggregate_root": true, "search": "{{ display_name }}", "fields": {"total": {"type": "integer"}}}),
-          actioner_id: "system:test",
-        )
-        create_bound_webhook(db, "wh-2", "sales.Quote", account_id, role_id)
-        mgr.mark_registry_stale
+          # Add a second webhook on another source doctype.
+          Facet::Mutation::Client.create(
+            db, "core", "DocType", doc_id: "sales.Quote",
+            content: %({"doctype": "Quote", "domain": "sales", "schema_version": 1, "aggregate_root": true, "search": "{{ display_name }}", "fields": {"total": {"type": "integer"}}}),
+            actioner_id: "system:test",
+          )
+          create_bound_webhook(db, "wh-2", "sales.Quote", account_id, role_id)
+          mgr.mark_registry_stale
 
-        # The provider reflects the new channel set on the next call —
-        # no restart, no re-subscribe.
-        channels = provider.call.sort
-        channels.should eq(["FACET:RESOURCE:sales:Invoice", "FACET:RESOURCE:sales:Quote"])
+          # The provider reflects the new channel set on the next call —
+          # no restart, no re-subscribe.
+          channels = provider.call.sort
+          channels.should eq(["FACET:RESOURCE:sales:Invoice", "FACET:RESOURCE:sales:Quote"])
+        ensure
+          mgr.stop
+        end
       end
     end
 
@@ -217,21 +225,25 @@ module Facet
           service_id: "test-b54-boot",
           event_manager: stub,
         )
-        mgr.start(db)
+        begin
+          mgr.start(db)
 
-        # With zero webhooks, `event_manager.start` creates no subscriber
-        # for `core` — the manager must create it itself, wired with the
-        # provider and the add callback, so a webhook created later arms
-        # live delivery without a restart.
-        subscriber = stub.stub_subscribers["core"]?
-        subscriber.should_not be_nil
-        core = subscriber.not_nil!
-        core.channels.should be_empty
-        core.provider.should_not be_nil
-        core.on_channels_added.should_not be_nil
+          # With zero webhooks, `event_manager.start` creates no subscriber
+          # for `core` — the manager must create it itself, wired with the
+          # provider and the add callback, so a webhook created later arms
+          # live delivery without a restart.
+          subscriber = stub.stub_subscribers["core"]?
+          subscriber.should_not be_nil
+          core = subscriber.not_nil!
+          core.channels.should be_empty
+          core.provider.should_not be_nil
+          core.on_channels_added.should_not be_nil
 
-        # No dispatch registrations yet — no webhook, no registration.
-        stub.subscriptions.should be_empty
+          # No dispatch registrations yet — no webhook, no registration.
+          stub.subscriptions.should be_empty
+        ensure
+          mgr.stop
+        end
       end
     end
 
@@ -246,30 +258,34 @@ module Facet
           service_id: "test-b54-live",
           event_manager: stub,
         )
-        mgr.start(db)
-        core = stub.stub_subscribers["core"].not_nil!
-        core.channels.should be_empty
+        begin
+          mgr.start(db)
+          core = stub.stub_subscribers["core"].not_nil!
+          core.channels.should be_empty
 
-        # The webhook lands the way production does: a mutation, the
-        # DoctypeCache fanout, `mark_registry_stale`, and the next
-        # registry read rebuilds from the DB.
-        role_id = seed_role(db, "inv_reader", [{"action" => "read", "on" => "sales.Invoice"}])
-        account_id = create_test_account(db, roles: [role_id], default_role: role_id)
-        create_bound_webhook(db, "wh-late", "sales.Invoice", account_id, role_id)
-        mgr.mark_registry_stale
+          # The webhook lands the way production does: a mutation, the
+          # DoctypeCache fanout, `mark_registry_stale`, and the next
+          # registry read rebuilds from the DB.
+          role_id = seed_role(db, "inv_reader", [{"action" => "read", "on" => "sales.Invoice"}])
+          account_id = create_test_account(db, roles: [role_id], default_role: role_id)
+          create_bound_webhook(db, "wh-late", "sales.Invoice", account_id, role_id)
+          mgr.mark_registry_stale
 
-        # Next polling turn: the provider consults the rebuilt registry.
-        channels = core.provider.not_nil!.call
-        channels.should eq(["FACET:RESOURCE:sales:Invoice"])
+          # Next polling turn: the provider consults the rebuilt registry.
+          channels = core.provider.not_nil!.call
+          channels.should eq(["FACET:RESOURCE:sales:Invoice"])
 
-        # The subscriber adds the channel, and the add callback pairs it
-        # with a dispatch registration — without it the messages would be
-        # read and silently dropped.
-        core.on_channels_added.not_nil!.call(channels)
-        subs = stub.subscriptions
-        subs.size.should eq(1)
-        subs.first.domain.should eq("core")
-        subs.first.channel.should eq("FACET:RESOURCE:sales:Invoice")
+          # The subscriber adds the channel, and the add callback pairs it
+          # with a dispatch registration — without it the messages would be
+          # read and silently dropped.
+          core.on_channels_added.not_nil!.call(channels)
+          subs = stub.subscriptions
+          subs.size.should eq(1)
+          subs.first.domain.should eq("core")
+          subs.first.channel.should eq("FACET:RESOURCE:sales:Invoice")
+        ensure
+          mgr.stop
+        end
       end
     end
 
@@ -287,21 +303,25 @@ module Facet
           service_id: "test-b54-bootwebhook",
           event_manager: stub,
         )
-        mgr.start(db)
+        begin
+          mgr.start(db)
 
-        core = stub.stub_subscribers["core"]?
-        core.should_not be_nil
-        core.not_nil!.channels.should eq(["FACET:RESOURCE:sales:Invoice"])
+          core = stub.stub_subscribers["core"]?
+          core.should_not be_nil
+          core.not_nil!.channels.should eq(["FACET:RESOURCE:sales:Invoice"])
 
-        # One dispatch registration per source channel — the pre-start
-        # registration and the ensure-path re-registration de-duplicate.
-        subs = stub.subscriptions
-        subs.size.should eq(1)
-        subs.first.domain.should eq("core")
-        subs.first.channel.should eq("FACET:RESOURCE:sales:Invoice")
+          # One dispatch registration per source channel — the pre-start
+          # registration and the ensure-path re-registration de-duplicate.
+          subs = stub.subscriptions
+          subs.size.should eq(1)
+          subs.first.domain.should eq("core")
+          subs.first.channel.should eq("FACET:RESOURCE:sales:Invoice")
 
-        # The add callback is wired for post-boot source-doctype additions.
-        stub.channel_add_callbacks.has_key?("core").should be_true
+          # The add callback is wired for post-boot source-doctype additions.
+          stub.channel_add_callbacks.has_key?("core").should be_true
+        ensure
+          mgr.stop
+        end
       end
     end
 
@@ -323,10 +343,13 @@ module Facet
         # snapshot depends on.
         jobs.handler_for("webhook_delivery").should eq(Webhook::Dispatcher)
 
-        jobs.start
-        jobs.worker.should_not be_nil
-        jobs.worker.not_nil!.handlers["webhook_delivery"]?.should eq(Webhook::Dispatcher)
-        jobs.stop
+        begin
+          jobs.start
+          jobs.worker.should_not be_nil
+          jobs.worker.not_nil!.handlers["webhook_delivery"]?.should eq(Webhook::Dispatcher)
+        ensure
+          jobs.stop
+        end
       end
     end
 
@@ -342,12 +365,16 @@ module Facet
           service_id: "test-empty",
           event_manager: stub,
         )
-        mgr.start(db)
+        begin
+          mgr.start(db)
 
-        stub.subscriptions.should be_empty
-        stub.channel_providers.has_key?("core").should be_true
-        stub.channel_providers["core"].call.should be_empty
-        mgr.started?.should be_true
+          stub.subscriptions.should be_empty
+          stub.channel_providers.has_key?("core").should be_true
+          stub.channel_providers["core"].call.should be_empty
+          mgr.started?.should be_true
+        ensure
+          mgr.stop
+        end
       end
     end
   end

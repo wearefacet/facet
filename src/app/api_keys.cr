@@ -221,18 +221,23 @@ module Facet
         nil
       end
 
-      # Names the problem and the remedy: the role line that reaches the
-      # grant target. A domain-wide role line (`fin`) has an empty path and
-      # never covers a concrete grant target — the grant is the ceiling, and
-      # the intersection needs the target repeated on the role side.
+      # Names the problem and the remedy: a role permission line whose reach
+      # covers the grant target. The intersection is reach-overlap
+      # (`Grant#intersects_reach?`), so a domain-wide line (`crm`), an
+      # ancestor line, or the concrete target repeated on the role all
+      # qualify. The gate fires only when the role's lines sit in other
+      # domains, or every line that reaches a grant target carves it out
+      # (`except`).
       private def self.grant_intersection_message(app_scope : RBAC::AppScope, role_id : String) : String
         remedies = app_scope.grants.map do |grant|
-          %({"on": "#{grant.target}", "action": "*"})
+          domain_wide = %({"on": "#{grant.domain}", "action": "*"})
+          concrete = %({"on": "#{grant.target}", "action": "*"})
+          "#{domain_wide} or #{concrete}"
         end
         remedies.uniq!
         "The app's grants do not intersect the service role #{role_id}'s permissions — " \
-        "the key would be refused at every request. Repeat each grant target as a concrete " \
-        "role permission line (e.g. #{remedies.join(", ")}) or widen the role."
+        "the key would be refused at every request. Add a role permission line whose reach " \
+        "covers each grant target (for each grant: #{remedies.join("; ")}) or widen the role."
       end
 
       private def self.load_app(db : DB::Connection, app_id : String) : NamedTuple(id: String, content: JSON::Any)?

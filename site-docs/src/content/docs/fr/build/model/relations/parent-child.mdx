@@ -1,0 +1,161 @@
+---
+type: how-to
+title: Documents parents et enfants
+description: Déclarez des enfants possédés que leur parent crée, verrouille et supprime en bloc.
+audience: [author]
+features: [DOM-05, DOC-07]
+sidebar:
+  order: 1
+verified_at: eee55a2
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Certains enregistrements sont les parties d’un tout. Une réservation
+Brightwater contient ses lignes ; une société cliente regroupe ses
+contacts. Facet modélise ce lien par une composition : le parent possède
+ses enfants, et l’enfant ne peut exister hors du parent. Une déclaration sur
+le parent et une sur l’enfant installent le couple.
+
+## Quand l’utiliser
+
+Utilisez la composition quand l’enfant appartient à exactement un parent et
+disparaît avec lui. Utilisez un champ de référence quand la cible existe par
+elle-même (voir
+[Relier des documents entre eux](/fr/build/model/relations/references-links/))
+— un ticket nomme son article, mais l’article existe avant et après le
+ticket.
+
+## Avant de commencer
+
+- **Les deux moitiés.** Le parent déclare une entrée `children`, et l’enfant
+  déclare `member_of` en retour. Facet refuse un couple à sens unique.
+- **Même domaine, nom court.** Un doctype enfant se trouve dans le même
+  domaine que son parent, et son nom s’écrit sans le préfixe de domaine.
+
+## Étapes
+
+<Tabs syncKey="build-mode">
+<TabItem label="Builder">
+
+1. Ouvrez le doctype parent dans le **Builder** et cochez **Racine
+   d’agrégat**.
+2. Ajoutez une entrée **Enfants** : un nom de relation (par exemple
+   `lines`), le doctype enfant et la cardinalité.
+3. Ouvrez le doctype enfant, décochez **Racine d’agrégat** et renseignez
+   **Member of** avec le nom du parent.
+4. Publiez — la vérification contrôle le couple des deux côtés.
+
+</TabItem>
+<TabItem label="Fichiers">
+
+La réservation Brightwater et ses lignes, exactement telles que le bundle les
+livre :
+
+```yaml
+# rentals/doctypes/rentals.Booking.yml (extrait)
+aggregate_root: true
+children:
+  lines:
+    doctype: BookingLine
+    collection: true
+    description: "The equipment lines on this booking."
+
+# rentals/doctypes/rentals.BookingLine.yml (extrait)
+aggregate_root: false
+member_of: Booking
+```
+
+`collection: true` porte plusieurs enfants. Une relation à enfant unique
+l’omet.
+
+</TabItem>
+</Tabs>
+
+### Déclarer l’enfant sans référence inverse
+
+N’ajoutez pas sur l’enfant un champ de référence qui pointerait vers le
+parent. Facet gère lui-même le lien vers le parent.
+
+### Créer le parent avec ses enfants en un appel
+
+Envoyez un corps composé : `$content` pour les champs du parent et
+`$children` pour les champs imbriqués. Facet crée le tout dans une seule
+transaction. Si un enfant échoue à la validation, rien n’est écrit.
+
+```sh
+curl -k -X POST "https://facet.localhost:3443/Api/rentals/Booking" \
+  -H "Authorization: Bearer $FACET_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "$content": { "client": "clients.Company.06H1FM1B3MXBPS0JYVM3BDD154", "dates": { "start": "2026-12-07", "end": "2026-12-09" } },
+    "$children": {
+      "lines": [ { "item": "equipment.Item.EQ-2026-0001", "quantity": 2, "price": { "value": "250.00", "currency": "EUR" } } ]
+    }
+  }'
+```
+
+`-k` ignore la vérification du certificat de l’adresse de développement
+locale. La réponse porte le parent et les enfants créés ; la ligne prend
+ses valeurs de champ par défaut. Dans l’application, la page document du
+parent crée les enfants et les liste sur des onglets dédiés.
+
+## Les règles que la composition vous donne
+
+| Règle | Effet |
+| --- | --- |
+| Suppression en cascade | Supprimer le parent supprime ses enfants. |
+| Couplage des verrous | Une écriture sur un enfant verrouille le parent, l’agrégat reste donc cohérent. |
+| Création directe refusée | Un enfant créé hors de son parent répond `422`. Utilisez la route imbriquée. |
+| Accès hérité | Une permission sur le parent couvre l’enfant, car le chemin de l’enfant prolonge le chemin du parent. |
+| Diffusion d’événements | Un changement d’enfant notifie le parent, les champs calculés du parent se mettent donc à jour. |
+
+{/* d2
+*One aggregate: the parent owns its lines*
+parent: "Booking (aggregate root)" {class: node}
+line1: "BookingLine" {class: node}
+line2: "BookingLine" {class: node}
+delete: "Delete the booking" {class: external}
+
+parent -> line1: owns
+parent -> line2: owns
+delete -> parent: cascades down
+*/}
+<div class="d2-diagram">
+<img class="d2-diagram__img d2-diagram__light" src="/diagrams/0bf532da-light.svg" alt="Booking (aggregate root)" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/0bf532da-dark.svg" alt="Booking (aggregate root)" loading="lazy" />
+</div>
+
+La cascade ne descend que vers le bas : supprimer un enfant ne supprime
+jamais le parent.
+
+## Dépannage
+
+### La publication refuse le couple
+
+Une moitié de la composition manque. Ajoutez `member_of` sur l’enfant ou
+l’entrée `children` sur le parent, puis publiez à nouveau.
+
+### Une création directe de l’enfant répond `422`
+
+Les enfants se créent via le parent. Utilisez la route imbriquée du document
+parent, ou le corps composé montré plus haut.
+
+### L’enfant apparaît sous un autre parent après une copie
+
+C’est impossible. Une copie rattache l’enfant au parent copié, jamais au
+parent d’origine.
+
+### Un champ de référence serait plus simple
+
+Si l’enfant a une existence hors du parent — plusieurs parents, sa propre
+règle d’accès, sa propre page de liste — modélisez-le plutôt comme une racine
+d’agrégat avec un champ de référence. Voir
+[Relier des documents entre eux](/fr/build/model/relations/references-links/).
+
+## Voir aussi
+
+- [Schéma de doctype (référence)](/fr/reference/doctype-schema/) — les clés `children` et `member_of` en détail.
+- [Champs calculés](/fr/build/model/data/computed-fields/) — sommer sur les enfants, le schéma du total de réservation.
+- [Commentaires et pièces jointes](/fr/build/model/relations/comments-attachments/) — attacher un panneau de discussion au parent.
+- [Documents, doctypes et projections](/fr/build/deeper/documents-and-projections/) — comment le lien vers le parent est stocké.

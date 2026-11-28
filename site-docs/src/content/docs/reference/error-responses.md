@@ -1,23 +1,25 @@
 ---
+type: reference
 title: Error responses
 description: "Error response shapes: validation 422s, auth failures, and non-disclosing 404s."
 audience: [developer, operator]
 features: [PLT-13]
 sidebar:
-  order: 8
-verified_at: f1409cdc
+  order: 18
+verified_at: eee55a2
 ---
 
-Use this page to read an error the API returned, or to build the error handling your client needs.
-
-Every error the API returns is one JSON object with an `error` key.
-Validation failures add a `details` array. All error responses are
-`application/json` and carry `Cache-Control: no-store`.
-
-This page gives the status codes, the body shapes, and what each denial lets a
-caller conclude.
+Your client calls the API and gets an error back. This page shows the body
+shape, every status the API answers with, and the validation codes you can
+branch on. You also learn what each denial lets you conclude — and what it
+never tells you.
 
 ## Body shape
+
+Every error is one JSON object with an `error` key. All error responses are
+`application/json` and carry `Cache-Control: no-store` — browsers may store
+`404` and `410` by default, and a cached tombstone would keep reporting a
+document as deleted after a restore.
 
 ```json
 { "error": "<message>", "details": [ ... ], "<extra>": "<value>" }
@@ -27,7 +29,7 @@ caller conclude.
 | --- | --- | --- |
 | `error` | always | The human-readable message. English, never localised. |
 | `details` | validation failures only | One object per rejected value. Omitted when empty. |
-| extra keys | a few statuses only | Flat string values a route adds, for example the tombstone fields on a `410`. |
+| extra keys | a few statuses only | Flat string values a route adds, for example the tombstone fields on a `410` or the `dependency` key on a `503`. |
 
 ## Status codes
 
@@ -35,15 +37,35 @@ caller conclude.
 | --- | --- | --- |
 | `400` | A malformed JSON body on a create route, or a QUERY request whose body declares no `Content-Type`. | Names the parse error. |
 | `401` | A presented credential is invalid or unparseable. | `{"error": "Authentication required"}`. |
-| `403` | The caller holds no permission for the operation at all, or fails the cross-site request check. | `{"error": "Forbidden"}` for permission denials. |
+| `403` | The caller holds no permission for the operation at all, fails the cross-site request check, or writes into an invisible field. | `{"error": "Forbidden"}` for permission denials; the write-plane refusals carry their own messages — see the table below. |
 | `404` | The document is missing, or the caller holds a grant but cannot see the row. Also for an unknown route, an unknown doctype, or a disabled domain. | Non-disclosing — see below. |
 | `405` | The path routes for other methods. | Carries the `Allow` header; the message names the same set. |
-| `409` | A concurrent write lost the ordering race, a duplicate doctype registration, or a state conflict such as restoring a live document. | `{"error": "Concurrent write on this document — retry the request"}` for the write race. Re-issue the same request. |
-| `410` | The document exists as a tombstone. | Carries `X-Document-Deleted: true`, plus `display_name` and `deleted_at` when known. |
-| `415` | The request declares a non-JSON media type where the route needs JSON. | |
+| `409` | A concurrent write lost the ordering race, a duplicate doctype registration or domain name, or a state conflict such as restoring a live document. | `{"error": "Concurrent write on this document — retry the request"}` for the write race. Re-issue the same request. |
+| `410` | The document exists as a tombstone — a read of a deleted document, or a delete of an already-deleted one. | Carries `X-Document-Deleted: true`, plus `display_name` and `deleted_at` when known. |
+| `413` | An upload — file artifact, document import, or domain import — exceeds the size cap. | `{"error": "Upload exceeds the maximum allowed size (N bytes)"}` with the cap value. |
+| `415` | The request declares a non-JSON media type where the route needs JSON: a QUERY body, a nested document write, or the `export_view` body. | The message names the route that refused it. |
 | `422` | Validation failed, the body has the wrong shape, or a query parameter is unknown. | Carries `details` when field validation failed. |
+| `429` | A rate limit or budget fired: the OAuth refresh floor (`slow_down`), an IAM throttle (login lockout, MFA verify, change password), or the assistant token budget. | The message says which gate fired. The OAuth token endpoint also sets `Retry-After`. |
 | `500` | An unexpected failure. | Always `{"error": "Internal server error"}` — never exception text. The details go to the server log. |
-| `503` | A list aggregate exceeded the statement timeout. | Retry with a narrower filter. |
+| `502` | The mail test route reached a transport that refused or failed the request. | The message carries the adapter's own error. |
+| `503` | Either a list or export exceeded the statement timeout, or a backing service (Redis, PostgreSQL) could not be reached. | Two shapes — see below. |
+
+### The 403 write-plane refusals
+
+A `403` on a write can name its reason:
+
+| Message | Means | Source |
+| --- | --- | --- |
+| `Forbidden` | The caller holds no permission for the action on the doctype at all (role denial or app-grant ceiling). | `src/document/read.cr:174-182`, `src/document/action.cr:239-251` |
+| `Write refused: invisible field` | The write reaches a field the caller's role cannot see — an explicit `null` counts as a write. `details` names the content paths. | `src/rbac/write_enforcer.cr:75` |
+| `Role authority refused this write` | The write would move an IAM account or role above the caller's level, or into a protected target. | `src/rbac/role_authority.cr:390-393` |
+
+### The two 503 shapes
+
+| Shape | Cause | What to do |
+| --- | --- | --- |
+| `{"error": "The request exceeded the server's statement timeout — narrow the filters and retry"}` | A list, export, or aggregate query ran past `database.statement_timeout_ms`. | Narrow the filters and retry. |
+| `{"error": "Service unavailable", "dependency": "redis" \| "postgresql"}` | A connection-level failure of a backing service. | An operator signal, not a client bug — check the health probe. |
 
 ## The 422 validation shape
 
@@ -65,10 +87,25 @@ The stable codes:
 | `unknown_field` | The input carries a key the doctype does not declare. |
 | `read_only` | The caller set a read-only or replicated field. |
 | `reserved` | The input uses a system-reserved field name. |
-| `unique` | A unique constraint was violated. |
-| `invalid_format` | The value is malformed for its format, for example a pattern or an enum key. |
+| `unique` | A unique constraint was violated. The lost unique-index race carries this code too. |
+| `invalid_format` | The value is malformed for its format — a pattern, an enum key, a URL shape, a reference token. |
+| `invalid_reference_format` | A reference value does not use the `domain.Doctype.id` form. |
+| `reference_target_not_found` | The referenced target does not exist as a live row. |
+| `reference_doctype_mismatch` | A reference value names a doctype the field does not declare. |
+| `reference_filter_mismatch` | A referenced row exists but misses the field's `filter`, or the caller cannot read it. |
+| `duplicate_reference_target` | A collection reference names the same target twice. |
 | `inactive_currency` | A money value names a registered but inactive currency. |
 | `out_of_range` | A numeric or length bound was violated. |
+| `too_long` | A value exceeds a fixed ceiling, for example an enum key length. |
+| `empty_value` | A value that must be non-empty carries empty text. |
+| `duplicate_value` | A definition-level list carries the same key twice, for example an enum. |
+| `invalid_value` | A value is outside the set a rule allows, for example a kanban lane colour. |
+| `invalid_mime` | An uploaded file's bytes do not match the field's allowed MIME types. |
+| `immutable` | A write tries to change a field that cannot change after creation, for example an account email. |
+| `unsupported_field` | A view configuration names a field the surface does not serve. |
+| `wildcard_target` | An app grant names the `domain.*` wildcard instead of a concrete target. |
+| `unsupported_filter_operator` | The field does not serve the operator the filter uses. |
+| `malformed_filter_value` | The filter value has the wrong shape, for example a non-array `__between`. |
 | `compute` | A compute function called `error(msg)`. |
 | `compute_runtime` | A compute function raised an unexpected exception. |
 | `script` | A lifecycle hook or action called `ctx.error(msg)`. |
@@ -78,6 +115,7 @@ The stable codes:
 | `schema` | A doctype-definition-level check failed. |
 | `template` | A view template failed structural validation. |
 | `argument` | A named-action argument is missing or invalid. |
+| `forbidden` | The write-plane refusal `Write refused: invisible field` — the details carry the invisible paths. |
 
 Branch on `code`, never on the text of `message`.
 
@@ -86,10 +124,10 @@ Branch on `code`, never on the text of `message`.
 A create that sends an enum value the doctype does not declare:
 
 ```sh
-curl -X POST -H "Authorization: Bearer $FACET_API_KEY" \
+curl -X POST -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{"title": "Fix login", "status": "archived"}' \
-  "https://facet.example.com/Api/helpdesk/Ticket"
+  "$(facet-cli host)/Api/helpdesk/Ticket"
 ```
 
 The answer is:
@@ -156,3 +194,4 @@ A request that carries `Authorization: Bearer` is exempt from the header check �
 ## Related
 
 - [REST API](/reference/rest-api/) — the endpoint surface these statuses belong to.
+- [Use the REST API](/build/apps/data/rest-api/)

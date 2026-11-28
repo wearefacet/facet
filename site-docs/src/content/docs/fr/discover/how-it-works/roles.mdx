@@ -1,0 +1,57 @@
+---
+type: explanation
+title: "Rôles : qui voit quoi et fait quoi"
+description: "Découvrez comment les rôles décident qui voit et fait quoi, un rôle à la fois, sur chaque surface."
+audience: [evaluator, admin]
+features: [RBC-01, RBC-02, RBC-04, RBC-05]
+verified_at: eee55a2
+sidebar:
+  order: 3
+---
+
+import Illustration from '../../../../../components/Illustration.astro';
+
+Qui peut voir quels clients ? Qui peut modifier un prix, et qui ne peut même pas en voir un ? Dans Facet, la réponse tient à un **rôle** : un ensemble nommé de règles que vous attribuez au compte d’une personne.
+
+*Un rôle décide des lignes que vous pouvez atteindre et des champs que vous pouvez lire. Les vérifications s’exécutent à chaque fois, sur chaque surface.*
+
+<Illustration name="roles-rows-and-fields" />
+
+## Un seul rôle à la fois
+
+Une personne peut détenir plusieurs rôles — par exemple *Sales* et *Manager*. À la connexion, Facet la place sous l’un d’eux ; si elle en détient plusieurs, le menu du compte propose **Changer de rôle**. Tout ce qu’elle voit et fait relève de ce rôle unique jusqu’à ce qu’elle en change.
+
+Un seul rôle à la fois rend chaque action facile à expliquer ensuite : l’historique montre qui l’a faite, et sous quel rôle.
+
+## Un rôle décide des lignes que vous atteignez
+
+Brightwater veut que chaque commercial ne voie que les clients qu’il gère. Le rôle *Sales* de Tom porte cette règle ; sa liste de clients affiche donc ses cinq sociétés — pas les sept autres. La même règle façonne la recherche, les autres apps et l’assistant ; il n’existe aucun écran où la règle s’arrête.
+
+Une règle telle que « clients dont je suis le gestionnaire de compte » est un **périmètre de lignes** : un filtre enregistré qu’un rôle peut porter.
+
+## Un rôle décide des champs que vous lisez
+
+Le rôle *Warehouse* de Lucía lit chaque article, car l’équipe doit savoir ce qui est en stock. Ce dont elle n’a pas besoin, c’est de ce que chaque article a coûté. Le champ du prix d’achat porte une **étiquette de champ** — une étiquette de sensibilité — et son rôle ne la détient pas. Elle ouvre un article et le champ n’existe pas : ni grisé, ni mention « accès refusé » — absent, à l’écran comme dans l’API.
+
+## Vérifiées à chaque fois
+
+Ces règles ne sont pas des paramètres internes à chaque app. Facet les vérifie à chaque lecture et à chaque écriture, quel que soit l’émetteur de la requête — l’espace de travail, une app, une clé ou un agent d’IA. Une app ne peut pas contourner les règles auxquelles ses utilisateurs sont soumis ; l’assistant ne peut pas montrer à Tom les clients d’un autre. Un seul ensemble de règles, appliqué en un seul endroit.
+
+## Ce que cela signifie pour vous
+
+- Décrivez l’accès comme vous décrivez des emplois : « les commerciaux voient leurs propres clients », et non une matrice de cases à cocher.
+- Les champs sensibles sont masqués par conception, pas par confiance — et masqués pour les machines comme pour les personnes.
+- Quand quelqu’un change d’emploi, une seule attribution de rôle le déplace ; aucun nettoyage outil par outil.
+
+## Pour les détails techniques
+
+- [Pourquoi vous agissez sous un seul rôle à la fois](/fr/admin/under-the-hood/one-role-at-a-time/) — la règle et ses raisons.
+- [Comment l’accès est contrôlé](/fr/admin/under-the-hood/how-access-is-enforced/) — les vérifications, dans l’ordre.
+- [Montrer à chaque rôle uniquement ses propres lignes](/fr/admin/people/row-scopes/) — configurez les périmètres de lignes.
+- [Masquer un champ à certains rôles](/fr/admin/people/hidden-fields/) — configurez les étiquettes de champ.
+
+## Voir aussi
+
+- [Vue d’ensemble](/fr/discover/how-it-works/) — la place des rôles parmi les cinq idées.
+- [Les documents : enregistrements avec mémoire](/fr/discover/how-it-works/documents/) — ce qu’une modification consignée dit du rôle.
+- [Rôles et permissions](/fr/admin/people/roles-and-permissions/) — créez des rôles et attribuez-les aux personnes.

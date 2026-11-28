@@ -1,0 +1,174 @@
+---
+type: how-to
+title: Link documents together
+description: Connect documents with reference fields, restrain pickers with filters, and show users who points at a document.
+audience: [author]
+features: [DOC-05, DOC-10]
+sidebar:
+  order: 0
+verified_at: eee55a2
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+A Brightwater maintenance ticket names the item it is about; a booking line
+names the piece of equipment it rents. Documents point at other documents. A
+`reference` field holds one typed link, a collection reference holds many,
+and a long text field can carry links inside markdown. Facet indexes every
+link, so each document page can also show the reverse: which documents point
+here.
+
+## When to use this
+
+Use reference fields when one record names another record but does not own
+it — a ticket names its item, a booking names its client. When the part
+belongs to the whole, model composition instead (see
+[Parent and child documents](/build/model/relations/parent-child/)).
+
+## Before you start
+
+- **A qualified target.** The target of a reference is always a qualified
+  doctype id: `domain.Doctype`, for example `equipment.Item`. Facet rejects a
+  bare name when you save the doctype, so a dead field never reaches your
+  data.
+- **Read access to the target.** Users need read access to a target doctype
+  to resolve its references.
+- **Where the target lives.** A reference can point into another domain —
+  see [Share data across domains](/build/model/relations/across-domains/)
+  for the rules that apply between domains.
+
+## Steps
+
+<Tabs syncKey="build-mode">
+<TabItem label="Builder">
+
+1. Open the doctype in the **Builder** and add a field of type
+   **Reference**.
+2. Pick the target doctype. The editor qualifies the target while you work in
+   a draft — you may see the draft's own id as the prefix. On publish, Facet
+   relinks every same-domain target to the published domain name, so the
+   stored form is always the live one.
+3. Optionally set a **Filter** to restrain the picker.
+
+</TabItem>
+<TabItem label="Files">
+
+The Brightwater maintenance ticket declares its item reference:
+
+```yaml
+# equipment/doctypes/equipment.MaintenanceTicket.yml (extract)
+fields:
+  item:
+    type: reference
+    title: Item
+    doctype: equipment.Item
+    required: true
+    filters: [equality]
+```
+
+The target is the qualified form `equipment.Item` — a bare `Item` is
+rejected.
+
+</TabItem>
+</Tabs>
+
+### What writers may submit
+
+Users and API callers can send a bare id, a qualified id, or a `urn:facet:`
+token. Facet stores the qualified form in every case:
+
+| You send | Facet stores |
+| --- | --- |
+| `EQ-2026-0001` | `equipment.Item.EQ-2026-0001` |
+| `equipment.Item.EQ-2026-0001` | `equipment.Item.EQ-2026-0001` |
+| `urn:facet:equipment:Item:EQ-2026-0001` | `equipment.Item.EQ-2026-0001` |
+
+### Restrain the picker with a filter
+
+The optional `filter` limits which documents a reference accepts. Facet
+checks the filter on every write:
+
+```json
+"company": {
+  "type": "reference",
+  "doctype": "clients.Company",
+  "filter": { "status__eq": "active" }
+}
+```
+
+### Allow forward references
+
+A reference normally must point at a document that exists. Set
+`dangling: true` when the target may not exist yet, for example a successor
+filled in a later step.
+
+### Point at many documents
+
+Add `collection: true` to hold an array of references. Facet checks each
+element in turn, and rejects a list that names the same target twice:
+
+```json
+"watchers": {
+  "type": "reference",
+  "doctype": "iam.Account",
+  "collection": true
+}
+```
+
+### Link inside long text
+
+A `longtext` field accepts markdown links to documents. Both forms below
+produce a link on the page and count as a link in the index:
+
+```markdown
+Checked with [Nadia](urn:facet:iam:Account:nadia@brightwater.example).
+
+Follow-up for [Main tent 10x15](equipment.Item.EQ-2026-0001).
+```
+
+Both forms count: a `urn:facet:` token anywhere in the text, and a markdown
+link whose address is a document. A dotted address typed in plain prose,
+without a link, does not count.
+
+## Example
+
+Three Brightwater references, each pointing at a different kind of target:
+
+```json
+{
+  "fields": {
+    "item": { "type": "reference", "doctype": "equipment.Item", "required": true, "filters": ["equality"] },
+    "assignee": { "type": "reference", "doctype": "iam.Account", "filters": ["equality"] },
+    "client": { "type": "reference", "doctype": "clients.Company", "required": true, "filters": ["equality"] }
+  }
+}
+```
+
+On each document page, the **Referenced by** section lists the documents that
+point here. Before a delete, Facet warns:
+`N document(s) reference it — deleting it leaves those links dangling`. The
+delete is never blocked; the warning is there to inform the choice.
+
+## Troubleshooting
+
+### The doctype refuses to save with a target error
+
+The declared `doctype` must be the qualified form `domain.Doctype`. A bare
+name such as `"Item"` fails at definition time, before any value is written.
+
+### A write answers `422` with a doctype error
+
+The referenced doctype is not registered — most often because it still lives
+only in a draft. Publish the draft first, then write the reference.
+
+### A reference shows as empty or not found
+
+The target document was deleted, or your role cannot read its doctype. Facet
+keeps the stored value but resolves nothing for you.
+
+## Related
+
+- [Links and back-references (engineering doc)](https://github.com/wearefacet/facet/blob/main/doc/backend/links.md) — how the link index works.
+- [Parent and child documents](/build/model/relations/parent-child/) — model owned children instead of loose references.
+- [Share data across domains](/build/model/relations/across-domains/) — the grant contract behind cross-domain references.
+- [Documents, doctypes and projections](/build/deeper/documents-and-projections/) — where the link index lives.

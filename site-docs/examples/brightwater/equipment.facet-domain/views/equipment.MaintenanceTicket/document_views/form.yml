@@ -1,0 +1,31 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+      - type: section
+        label: Ticket
+        children:
+          - type: row
+            layout: 2fr 1fr
+            children:
+              - type: input
+                field: item
+              - type: input
+                field: status
+      - type: section
+        label: Detail
+        children:
+          - type: input
+            field: problem
+          - type: row
+            layout: repeat(2, minmax(180px, 1fr))
+            children:
+              - type: input
+                field: assignee
+              - type: input
+                field: reported_by
+  parent_doctype: equipment.MaintenanceTicket
+meta:
+  parent_id: equipment.MaintenanceTicket

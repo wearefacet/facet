@@ -51,6 +51,17 @@ module Facet
         1
       end
 
+      # One import decodes a whole file and buffers one event per row, so
+      # concurrent imports are the dominant term of the process footprint:
+      # four default-size (100 k-row) files took an instance from 24 MB to
+      # 11 GB. Two imports at once keep the peak bounded while still using
+      # both sides of the write path. The cap rides the enqueue; a worker
+      # honours it from its next start.
+      def self.max_concurrent : Int32?
+        2
+      end
+
+      # Executes one claimed import row.
       # The completion events are opt-in for webhooks: a binding fires only
       # when its `events` list names the event. A match-all webhook never
       # receives them. The names live on `Facet::Event` beside the other
@@ -93,20 +104,30 @@ module Facet
           outcome = Document::Import.call(db, payload.domain, payload.doc_type, definition,
             payload.format, file_text, manifest.ids, manifest.supplied, auth_context)
 
-          case outcome
-          in Document::Import::Result
-            emit_success(db, payload, job.id, outcome)
-            Jobs::Handler::Result.new(status: Jobs::Handler::Kind::Succeeded, result: result_json(outcome))
-          in Document::Import::RowFailure
-            emit_failure(db, payload, job.id, outcome)
-            Jobs::Handler::Result.new(
-              status: Jobs::Handler::Kind::Failed,
-              # Row 0 marks a file-level refusal (the row-count guard) —
-              # no single row owns it, so the message stands alone.
-              error: outcome.row.zero? ? outcome.message : "row #{outcome.row}: #{outcome.message}",
-              result: failure_json(outcome),
-            )
-          end
+          result = case outcome
+                   in Document::Import::Result
+                     emit_success(db, payload, job.id, outcome)
+                     Jobs::Handler::Result.new(status: Jobs::Handler::Kind::Succeeded, result: result_json(outcome))
+                   in Document::Import::RowFailure
+                     emit_failure(db, payload, job.id, outcome)
+                     Jobs::Handler::Result.new(
+                       status: Jobs::Handler::Kind::Failed,
+                       # Row 0 marks a file-level refusal (the row-count guard) —
+                       # no single row owns it, so the message stands alone.
+                       error: outcome.row.zero? ? outcome.message : "row #{outcome.row}: #{outcome.message}",
+                       result: failure_json(outcome),
+                     )
+                   end
+
+          # An import is the one job that can transiently allocate a whole
+          # file's worth of decoded rows and buffered events. The GC keeps the
+          # high-water mark (the process RSS never returns the freed pages on
+          # its own), so without a nudge every import job ratchets the resident
+          # set up and never lets it back down. One collect per job — not per
+          # row — settles the high-water mark once the working set is gone.
+          GC.collect
+
+          result
         end
       end
 

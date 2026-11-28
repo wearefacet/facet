@@ -262,13 +262,83 @@ module Facet
 
           unless to_remove.empty?
             run_batch(BatchKind::Remove, definition.domain, definition.doctype, to_remove,
-              concurrent: !synchronous?, async: !synchronous?)
+              concurrent: !synchronous?, async: !synchronous?, remaining: desired)
           end
 
           unless to_add.empty?
             insert_pending(db, to_add)
             run_batch(BatchKind::Create, definition.domain, definition.doctype, to_add,
               concurrent: !synchronous?, async: !synchronous?)
+          end
+        end
+      end
+
+      # ── Domain disposal ────────────────────────────────────────────────
+
+      # Drops every physical index (and its field statistics object) that
+      # `doctype_indexes` tracks for `domain`, then leaves the tracking rows
+      # to the caller. Used by `Domain::Scratch.dispose_definitions!` when a
+      # draft or dropped domain goes away: the managed indexes live on the
+      # shared `projections` table (they are partial indexes scoped by
+      # `domain = '<d>'`), so deleting the tracking rows alone leaves the
+      # real indexes behind. Nothing would ever drop them again — every
+      # write and every query plan would keep paying for a domain that no
+      # longer exists.
+      #
+      # Runs each `DROP INDEX` through `exec_ddl_with_deadlock_retry` under
+      # the DDL gate, the same path `sync` uses for a removal. Failures log
+      # and continue: a leftover index is a performance problem, never a
+      # correctness one, and must not abort the domain disposal.
+      #
+      # `concurrent` defaults to `true` (production). The spec suite runs in
+      # synchronous mode and passes `concurrent: false` so the drop can run
+      # on the caller's transaction/stack.
+      def self.dispose_domain_indexes(
+        db : DB::Connection,
+        domain : String,
+        *,
+        concurrent : Bool = true,
+      ) : Nil
+        rows = db.query_all(
+          "SELECT doc_type, field_name, index_type FROM doctype_indexes WHERE domain = $1",
+          domain,
+          as: {String, String, String},
+        )
+        return if rows.empty?
+
+        # One statistics object per (domain, doctype, field) — a field's
+        # btree variants share it. Collect the distinct fields so the object
+        # is dropped once, not once per variant.
+        statistics_fields = Set({String, String}).new
+
+        rows.each do |doc_type, field_name, index_type|
+          drop_sql = Naming.drop_index_sql(domain, doc_type, field_name, index_type, concurrent: concurrent)
+          begin
+            with_ddl_gate(db, concurrent: concurrent) do
+              exec_ddl_with_deadlock_retry(db, drop_sql)
+            end
+          rescue ex
+            Log.warn(exception: ex) do
+              "Domain index disposal failed for #{domain}.#{doc_type}.#{field_name} " \
+              "(#{index_type}): #{ex.class}: #{ex.message || "(no message)"}"
+            end
+          end
+
+          unless Naming.create_statistics_sql(domain, doc_type, field_name, index_type).nil?
+            statistics_fields << {doc_type, field_name}
+          end
+        end
+
+        statistics_fields.each do |doc_type, field_name|
+          begin
+            with_ddl_gate(db, concurrent: concurrent) do
+              exec_ddl_with_deadlock_retry(db, Naming.drop_statistics_sql(domain, doc_type, field_name))
+            end
+          rescue ex
+            Log.warn(exception: ex) do
+              "Domain statistics disposal failed for #{domain}.#{doc_type}.#{field_name}: " \
+              "#{ex.class}: #{ex.message || "(no message)"}"
+            end
           end
         end
       end
@@ -357,11 +427,12 @@ module Facet
         *,
         concurrent : Bool,
         async : Bool,
+        remaining : Set(DesiredIndex) = Set(DesiredIndex).new,
       ) : Nil
         if async
-          track_fiber { run_batch_once(kind, domain, doc_type, indexes, concurrent, async) }
+          track_fiber { run_batch_once(kind, domain, doc_type, indexes, concurrent, async, remaining) }
         else
-          run_batch_once(kind, domain, doc_type, indexes, concurrent, async)
+          run_batch_once(kind, domain, doc_type, indexes, concurrent, async, remaining)
         end
       end
 
@@ -382,6 +453,7 @@ module Facet
         indexes : Set(DesiredIndex),
         concurrent : Bool,
         async : Bool,
+        remaining : Set(DesiredIndex) = Set(DesiredIndex).new,
       ) : Nil
         begin
           Database.with_db(:read_write) do |db|
@@ -390,7 +462,7 @@ module Facet
               in BatchKind::Create
                 create_one_index(db, idx, concurrent: concurrent)
               in BatchKind::Remove
-                drop_one_index(db, idx, concurrent: concurrent)
+                drop_one_index(db, idx, concurrent: concurrent, remaining: remaining)
               end
             end
           end
@@ -425,6 +497,7 @@ module Facet
           with_ddl_gate(db, concurrent: concurrent) do
             begin
               exec_ddl_with_deadlock_retry(db, sql, drop_sql)
+              create_field_statistics(db, idx)
               db.exec(
                 "UPDATE doctype_indexes SET status = 'active', updated_at = now() WHERE index_name = $1",
                 index_name
@@ -484,6 +557,57 @@ module Facet
         )
       end
 
+      # Creates the field's extended statistics object, if the index type
+      # has one (see `Naming.create_statistics_sql`). Best effort: the
+      # index is the contract, and the statistics object only steers the
+      # planner towards it, so a failure logs and leaves the index active.
+      #
+      # The object is created under the same DDL gate and with the same
+      # concurrency as the index. `CREATE STATISTICS` has no
+      # `CONCURRENTLY` form, so it takes the same `SHARE UPDATE EXCLUSIVE`
+      # lock a plain `CREATE INDEX` does — writes keep flowing. A newly
+      # created object has no collected data until the next `ANALYZE` on
+      # `projections` (autovacuum reaches the table, or an operator runs
+      # `ANALYZE projections` after a bulk load).
+      private def self.create_field_statistics(
+        db : DB::Connection,
+        idx : DesiredIndex,
+      ) : Nil
+        sql = Naming.create_statistics_sql(idx.domain, idx.doc_type, idx.field_name, idx.index_type)
+        return if sql.nil?
+
+        exec_ddl_with_deadlock_retry(db, sql)
+      rescue ex
+        Log.warn(exception: ex) do
+          "Statistics creation failed for #{idx.domain}.#{idx.doc_type}.#{idx.field_name} " \
+          "(#{idx.index_type}): #{ex.class}: #{ex.message || "(no message)"}"
+        end
+      end
+
+      # Drops the field's statistics object. The object is shared by every
+      # btree variant of a field, so it goes only when no remaining
+      # desired index for that field needs it. Best effort, like the
+      # create path.
+      private def self.drop_field_statistics(
+        db : DB::Connection,
+        idx : DesiredIndex,
+        remaining : Set(DesiredIndex),
+      ) : Nil
+        still_needed = remaining.any? do |other|
+          other.field_name == idx.field_name &&
+            !Naming.create_statistics_sql(other.domain, other.doc_type, other.field_name, other.index_type).nil?
+        end
+        return if still_needed
+        return if Naming.create_statistics_sql(idx.domain, idx.doc_type, idx.field_name, idx.index_type).nil?
+
+        exec_ddl_with_deadlock_retry(db, Naming.drop_statistics_sql(idx.domain, idx.doc_type, idx.field_name))
+      rescue ex
+        Log.warn(exception: ex) do
+          "Statistics removal failed for #{idx.domain}.#{idx.doc_type}.#{idx.field_name} " \
+          "(#{idx.index_type}): #{ex.class}: #{ex.message || "(no message)"}"
+        end
+      end
+
       # Runs one DDL statement with a bounded retry on PG deadlock
       # (SQLSTATE 40P01). `CREATE INDEX CONCURRENTLY` cannot run inside a
       # transaction block (it manages its own internal transactions), so
@@ -528,7 +652,9 @@ module Facet
       # Runs one `DROP INDEX` (concurrent or not, per the `concurrent` flag)
       # against `db`, then updates `doctype_indexes` to `dropped`. On
       # failure the row is still marked `dropped` (a leftover PG index may
-      # need manual cleanup) with an `error_message` for visibility.
+      # need manual cleanup) with an `error_message` for visibility. The
+      # field's statistics object goes with the last btree variant of the
+      # field (see `drop_field_statistics`).
       #
       # Shared by the async remove batch (`concurrent: true`) and the
       # inline remove batch (`concurrent: false`) through `run_batch`.
@@ -537,6 +663,7 @@ module Facet
         idx : DesiredIndex,
         *,
         concurrent : Bool,
+        remaining : Set(DesiredIndex) = Set(DesiredIndex).new,
       ) : Nil
         index_name = Naming.index_name(idx.domain, idx.doc_type, idx.field_name, idx.index_type)
         sql = Naming.drop_index_sql(idx.domain, idx.doc_type, idx.field_name, idx.index_type, concurrent: concurrent)
@@ -545,6 +672,7 @@ module Facet
           with_ddl_gate(db, concurrent: concurrent) do
             begin
               exec_ddl_with_deadlock_retry(db, sql)
+              drop_field_statistics(db, idx, remaining)
               db.exec(
                 "UPDATE doctype_indexes SET status = 'dropped', updated_at = now() WHERE index_name = $1",
                 index_name

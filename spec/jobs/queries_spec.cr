@@ -154,6 +154,33 @@ module Facet
             (ids_a + ids_b).size.should eq(4)
           end
         end
+
+        # Regression: a `WHERE id IN (SELECT ... LIMIT $3 FOR UPDATE SKIP
+        # LOCKED)` claim can be planned as a nested-loop semi-join that runs
+        # the inner `LIMIT` subquery once per outer row. Each rescan skips
+        # the rows the same statement already locked, so the claim returns
+        # more rows than `batch`. The `MATERIALIZED` CTE in `Queries.claim`
+        # runs the locking subquery exactly once. This forces the plan that
+        # exposed the bug and asserts the batch is a hard upper bound.
+        it "never claims more rows than the batch, even under a rescanning plan" do
+          with_db do |db|
+            40.times { insert_job(db) }
+
+            # Drive the planner into the nested-loop semi-join that rescans
+            # the inner subquery (the generic plan alone is not enough on a
+            # small table).
+            db.exec("SET plan_cache_mode = force_generic_plan")
+            db.exec("SET enable_hashjoin = off")
+            db.exec("SET enable_mergejoin = off")
+            db.exec("SET enable_material = off")
+            db.exec("SET enable_hashagg = off")
+            db.exec("SET enable_sort = off")
+            db.exec("SET enable_incremental_sort = off")
+            db.exec("SET enable_memoize = off")
+
+            Queries.claim(db, "worker-a", 60, 2).size.should eq(2)
+          end
+        end
       end
 
       describe ".write_succeeded" do

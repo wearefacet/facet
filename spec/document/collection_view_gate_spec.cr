@@ -19,6 +19,7 @@ require "json"
 #   - calendar with a discriminator that is not a date field → 422
 #   - calendar with a discriminator that serves `gte` + `lte` → saved
 #   - table with an unknown column key → 422
+#   - grid: columns, Σ aggregates, editability, frozen bounds, filters, sort
 #   - update touching `config` validates the submitted config
 #
 # The view is created as a child of a real `core.DocType` row, so the gate
@@ -114,6 +115,17 @@ describe "CollectionView config write gate" do
     "flag"   => cv_gate_field("boolean", ["equality"]),
   }
 
+  # The grid-rule fields: everything above plus a money field (the
+  # aggregate-able case), a read-only string (the non-writable column), and
+  # an object (the unsortable sort key).
+  cv_grid_fields = begin
+    fields = cv_fields.dup
+    fields["amount"] = JSON.parse(%({"type": "money", "currency": "USD"}))
+    fields["locked"] = JSON.parse(%({"type": "string", "read_only": true}))
+    fields["blob"] = JSON.parse(%({"type": "object"}))
+    fields
+  end
+
   it "rejects a kanban mode outside values/custom" do
     parent_id = cv_gate_parent_doctype("CvGateKanbanMode", cv_fields)
     config = JSON.parse(%({"kanban": {"mode": "bogus"}}))
@@ -208,5 +220,109 @@ describe "CollectionView config write gate" do
     else
       fail "expected the update to succeed: #{result}"
     end
+  end
+
+  it "saves a valid grid view" do
+    parent_id = cv_gate_parent_doctype("CvGateGridOk", cv_grid_fields)
+    config = JSON.parse(%({"columns": [{"key": "name"}, {"key": "amount", "summary": "sum"}, {"key": "created_at"}], "grid": {"frozen": 1, "sort": ["-amount"], "filters": {"name__match": "acme", "search": "deal"}}}))
+    cv_gate_created_id(cv_gate_create(parent_id, "grid", config)).should_not be_empty
+  end
+
+  it "rejects a grid column key absent from the parent doctype" do
+    parent_id = cv_gate_parent_doctype("CvGateGridCol", cv_grid_fields)
+    config = JSON.parse(%({"columns": [{"key": "name"}, {"key": "ghost"}]}))
+    cv_gate_expect_422(cv_gate_create(parent_id, "grid", config), "config.columns.1.key")
+  end
+
+  it "rejects a grid view with no columns" do
+    parent_id = cv_gate_parent_doctype("CvGateGridEmpty", cv_grid_fields)
+    config = JSON.parse(%({"columns": []}))
+    cv_gate_expect_422(cv_gate_create(parent_id, "grid", config), "config.columns")
+  end
+
+  it "rejects an unknown summary aggregate" do
+    parent_id = cv_gate_parent_doctype("CvGateGridSum", cv_grid_fields)
+    config = JSON.parse(%({"columns": [{"key": "amount", "summary": "median"}]}))
+    cv_gate_expect_422(cv_gate_create(parent_id, "grid", config), "config.columns.0.summary")
+  end
+
+  it "rejects a field aggregate on a non-numeric field" do
+    parent_id = cv_gate_parent_doctype("CvGateGridSumType", cv_grid_fields)
+    # `name` is a string — the read-time aggregate would answer 422.
+    config = JSON.parse(%({"columns": [{"key": "name", "summary": "sum"}]}))
+    cv_gate_expect_422(cv_gate_create(parent_id, "grid", config), "config.columns.0.summary")
+  end
+
+  it "rejects editable true on a non-writable field" do
+    parent_id = cv_gate_parent_doctype("CvGateGridEdit", cv_grid_fields)
+    # `locked` is read_only in the schema; `created_at` never edits.
+    config = JSON.parse(%({"columns": [{"key": "locked", "editable": true}, {"key": "created_at", "editable": true}]}))
+    result = cv_gate_create(parent_id, "grid", config)
+    err = cv_gate_expect_422(result, "config.columns.0.editable")
+    err.details.not_nil!.any? { |e| e.field == "config.columns.1.editable" }.should be_true
+  end
+
+  it "accepts editable true on a writable field" do
+    parent_id = cv_gate_parent_doctype("CvGateGridEditOk", cv_grid_fields)
+    config = JSON.parse(%({"columns": [{"key": "name", "editable": true}]}))
+    cv_gate_created_id(cv_gate_create(parent_id, "grid", config)).should_not be_empty
+  end
+
+  it "rejects a grid.frozen outside 0..columns.length" do
+    parent_id = cv_gate_parent_doctype("CvGateGridFrozen", cv_grid_fields)
+    config = JSON.parse(%({"columns": [{"key": "name"}], "grid": {"frozen": 2}}))
+    cv_gate_expect_422(cv_gate_create(parent_id, "grid", config), "config.grid.frozen")
+  end
+
+  it "rejects a non-integer grid.frozen" do
+    parent_id = cv_gate_parent_doctype("CvGateGridFrozenType", cv_grid_fields)
+    config = JSON.parse(%({"columns": [{"key": "name"}], "grid": {"frozen": "1"}}))
+    cv_gate_expect_422(cv_gate_create(parent_id, "grid", config), "config.grid.frozen")
+  end
+
+  it "rejects a grid filter that names an unknown field" do
+    parent_id = cv_gate_parent_doctype("CvGateGridFilter", cv_grid_fields)
+    config = JSON.parse(%({"columns": [{"key": "name"}], "grid": {"filters": {"ghost__eq": "x"}}}))
+    cv_gate_expect_422(cv_gate_create(parent_id, "grid", config), "config.grid.filters.ghost__eq")
+  end
+
+  it "rejects a grid filter whose operator the field does not serve" do
+    parent_id = cv_gate_parent_doctype("CvGateGridFilterOp", cv_grid_fields)
+    # `name` serves equality and text_search — not the comparison family.
+    config = JSON.parse(%({"columns": [{"key": "name"}], "grid": {"filters": {"name__gte": 1, "created_at__match": "x"}}}))
+    result = cv_gate_create(parent_id, "grid", config)
+    err = cv_gate_expect_422(result, "config.grid.filters.name__gte")
+    err.details.not_nil!.any? { |e| e.field == "config.grid.filters.created_at__match" }.should be_true
+  end
+
+  it "rejects a suffixed search filter but accepts the bare key" do
+    parent_id = cv_gate_parent_doctype("CvGateGridSearch", cv_grid_fields)
+    bad = JSON.parse(%({"columns": [{"key": "name"}], "grid": {"filters": {"search__eq": "x"}}}))
+    cv_gate_expect_422(cv_gate_create(parent_id, "grid", bad), "config.grid.filters.search__eq")
+
+    good = JSON.parse(%({"columns": [{"key": "name"}], "grid": {"filters": {"search": "deal"}}}))
+    cv_gate_created_id(cv_gate_create(parent_id, "grid", good)).should_not be_empty
+  end
+
+  it "rejects an unknown grid sort field" do
+    parent_id = cv_gate_parent_doctype("CvGateGridSort", cv_grid_fields)
+    config = JSON.parse(%({"columns": [{"key": "name"}], "grid": {"sort": ["-ghost"]}}))
+    cv_gate_expect_422(cv_gate_create(parent_id, "grid", config), "config.grid.sort.0")
+  end
+
+  it "rejects an unsortable grid sort field" do
+    parent_id = cv_gate_parent_doctype("CvGateGridSortType", cv_grid_fields)
+    # `blob` is an object — no sort expression exists for it.
+    config = JSON.parse(%({"columns": [{"key": "name"}], "grid": {"sort": ["blob"]}}))
+    cv_gate_expect_422(cv_gate_create(parent_id, "grid", config), "config.grid.sort.0")
+  end
+
+  it "validates a submitted grid config on an update" do
+    parent_id = cv_gate_parent_doctype("CvGateGridUpdate", cv_grid_fields)
+    config = JSON.parse(%({"columns": [{"key": "name"}]}))
+    doc_id = cv_gate_created_id(cv_gate_create(parent_id, "grid", config))
+
+    result = cv_gate_update(doc_id, %({"surface": "grid", "config": {"columns": [{"key": "name"}], "grid": {"frozen": 9}}}))
+    cv_gate_expect_422(result, "config.grid.frozen")
   end
 end

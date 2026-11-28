@@ -1,4 +1,5 @@
 ---
+type: reference
 title: Webhook payloads
 description: Webhook payload fields, the signature header, and how to verify the signature.
 audience: [developer, operator]
@@ -188,5 +189,5 @@ form so you can run it verbatim.
 
 ## Related
 
-- [Outbound webhooks](/build/webhooks/) — register and manage webhooks.
-- [Event hooks](/build/event-hooks/) — run Lua inside Facet instead of calling out.
+- [Outbound webhooks](/build/model/automation/webhooks/) — register and manage webhooks.
+- [Event hooks](/build/model/automation/event-hooks/) — run Lua inside Facet instead of calling out.

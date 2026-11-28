@@ -1,0 +1,154 @@
+---
+type: how-to
+title: Parent and child documents
+description: Model owned children that a parent document creates, locks, and deletes together.
+audience: [author]
+features: [DOM-05, DOC-07]
+sidebar:
+  order: 1
+verified_at: eee55a2
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Some records are parts of a whole. A Brightwater booking holds its lines; a
+client company holds its contacts. Facet models this as composition: the
+parent owns its children, and the child cannot exist outside the parent. One
+declaration on the parent and one on the child set the pair up.
+
+## When to use this
+
+Use composition when the child belongs to exactly one parent and dies with
+it. Use a reference field when the target stands alone (see
+[Link documents together](/build/model/relations/references-links/)) — a
+ticket names its item, but the item exists before and after the ticket.
+
+## Before you start
+
+- **Both halves.** The parent declares a `children` entry, and the child
+  declares `member_of` back. Facet rejects a one-sided pair.
+- **Same domain, short name.** A child doctype lives in the same domain as
+  its parent, and its name is written without the domain prefix.
+
+## Steps
+
+<Tabs syncKey="build-mode">
+<TabItem label="Builder">
+
+1. Open the parent doctype in the **Builder** and tick **Aggregate root**.
+2. Add a **Children** entry: a relationship name (for example `lines`), the
+   child doctype, and the cardinality.
+3. Open the child doctype, clear **Aggregate root**, and set **Member of**
+   to the parent's name.
+4. Publish — the check verifies the pair on both sides.
+
+</TabItem>
+<TabItem label="Files">
+
+The Brightwater booking and its lines, exactly as the bundle ships them:
+
+```yaml
+# rentals/doctypes/rentals.Booking.yml (extract)
+aggregate_root: true
+children:
+  lines:
+    doctype: BookingLine
+    collection: true
+    description: "The equipment lines on this booking."
+
+# rentals/doctypes/rentals.BookingLine.yml (extract)
+aggregate_root: false
+member_of: Booking
+```
+
+`collection: true` holds many children. A single-child relationship omits it.
+
+</TabItem>
+</Tabs>
+
+### Declare the child without a back-reference
+
+Do not add a reference field on the child that points back at the parent.
+Facet manages the parent link itself.
+
+### Create the parent with its children in one call
+
+Send a compound body: `$content` for the parent fields and `$children` for
+the nested ones. Facet creates everything in one transaction. If one child
+fails validation, nothing is written.
+
+```sh
+curl -k -X POST "https://facet.localhost:3443/Api/rentals/Booking" \
+  -H "Authorization: Bearer $FACET_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "$content": { "client": "clients.Company.06H1FM1B3MXBPS0JYVM3BDD154", "dates": { "start": "2026-12-07", "end": "2026-12-09" } },
+    "$children": {
+      "lines": [ { "item": "equipment.Item.EQ-2026-0001", "quantity": 2, "price": { "value": "250.00", "currency": "EUR" } } ]
+    }
+  }'
+```
+
+`-k` skips the certificate check of the local development address. The
+response carries the parent and the created children; the line takes its
+field defaults. In the app, the parent's document page creates and lists the
+children on their own tabs.
+
+## The rules composition gives you
+
+| Rule | Effect |
+| --- | --- |
+| Cascade delete | Deleting the parent deletes its children. |
+| Lock coupling | A write to a child locks the parent, so the aggregate stays consistent. |
+| Flat create refused | A child created outside its parent answers `422`. Use the nested route. |
+| Inherited access | A permission on the parent covers the child, because the child path extends the parent path. |
+| Event fan-out | A child change notifies the parent, so parent-side computed fields update. |
+
+{/* d2
+*One aggregate: the parent owns its lines*
+parent: "Booking (aggregate root)" {class: node}
+line1: "BookingLine" {class: node}
+line2: "BookingLine" {class: node}
+delete: "Delete the booking" {class: external}
+
+parent -> line1: owns
+parent -> line2: owns
+delete -> parent: cascades down
+*/}
+<div class="d2-diagram">
+<img class="d2-diagram__img d2-diagram__light" src="/diagrams/0bf532da-light.svg" alt="Booking (aggregate root)" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/0bf532da-dark.svg" alt="Booking (aggregate root)" loading="lazy" />
+</div>
+
+The cascade runs downward only: deleting a child never deletes the parent.
+
+## Troubleshooting
+
+### Publish refuses the pair
+
+One half of the composition is missing. Add the `member_of` on the child or
+the `children` entry on the parent, then publish again.
+
+### A flat create of the child answers `422`
+
+Children are created through the parent. Use the nested route on the parent
+document, or the compound body shown above.
+
+### The child shows under a different parent after a copy
+
+It cannot. A copy re-parents the child to the copied parent, never to the
+original one.
+
+### A reference field would be simpler
+
+If the child has a life outside the parent — several parents, its own
+access rule, its own list page — model it as an aggregate root with a
+reference field instead. See
+[Link documents together](/build/model/relations/references-links/).
+
+## Related
+
+- [Doctype schema (reference)](/reference/doctype-schema/) — the `children` and `member_of` keys in full.
+- [Computed fields](/build/model/data/computed-fields/) — sum over children, the booking-total pattern.
+- [Add comments and attachments](/build/model/relations/comments-attachments/) — attach a discussion panel to the parent.
+- [Documents, doctypes and projections](/build/deeper/documents-and-projections/) — how the parent link is stored.

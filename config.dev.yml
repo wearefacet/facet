@@ -209,6 +209,10 @@ jobs:
   poll_interval_s: 5.0
   lease_ttl_s: 60
   batch: 32
+  # Max job fibers running at once. A claim pass holds while this many run.
+  # Import enqueues its own tighter cap (two imports at once), so this
+  # global value bounds the light kinds only.
+  max_concurrent: 4
   sweep_interval_s: 30.0
   retention_days: 30
   enabled: true
@@ -330,9 +334,9 @@ assistant:
 # domains' definition surface (and, in discard mode, their data). Never
 # enable this in production — the boot code refuses the watcher there even
 # when the section is present. See `Facet::Dev::DomainWatcher`.
-#
-# dev:
-#   domain_watch:
-#     path: ./dev
-#     poll_ms: 500
-#     documents: preserve
+
+dev:
+  domain_watch:
+    path: ./site-docs/examples/brightwater
+    poll_ms: 500
+    documents: preserve

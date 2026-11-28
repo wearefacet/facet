@@ -40,7 +40,7 @@ function parseInventory(text) {
     const idMatch = line.match(/^- id:\s*(\S+)\s*$/);
     if (idMatch) {
       if (current) features.push(current);
-      current = { id: idMatch[1], name: '', area: '' };
+      current = { id: idMatch[1], name: '', area: '', referenceOnly: false, removed: null };
       continue;
     }
     if (!current) continue;
@@ -48,6 +48,12 @@ function parseInventory(text) {
     if (nameMatch) current.name = nameMatch[1].trim();
     const areaMatch = line.match(/^area:\s*(\S+)\s*$/);
     if (areaMatch) current.area = areaMatch[1];
+    // Rule R2 (04-coverage-and-verification.md): an ID whose only sensible
+    // documentation is a generated table needs no task page.
+    if (/^reference-only:\s*true\s*$/.test(line)) current.referenceOnly = true;
+    // WP 10 marks retired features instead of deleting their rows.
+    const removedMatch = line.match(/^removed:\s*(.+)$/);
+    if (removedMatch) current.removed = removedMatch[1].trim();
   }
   if (current) features.push(current);
   return features;
@@ -99,6 +105,24 @@ function parseVerifiedAt(frontMatter) {
   if (!line) return null;
   const value = line.slice('verified_at:'.length).trim().replace(/^['"]|['"]$/g, '');
   return value || null;
+}
+
+// The page type comes from the v2 front-matter contract (00-contract.md §4).
+const PAGE_TYPES = ['overview', 'tutorial', 'how-to', 'explanation', 'reference'];
+// Rule R2: only these types establish coverage of a feature ID.
+const TASK_TYPES = ['how-to', 'tutorial', 'explanation'];
+
+function parseType(frontMatter) {
+  const line = frontMatter.split('\n').find((l) => /^type:/.test(l));
+  if (!line) return null;
+  const value = line.slice('type:'.length).trim().replace(/^['"]|['"]$/g, '');
+  return PAGE_TYPES.includes(value) ? value : null;
+}
+
+function parseTitle(frontMatter) {
+  const line = frontMatter.split('\n').find((l) => /^title:/.test(l));
+  if (!line) return null;
+  return line.slice('title:'.length).trim().replace(/^['"]|['"]$/g, '');
 }
 
 // --- page scan ---------------------------------------------------------------
@@ -190,9 +214,13 @@ const exclusions = existsSync(EXCLUDE_PATH)
 const excludedIds = new Set(exclusions.map((entry) => entry.id));
 
 const pagePaths = collectPages(DOCS_DIR);
-const coveredBy = new Map(); // inventory id -> pages that cite it
+const coveredBy = new Map(); // inventory id -> task pages (R2) that cite it
+const citedBy = new Map(); // inventory id -> any page that cites it
 const unknown = new Map(); // page id -> pages that cite it
 const problems = []; // pages whose features front-matter breaks the contract
+const missingType = []; // English pages without a valid type (landing exempt)
+const longTitles = []; // titles over 40 characters (01-voice-and-vibe.md §6)
+const emptyFeatures = []; // rule R5: non-overview pages with features: []
 
 for (const page of pagePaths) {
   const text = readFileSync(join(DOCS_DIR, page), 'utf8');
@@ -205,6 +233,17 @@ for (const page of pagePaths) {
   if (malformed) {
     problems.push(`${page}: features is not a flat one-line array`);
   }
+  const type = parseType(frontMatter);
+  if (!type && page !== 'index.mdx') {
+    missingType.push(page);
+  }
+  const title = parseTitle(frontMatter);
+  if (title && title.length > 40) {
+    longTitles.push(`${page} — "${title}" (${title.length})`);
+  }
+  if (type && type !== 'overview' && features.length === 0 && page !== 'index.mdx') {
+    emptyFeatures.push(`${page} (${type})`);
+  }
   for (const id of features) {
     if (id.endsWith('-*')) {
       // A wildcard expands to every inventory ID of that area; the expansion,
@@ -212,13 +251,21 @@ for (const page of pagePaths) {
       const area = id.slice(0, -2);
       if (areas.includes(area)) {
         for (const feature of inventory) {
-          if (feature.area === area) record(coveredBy, feature.id, page);
+          if (feature.area === area) {
+            record(citedBy, feature.id, page);
+            if (TASK_TYPES.includes(type)) record(coveredBy, feature.id, page);
+          }
         }
       } else {
         record(unknown, id, page);
       }
     } else if (byId.has(id)) {
-      record(coveredBy, id, page);
+      record(citedBy, id, page);
+      if (TASK_TYPES.includes(type)) record(coveredBy, id, page);
+      if (byId.get(id).removed) {
+        // A removed feature keeps its row only so old citations surface here.
+        record(unknown, id, page);
+      }
     } else {
       record(unknown, id, page);
     }
@@ -226,8 +273,18 @@ for (const page of pagePaths) {
 }
 
 const uncovered = inventory
-  .filter((feature) => !coveredBy.has(feature.id) && !excludedIds.has(feature.id))
-  .map((feature) => feature.id);
+  .filter(
+    (feature) =>
+      !coveredBy.has(feature.id) &&
+      !excludedIds.has(feature.id) &&
+      !feature.referenceOnly &&
+      !feature.removed,
+  )
+  .map((feature) =>
+    citedBy.has(feature.id)
+      ? `${feature.id} (cited, but only on overview/reference pages)`
+      : feature.id,
+  );
 
 // --- coverage table ----------------------------------------------------------
 
@@ -279,11 +336,26 @@ console.log(
 );
 console.log('');
 
-console.log(`Uncovered IDs (${uncovered.length}):`);
+console.log(`Uncovered IDs (rule R2 — no how-to/tutorial/explanation page cites them; ${uncovered.length}):`);
 printWrapped(uncovered);
 console.log('');
 console.log(`Unknown IDs on pages, not in the inventory (${unknown.size}):`);
 printUnknown(unknown);
+if (missingType.length > 0) {
+  console.log('');
+  console.log(`Pages without a valid type — overview, tutorial, how-to, explanation, reference (${missingType.length}):`);
+  printWrapped(missingType);
+}
+if (longTitles.length > 0) {
+  console.log('');
+  console.log(`Titles longer than 40 characters (01-voice-and-vibe.md §6; ${longTitles.length}):`);
+  for (const entry of longTitles) console.log(`  ${entry}`);
+}
+if (emptyFeatures.length > 0) {
+  console.log('');
+  console.log(`Rule R5 — non-overview pages with an empty features list (${emptyFeatures.length}):`);
+  printWrapped(emptyFeatures);
+}
 if (problems.length > 0) {
   console.log('');
   console.log(`Front-matter problems (${problems.length}):`);

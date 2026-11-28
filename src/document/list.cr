@@ -625,6 +625,11 @@ module Facet
       # same strict contract the filter grammar holds. An empty sort list
       # answers `"id ASC"`.
       #
+      # Every sort ends with the row id as its tie-breaker, so rows with
+      # equal sort keys keep one order across offset pages (the ULID sorts
+      # by creation order) instead of duplicating or skipping between them.
+      # An id entry the caller authored is left where it stands.
+      #
       # A field the active role cannot see answers `403` (S4). Without the
       # gate a caller reads a hidden value from the row order. The
       # visibility test runs before the type test, so the error never names
@@ -669,7 +674,8 @@ module Facet
           end
         end
 
-        order_clauses.empty? ? "id ASC" : order_clauses.join(", ")
+        order_clauses << "id ASC" unless order_clauses.any? { |c| c == "id ASC" || c == "id DESC" }
+        order_clauses.join(", ")
       end
 
       # Returns the SQL ORDER BY expression for a doctype field, or `nil`

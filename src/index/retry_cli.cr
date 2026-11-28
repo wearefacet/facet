@@ -40,7 +40,11 @@ module Facet
         doc_type : String,
         field_name : String,
         index_type : String,
-        index_name : String
+        index_name : String,
+        # The doctype's full desired index set — read for the `missing`
+        # rows so the drop path can tell whether a sibling btree variant of
+        # the same field still needs the shared statistics object.
+        desired : Set(DesiredIndex) = Set(DesiredIndex).new
 
       # Public entry point for in-process callers (e.g. `Migrate.db_reset`)
       # that want to retry every errored index without going through the CLI
@@ -210,7 +214,7 @@ module Facet
           when "missing"
             print "  Dropping #{r.index_name} (field removed)... "
             begin
-              execute_drop(db, r.domain, r.doc_type, r.field_name, r.index_type, r.index_name)
+              execute_drop(db, r.domain, r.doc_type, r.field_name, r.index_type, r.index_name, r.desired)
               puts "done"
               dropped += 1
             rescue ex
@@ -292,14 +296,15 @@ module Facet
           still_desired = desired.any? { |d| d.field_name == field_name && d.index_type == index_type }
 
           add_result(results, still_desired ? "retry" : "missing",
-            domain, doc_type, field_name, index_type, index_name)
+            domain, doc_type, field_name, index_type, index_name, desired)
         end
 
         results
       end
 
-      # Appends one re-check outcome. Collapses the three repeated
-      # six-key NamedTuple literals.
+      # Appends one re-check outcome. `desired` carries the doctype's
+      # desired index set for the drop path; the `skip` rows pass the
+      # default empty set (they run no DDL).
       private def self.add_result(
         results : Array(RecheckResult),
         status : String,
@@ -308,6 +313,7 @@ module Facet
         field_name : String,
         index_type : String,
         index_name : String,
+        desired : Set(DesiredIndex) = Set(DesiredIndex).new,
       ) : Nil
         results << RecheckResult.new(
           status: status,
@@ -316,6 +322,7 @@ module Facet
           field_name: field_name,
           index_type: index_type,
           index_name: index_name,
+          desired: desired,
         )
       end
 
@@ -356,6 +363,12 @@ module Facet
               # Best-effort cleanup
             end
             Manager.exec_ddl_with_deadlock_retry(db, sql, drop_sql, max_attempts: 5)
+            # A retried index also recreates its field's statistics object
+            # when an earlier attempt failed before reaching it (see
+            # `Naming.create_statistics_sql`).
+            if stats_sql = Naming.create_statistics_sql(domain, doc_type, field_name, index_type)
+              Manager.exec_ddl_with_deadlock_retry(db, stats_sql, max_attempts: 5)
+            end
           end
 
           db.exec(
@@ -379,7 +392,11 @@ module Facet
         end
       end
 
-      # Drops an index and marks it as dropped.
+      # Drops an index and marks it as dropped. The field's statistics
+      # object goes with the last btree variant of the field: the recheck
+      # already knows whether a sibling btree variant of the same field is
+      # still desired (`desired`), and only a field with no remaining
+      # btree index loses its statistics.
       private def self.execute_drop(
         db : DB::Connection,
         domain : String,
@@ -387,6 +404,7 @@ module Facet
         field_name : String,
         index_type : String,
         index_name : String,
+        desired : Set(DesiredIndex) = Set(DesiredIndex).new,
       ) : Nil
         begin
           # First gate attempt: the DDL statement under the DDL gate, so
@@ -397,6 +415,17 @@ module Facet
               Naming.drop_index_sql(domain, doc_type, field_name, index_type),
               max_attempts: 5,
             )
+            still_needed = desired.any? do |other|
+              other.field_name == field_name &&
+                !Naming.create_statistics_sql(other.domain, other.doc_type, other.field_name, other.index_type).nil?
+            end
+            unless still_needed || Naming.create_statistics_sql(domain, doc_type, field_name, index_type).nil?
+              Manager.exec_ddl_with_deadlock_retry(
+                db,
+                Naming.drop_statistics_sql(domain, doc_type, field_name),
+                max_attempts: 5,
+              )
+            end
           end
         rescue ex
           Manager::Log.warn(exception: ex) do

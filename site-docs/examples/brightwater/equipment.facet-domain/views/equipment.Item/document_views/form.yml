@@ -1,0 +1,36 @@
+---
+content:
+  kind: form
+  template:
+    type: col
+    children:
+      - type: section
+        label: Item
+        children:
+          - type: row
+            layout: 2fr 1fr
+            children:
+              - type: input
+                field: name
+              - type: input
+                field: category
+      - type: section
+        label: Stock
+        children:
+          - type: row
+            layout: repeat(3, minmax(140px, 1fr))
+            children:
+              - type: input
+                field: status
+              - type: input
+                field: serial_number
+              - type: input
+                field: purchase_price
+      - type: section
+        label: Notes
+        children:
+          - type: input
+            field: notes
+  parent_doctype: equipment.Item
+meta:
+  parent_id: equipment.Item

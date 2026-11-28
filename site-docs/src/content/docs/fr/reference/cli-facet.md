@@ -3,6 +3,7 @@ title: CLI facet
 description: Chaque commande du CLI facet, avec son rôle et sa gestion des options.
 audience: [developer, operator]
 features: [PLT-11, IAM-12, DOM-18]
+type: reference
 sidebar:
   order: 2
 verified_at: 008dd880
@@ -26,6 +27,7 @@ Chaque autre commande ne prend que ses options préfixées d’un tiret, et la c
 | `artifacts:reconcile` | Delete orphaned objects from the artifact store (run standalone to pass options) | consomme ses propres options |
 | `artifacts:revoke` | Revoke every signed URL for an artifact (run standalone to pass the artifact id) | consomme ses propres options |
 | `auth:mode` | Pin the authentication mode on the SystemSettings document (run standalone: facet auth:mode {hybrid\|oidc_only}) | consomme ses propres options |
+| `cron:list` | List the boot cron tasks (id, config key, schedule, next run) | — |
 | `db_reset` | Drop, recreate and migrate the database (asks to confirm; --yes skips) | — |
 | `doctype:migrate-retry` | Re-run lazy migration for documents blocked by a meta.migration_error marker | consomme ses propres options |
 | `doctype:reproject` | Re-project a doctype's search/links/display_name columns for every live document | consomme ses propres options |
@@ -43,5 +45,5 @@ Chaque autre commande ne prend que ses options préfixées d’un tiret, et la c
 
 ## Voir aussi
 
-- [Amorçage et tâches CLI](/fr/operate/bootstrap-cli/)
-- [Premiers pas avec le CLI dev](/fr/apps/quickstart-dev-cli/)
+- [Amorçage et tâches CLI](/fr/admin/install/bootstrap/)
+- [Premiers pas avec le CLI dev](/fr/build/apps/quickstart/)

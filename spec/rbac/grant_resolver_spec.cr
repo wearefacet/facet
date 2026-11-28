@@ -250,6 +250,44 @@ module Facet
           GrantResolver.role_usable?(app, r).should be_true
         end
 
+        it "is true when a domain-wide role line reaches the grant target" do
+          # The bare-domain line (`{"on": "crm"}`) reaches every doctype in
+          # the domain — its reach contains the grant target, so it backs a
+          # concrete grant exactly like a concrete line would.
+          app = app_scope(%([
+            {"target": "crm.Contact",
+             "actions": [{"name": "read", "required": true}]}
+          ]))
+          r = rbac_role([rbac_perm("*", "crm")])
+
+          GrantResolver.role_usable?(app, r).should be_true
+        end
+
+        it "is true when an ancestor role line reaches the grant target" do
+          # Same reach-overlap rule one level down: a line on `crm.Contact`
+          # reaches `crm.Contact.Comment`.
+          app = app_scope(%([
+            {"target": "crm.Contact.Comment",
+             "actions": [{"name": "read", "required": true}]}
+          ]))
+          r = rbac_role([rbac_perm("read", "crm.Contact")])
+
+          GrantResolver.role_usable?(app, r).should be_true
+        end
+
+        it "is false when a domain-wide line's except carves the grant target" do
+          # Reach overlap alone is not enough: the carve-out subtracts the
+          # grant target from the line's reach, mirroring enforcement.
+          app = app_scope(%([
+            {"target": "crm.Contact",
+             "actions": [{"name": "read", "required": true}]}
+          ]))
+          r = rbac_role([Permission.new(action: "read", domain: "crm", path: [] of String,
+            except: ["crm.Contact"])])
+
+          GrantResolver.role_usable?(app, r).should be_false
+        end
+
         it "is true for an app with no required actions at all" do
           app = app_scope(%([
             {"target": "crm.Contact",
@@ -550,6 +588,63 @@ module Facet
             actions: ["read"],
             scopes:  [] of String,
           }])
+        end
+
+        it "collapses a domain-wide role line onto the grant's target" do
+          # The bare-domain line has no concrete doctype coordinate of its
+          # own — the entry takes the grant's target and carries the line's
+          # actions. The tutorial-1 warehouse role reaches its app this way.
+          app = app_scope(%([
+            {"target": "equipment.Item",
+             "actions": [{"name": "read",  "required": true},
+                         {"name": "write", "required": true}]}
+          ]))
+          r = rbac_role([rbac_perm("*", "equipment")])
+
+          GrantResolver.role_usable?(app, r).should be_true
+          scope = GrantResolver.resolve(app, r)
+          decoded(scope).should eq([{
+            target:  "equipment.Item",
+            domain:  "equipment",
+            path:    ["Item"],
+            actions: ["create", "read", "update"],
+            scopes:  [] of String,
+          }])
+        end
+
+        it "collapses an ancestor role line onto the grant's target" do
+          app = app_scope(%([
+            {"target": "crm.Contact.Comment",
+             "actions": [{"name": "read", "required": true}]}
+          ]))
+          r = rbac_role([rbac_perm("read", "crm.Contact")])
+
+          scope = GrantResolver.resolve(app, r)
+          decoded(scope).should eq([{
+            target:  "crm.Contact.Comment",
+            domain:  "crm",
+            path:    ["Contact", "Comment"],
+            actions: ["read"],
+            scopes:  [] of String,
+          }])
+        end
+
+        it "emits a domain-wide entry for a wildcard grant matched by a domain-wide line" do
+          # `crm.*` grant ∩ bare-`crm` line: both reaches are the whole
+          # domain — one wildcard-path entry, which the enforcer expands
+          # across the domain.
+          app = app_scope(%([
+            {"target": "crm.*",
+             "actions": [{"name": "read", "required": true}]}
+          ]))
+          r = rbac_role([rbac_perm("read", "crm")])
+
+          scope = GrantResolver.resolve(app, r)
+          scope.entries.size.should eq(1)
+          entry = scope.entries.first
+          entry.domain.should eq("crm")
+          entry.path.should eq(["*"])
+          entry.actions.should eq(Set{"read"})
         end
 
         it "preserves the role's scope aliases untouched on the emitted permissions" do

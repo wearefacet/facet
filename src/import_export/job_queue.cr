@@ -34,6 +34,7 @@ module Facet
             max_attempts: max_attempts,
             backoff: [] of Int32,
             lease_ttl_s: lease_ttl_s,
+            max_concurrent: Document::ImportJob.max_concurrent,
           )
         else
           Database.with_db(:read_write) do |db|

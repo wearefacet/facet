@@ -1,0 +1,310 @@
+# Screenshot declarations for the docs capture pipeline.
+#
+# One YAML file lists every shot: the persona it is taken as, the URL to
+# visit after programmatic sign-in, and where the PNG lands. Run the capture
+# script from site-docs/ (see capture.mjs header for the exact command).
+#
+# Fields per shot:
+#   id         short unique name, used in logs and --only filters
+#   persona    key into the personas map below
+#   url        full URL to open after sign-in (or `login: true` to shoot the
+#              sign-in screen before any credentials are entered)
+#   out        output path relative to site-docs/src/assets/screens/
+#   viewport   optional, default 1280x800
+#   theme      optional, default light
+#   wait       optional CSS selector that must exist before the shutter
+#   settle     optional extra wait in ms after the network goes quiet
+#   crop       optional CSS selector — screenshot only that element
+#   highlight  optional CSS selector — draw an outline around it first
+
+defaults:
+  base: https://facet.localhost:3443
+  viewport: { width: 1280, height: 800 }
+  theme: light
+
+# Dev-instance demo accounts (site-docs/examples/brightwater/README.md).
+personas:
+  nadia: { email: nadia@brightwater.example, password: brightwater-nadia }
+  tom: { email: tom@brightwater.example, password: brightwater-tom }
+  lucia: { email: lucia@brightwater.example, password: brightwater-lucia }
+  ravi: { email: ravi@brightwater.example, password: brightwater-ravi }
+  admin: { email: admin@example.tld, password: admin }
+
+shots:
+  # Your first hour — overview.
+  - id: dashboard-nadia
+    persona: nadia
+    url: /
+    out: build/index-1.png
+    wait: main
+    settle: 1200
+
+  # Tutorial 2 (first-domain) — the surfaces the domain work lands on.
+  - id: ticket-kanban
+    persona: nadia
+    url: /equipment/MaintenanceTicket?view=board
+    out: build/first-domain-1.png
+    wait: main
+    settle: 1500
+
+  - id: booking-list
+    persona: nadia
+    url: /rentals/Booking
+    out: build/first-domain-2.png
+    wait: main
+    settle: 1200
+
+  - id: booking-document
+    persona: nadia
+    url: /rentals/Booking/BK-2026-0001
+    out: build/first-domain-3.png
+    wait: main
+    settle: 1200
+
+  # Tutorial 2b (first-domain-in-files) — the equipment domain's Item list.
+  - id: item-list
+    persona: nadia
+    url: /equipment/Item
+    out: build/first-domain-in-files-1.png
+    wait: main
+    settle: 1200
+
+  # Tutorial 4 (team-access) — what the roles see.
+  - id: tom-clients-scoped
+    persona: tom
+    url: /clients/Company
+    out: build/team-access-1.png
+    wait: main
+    settle: 1200
+
+  - id: lucia-item-no-price
+    persona: lucia
+    url: /equipment/Item/EQ-2026-0001
+    out: build/team-access-2.png
+    wait: main
+    settle: 1200
+
+  # Captured-once shots. These PNGs are committed assets, but the standard
+  # capture run above does not reproduce them:
+  #
+  #   run-facet-1/2/3  taken against the throwaway tutorial-1 stack (the
+  #                    welcome tour only opens for a freshly seeded admin,
+  #                    and the password screen only appears during a
+  #                    forced change).
+  #   team-access-3/4/5 taken on the shared dev instance while a throwaway
+  #                    account (pat@brightwater.example) was created,
+  #                    assigned the warehouse role, given a one-time
+  #                    password, and deleted again. The flow lives in
+  #                    tmp/wp14-t4-pat-final.mjs (scratch, not committed).
+  #
+  # Re-shoot them by re-running the corresponding tutorial by hand.
+  #
+  # run-facet-1  the sign-in screen of a fresh stack (tutorial 1)
+  # run-facet-2  the welcome tour, first step — taken on the shared dev
+  #               instance as admin@example.tld (the show_welcome flag was
+  #               left true for the shot; tmp/wp14-tour-shot.mjs), not on
+  #               the throwaway tutorial-1 stack
+  # run-facet-3  the Set a new password screen (tutorial 1)
+  # team-access-3  the New Account form, filled (tutorial 4, step 1)
+  # team-access-4  the Temporary password generated dialog (tutorial 4, step 1)
+  # team-access-5  the Assignments page, By account, Warehouse assigned
+  #                (tutorial 4, step 2)
+
+  # ---------------------------------------------------------------------------
+  # WP 15a — use/first-day + use/documents (ledger 15a.md §Shot requests).
+  # Click-opened surfaces (palette, panels, menus) are shot as their trigger
+  # control via crop+highlight; the opened state is described in page text.
+  - id: use-first-day-tour-1
+    persona: nadia
+    url: /
+    out: use/first-day-tour-1.png
+    wait: main
+    settle: 1500
+
+  - id: use-first-day-tour-2
+    persona: lucia
+    url: /equipment/Item
+    out: use/first-day-tour-2.png
+    wait: main
+    settle: 1500
+
+  - id: use-first-day-tour-3
+    persona: tom
+    url: /rentals/Booking
+    out: use/first-day-tour-3.png
+    wait: main
+    settle: 1200
+
+  - id: use-first-day-tour-4
+    persona: tom
+    url: /rentals/Booking/BK-2026-0001
+    out: use/first-day-tour-4.png
+    wait: main
+    settle: 1200
+
+  - id: use-first-day-tour-5
+    persona: tom
+    url: /clients/Company
+    out: use/first-day-tour-5.png
+    wait: main
+    settle: 1200
+    crop: header.top
+    highlight: header.top .search
+
+  - id: use-first-day-tour-6
+    persona: tom
+    url: /clients/Company
+    out: use/first-day-tour-6.png
+    wait: main
+    settle: 1200
+    crop: header.top
+    highlight: header.top .ag
+
+  - id: use-first-day-tour-7
+    persona: tom
+    url: /clients/Company
+    out: use/first-day-tour-7.png
+    wait: main
+    settle: 1200
+    crop: header.top
+    highlight: header.top .iconbtn
+
+  - id: use-first-day-tour-8
+    persona: lucia
+    url: /equipment/Item
+    out: use/first-day-tour-8.png
+    wait: main
+    settle: 1200
+    crop: .side .foot
+    highlight: .foot-trigger
+
+  - id: use-first-day-sign-in-1
+    persona: tom
+    login: true
+    url: /Login
+    out: use/first-day-sign-in-1.png
+    settle: 1200
+
+  - id: use-first-day-dashboard-1
+    persona: nadia
+    url: /rentals
+    out: use/first-day-dashboard-1.png
+    wait: main
+    settle: 1500
+
+  - id: use-documents-1
+    persona: tom
+    url: /rentals/Booking/BK-2026-0001/edit
+    out: use/documents-1.png
+    wait: main
+    settle: 1200
+
+  - id: use-documents-2
+    persona: lucia
+    url: /equipment/MaintenanceTicket/MT-2026-0001
+    out: use/documents-2.png
+    wait: main
+    settle: 1200
+
+  - id: use-documents-3
+    persona: tom
+    url: /rentals/Booking/BK-2026-0001/history
+    out: use/documents-3.png
+    wait: main
+    settle: 1200
+
+  - id: use-documents-4
+    persona: tom
+    url: /clients/Company
+    out: use/documents-4.png
+    wait: main
+    settle: 1200
+
+  # ---------------------------------------------------------------------------
+  # WP 15b — use/finding + top-level (ledger 15b.md §Shot requests).
+  - id: use-finding-lists-1
+    persona: tom
+    url: /clients/Company
+    out: use/finding-lists-1.png
+    wait: main
+    settle: 1500
+
+  - id: use-finding-lists-2
+    persona: lucia
+    url: /equipment/MaintenanceTicket?view=board
+    out: use/finding-lists-2.png
+    wait: main
+    settle: 1800
+
+  - id: use-finding-lists-3
+    persona: nadia
+    url: /rentals/Booking?view=calendar
+    out: use/finding-lists-3.png
+    wait: main
+    settle: 1800
+
+  - id: use-finding-search-1
+    persona: tom
+    url: /clients/Company
+    out: use/finding-search-1.png
+    wait: main
+    settle: 1200
+    crop: header.top
+    highlight: header.top .search
+
+  - id: use-notifications-1
+    persona: tom
+    url: /clients/Company
+    out: use/notifications-1.png
+    wait: main
+    settle: 1200
+    crop: header.top
+    highlight: header.top .iconbtn
+
+  - id: use-assistant-1
+    persona: tom
+    url: /clients/Company
+    out: use/assistant-1.png
+    wait: main
+    settle: 1200
+    crop: header.top
+    highlight: header.top .ag
+
+  - id: use-account-1
+    persona: tom
+    url: /Settings
+    out: use/account-1.png
+    wait: main
+    settle: 1500
+
+  - id: use-account-2
+    persona: tom
+    url: /Settings/api-keys
+    out: use/account-2.png
+    wait: main
+    settle: 1500
+
+  # ---------------------------------------------------------------------------
+  # WP 14c — tutorial 5 (ledger 14c.md §Shot requests). Row 1 runs in the
+  # standard pipeline; rows 2-4 are captured-once class (manual filter click,
+  # consent with a widen-shoot-revert of the warehouse role, and the local
+  # checkout app board) — see ledger 14c.md for the hand-run recipes.
+  - id: mcp-endpoints-nadia
+    persona: nadia
+    url: /Settings
+    out: build/connect-an-agent-1.png
+    wait: main
+    settle: 1200
+    crop: "#settings-chapter-mcp"
+
+# Captured-once (hand-run): the first-app wizard shots depend on the
+# brw-checkout registration state and the dismissed first-run tour, so
+# they are not pipeline entries. Recipe:
+#   node scripts/screens/capture-first-app-wizard.mjs [appIdToDelete]
+# then delete the app it leaves behind (the script prints the id) so the
+# slug stays free for tutorial readers. Files:
+#   build/first-app-wizard-setup.png        (Set it up, filled)
+#   build/first-app-wizard-permissions.png  (grants set, required on)
+#   build/first-app-wizard-review.png       (checklist + consent preview)
+#   build/first-app-wizard-credentials.png  (client id, no secret)
+#   build/first-app-wizard-host.png         (Settings > Serving host)

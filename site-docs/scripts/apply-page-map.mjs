@@ -1,0 +1,229 @@
+// Applies the documentation-v2 page map (scripts/page-map.mjs) for one tab:
+// moves pages (git mv, English + French), sets `type` and `sidebar.order`,
+// creates the §9 stubs, rewrites internal links across every page, and
+// regenerates site-docs/redirects.mjs. Idempotent: already-moved rows are
+// skipped, link rewriting and redirect generation always use the full map.
+//
+// Usage: node scripts/apply-page-map.mjs <discover|use|build|admin|reference>
+//
+// Redirects resolve French-page existence against the pre-restructure commit
+// (the WP 10 commit), so the fr entries stay stable across runs.
+import fs from 'node:fs';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { rows, retires, stubs, generated, urlMap, extraRedirects } from './page-map.mjs';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'); // site-docs/
+const docs = path.join(root, 'src', 'content', 'docs');
+const preRestructureCommit = '5d97eec'; // WP 10 commit — last state before any move.
+
+const tab = process.argv[2];
+if (!['discover', 'use', 'build', 'admin', 'reference'].includes(tab)) {
+	console.error(`Usage: node scripts/apply-page-map.mjs <discover|use|build|admin|reference>`);
+	process.exit(1);
+}
+
+const isGenerated = (rel) => generated.some((g) => rel === g || rel === `fr/${g}`);
+const docFiles = () => {
+	const out = [];
+	const walk = (dir) => {
+		for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+			const p = path.join(dir, e.name);
+			if (e.isDirectory()) walk(p);
+			else if (/\.(md|mdx)$/.test(e.name)) out.push(p);
+		}
+	};
+	walk(docs);
+	return out;
+};
+const rel = (p) => path.relative(docs, p);
+
+function frBaseFiles() {
+	const out = execFileSync(
+		'git',
+		['ls-tree', '-r', '--name-only', preRestructureCommit, '--', 'src/content/docs/fr'],
+		{ cwd: root, encoding: 'utf8' },
+	);
+	return new Set(out.split('\n').filter(Boolean));
+}
+
+function gitMv(srcRel, dstRel) {
+	fs.mkdirSync(path.dirname(path.join(docs, dstRel)), { recursive: true });
+	execFileSync('git', ['mv', `src/content/docs/${srcRel}`, `src/content/docs/${dstRel}`], {
+		cwd: root,
+	});
+}
+
+function gitRm(srcRel) {
+	// -f: the link-rewrite pass modifies pages before their tab runs; the
+	// pre-move original is preserved in ledgers/originals/, so the working-tree
+	// modification (rewritten links in a page that is being deleted) is safe
+	// to discard.
+	execFileSync('git', ['rm', '-q', '-f', `src/content/docs/${srcRel}`], { cwd: root });
+}
+
+const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// Matches an internal link path (optionally /fr/-prefixed) only where a URL
+// begins: after whitespace, an opening bracket, a quote, '=' or a backtick.
+// The lookahead stops at a path boundary so '/apps/files' never matches
+// inside '/build/apps/data/files'.
+function linkRe(oldUrl) {
+	return new RegExp(
+		`(?<=[\\s(\\[{"'\`=])\\/(fr\\/)?${esc(oldUrl)}(?=[\\/)#!?"'\\s]|$)`,
+		'g',
+	);
+}
+
+function setFrontMatter(file, type, order) {
+	let content = fs.readFileSync(file, 'utf8');
+	if (!content.startsWith('---\n')) throw new Error(`no front-matter: ${rel(file)}`);
+	const end = content.indexOf('\n---\n', 4);
+	if (end === -1) throw new Error(`unterminated front-matter: ${rel(file)}`);
+	let fm = content.slice(4, end);
+	const body = content.slice(end);
+	if (/^type:.*$/m.test(fm)) fm = fm.replace(/^type:.*$/m, `type: ${type}`);
+	else fm = `type: ${type}\n` + fm;
+	const sidebarBlock = /^sidebar:\n(?:[ \t]+.*\n?)*/m;
+	if (sidebarBlock.test(fm)) fm = fm.replace(sidebarBlock, `sidebar:\n  order: ${order}\n`);
+	else fm += `sidebar:\n  order: ${order}\n`;
+	fs.writeFileSync(file, `---\n${fm}${body}`);
+}
+
+function rewriteLinks(map) {
+	let filesChanged = 0;
+	let totalReplacements = 0;
+	for (const file of docFiles()) {
+		const before = fs.readFileSync(file, 'utf8');
+		let after = before;
+		let count = 0;
+		for (const [oldUrl, newUrl] of map) {
+			after = after.replace(linkRe(oldUrl), (_m, fr) => {
+				count++;
+				return `/${fr ? 'fr/' : ''}${newUrl}`;
+			});
+		}
+		if (count > 0) {
+			fs.writeFileSync(file, after);
+			filesChanged++;
+			totalReplacements += count;
+		}
+	}
+	return { filesChanged, totalReplacements };
+}
+
+function writeRedirects(frBase) {
+	const entries = {};
+	for (const [oldUrl, newUrl] of urlMap()) {
+		entries[`/${oldUrl}`] = `/${newUrl}`;
+		const frFile = `fr/${oldUrl}.md`;
+		const frIndex = `fr/${oldUrl}/index.md`;
+		if (frBase.has(`src/content/docs/${frFile}`) || frBase.has(`src/content/docs/${frIndex}`)) {
+			entries[`/fr/${oldUrl}`] = `/fr/${newUrl}`;
+		}
+	}
+	// Sitemap-only URLs (no fr twin ever existed) point at the English target.
+	for (const [oldUrl, newUrl] of extraRedirects) {
+		entries[`/${oldUrl}`] = `/${newUrl}`;
+	}
+	const sorted = Object.fromEntries(Object.entries(entries).sort(([a], [b]) => a.localeCompare(b)));
+	const banner =
+		'// Generated by scripts/apply-page-map.mjs from scripts/page-map.mjs — do not edit by hand.\n' +
+		'// Old URLs (English and French) redirect to their documentation-v2 paths.\n';
+	fs.writeFileSync(path.join(root, 'redirects.mjs'), banner + `export default ${JSON.stringify(sorted, null, '\t')};\n`);
+	return Object.keys(sorted).length;
+}
+
+function reportUnresolved() {
+	const known = new Set(['discover', 'use', 'build', 'admin', 'reference', 'fr']);
+	const unknown = new Map();
+	const re = /(?<=[\s([{="'`])\/([a-z0-9_-]+)(?=[\/)#?!"'`\s]|$)/g;
+	for (const file of docFiles()) {
+		const content = fs.readFileSync(file, 'utf8');
+		for (const m of content.matchAll(re)) {
+			if (!known.has(m[1])) unknown.set(m[1], (unknown.get(m[1]) ?? 0) + 1);
+		}
+	}
+	return unknown;
+}
+
+// --- run ---
+const frBase = frBaseFiles();
+const moved = [];
+const skipped = [];
+for (const [oldPath, newPath, type, rowTab, order] of rows.filter(([, , , t]) => t === tab)) {
+	if (oldPath === newPath) {
+		for (const f of [oldPath, `fr/${oldPath}`]) {
+			const p = path.join(docs, f);
+			if (fs.existsSync(p) && !isGenerated(f)) setFrontMatter(p, type, order);
+		}
+		continue;
+	}
+	const enSrc = path.join(docs, oldPath);
+	if (!fs.existsSync(enSrc)) {
+		skipped.push(oldPath);
+		continue;
+	}
+	gitMv(oldPath, newPath);
+	moved.push(`${oldPath} → ${newPath}`);
+	for (const [f, t] of [[newPath, type], [`fr/${newPath}`, type]]) {
+		const p = path.join(docs, f);
+		if (fs.existsSync(p) && !isGenerated(f)) setFrontMatter(p, t, order);
+	}
+	const frSrc = `fr/${oldPath}`;
+	if (fs.existsSync(path.join(docs, frSrc))) {
+		gitMv(frSrc, `fr/${newPath}`);
+		moved.push(`${frSrc} → fr/${newPath}`);
+	}
+}
+
+for (const r of retires.filter((r) => r.tab === tab)) {
+	for (const f of [r.old, `fr/${r.old}`]) {
+		const p = path.join(docs, f);
+		if (!fs.existsSync(p)) continue;
+		const original = path.join(root, '..', 'doc/plans/documentation/documentation-v2/ledgers/originals', f);
+		if (!fs.existsSync(original)) throw new Error(`retire without saved original: ${f}`);
+		gitRm(f);
+	}
+}
+
+const createdStubs = [];
+for (const [stubPath, title, type, stubTab, order] of stubs.filter(([, , , t]) => t === tab)) {
+	const p = path.join(docs, stubPath);
+	if (fs.existsSync(p)) continue;
+	fs.mkdirSync(path.dirname(p), { recursive: true });
+	const fm = [
+		'---',
+		`title: ${JSON.stringify(title)}`,
+		'description: TODO',
+		`type: ${type}`,
+		'audience: []',
+		'features: []',
+		// The tab sidebars reference every page by slug, and Starlight errors on
+		// slugs without a route — draft pages have none. Stubs therefore publish
+		// as one honest line, out of search (pagefind) and pager chrome, until
+		// their owner WP writes them.
+		'pagefind: false',
+		'pager: false',
+		`sidebar:\n  order: ${order}`,
+		'---',
+		'',
+		'This page is being written.',
+		'',
+	].join('\n');
+	fs.writeFileSync(p, fm);
+	createdStubs.push(stubPath);
+}
+
+const { filesChanged, totalReplacements } = rewriteLinks(urlMap());
+const redirectCount = writeRedirects(frBase);
+const unknown = reportUnresolved();
+
+console.log(`Tab ${tab}:`);
+console.log(`  moved: ${moved.length}${skipped.length ? ` (skipped, already moved: ${skipped.length})` : ''}`);
+console.log(`  retired: ${retires.filter((r) => r.tab === tab).length}`);
+console.log(`  stubs created: ${createdStubs.length}`);
+console.log(`  files with rewritten links: ${filesChanged} (${totalReplacements} links)`);
+console.log(`  redirects written: ${redirectCount}`);
+if (unknown.size) console.log(`  link roots outside the tabs (report only): ${[...unknown.entries()].map(([k, v]) => `${k} (${v})`).join(', ')}`);

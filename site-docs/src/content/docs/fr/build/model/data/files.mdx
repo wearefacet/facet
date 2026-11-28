@@ -1,0 +1,163 @@
+---
+type: how-to
+title: Fichiers dans les champs
+description: Stockez des fichiers dans des champs via le magasin d’artefacts, plafonnez la taille des envois, et contrôlez les types acceptés.
+audience: [author]
+features: [PLT-04]
+sidebar:
+  order: 5
+verified_at: eee55a2
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Un champ `file` porte un fichier, pas une chaîne de caractères. Le champ
+stocke l’identifiant d’un artefact, et le magasin d’artefacts conserve les
+octets en dehors du document. Les documents restent ainsi petits, et deux
+documents peuvent partager un même fichier sans le copier.
+
+## Quand l’utiliser
+
+Utilisez un champ `file` quand le fichier fait partie de l’enregistrement :
+un contrat signé sur une réservation, une photo de dégât sur un ticket de
+maintenance, un manuel sur un item. Pour les fichiers d’échange rattachés à
+aucun champ, préférez le panneau des pièces jointes (voir
+[Ajouter des commentaires et des pièces jointes](/fr/build/model/relations/comments-attachments/)).
+
+## Avant de commencer
+
+- **Le stockage est intégré.** Le
+  [magasin d’artefacts](/fr/admin/configure/file-storage/) existe sur toute
+  instance. Vous déclarez le champ ; vous ne configurez pas le stockage.
+- **Une limite de taille.** Un envoi est plafonné à 50 Mio par défaut
+  (`artifact.max_upload_bytes`, 52 428 800 octets). Votre administrateur
+  règle la limite.
+- **Une liste de types, si vous en voulez une.** Facet accepte tout type de
+  fichier par défaut. Déclarez une liste `accept` quand le champ ne doit
+  prendre que certains types.
+
+## Étapes
+
+<Tabs syncKey="build-mode">
+<TabItem label="Builder">
+
+1. Ouvrez le doctype dans le **Builder** et ajoutez un champ de type
+   **File**.
+2. Si besoin, saisissez la liste **Accept** sous forme de types MIME, par
+   exemple `application/pdf`.
+3. Enregistrez. Le formulaire du doctype accepte maintenant des fichiers
+   dans ce champ.
+
+</TabItem>
+<TabItem label="Fichiers">
+
+Le doctype item de Brightwater avec une photo de dégât et un manuel, en
+extrait complet des champs :
+
+```yaml
+# equipment/doctypes/equipment.Item.yml (extrait des champs)
+fields:
+  name:
+    type: string
+    title: Name
+    required: true
+    filters: [equality, text_search]
+  damage_photo:
+    type: file
+    accept: [image/jpeg, image/png]
+    title: Damage photo
+  manual_pdf:
+    type: file
+    accept: [application/pdf]
+    title: Manual
+```
+
+Un champ sans `accept` prend tous les types de fichiers.
+
+</TabItem>
+</Tabs>
+
+### La liste accept utilise des types MIME
+
+Facet détermine le type d’un envoi à partir du contenu du fichier, pas de
+son nom, et refuse tout envoi qui ne correspond pas à la liste. Renommer un
+fichier ne le fait pas passer le contrôle.
+
+### Envoyer depuis l’application
+
+Dans un formulaire, l’utilisateur choisit un fichier pour le champ. Facet
+envoie les octets, les stocke, et place l’identifiant d’artefact dans le
+champ. L’enregistrement et l’envoi ne font qu’une étape : si l’un échoue,
+rien n’est écrit.
+
+### Envoyer via l’API
+
+Envoyez un corps multipart. Une partie nommée `$content` porte les champs du
+document, et une partie par champ fichier porte les octets, nommée d’après
+le champ.
+
+```sh
+curl -k -X POST "https://facet.localhost:3443/Api/equipment/Item" \
+  -H "Authorization: Bearer $FACET_API_KEY" \
+  -F '$content={"name":"Folding table 6ft"}' \
+  -F 'manual_pdf=@./table-manual.pdf'
+```
+
+`-k` ignore la vérification du certificat de l’adresse de développement
+locale.
+
+## Ce que fait le magasin
+
+| Règle | Effet |
+| --- | --- |
+| Des octets identiques, une seule copie — en principe | Les octets identiques sont stockés une fois et réutilisés, quand l’émetteur peut déjà lire la copie stockée. Deux appelants qui ne peuvent pas lire les fichiers l’un de l’autre stockent chacun leur copie. |
+| L’accès suit les documents | Un fichier est lisible par les documents qui le référencent. |
+| Les envois hors champ | Un fichier collé dans un texte long est envoyé d’abord, puis lié à l’enregistrement. |
+
+Un champ longtext peut embarquer un lien de fichier sous la forme
+`urn:facet:artifact:<id>`. Chaque lecteur du document obtient l’accès au
+fichier.
+
+## Exemple
+
+La déclaration ci-dessus donne à chaque item un champ photo et un champ
+manuel. Une création avec un manuel enregistre :
+
+```json
+{
+  "name": "Folding table 6ft",
+  "manual_pdf": "01HQ2F5WX8K4M3PZC6NRB9TJVA"
+}
+```
+
+La valeur est l’identifiant d’artefact — un ULID de 26 caractères. La page
+détail l’affiche comme lien de téléchargement.
+
+## Dépannage
+
+### L’envoi répond `413`
+
+Le fichier dépasse la limite de taille. Prenez un fichier plus petit, ou
+demandez à votre administrateur de relever la limite.
+
+### L’envoi répond `422` avec une erreur MIME
+
+Le contenu du fichier ne correspond pas à la liste `accept`. Convertissez le
+fichier ou élargissez la liste ; changer le nom du fichier ne suffit pas, car
+Facet lit le contenu.
+
+### Un export porte un id court au lieu du fichier
+
+C’est l’identifiant d’artefact. Le contenu du fichier ne voyage pas avec un
+export CSV ou JSON ; téléchargez les fichiers depuis la page détail.
+
+### Un lien de fichier dans un document apparaît mort
+
+Le fichier a été détruit par un administrateur. La référence reste dans le
+texte, mais les octets ont disparu.
+
+## Voir aussi
+
+- [Artifacts (doc d’ingénierie)](https://github.com/wearefacet/facet/blob/main/doc/backend/artifact.md) — le magasin d’artefacts en détail.
+- [Ajouter des commentaires et des pièces jointes](/fr/build/model/relations/comments-attachments/) — les fichiers d’une discussion, pas d’un champ.
+- [Comment les domaines restent isolés](/fr/build/deeper/domain-isolation/) — comment le magasin se tient en dehors de votre domaine.

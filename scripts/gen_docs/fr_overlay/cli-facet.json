@@ -8,6 +8,6 @@
   "col_options": "Options",
   "col_consumes_own": "consomme ses propres options",
   "related_heading": "Voir aussi",
-  "related_bootstrap": "- [Amorçage et tâches CLI](/fr/operate/bootstrap-cli/)",
-  "related_quickstart": "- [Premiers pas avec le CLI dev](/fr/apps/quickstart-dev-cli/)"
+  "related_bootstrap": "- [Amorçage et tâches CLI](/fr/admin/install/bootstrap/)",
+  "related_quickstart": "- [Premiers pas avec le CLI dev](/fr/build/apps/quickstart/)"
 }

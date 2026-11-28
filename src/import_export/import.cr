@@ -142,28 +142,33 @@ module Facet
           span["domain"] = domain
           span["doc_type"] = doc_type
 
-          # A decode failure raised during parsing is a row failure — the
-          # transaction has not opened yet, so nothing rolls back.
-          rows = begin
-            parse_rows(format, file_text, definition)
-          rescue ex : Failure
-            return ex.report
-          end
-          if rows.size != ids.size
-            raise MalformedInput.new("File carries #{rows.size} rows but the manifest lists #{ids.size} ids")
-          end
           unless supplied.size == ids.size
             raise MalformedInput.new("Manifest pairs #{ids.size} ids with #{supplied.size} supplied flags")
           end
-          span["row_count"] = rows.size.to_s
 
           created = 0
           updated = 0
           skipped = 0
+          row_count = 0
 
+          # Decode and apply row by row inside the transaction. The whole file
+          # still lands or nothing does (one transaction, atomicity
+          # unchanged), but only the current row's content is live at a time:
+          # the previous whole-file `Array(ParsedRow)` decode is gone, so the
+          # process no longer holds every row's `JSON::Any` tree for the run.
+          # A decode failure on row N aborts the transaction exactly as before
+          # — rows 1..N-1 roll back and the report names row N.
           begin
             Database.with_transaction(db) do
-              rows.each_with_index do |row, i|
+              each_row(format, file_text, definition) do |content, i|
+                row_count += 1
+                # A file with more rows than the manifest is a structural
+                # mismatch — refuse it inside the transaction so nothing
+                # commits (a mid-loop raise rolls the whole file back).
+                if i >= ids.size
+                  raise MalformedInput.new("File carries more rows than the manifest lists #{ids.size} ids")
+                end
+                row = ParsedRow.new(content: content)
                 outcome = apply_row(db, domain, doc_type, definition, row, ids[i], supplied[i]?, auth_context)
                 if outcome.is_a?(RowFailure)
                   # The first failing row aborts the transaction — zero rows
@@ -177,13 +182,28 @@ module Facet
                 when RowOutcome::Skip   then skipped += 1
                 end
               end
+
+              # A file with fewer rows than the manifest is the same mismatch.
+              # Checked inside the transaction so the partial file rolls back
+              # instead of committing the rows it did carry.
+              if row_count != ids.size
+                raise MalformedInput.new("File carries #{row_count} rows but the manifest lists #{ids.size} ids")
+              end
             end
           rescue ex : Failure
             # Zero rows persisted, so nothing the rows buffered may ride a
             # later flush on this (worker) fiber — discard the burst.
             Event::Publisher.discard
             return ex.report
+          rescue ex : MalformedInput
+            # A structural mismatch rolled the transaction back; the buffered
+            # events of the rows that did apply must not ride a later flush on
+            # this long-lived worker fiber.
+            Event::Publisher.discard
+            raise ex
           end
+
+          span["row_count"] = row_count.to_s
 
           # The commit landed. Every created/updated event of the file goes
           # out in one burst — nothing published before this point.
@@ -192,7 +212,7 @@ module Facet
           span["created"] = created.to_s
           span["updated"] = updated.to_s
           span["skipped"] = skipped.to_s
-          Result.new(row_count: rows.size, created: created, updated: updated, skipped: skipped)
+          Result.new(row_count: row_count, created: created, updated: updated, skipped: skipped)
         end
       end
 
@@ -203,50 +223,75 @@ module Facet
       # manifest's positional pairing).
       private record ParsedRow, content : JSON::Any
 
-      # Parses and decodes every data row up front, before the transaction
-      # opens. A cell-level decode failure (`RowError` — money grammar,
-      # boolean text, broken JSON in a cell, wrong cell count) fails the
-      # row here, before anything writes. Row numbers are 1-based over the
-      # data rows; a `Failure` aborts before the transaction opens.
-      private def self.parse_rows(format : String, file_text : String, definition : Doctype::DoctypeDefinition) : Array(ParsedRow)
+      # Yields one decoded row at a time (its content, then its 0-based data
+      # row index). Streaming keeps only the current row live: the caller
+      # applies it inside the transaction and discards it before the next is
+      # decoded, so a large file never holds every row's `JSON::Any` tree at
+      # once. A cell-level decode failure (`RowError` — money grammar,
+      # boolean text, broken JSON in a cell, wrong cell count) raises a
+      # `Failure` for that row; the transaction has already opened, so the
+      # caller's rollback removes the rows already applied.
+      private def self.each_row(
+        format : String,
+        file_text : String,
+        definition : Doctype::DoctypeDefinition,
+        & : JSON::Any, Int32 ->
+      ) : Nil
         if format == "csv"
-          parse_csv_rows(file_text, definition)
+          each_csv_row(file_text, definition) { |content, i| yield content, i }
         else
-          parse_json_rows(file_text, definition)
+          each_json_row(file_text, definition) { |content, i| yield content, i }
         end
       end
 
-      private def self.parse_csv_rows(file_text : String, definition : Doctype::DoctypeDefinition) : Array(ParsedRow)
-        parsed = CSV.parse(file_text)
-        raise MalformedInput.new("CSV file carries no header row") if parsed.empty?
+      # Streams the CSV rows through the pull parser: the header row first,
+      # then one decoded row per `next_row`. Only the current row's cell
+      # array and decoded content are live at a time.
+      private def self.each_csv_row(
+        file_text : String,
+        definition : Doctype::DoctypeDefinition,
+        & : JSON::Any, Int32 ->
+      ) : Nil
+        parser = CSV::Parser.new(IO::Memory.new(file_text))
+        headers = parser.next_row
+        raise MalformedInput.new("CSV file carries no header row") if headers.nil?
 
-        headers = parsed[0]
-        rows = [] of ParsedRow
-        parsed.each_with_index do |cells, i|
-          next if i.zero?
-          decoded = Facet::ImportExport::CsvSerializer.decode_row(headers, cells, definition)
-          rows << ParsedRow.new(content: JSON::Any.new(decoded[:content]))
-        rescue ex : Facet::ImportExport::CsvSerializer::RowError
-          raise Failure.new(RowFailure.new(row: i, field: ex.field, message: ex.message.to_s))
+        i = 0
+        while cells = parser.next_row
+          content = begin
+            Facet::ImportExport::CsvSerializer.decode_row(headers, cells, definition)[:content]
+          rescue ex : Facet::ImportExport::CsvSerializer::RowError
+            raise Failure.new(RowFailure.new(row: i + 1, field: ex.field, message: ex.message.to_s))
+          end
+          yield JSON::Any.new(content), i
+          i += 1
         end
-        rows
       end
 
-      private def self.parse_json_rows(file_text : String, definition : Doctype::DoctypeDefinition) : Array(ParsedRow)
-        parsed = JSON.parse(file_text)
-        array = parsed.as_a?
-        raise MalformedInput.new("JSON file must be an array of rows") if array.nil?
-
-        rows = [] of ParsedRow
-        array.each_with_index do |element, i|
+      # Streams the JSON rows through the pull parser: one array element at a
+      # time, each decoded and yielded before the next is read. Only the
+      # current element's parsed tree is live at a time.
+      private def self.each_json_row(
+        file_text : String,
+        definition : Doctype::DoctypeDefinition,
+        & : JSON::Any, Int32 ->
+      ) : Nil
+        pull = JSON::PullParser.new(file_text)
+        pull.read_begin_array
+        i = 0
+        until pull.kind.end_array?
+          element = JSON::Any.new(pull)
           obj = element.as_h?
           raise Failure.new(RowFailure.new(row: i + 1, field: nil, message: "row must be a JSON object")) if obj.nil?
           raw_content = obj["content"]?
           raise Failure.new(RowFailure.new(row: i + 1, field: nil, message: "row carries no content object")) if raw_content.nil?
           content = Facet::ImportExport::CsvSerializer.strip_server_managed(raw_content, definition)
-          rows << ParsedRow.new(content: JSON::Any.new(content))
+          yield JSON::Any.new(content), i
+          i += 1
         end
-        rows
+        pull.read_end_array
+      rescue ex : JSON::ParseException
+        raise MalformedInput.new("JSON file must be an array of rows: #{ex.message}")
       end
 
       # ── Upsert by manifest id ────────────────────────────────────────

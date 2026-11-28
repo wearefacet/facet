@@ -22,7 +22,7 @@ function writeConfig(json: unknown): void {
 }
 
 const BASE_CONFIG = {
-	app: 'bfr-plans',
+	app: 'brw-plans',
 	outDir: 'build',
 	spa: true,
 	targets: {
@@ -42,7 +42,7 @@ describe('loadConfig', () => {
 	});
 
 	it('applies the spa default of true', () => {
-		writeConfig({ app: 'bfr-plans', outDir: 'build' });
+		writeConfig({ app: 'brw-plans', outDir: 'build' });
 
 		const config = loadConfig(root);
 
@@ -74,19 +74,19 @@ describe('loadConfig', () => {
 	});
 
 	it('rejects a config with no outDir value', () => {
-		writeConfig({ app: 'bfr-plans' });
+		writeConfig({ app: 'brw-plans' });
 
 		expect(() => loadConfig(root)).toThrow(/"outDir"/);
 	});
 
 	it('rejects a non-boolean spa value', () => {
-		writeConfig({ app: 'bfr-plans', outDir: 'build', spa: 'yes' });
+		writeConfig({ app: 'brw-plans', outDir: 'build', spa: 'yes' });
 
 		expect(() => loadConfig(root)).toThrow(/"spa" must be true or false/);
 	});
 
 	it('rejects a target entry with no url value', () => {
-		writeConfig({ app: 'bfr-plans', outDir: 'build', targets: { prod: {} } });
+		writeConfig({ app: 'brw-plans', outDir: 'build', targets: { prod: {} } });
 
 		expect(() => loadConfig(root)).toThrow(/Target "prod"/);
 	});
@@ -125,14 +125,14 @@ describe('resolveTarget', () => {
 
 	it('rejects a run with no selection when targets are defined', () => {
 		const config = loadConfig(
-			rootWith({ app: 'bfr-plans', outDir: 'build', targets: BASE_CONFIG.targets })
+			rootWith({ app: 'brw-plans', outDir: 'build', targets: BASE_CONFIG.targets })
 		);
 
 		expect(() => resolveTarget(config)).toThrow(/No target selected/);
 	});
 
 	it('rejects a run when the config defines no targets at all', () => {
-		const config = loadConfig(rootWith({ app: 'bfr-plans', outDir: 'build' }));
+		const config = loadConfig(rootWith({ app: 'brw-plans', outDir: 'build' }));
 
 		expect(() => resolveTarget(config)).toThrow(/defines no targets/);
 	});

@@ -1,0 +1,60 @@
+---
+type: overview
+title: Reference
+description: The exact REST API, CLI commands, config keys, field types, filter operators, schemas, and payloads — for people and agents.
+audience: [developer, admin, operator]
+features: []
+verified_at: eee55a2
+sidebar:
+  order: 0
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+This tab holds the exact details: routes, commands, keys, field types,
+operators, schemas, and payloads. It answers "what is the exact…?", not "how
+do I…?". Pages are generated from the source where possible, so they stay
+true without hand edits — never edit a generated page by hand; run its
+`make gen-docs-<name>` target.
+
+Reading as an agent? Start at `/llms.txt`, or fetch any page as raw markdown
+at `<page path>.md`.
+
+## What do you want to look up?
+
+<CardGrid>
+	<LinkCard title="REST API" description="Every route, with the generated OpenAPI embed." href="/reference/rest-api/" />
+	<LinkCard title="CLI commands" description="The `facet` server CLI and the `@facetapp` app CLI." href="/reference/cli-facet/" />
+	<LinkCard title="Configuration keys" description="Every `config.{env}.yml` key, with type and default." href="/reference/config-keys/" />
+	<LinkCard title="Schemas and field types" description="Doctype and view-template schemas, field types, filter operators." href="/reference/doctype-schema/" />
+	<LinkCard title="Glossary" description="Every product term and engine word, defined once." href="/reference/glossary/" />
+</CardGrid>
+
+## All pages in this section
+
+- [Glossary](/reference/glossary/) — product terms and engine words in plain words.
+- [Feature index](/reference/feature-index/) — every feature ID and the page that documents it.
+- [REST API](/reference/rest-api/) — the HTTP surface, generated from the OpenAPI schema.
+- [facet CLI](/reference/cli-facet/) — server-side commands.
+- [Facet app CLI](/reference/cli-npm/) — `@facetapp/cli` for app developers.
+- [Config file keys](/reference/config-keys/) — every `config.{env}.yml` key.
+- [System settings keys](/reference/system-settings-keys/) — runtime settings.
+- [Account settings keys](/reference/account-settings-keys/) — per-account settings.
+- [Doctype definition schema](/reference/doctype-schema/) — the YAML schema of a doctype.
+- [DVT template schema](/reference/dvt-schema/) — document view templates.
+- [Field types](/reference/field-types/) — every field type, generated.
+- [Filter operators](/reference/filter-operators/) — every query operator, generated.
+- [Jinja2 template context](/reference/jinja2-context/) — variables available in templates.
+- [Lua API](/reference/lua-api/) — functions callable from lifecycle scripts.
+- [Permission line syntax](/reference/permission-syntax/) — the grammar of a permission line.
+- [Agent tools](/reference/agent-tools/) — the assistant's tool catalogue, generated.
+- [Webhook payloads](/reference/webhook-payloads/) — every outbound webhook body.
+- [Error responses](/reference/error-responses/) — error shapes and codes.
+- [Health and metrics names](/reference/health-metrics-names/) — every metric on `/Healthcheck`.
+- [Releases](/reference/changelog/) — what changed in each release.
+- [Limits](/reference/limits/) — every hard limit, with its source.
+
+## Related
+
+- [Build](/build/) — the how-to pages behind most of these details.
+- [Administer](/admin/) — the run book that uses these keys and commands.

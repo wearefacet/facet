@@ -7,10 +7,14 @@ through the same `FieldValue` renderer the table uses, and every write follows t
 rules — schema validation, RBAC, and the mutation log. The grid is not a spreadsheet engine:
 there are no formulas, no free cells, and no rows outside the listing.
 
-The surface ships as a component with its stories. The listing's surface picker
-(`CollectionViewSurfaceStep`) keeps `grid` disabled, and `ListView` dispatches only table,
-calendar, and kanban — the editor authors grid views (the editor stories create and edit
-them), but no app surface mounts the grid yet.
+`ListView` mounts the surface for a view whose `surface` is `grid` (the surface picker
+offers `grid`; the tab carries the grid glyph). The view's `config.columns` feed the grid
+columns — `summary` rides through, and writability re-derives from the doctype schema.
+`config.grid.filters` seed the toolbar filter map under the page's URL filters, and
+`config.grid.sort` seeds the session sort; a header click overrides the sort per view for
+the session. A `{#key}` wrapper remounts the surface per view, so a mount-seeded filter
+map never leaks across tabs. Trash mode never renders the grid — a tombstone cannot edit —
+and falls back to the table.
 
 ## Source files
 
@@ -84,8 +88,11 @@ or what a Σ cell can aggregate.
 
 ## Surface
 
-`Grid.svelte` mounts the table's toolbar pattern (search, filter chips) and the table's
-footer pattern (range, rows-per-page, pagination). On top of that it adds:
+`ListView` hands the surface its datasource, the doctype driver, the resolved columns, the
+merged filter map, the active sort, and the toolbar actions; a row click opens the peek
+drawer, a reference click opens the referenced document. `Grid.svelte` mounts the table's
+toolbar pattern (search, filter chips) and the table's footer pattern (range,
+rows-per-page, pagination). On top of that it adds:
 
 - **Frozen columns** — the first `grid.frozen` data columns stick left over px widths
   (`position: sticky`); the rightmost sticky cell carries the frozen-edge shadow. A non-px
@@ -119,9 +126,13 @@ footer pattern (range, rows-per-page, pagination). On top of that it adds:
   the draft satisfies the required-no-default fields the columns expose (the client gate — the
   server re-checks everything on the POST, and its defaults fill the rest). A blocked commit
   stays silent after one heads-up toast: the missing cells carry an italic "{field} required"
-  hint, the design's "created once named". A refused create (422) keeps the draft under error
-  frames — the invalid state holds until the value is fixed (the next commit retries; the
-  cells the 422 `details` name take the frame, rendered through the validation catalogue) or
+  hint, the design's "created once named". While the draft is unsaved — staged but blocked, a
+  create in flight, or held by a refusal — the whole line takes the faint danger tint and the
+  missing-required hint shows in the danger colour; the `+` gutter carries the spinner while
+  the create flies and turns danger on a refusal. The tint drops when the create lands or Esc
+  clears the draft. A refused create (422) keeps the draft under error
+  frames with the failure label naming the reason (the cells the 422 `details` name take
+  the frame and speak through the validation catalogue) or
   Esc clears the draft (the row-level cancel). A 403 reverts the draft, toasts, and locks the
   line off for the session — the row-403 contract. On success the created row appends, a
   refetch restores the canonical order, the Σ row refreshes, and the fresh ghost line below
@@ -136,9 +147,17 @@ footer pattern (range, rows-per-page, pagination). On top of that it adds:
   mode. Writes go through `writeQueue.ts` — one PATCH per row, concurrency cap 4, with a
   stacked session history (⌘Z undo, ⌘⇧Z / ⌘Y redo). One user gesture is one undo unit:
   a cell commit, a boolean flip, or a whole pasted block — and an undo write never
-  records itself, so ⌘Z walks the stack instead of toggling the last state. A rejected
-  cell keeps the typed text under a local error state
-  (Esc reverts); a 403 reverts, raises a toast, and locks the row read-only for the
+  records itself, so ⌘Z walks the stack instead of toggling the last state. The gutter
+  cell is the row's commit status: the line number yields to a spinner while the row has
+  a write in flight (a pasted block spins every touched row), and it takes the danger
+  tint with the first failure's tooltip when a write fails — the number stays, so the
+  row keeps its anchor. A success returns the plain number; no extra flash. A rejected
+  cell keeps the typed text under a local error state, and a floating failure label
+  under the cell names the reason: the cells the 422 details name speak through the
+  validation catalogue (a format refusal, a duplicate, a range), the other written
+  cells carry the generic failure text. The label shows only while the pointer sits on
+  the failing cell, and hides the moment the pointer leaves. Esc reverts the cell, and
+  the label goes with the error; a 403 reverts, raises a toast, and locks the row read-only for the
   session. A refetch re-applies in-flight cell values and leaves the open editor open.
   The `longtext`, `datetime`, and period editors float over the cell — five datetime
   segments (or two bound pickers) never fit one column — and the datetime and period
@@ -185,10 +204,14 @@ editor stories read the saved payload back from the driver (`CreateGrid`, `EditG
 
 ## Gate status
 
-The backend `Document::CollectionViewGate` validates `table`, `calendar`, and `kanban`
-configs (see [`backend/collection-view.md`](../backend/collection-view.md) → Config
-validation). A `grid` surface passes the backend gate unvalidated today; the frontend
-`buildConfig` normalization is the write path's only guard.
+The backend `Document::CollectionViewGate` validates all four surfaces — `table`,
+`calendar`, `kanban`, and `grid` (see
+[`backend/collection-view.md`](../backend/collection-view.md) → Config validation). The
+grid rules mirror the frontend: at least one column, known column keys, `summary` only on
+aggregate-able types, `editable: true` only on writable fields, `grid.frozen` within the
+column count, `grid.filters` keys that serve their operators, and `grid.sort` entries that
+exist and are sortable. The frontend `buildConfig` normalization applies the same rules at
+authoring time.
 
 ## Quirks
 
@@ -215,5 +238,13 @@ validation). A `grid` surface passes the backend gate unvalidated today; the fro
   cells paint no user-agent outline — the focused cell's ring is the one highlight. The
   UA outline would only paint while the window is focused, so it read as a stray
   highlight that vanished on screenshots.
+- The grid's floaters — the enum listbox, the floating editor frame, and the failure
+  label — are inline panels: they scroll with the grid, and nothing portals. Each mounts
+  through the `placeFloater` action (`grid/floatPlacement.ts`), which flips it before
+  the first paint when the grid's scroll box would cut it: upward when the room above
+  holds the whole panel (`open-up`), right-aligned when the box cuts its right
+  (`open-right`). The flip is decided at mount — scrolling while a panel is open can
+  leave it on the wrong side until it closes. The reference picker's search menu (the
+  shared form component) keeps its natural downward opening.
 - The stories seed explicit column sets, not `defaultColumns` — the fixture loader sorts
   the schema fields alphabetically, so the seeded set shifts with the fixture.
