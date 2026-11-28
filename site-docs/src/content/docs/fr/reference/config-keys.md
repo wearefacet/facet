@@ -104,6 +104,7 @@ Les chargeurs lisent les clés ci-dessous :
 | jobs | `enabled` | boolean | true | Start the background-job worker. |
 | jobs | `lease_ttl_s` | integer | 60 | Seconds a claimed job stays running before the lease sweep requeues it. |
 | jobs | `long_lease_ttl_s` | integer | 3600 | Lease horizon for long job kinds such as import and export, in seconds. |
+| jobs | `max_concurrent` | integer | 4 | Max job fibers running at once; a claim pass holds while this many run, so a heavy kind (an import) cannot multiply the process footprint. A kind's own cap (the import declares 2) tightens the next worker start. |
 | jobs | `poll_interval_s` | number | 5.0 | Seconds the worker waits between claim passes. |
 | jobs | `retention_days` | integer | 30 | Days terminal job rows are kept. |
 | jobs | `sweep_interval_s` | number | 30.0 | Seconds between expired-lease sweeps. |
