@@ -136,9 +136,9 @@
 	// computed from the same anchor the seed uses (today, ±0/+2 days).
 	function isoDayFromToday(dayOffset: number): string {
 		const n = new Date();
-		return new Date(
-			Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate() + dayOffset)
-		).toISOString().slice(0, 10);
+		return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate() + dayOffset))
+			.toISOString()
+			.slice(0, 10);
 	}
 
 	const cfgFiltered: CalendarViewConfig = {
