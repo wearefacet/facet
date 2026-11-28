@@ -16,6 +16,7 @@
 
 <script lang="ts">
 	import type { CellEditorProps, CommitMove } from './types.js';
+	import { placeFloater } from '../floatPlacement.js';
 	import TextEditor from './TextEditor.svelte';
 	import LongTextEditor from './LongTextEditor.svelte';
 	import IntegerEditor from './IntegerEditor.svelte';
@@ -79,7 +80,13 @@
 	from reaching the grid's cells, so it never arms the drag-select (the
 	enum list closes the editor under the held button — without this, the
 	cells exposed underneath sweep-select). -->
-<div class="cell-editor" class:floating class:wide onmousedown={(e) => e.stopPropagation()}>
+<div
+	class="cell-editor"
+	class:floating
+	class:wide
+	use:placeFloater
+	onmousedown={(e) => e.stopPropagation()}
+>
 	{#if field.type === 'longtext'}
 		<LongTextEditor
 			{field}
@@ -203,5 +210,18 @@
 		right: auto;
 		width: max-content;
 		max-width: min(92vw, 560px);
+	}
+
+	/* The flip classes come from the placeFloater action at runtime — they
+	   never appear in this template, so the selectors target them through
+	   `:global` (a plain class selector would be pruned as unused). */
+	.cell-editor.floating:global(.open-up) {
+		top: auto;
+		bottom: calc(100% + 1px);
+	}
+
+	.cell-editor.floating.wide:global(.open-right) {
+		left: auto;
+		right: 0;
 	}
 </style>
