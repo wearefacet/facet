@@ -322,7 +322,7 @@
 					{#if cellChipTopOffset[ri] > 0}
 						<div
 							class="cal-cell-spacer"
-							style="height: {cellChipTopOffset[ri]}px;"
+							style="flex: 0 0 {cellChipTopOffset[ri]}px; height: {cellChipTopOffset[ri]}px;"
 							aria-hidden="true"
 						></div>
 					{/if}

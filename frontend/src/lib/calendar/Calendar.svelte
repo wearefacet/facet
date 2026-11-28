@@ -46,10 +46,15 @@
 	// ── Display state (UI only, not persisted) ──────────────────────────────
 	let granularity = $state<'month' | 'week'>('month');
 	const today = new Date();
+	// `d: 1` — the month window starts on the Monday of the week holding the
+	// 1st (see `calendarFetchWindow`), so a mid-month day shifts that week
+	// backwards and drops the month's first days out of the 42-cell grid. The
+	// week grid derives its visible week from this day too, so it shows the
+	// month's first week until the user navigates.
 	let anchor = $state<Day>({
 		y: today.getUTCFullYear(),
 		m: today.getUTCMonth() + 1,
-		d: today.getUTCDate()
+		d: 1
 	});
 
 	function setAnchor(d: Day) {
@@ -227,6 +232,10 @@
 		// Native range fields (`period` / `dateperiod`) emit no window filter
 		// (see `buildCalendarWindowFilter`); fetch a wide window and overlap
 		// client-side so the MockDataSource (no `__overlaps`) renders them.
+		// The persisted `c.filters` are merged verbatim, so a pinned bound on
+		// such a field (e.g. `scheduled_on__gte` next to a `scheduled_window`
+		// discriminator) still narrows the fetch — two bounds on one field
+		// would AND together in the backend and reject every row.
 		const nativeRange = !c.end_field && (k === 'date-range' || k === 'datetime-range');
 		// The system timestamps live on `meta`, not in the content map —
 		// flatten them onto the row (content wins on a same-named schema
