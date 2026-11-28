@@ -45,7 +45,8 @@
 		required = false,
 		preferredCurrency,
 		idScope,
-		value = $bindable('')
+		value = $bindable(''),
+		onchange
 	}: {
 		label?: string;
 		placeholder?: string;
@@ -62,6 +63,12 @@
 		idScope?: string;
 		/** Canonical money object `{ value, currency }`, or `''` when cleared. */
 		value?: { value: string; currency: string } | string;
+		/**
+		 * Reports every committed value. A parent that owns the storage writes it
+		 * here instead of binding — the `Input` contract (see workflow.md → Child
+		 * editors never write into a prop).
+		 */
+		onchange?: (value: { value: string; currency: string } | '') => void;
 	} = $props();
 
 	const currencies = useCurrencies();
@@ -141,6 +148,7 @@
 		const next = composeEmitted(a, c);
 		value = next;
 		lastEmitted = JSON.stringify(next);
+		onchange?.(next);
 	}
 
 	// Seed from the bound value. Runs only on mount and on external resets (when

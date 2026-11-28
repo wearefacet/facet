@@ -231,9 +231,13 @@
 		const canvas = within(canvasElement);
 		inFilterCalls.length = 0;
 		await expect(canvas.getByText('Status')).toBeVisible();
-		// The multi-select trigger (a labelled button) opens the portalled
-		// listbox; the empty selection shows the pick placeholder.
-		const trigger = canvas.getByRole('button', { name: 'Filter values for Status' });
+		// The multi-select trigger is a Bits UI select button — `role="combobox"`
+		// with the caller's `aria-label` and `aria-haspopup` (the field select next
+		// to it is a combobox input that shares the chip label but has no popup).
+		// It opens the portalled listbox; the empty selection shows the placeholder.
+		const trigger = canvas
+			.getAllByRole('combobox', { name: 'Filter values for Status' })
+			.find((el) => el.getAttribute('aria-haspopup') === 'listbox')!;
 		await expect(trigger).toHaveTextContent('Pick…');
 		await userEvent.click(trigger);
 		await sleep(60);
@@ -253,10 +257,15 @@
 		// The trigger shows the picked labels.
 		await expect(trigger).toHaveTextContent('Open');
 		// Close the menu, then switch the operator away — the array key drops
-		// and the scalar shape takes over with a fresh initial value.
+		// and the scalar shape takes over with a fresh initial value. Both the
+		// field select and the multi-select trigger are comboboxes once a value
+		// is picked, so the field select is the one without a popup.
 		await userEvent.keyboard('{Escape}');
 		await sleep(40);
-		await userEvent.click(canvas.getByRole('combobox'));
+		const fieldSelect = canvas
+			.getAllByRole('combobox')
+			.find((el) => !el.hasAttribute('aria-haspopup'))!;
+		await userEvent.click(fieldSelect);
 		await sleep(60);
 		await userEvent.click(body.getByRole('option', { name: 'is' }));
 		await sleep(40);

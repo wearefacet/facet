@@ -62,7 +62,10 @@
 			helper={template.helper}
 			{error}
 			mode="date"
-			bind:value={values[template.field] as PeriodValue}
+			onchange={(next) => {
+				if (values) values[template.field] = next;
+			}}
+			value={values[template.field] as PeriodValue}
 		/>
 	{:else}
 		<div class="dvt-input-dateperiod-readonly">
