@@ -1,0 +1,54 @@
+---
+type: explanation
+title: "Apps : vite créées, librement remplacées"
+description: "Découvrez comment les apps se connectent à Facet, ce qu’elles peuvent atteindre et pourquoi vos données leur survivent."
+audience: [evaluator, author]
+features: [APP-01, APP-06, RBC-08]
+verified_at: eee55a2
+sidebar:
+  order: 4
+---
+
+import Illustration from '../../../../../components/Illustration.astro';
+
+L’espace de travail couvre la plupart des besoins quotidiens. Tôt ou tard, une équipe veut un outil qui lui soit propre — un écran de sortie d’entrepôt, une borne, un petit tableau de bord. Cet outil est une **app** : un programme extérieur à Facet qui l’utilise comme source de données et de connexion.
+
+*Une app est un invité muni d’un badge. Elle se connecte via Facet et n’atteint que ce que l’invité et le badge permettent l’un et l’autre.*
+
+<Illustration name="apps-role-and-allowance" />
+
+## L’espace de travail est intégré
+
+L’interface web que votre équipe utilise chaque jour est fournie avec Facet. Elle obéit directement à vos rôles et ne fait pas partie de ces apps — elle n’exige ni enregistrement ni consentement. Les apps sont les outils que vous ajoutez en plus.
+
+## Une app est un invité avec un badge
+
+Une app s’enregistre d’abord dans Facet : un document qui la nomme et énonce son **attribution**. L’attribution est le maximum que l’app pourra jamais demander, en types d’enregistrements et en actions. Lorsque Lucía ouvre l’application de sortie pour la première fois, Facet affiche son écran de consentement : quelle app, quel rôle, quels droits. Elle choisit le rôle sous lequel elle agit, et l’app est admise.
+
+À partir de ce moment, l’app n’obtient que l’intersection : ce que permet son rôle, réduit à ce que nomme l’attribution. Son rôle peut masquer les prix d’achat ; une attribution ne peut pas les rendre visibles — les attributions restreignent, elles n’élargissent jamais. Réduisez l’attribution plus tard : le changement s’applique dès le prochain appel de l’app, sans nouvelle connexion.
+
+## Hébergée pour vous, ou non
+
+Facet peut servir lui-même les écrans de l’app, à l’adresse propre de l’app, si bien qu’un outil de navigateur n’a besoin d’aucun serveur de votre part pour fonctionner. Une app qui préfère son propre hébergement fonctionne de la même manière. Elle se connecte toujours via Facet et n’obtient rien de plus que ce que permettent ses utilisateurs et son attribution.
+
+## Remplacez-la sans cérémonie
+
+Le trimestre suivant, l’application de sortie trouve un successeur meilleur. Supprimez l’ancienne app : les enregistrements, les règles et l’historique restent exactement où ils sont. Enregistrez la nouvelle, connectez-vous, et elle travaille sur les mêmes données sous les mêmes règles. Voici ce que signifie en pratique « les apps sont jetables » — changer d’outil est une tâche ordinaire, pas un projet de migration.
+
+## Ce que cela signifie pour vous
+
+- Construisez les petits outils que vos équipes demandent, sans corvées d’hébergement ni nouvelle base d’utilisateurs.
+- L’écran de consentement maintient la portée de chaque app visible et révocable.
+- Vos enregistrements ne résident jamais dans une app ; aucun outil ne peut donc prendre vos données en otage.
+
+## Pour les détails techniques
+
+- [Le fonctionnement des apps sur Facet](/fr/build/apps/how-apps-work/) — enregistrement, connexion, hébergement.
+- [Ce qu’une app est autorisée à faire](/fr/build/apps/connect/what-an-app-can-do/) — l’attribution, ligne par ligne.
+- [Contrôler ce que les apps peuvent atteindre](/fr/admin/apps-access/app-grants/) — le point de vue de l’administrateur.
+
+## Voir aussi
+
+- [Vue d’ensemble](/fr/discover/how-it-works/) — la place des apps parmi les cinq idées.
+- [Les rôles : qui voit quoi et fait quoi](/fr/discover/how-it-works/roles/) — l’autre moitié de l’intersection.
+- [Créer des apps](/fr/build/apps/) — enregistrez, construisez et déployez votre première app.

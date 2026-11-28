@@ -6,24 +6,28 @@ audience: [developer, operator]
 features: [PLT-12]
 sidebar:
   order: 3
-verified_at: 008dd880
+verified_at: eee55a2
 ---
 
-Utilisez cette page pour consulter une route : ses méthodes, ses
-paramètres et ses codes de statut.
+Un développeur client y cherche une route — ses méthodes, ses paramètres, ses
+codes de statut — ou vérifie une forme d’erreur contre le code. La référence
+intégrée ci-dessous couvre les routes des documents, de l’audit, de l’IAM, de
+la plateforme, de l’import/export et des secrets.
 
-Cette page intègre la référence interactive de l’API REST des routes de
-documents, d’audit et d’IAM. Le site embarque une copie de
-`doc/api/openapi.json`, servie à l’adresse `/api/openapi.json`.
-`make gen-docs-rest-api` actualise cette copie.
+Cette page intègre la référence interactive de l’API REST, produite à partir
+de la spécification OpenAPI.
+Le site embarque une copie de `doc/api/openapi.json`, servie à l’adresse
+`/api/openapi.json`.
+`make gen-docs-rest-api` actualise la copie depuis l’artefact versionné, qu’une
+tâche de CI maintient synchronisé avec les routes.
 
 Les guides pratiques sous `/build/apps/` présentent les mêmes routes avec des
-exemples concrets.
+exemples détaillés.
 
 :::note
 Le fichier OpenAPI couvre un sous-ensemble de la surface REST (la
-fonctionnalité `PLT-12`) ; cette référence est donc partielle. Le fichier
-dessert ces groupes de routes :
+fonctionnalité `PLT-12`) ; cette référence est donc partielle.
+Le fichier dessert ces groupes de routes :
 
 - CRUD des documents : lister, créer, lire, mettre à jour et supprimer les
   documents d’un doctype
@@ -35,9 +39,8 @@ dessert ces groupes de routes :
   identifiants, mot de passe temporaire et invitation
 
 Tous les autres groupes de routes — webhooks, fichiers, secrets, recherche,
-WebSocket et authentification — sont documentés dans les pages rédigées à
-
-la main sous `/build/apps/`.
+WebSocket et authentification —
+sont documentés dans les pages rédigées à la main sous `/build/apps/`.
 :::
 
 <script id="api-reference" data-url="/api/openapi.json" is:inline></script>

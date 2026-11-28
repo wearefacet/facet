@@ -1,0 +1,233 @@
+---
+type: how-to
+title: Choisir les types de champs
+description: Choisissez le type qui convient à chaque champ, ajoutez les contraintes, et sachez comment Facet normalise les saisies.
+audience: [author]
+features: [DOM-04, DOC-13]
+sidebar:
+  order: 1
+verified_at: eee55a2
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Chaque champ d’un item Brightwater porte un type de valeur différent : le nom
+est un texte court, le prix d’achat un montant avec devise, le numéro de
+série doit rester unique. Chaque champ porte un seul **type**, et le type
+décide de trois choses : ce que les utilisateurs peuvent saisir, comment
+Facet stocke la valeur, et quels filtres les pages de listes proposent.
+
+## Quand l’utiliser
+
+Vous ajoutez des champs à un doctype et hésitez entre texte et texte long,
+nombre et montant, date et datetime. Cette page vous aide à choisir. La
+table complète de tous les types, avec toutes leurs contraintes, se trouve
+dans [Types de champs (référence)](/fr/reference/field-types/).
+
+## Avant de commencer
+
+- **Éditez dans un brouillon.** Vous modifiez le doctype dans un domaine de
+  brouillon, ou dans le dossier du domaine sur un serveur de développement.
+- **Choisissez les types avec soin avant de publier.** Un changement de type
+  sur un domaine réel exige une montée de version de schéma avec migration,
+  car les valeurs stockées doivent rester lisibles. Voir
+  [Modifier un domaine réel sans risque](/fr/build/model/change-a-live-domain/).
+
+## Quel type pour quel usage
+
+| Le champ contient | Type | Exemple chez Brightwater |
+| --- | --- | --- |
+| Un nom ou un code court | `string` | Item `name` |
+| Un texte long avec markdown | `longtext` | Item `notes`, ticket `problem` |
+| Un nombre entier | `integer` | BookingLine `quantity` |
+| Vrai ou faux | `boolean` | — |
+| Un montant avec devise | `money` | Item `purchase_price` |
+| Une date calendaire | `date` | — |
+| Un instant | `datetime` | — |
+| Une plage de dates | `dateperiod` | Booking `dates` |
+| Une plage de datetimes | `period` | — |
+| Une durée en secondes | `duration` | — |
+| Une valeur d’une liste fixe | `enum` | Item `status` |
+| Une adresse web | `url` | — |
+| Un numéro de téléphone | `phone` | Contact `phone` |
+| Une couleur | `color` | — |
+| Un lien vers un autre document | `reference` | Ticket `item` |
+| Un fichier | `file` | — |
+| Un secret | `secret` | — |
+| Une valeur calculée par Facet | `data` | Booking `total` |
+| Des sous-valeurs nommées | `object` | — |
+| Une liste d’une seule forme | `array` | — |
+| Une table associative à clés texte, d’une seule forme | `dictionary` | — |
+| Un sous-document embarqué | `child` | — |
+
+Deux types sont spéciaux et ont leur propre page : les champs `data` sont
+calculés (voir [Champs calculés](/fr/build/model/data/computed-fields/)) et
+les champs `secret` stockent des secrets (voir
+[Champs secrets et en écriture seule](/fr/build/model/data/secret-fields/)).
+
+## Étapes
+
+<Tabs syncKey="build-mode">
+<TabItem label="Builder">
+
+1. Ouvrez le doctype dans le **Builder** et ajoutez une ligne de champ.
+2. Choisissez le **Type** dans la liste. L’éditeur affiche les contraintes
+   que le type prend en charge.
+3. Définissez **Requis**, un **Par défaut**, ou les bornes que le type
+   accepte.
+4. Cochez les **Filtres** que les pages de listes doivent proposer. Un champ
+   sans filtre reste visible dans les formulaires et les tables ; il
+   n’apparaît simplement pas dans la barre de filtres.
+5. Enregistrez, puis lancez **Vérification**.
+
+</TabItem>
+<TabItem label="Fichiers">
+
+Ajoutez le champ au fichier du doctype. Voici des champs réels des bundles
+Brightwater :
+
+```yaml
+# equipment/doctypes/equipment.Item.yml (extrait)
+fields:
+  status:
+    type: enum
+    title: Status
+    default: available
+    filters: [equality]
+    values:
+      - key: available
+        label: Available
+        color: "#15803d"
+      - key: out
+        label: Out
+        color: "#b45309"
+      - key: in_repair
+        label: In repair
+        color: "#b91c1c"
+  purchase_price:
+    type: money
+    title: Purchase price
+    currency: EUR
+    precision: 2
+    tags: [finance]
+    filters: [comparison, currency]
+
+# rentals/doctypes/rentals.BookingLine.yml (extrait)
+fields:
+  quantity:
+    type: integer
+    title: Quantity
+    min: 1
+    default: 1
+    filters: [comparison]
+  price:
+    type: money
+    title: Price
+    currency: EUR
+    precision: 2
+    required: true
+    filters: [comparison, currency]
+```
+
+</TabItem>
+</Tabs>
+
+### Ajouter des contraintes
+
+| Clé | Effet |
+| --- | --- |
+| `required: true` | L’écriture échoue quand le champ est absent. |
+| `unique: true` | Deux documents du doctype ne portent jamais la même valeur. Voir [Identifiants et contraintes d’unicité](/fr/build/model/data/identifiers-uniqueness/). |
+| `default` | Facet remplit la valeur quand l’émetteur omet le champ. |
+| `min`, `max` | Une borne : caractères pour le texte, valeur pour les nombres, longueur pour les secrets. |
+| `pattern` | La valeur doit correspondre à cette expression régulière. |
+| `title`, `description` | Le libellé et le texte d’aide que les formulaires affichent. |
+| `tags` | Des étiquettes de sensibilité ou de partage. Voir [Masquer un champ à certains rôles](/fr/admin/people/hidden-fields/). |
+| `write_only: true` | La valeur est acceptée, lue par les scripts, et jamais stockée. |
+| `read_only: true` | Seuls les scripts peuvent définir la valeur ; la saisie utilisateur est refusée. |
+
+### Déclarer les filtres
+
+Les capacités qu’un type prend en charge :
+
+| Capacité | Opérateurs débloqués | Types concernés |
+| --- | --- | --- |
+| `equality` | `eq` (plus `ne`, `in` quand le type s’y prête) | La plupart des scalaires, `reference`, les types d’intervalle |
+| `comparison` | `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `between` | Scalaires ordonnés : nombres, dates, montants, texte |
+| `text_search` | `match`, `starts_with` | Types proches du texte seulement |
+| `interval` | `eq`, `contains`, `overlaps`, `within` | `period`, `dateperiod` |
+| `membership` | `eq`, `contains`, `overlaps` | `array` |
+| `currency` | `currency` | `money` |
+
+La page [Opérateurs de filtre (référence)](/fr/reference/filter-operators/)
+donne à chaque opérateur son sens exact.
+
+## Exemple
+
+Le jeu de champs complet du doctype item de Brightwater, tel qu’il est
+livré :
+
+```json
+{
+  "fields": {
+    "name": { "type": "string", "required": true, "filters": ["equality", "text_search"] },
+    "category": { "type": "reference", "doctype": "equipment.Category", "required": true, "filters": ["equality"] },
+    "status": { "type": "enum", "default": "available", "filters": ["equality"],
+      "values": [
+        { "key": "available", "label": "Available", "color": "#15803d" },
+        { "key": "out", "label": "Out", "color": "#b45309" },
+        { "key": "in_repair", "label": "In repair", "color": "#b91c1c" }
+      ] },
+    "purchase_price": { "type": "money", "currency": "EUR", "precision": 2, "tags": ["finance"], "filters": ["comparison", "currency"] },
+    "serial_number": { "type": "string", "unique": true, "filters": ["equality"] },
+    "notes": { "type": "longtext" }
+  }
+}
+```
+
+## Comment Facet normalise les valeurs
+
+Facet réécrit certaines valeurs sous une forme canonique avant de les
+stocker, si bien qu’une même valeur se relit toujours identique :
+
+| Type | Vous envoyez | Facet stocke |
+| --- | --- | --- |
+| `money` (avec `currency: EUR` déclaré) | `{"value": "4800.00"}` | `{"value": "4800.00", "currency": "EUR"}` |
+| `money` (sans devise déclarée) | `{"value": "4800.00"}` | `422` — la devise est requise |
+| `datetime` | `2026-03-01T15:30:00+01:00` | `2026-03-01T14:30:00Z` |
+| `url` | `www.acme.tld` | `https://www.acme.tld` |
+| `color` | `#1565C0` | `#1565c0ff` |
+| `longtext` | `line one\r\nline two` | `line one\nline two` |
+| `reference` | un id nu, ou un jeton `urn:facet:` | la forme qualifiée `domain.Doctype.id` |
+
+## Dépannage
+
+### Une écriture répond `422` sur un champ money
+
+Le montant doit être une chaîne décimale, et la devise un ticker enregistré.
+Envoyez `{"value": "54000", "currency": "EUR"}`, pas un nombre nu. Si le
+doctype déclare `currency`, l’émetteur peut l’omettre.
+
+### Un datetime est stocké sous une autre forme que celle envoyée
+
+Facet normalise chaque datetime en UTC et le stocke avec un `Z` final. La
+valeur désigne le même instant. Les entrées sans décalage de fuseau sont
+refusées — envoyez un décalage ou la forme `Z`.
+
+### Une URL affiche un schéma que vous n’avez pas saisi
+
+Facet complète une adresse à points nue comme `www.acme.tld` en
+`https://www.acme.tld`. Une valeur sans hôte à points, comme
+`localhost:3000`, reste refusée — elle doit porter son schéma.
+
+### Une couleur change de forme
+
+Facet normalise les couleurs sous la forme `#RRGGBBAA` en minuscules.
+`#1565C0` est stocké `#1565c0ff`.
+
+## Voir aussi
+
+- [Types de champs (référence)](/fr/reference/field-types/) — la table complète de tous les types.
+- [Concevoir un doctype](/fr/build/model/data/design-doctypes/) — la déclaration complète.
+- [Identifiants et contraintes d’unicité](/fr/build/model/data/identifiers-uniqueness/) — identifiants lisibles et règles d’unicité.
+- [Documents, doctypes et projections](/fr/build/deeper/documents-and-projections/) — comment les valeurs de champs sont stockées et relues.

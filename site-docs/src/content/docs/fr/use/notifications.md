@@ -1,121 +1,118 @@
 ---
+type: how-to
 title: Notifications
-description: Lire les notifications depuis la cloche de la barre supérieure, agir, et régler votre préférence dans l’application.
+description: Lisez vos notifications depuis la cloche de la barre supérieure, agissez dessus, téléchargez les exports terminés, et coupez la cloche au besoin.
 audience: [user]
 features: [FE-09, AUT-06]
 sidebar:
-  order: 9
-verified_at: 49d7c7e5
+  order: 4
+verified_at: eee55a2
 ---
 
-Facet livre les notifications dans l’espace de travail. Une cloche dans la
-barre supérieure montre combien de notifications vous n’avez pas lues. Les
-notifications vous parlent des mentions dans les commentaires, des exports
-terminés, et des événements que les automatisations envoient.
+Une personne vous mentionne sur un ticket, un export se termine, une
+automatisation signale un enregistrement. Facet vous prévient dans
+l’application, sur la cloche de la barre supérieure. La cloche affiche le
+nombre de notifications que vous n’avez pas lues, et le panneau derrière
+elle contient la liste.
 
-## Étapes
+![The bell in the top bar — selecting it opens the notification panel.](/screens/use/notifications-1.png)
 
-### 1. Ouvrez le panneau de notifications
+## Lire vos notifications
 
-Sélectionnez la cloche dans la barre supérieure. Le panneau s’ouvre sous la
-cloche. Il liste vos notifications, du plus récent au plus ancien. Une ligne
-non lue montre un point et un titre en gras. La cloche affiche le nombre de
-non lues tant que vous avez des notifications non lues.
+Sélectionnez la cloche. Le panneau s’ouvre en dessous, du plus récent au
+plus ancien. Une notification non lue porte un point et un titre en gras ;
+la cloche conserve son compteur tant qu’une ligne non lue subsiste.
 
-### 2. Ouvrez une notification
+Sélectionnez une ligne. Le panneau se ferme, marque la notification comme
+lue, et ouvre l’enregistrement concerné.
 
-Sélectionnez la ligne. Le panneau se ferme, marque la notification comme lue,
-et ouvre l’enregistrement dont la notification parle.
+Le panneau affiche une page de notifications. Sélectionnez **Charger plus**
+en bas pour la page suivante, et **Tout marquer comme lu** en haut quand
+vous voulez repartir de zéro.
 
-### 3. Lancez une action
+## Lancer une action depuis une notification
 
-Une notification peut porter des boutons d’action, par exemple « Approuver »
-ou « Réouvrir ». Une action tourne sur l’enregistrement, sous votre propre
-rôle. Les mêmes vérifications s’appliquent que sur la page du document.
-Certaines actions vous demandent de confirmer d’abord.
+Une notification peut porter des boutons — par exemple **Approuver** ou
+**Réouvrir**. Le bouton exécute une action nommée sur l’enregistrement, sous
+votre propre rôle : les mêmes contrôles s’appliquent que sur la page de
+l’enregistrement elle-même. Certaines actions demandent d’abord une
+confirmation.
 
 :::caution
-La première action que vous lancez éteint tous les boutons d’action de la
-ligne. La ligne affiche alors « Action effectuée ».
+La première action que vous exécutez désactive tous les boutons d’action de
+cette ligne. La ligne affiche alors **Action effectuée**.
 :::
 
-### 4. Téléchargez un export
+Une notification d’export porte plutôt un bouton **Télécharger**.
+Sélectionnez-le pour enregistrer le fichier — sur ces lignes, sélectionner
+la ligne elle-même télécharge aussi, au lieu d’ouvrir un enregistrement.
 
-Une notification d’export porte un bouton « Télécharger ». Sélectionnez-le
-pour enregistrer le fichier. Sur ces lignes, la sélection de la ligne elle-
-même télécharge aussi le fichier, au lieu d’ouvrir un enregistrement.
+## Couper la cloche
 
-### 5. Marquez tout comme lu
+1. Ouvrez **Mes paramètres** depuis le menu du compte, en bas de la barre
+   latérale.
+2. Dans le chapitre **Notifications**, désactivez **Notifications dans
+   l’application**.
 
-Sélectionnez « Tout marquer comme lu » en haut du panneau. Le bouton apparaît
-quand vous avez des notifications non lues. Ouvrir une ligne marque cette
-seule ligne comme lue.
-
-### 6. Voyez les notifications plus anciennes
-
-Le panneau montre une page de notifications. Sélectionnez « Charger plus » en
-bas pour la page suivante.
-
-### 7. Allumez ou éteignez les notifications
-
-1. Ouvrez « Mes paramètres », et sélectionnez le chapitre « Notifications ».
-2. Allumez ou éteignez « Notifications dans l’application ».
-
-Quand il est éteint, la cloche se cache, et l’espace de travail cesse
-d’afficher les notifications. Quand vous le rallumez, les notifications
-envoyées entre-temps apparaissent.
-
-:::note
-Les notifications ne vivent que dans l’application. Facet n’envoie pas
-d’e-mails de notification.
-:::
+La cloche disparaît et le badge cesse de compter. Rien ne se perd : les
+notifications envoyées pendant que la cloche est coupée apparaissent quand
+vous la rallumez. Facet livre les notifications dans l’application seulement
+— il n’y a pas d’e-mails de notification.
 
 ## Ce qui envoie une notification
 
-| Source | Ce que vous recevez |
-| --- | --- |
-| Une mention dans un commentaire | Une notification qui ouvre l’enregistrement portant le commentaire |
-| Un export terminé | Une notification avec le fichier, prêt à télécharger |
-| Une automatisation sur un doctype | Ce que l’automatisation envoie, à propos de l’enregistrement changé |
+| Ce qui arrive | Ce que vous recevez |
+|---|---|
+| Une personne vous mentionne dans un commentaire | Une notification qui ouvre l’enregistrement portant le commentaire. Une modification qui vous ajoute vous notifie aussi ; conserver une mention au fil d’une modification reste silencieux |
+| Un export ou un import se termine | Une notification avec le fichier, prêt au téléchargement |
+| Une automatisation en envoie une | Ce que l’automatisation envoie, au sujet de l’enregistrement qui a changé |
 
-Les automatisations sont des scripts qui tournent quand un enregistrement
-change. L’auteur du doctype décide du moment où une automatisation envoie une
-notification.
+Les automatisations sont de petits scripts que l’auteur du domaine attache à
+un type d’enregistrement. Elles s’exécutent quand des enregistrements
+changent ou selon un calendrier, et l’une des choses qu’elles peuvent faire
+est d’envoyer une notification. Ce qui arrive, et quand, relève de la
+décision de l’auteur — adressez-vous à lui, ou à votre administrateur, quand
+une automatisation fait trop de bruit.
 
 ## Dépannage
 
 ### Aucune notification n’arrive
 
-1. Vérifiez d’abord la préférence : « Mes paramètres » →
-   « Notifications » → « Notifications dans l’application ». Quand elle est
-   éteinte, la cloche est cachée.
-2. Vérifiez la source. Vous recevez une mention seulement quand quelqu’un vous
-   mentionne dans un commentaire.
+Vérifiez d’abord votre propre interrupteur : **Mes paramètres** →
+**Notifications** → **Notifications dans l’application**. Quand il est
+coupé, la cloche est cachée. Vérifiez ensuite la source. Vous recevez une
+mention seulement quand une personne vous mentionne dans un commentaire, et
+une notification d’export seulement quand vous avez lancé cet export. Si un
+collègue dit vous avoir mentionné et que rien n’est arrivé, demandez à votre
+administrateur de vérifier l’automatisation.
 
-### Le nombre de non lues semble périmé
+### Le compteur de non-lues semble faux
 
-L’espace de travail rafraîchit le nombre tout seul. S’il semble faux, attendez
-jusqu’à une minute, ou rechargez la page.
+L’espace de travail rafraîchit le compteur environ une fois par minute, et
+les mises à jour en direct vous parviennent pendant que la page est ouverte.
+Si le compteur paraît faux, attendez une minute ou rechargez la page.
 
-### Tous les boutons d’action sont éteints
+### Tous les boutons d’action sont désactivés
 
-Une action a déjà tourné sur cette notification. La ligne affiche
-« Action effectuée ».
+Une action a déjà été exécutée sur cette notification — la ligne affiche
+**Action effectuée**. Une notification exécute une seule action. Si vous
+avez besoin de l’action à nouveau, ouvrez l’enregistrement et exécutez-la
+là.
 
 ### Une action échoue
 
-Votre rôle ne permet peut-être pas l’action sur cet enregistrement. Les
-notifications ne sont pas un moyen de contourner les droits.
+Votre rôle ne permet pas cette action sur cet enregistrement. Les
+notifications ne sont pas un moyen de contourner vos droits — demandez le
+droit à votre administrateur, ou demandez à un collègue qui le détient
+d’exécuter l’action.
 
 ## Voir aussi
 
 - [Commentaires et pièces jointes](/fr/use/documents/comments-attachments/) —
-  d’où viennent les mentions des commentaires.
+  d’où viennent les mentions dans les commentaires.
 - [Importer et exporter des données](/fr/use/documents/import-export/) — les
-  exports qui arrivent comme notifications de téléchargement.
-- [Paramètres, sessions et clés API](/fr/use/account/) —
-  l’interrupteur des notifications dans l’application.
-- [Hooks d’événements et hooks planifiés](/fr/build/model/automation/event-hooks/) — où vivent
-  les automatisations qui envoient des notifications.
-- [Événements et livraison](/fr/admin/under-the-hood/events-and-delivery/) — comment l’espace
-  de travail reçoit les mises à jour en direct.
+  exports qui arrivent en notifications de téléchargement.
+- [Vos réglages et clés API](/fr/use/account/) — l’interrupteur des
+  notifications dans l’application.
+- [Notifications et mentions (pour les auteurs)](/fr/build/model/automation/notifications/) —
+  comment l’auteur du domaine envoie des notifications.

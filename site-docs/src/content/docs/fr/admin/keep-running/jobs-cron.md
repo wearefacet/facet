@@ -1,48 +1,47 @@
 ---
-title: Jobs en arrière-plan et cron
-description: Faites tourner la file de jobs et les tâches cron, et réglez les relances, les baux et les planifications.
+title: "Tâches de fond et cron"
+description: "Exécutez la file de tâches de fond et les neuf tâches cron, et réglez les relances, les baux et les horaires."
+type: how-to
 audience: [operator]
-features: [AUT-04, AUT-05]
+features: [AUT-04, AUT-05, AUT-10]
+verified_at: eee55a2
 sidebar:
-  order: 12
-verified_at: 008dd880
+  order: 2
 ---
 
-Facet exécute le travail en arrière-plan avec deux moteurs, à l’intérieur
-du processus backend. La file de jobs est une seule table PostgreSQL. Une
-boucle worker réclame les lignes arrivées à échéance et exécute un handler
-pour chacune. Le planificateur cron déclenche des tâches de maintenance
-selon un calendrier défini. Les deux démarrent avec le serveur, sans
-logiciel supplémentaire.
+Les webhooks doivent atteindre leurs destinataires, les exports doivent
+finir, et les vieilles données doivent être purgées — pendant que
+personne ne regarde. Facet exécute ce travail lui-même, dans deux
+moteurs à l’intérieur du processus backend. La file de tâches est une
+table PostgreSQL ; une boucle worker réclame les lignes dues et exécute
+un handler pour chacune. L’ordonnanceur cron déclenche les tâches de
+maintenance sur un horaire. Tous deux démarrent avec le serveur, et
+aucun ne demande de logiciel supplémentaire.
 
 ## Quand l’utiliser
 
-Lisez cette page quand :
-
-- vous voulez savoir quelles tâches tournent en arrière-plan, et quand,
-- un job échoue ou reste `running`, et vous devez le récupérer,
-- vous réglez les relances, les baux, la taille des lots ou une
-  planification cron.
+- Vous voulez savoir quelles tâches de fond tournent et quand.
+- Une tâche échoue ou reste `running`, et vous devez la récupérer.
+- Vous réglez les relances, les baux, la taille de lot, ou un horaire cron.
 
 ## Avant de commencer
 
-- Chaque clé `jobs:` et chaque planification cron se lient au démarrage.
-  Toute modification exige un redémarrage.
-- Le worker tourne dans chaque instance du backend. Deux workers ne
-  prennent jamais la même ligne : la réclamation verrouille les
-  lignes avec `FOR UPDATE SKIP LOCKED`.
-- Le worker maintient une clé de vivacité Redis par instance. Le balayage
-  des baux la lit pour détecter un worker mort.
+- Chaque clé `jobs:` et chaque horaire cron se lie au démarrage. Un changement demande un redémarrage.
+- Le worker tourne dans chaque instance backend. Deux workers ne prennent jamais la même ligne : la réclamation verrouille les lignes avec `FOR UPDATE SKIP LOCKED`.
+- Le worker garde une clé de vivacité dans Redis par instance. La passe de baux la lit pour détecter un worker mort.
 
 ## Étapes
 
-### 1. Suivre une ligne de job
+### 1. Suivre une ligne de tâche
 
-Une ligne de `background_jobs` est une unité de travail. La ligne n’est pas
-un document et n’a pas de journal d’événements. Elle traverse quatre
-états :
+Une ligne dans `background_jobs` est une unité de travail. La ligne
+n’est pas un document et n’a pas de journal d’événements. Elle traverse
+quatre états :
+
+*Une ligne de tâche, de la mise en file à l’état terminal.*
 
 <!-- d2
+direction: down
 pending: pending
 running: running
 succeeded: succeeded {class: ok}
@@ -54,112 +53,129 @@ running -> failed
 running -> pending: retry
 -->
 <div class="d2-diagram">
-<img class="d2-diagram__img d2-diagram__light" src="/diagrams/6f049f94-light.svg" alt="Diagram" loading="lazy" />
-<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/6f049f94-dark.svg" alt="Diagram" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__light" src="/diagrams/c8f16496-light.svg" alt="Diagram" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/c8f16496-dark.svg" alt="Diagram" loading="lazy" />
 </div>
 
-- Une réclamation par un worker fait passer la ligne de `pending` à
-
+- La réclamation d’un worker fait passer la ligne de `pending` à
   `running` et démarre un bail.
-- Une tentative échouée avec des tentatives restantes la renvoie en
-  `pending`, avec un délai avant sa prochaine échéance.
-- Une tentative échouée au plafond de relances la marque `failed`
+- Une tentative en échec avec des tentatives restantes la ramène à
+  `pending`, avec un délai avant qu’elle soit de nouveau due.
+- Une tentative en échec au plafond de relances la marque `failed`
   définitivement.
-- Le balayage des baux renvoie aussi les lignes `running` bloquées en
-  `pending`, ou en `failed` quand elles dépassent le plafond.
+- La passe de baux ramène aussi les lignes `running` abandonnées à
+  `pending`, ou à `failed` quand elles dépassent le plafond.
 
-### 2. Connaître les types de jobs
+### 2. Connaître les types de tâches
 
 Le serveur enregistre un handler par type :
 
 | Type | Ce qu’il fait |
 | --- | --- |
 | `webhook_delivery` | Envoie un POST de webhook signé. Les relances suivent la configuration du webhook. |
-| `document_export` | Exporte les documents d’un doctype. Tourne une fois, long bail. |
-| `document_import` | Importe des documents. Tourne une fois, long bail. |
-| `domain_export` | Exporte un bundle de domaine portable. Tourne une fois, long bail. |
-| `domain_import` | Importe un bundle de domaine portable. Tourne une fois, long bail. |
-| `doctype_reproject` | Reprojette chaque document vivant d’un doctype. Tourne une fois, long bail. |
-| `doctype_migrate_ahead` | Exécute la migration d’un doctype en avance sur le chemin paresseux. Tourne une fois, long bail. |
+| `document_export` | Exporte les documents d’un doctype. Tourne une fois, bail long. |
+| `document_import` | Importe des documents. Tourne une fois, bail long. |
+| `domain_export` | Exporte un bundle de domaine portable. Tourne une fois, bail long. |
+| `domain_import` | Importe un bundle de domaine portable. Tourne une fois, bail long. |
+| `doctype_reproject` | Reprojette chaque document en direct d’un doctype. Tourne une fois, bail long. |
+| `doctype_migrate_ahead` | Exécute une migration de doctype en avance sur le chemin de migration paresseux. Tourne une fois, bail long. |
 
-Par défaut, un job se relance jusqu’à 5 fois, avec un délai de 10, 60, 300,
-1800 puis 7200 secondes entre les tentatives. Une ligne de job peut porter
-ses propres limites dès l’ajout en file.
+La politique par défaut autorise 5 tentatives par tâche. Une tentative
+en échec avec des tentatives restantes retourne à `pending` après un
+délai : 10, 60, 300, puis 1800 secondes entre les quatre relances. Les
+types de tâches longs posent `max_attempts: 1` sur leurs propres
+lignes : l’appelant corrige l’entrée et soumet de nouveau. Une ligne de
+tâche peut porter ses propres limites à la mise en file.
 
 ### 3. Régler la file
 
-La section `jobs:` facultative porte les réglages de la file :
+La section `jobs:` optionnelle porte les réglages de la file :
 
-| Clé | Valeur par défaut | Signification |
+| Clé | Défaut | Signification |
 | --- | --- | --- |
 | `poll_interval_s` | `5.0` | Attente au repos entre deux passes de réclamation. |
-| `lease_ttl_s` | `60` | Durée pendant laquelle une ligne réclamée reste `running` avant que le balayage la remette en file. |
-| `long_lease_ttl_s` | `3600` | L’horizon de bail que les types de jobs longs posent sur leurs propres lignes. |
+| `lease_ttl_s` | `60` | Durée pendant laquelle une ligne réclamée reste `running` avant que la passe la remette en file. |
+| `long_lease_ttl_s` | `3600` | L’horizon de bail que les types de tâches longs posent sur leurs propres lignes. |
 | `batch` | `32` | Maximum de lignes réclamées par passe. |
-| `sweep_interval_s` | `30.0` | Cadence du balayage des baux et du rafraîchissement de vivacité. |
-| `retention_days` | `30` | Les lignes terminées plus vieilles que cette valeur sont élaguées. |
-| `enabled` | `true` | À `false`, aucun worker ne démarre@NBSP;; les ajouts en file insèrent toujours des lignes. |
+| `sweep_interval_s` | `30.0` | Cadence de la passe de baux et de l’actualisation de vivacité. |
+| `retention_days` | `30` | Les lignes terminées plus vieilles que ce nombre sont purgées. |
+| `enabled` | `true` | `false` ne démarre aucun worker ; les mises en file insèrent toujours des lignes. |
 
-### 4. Connaître la reprise après crash
+### 4. Connaître la récupération après crash
 
 Deux détecteurs transforment un crash en reprise propre :
 
-- Le balayage des baux tourne à chaque `sweep_interval_s`. Il remet en file
-  les lignes `running` dont le bail a expiré ou dont l’instance
+- La passe de baux tourne à chaque `sweep_interval_s`. Elle remet en
+  file les lignes `running` dont le bail a expiré ou dont l’instance
   propriétaire est morte.
 - Le contrôle de vivacité marque l’instance vivante dans Redis à chaque
-  tick de balayage. La clé tient 120 secondes, si bien que trois ticks
+  tick de passe. La clé tient 120 secondes, si bien que trois ticks
   manqués ne déclarent jamais morte une instance vivante.
 
-  Une ligne bloquée au-del à de son plafond de relances passe en `failed`
-  terminal avec l’erreur `job abandoned — worker lost`. Un job en boucle
-  de crash ne peut pas se remettre en file indéfiniment.
+Une ligne abandonnée au-delà de son plafond de relances passe à l’état
+terminal `failed` avec l’erreur `job abandoned — worker lost`. Une
+tâche en boucle de crash ne peut pas se remettre en file indéfiniment.
 
-### 5. Séparer l’ajout en file du travail, au besoin
+### 5. Séparer la mise en file du travail, au besoin
 
-Avec `jobs.enabled: false`, le worker ne démarre jamais, mais les ajouts en
-file insèrent quand même des lignes. Un autre processus, avec son worker
-actif, les réclame. Utilisez ce réglage pour décharger une instance du
-travail des jobs.
+Avec `jobs.enabled: false`, le worker ne démarre jamais, mais les mises
+en file insèrent toujours des lignes. Un autre processus avec le worker
+activé les réclame. Utilisez cela pour garder le travail de tâches hors
+d’une instance.
 
 ### 6. Connaître les tâches cron
 
-Une fibre de planification par processus déclenche les huit tâches
-enregistrées. Chaque déclenchement pose d’abord un bail sur le tick
-programmé dans Redis, si bien que le tick s’exécute exactement une fois
-dans le cluster. Une erreur Redis saute le déclenchement, et le tick
+Une fibre d’ordonnanceur par processus déclenche neuf tâches
+enregistrées. Chaque déclenchement prend d’abord un bail sur le tick
+planifié dans Redis, si bien que le tick s’exécute exactement une fois
+sur le cluster. Une erreur Redis saute le déclenchement, et le tick
 suivant réarme.
 
-| Tâche | Clé de planification | Planification par défaut | Passe |
-| --- | --- | --- | --- |
-| `sidecar.reconcile` | `sidecar.reconcile_cron` | `"0 */1 * * *"` | Remet en file les balayages de sidecars orphelins. |
-| `tombstone.content_prune` | `tombstone.prune_cron` | `"15 4 * * *"` | Efface les payloads des tombstones après la rétention. |
-| `secrets.prune` | `secrets.prune_cron` | `"45 4 * * *"` | Supprime les emplacements de secrets expirés et les lignes de staging. |
-| `assistant.turn_sweep` | `assistant.turn_sweep_cron` | `"*/5 * * * *"` | Marque `interrupted` les tours d’agent `running` obsolètes. |
-| `assistant.usage_prune` | `assistant.usage_prune_cron` | `"30 4 * * *"` | Supprime les lignes d’usage de l’assistant au-del à de la fenêtre. |
-| `mutations.compaction` | `mutations.compaction_cron` | `"45 3 * * *"` | Compacte les vieilles mutations en un instantané par document. |
-| `webhook.reconcile` | `webhook.reconcile_cron` | `"7 */1 * * *"` | Répare le maillon d’ajout en file des webhooks. |
-| `event.lag_check` | `event.lag_check_cron` | `"*/10 * * * *"` | Avertit avant qu’un consommateur lent ne perde des entrées emportées par le trim. |
+`facet cron:list` imprime cette table depuis votre propre
+configuration — id de tâche, clé d’horaire, expression, et prochain
+déclenchement (UTC) :
 
-`facet cron:list` affiche la même table d’après votre configuration :
-l’identifiant de la tâche, la clé de planification, l’expression et la
-prochaine exécution (UTC). La commande lit la configuration seule — ni
-base de données, ni Redis. Une expression que l’analyseur refuse marque
-sa ligne et la commande sort en code 1 : le serveur refuse aussi de
-démarrer sur la même erreur.
+```text
+task id                   schedule key                 expression     next run (UTC)
+sidecar.reconcile         sidecar.reconcile_cron       0 */1 * * *    2026-11-26 15:00:00 UTC
+artifact.grant_prune      artifact.grant_prune_cron    0 5 * * *      2026-11-27 05:00:00 UTC
+tombstone.content_prune   tombstone.prune_cron         15 4 * * *     2026-11-27 04:15:00 UTC
+secrets.prune             secrets.prune_cron           45 4 * * *     2026-11-27 04:45:00 UTC
+assistant.turn_sweep      assistant.turn_sweep_cron    */5 * * * *    2026-11-26 14:55:00 UTC
+assistant.usage_prune     assistant.usage_prune_cron   30 4 * * *     2026-11-27 04:30:00 UTC
+mutations.compaction      mutations.compaction_cron    45 3 * * *     2026-11-27 03:45:00 UTC
+webhook.reconcile         webhook.reconcile_cron       7 */1 * * *    2026-11-26 15:07:00 UTC
+event.lag_check           event.lag_check_cron         */10 * * * *   2026-11-26 15:00:00 UTC
+```
+
+La commande ne lit que la configuration — pas de base, pas de Redis.
+Une expression que l’analyseur refuse marque sa ligne, et la commande
+sort avec `1` : le serveur refuse de démarrer sur la même erreur.
+
+Ce que fait chaque tâche :
+
+| Id de tâche | Passe |
+| --- | --- |
+| `sidecar.reconcile` | Remet en file les passes sidecar orphelines. |
+| `artifact.grant_prune` | Détruit les lignes de liens de téléchargement éphémères expirées après `artifact.grant_prune_days`. |
+| `tombstone.content_prune` | Efface les charges des documents supprimés après `tombstone.content_retention_days`. Nettoyage de stockage seulement — l’historique d’audit reste. |
+| `secrets.prune` | Détruit les emplacements de secrets expirés et les lignes de staging. |
+| `assistant.turn_sweep` | Marque `interrupted` les tours d’assistant `running` périmés. |
+| `assistant.usage_prune` | Détruit les lignes d’usage de l’assistant au-delà de la fenêtre. |
+| `mutations.compaction` | Fusionne les mutations plus vieilles que `mutations.retention_days` en un instantané par document. La profondeur du retour arrière égale cette fenêtre. |
+| `webhook.reconcile` | Répare le saut de mise en file des webhooks depuis le journal `mutations`, dans la fenêtre `webhook.reconcile_window_hours`. |
+| `event.lag_check` | Avertit avant qu’un groupe de consommateurs lent ne perde des entrées au rognage du stream. |
 
 :::tip
-Les planifications se répartissent volontairement sur la nuit :
-compactage à 03:45, élagage des tombstones à 04:15, élagage de l’usage à
-
-04:30, élagage des secrets à 04:45. Gardez cet espacement quand vous en
-déplacez un.
+Les horaires nocturnes s’étagent à dessein : compactage à 03:45, puis
+les purges à 04:15, 04:30, 04:45 et 05:00. Gardez cet espacement quand
+vous en déplacez une.
 :::
 
 ## Exemple
 
-Un fragment de configuration complet. Il montre les valeurs par défaut de
-la file et chaque planification cron avec sa valeur par défaut :
+Un fragment de configuration complet. Il montre les défauts de la file
+et chaque horaire cron avec sa valeur par défaut :
 
 ```yaml
 jobs:
@@ -173,6 +189,9 @@ jobs:
 
 sidecar:
   reconcile_cron: "0 */1 * * *"
+
+artifact:
+  grant_prune_cron: "0 5 * * *"
 
 tombstone:
   prune_cron: "15 4 * * *"
@@ -197,47 +216,40 @@ event:
 
 ## Dépannage
 
-**Un job reste `running` plus longtemps que prévu.**
+**Une tâche reste `running` plus longtemps que prévu.**
 
-Le handler tourne peut-être encore : les types de jobs longs portent
-un bail de 3600 secondes. Sinon, le worker est mort. Le balayage remet la
-ligne en file au premier tick qui suit l’expiration du bail. Attendez un
-`sweep_interval_s` après `lease_ttl_s`.
+Le handler tourne peut-être encore : les types de tâches longs portent
+un bail de 3600 secondes. Sinon, le worker est mort. La passe remet la
+ligne en file au premier tick de passe après l’expiration du bail.
+Attendez un `sweep_interval_s` après `lease_ttl_s`.
 
-**Un job a échoué avec `job abandoned — worker lost`.**
+**Une tâche a échoué avec `job abandoned — worker lost`.**
 
-La ligne a dépassé son plafond de relances pendant qu’elle était bloquée.
-Relancez le travail@NBSP;; la file ne réessaiera plus cette ligne.
+La ligne a dépassé son plafond de relances pendant qu’elle était
+abandonnée. Relancez le travail ; la file ne relancera plus la ligne.
 
 **Une livraison de webhook échoue.**
 
 Lisez le journal d’appels du webhook — voir
-[Webhooks sortants](/fr/build/model/automation/webhooks/). Les relances de transport suivent
-les valeurs `max_attempts` et `backoff_seconds` du webhook, pas les
-réglages par défaut de la file.
+[Webhooks](/fr/build/model/automation/webhooks/). Les relances de
+transport suivent les valeurs `max_attempts` et `backoff_seconds` du
+webhook, pas les défauts de la file.
 
 **Deux instances ont exécuté la même passe cron.**
 
-Le bail du tick vit dans Redis. Faites pointer chaque instance sur la même
-base Redis, pour que le bail soit une seule clé par tick.
+Le bail de tick vit dans Redis. Pointez chaque instance vers la même
+base Redis, si bien que le bail est une clé par tick.
 
-**Un changement de planification ne fait rien.**
+**Un changement d’horaire ne fait rien.**
 
-Les planifications se lient au démarrage. Redémarrez le backend après
-avoir modifié le fichier.
+Les horaires se lient au démarrage. Redémarrez le backend après avoir
+édité le fichier.
 
 ## Voir aussi
 
-- [Paramètres système](/fr/admin/configure/system-settings/) — quels réglages
-  s’appliquent à chaud et lesquels se lient au démarrage.
-- [Health checks, métriques, tracing, logs](/fr/admin/keep-running/monitoring/) —
-  les métriques de jobs et de cron à surveiller.
-- [La rétention : quoi et combien de temps](/fr/admin/history/retention/) — la
-  fenêtre qui élague les lignes de jobs terminées.
-- [Webhooks sortants](/fr/build/model/automation/webhooks/) — le job de livraison que la
-  file porte.
-- [Événements et garanties de livraison](/fr/admin/under-the-hood/events-and-delivery/) —
-  le bus que le contrôle de retard cron surveille.
-- Internes sur GitHub :
-  [jobs.md](https://github.com/wearefacet/facet/blob/main/doc/backend/jobs.md),
-  [cron.md](https://github.com/wearefacet/facet/blob/main/doc/backend/cron.md).
+- [Réglages système](/fr/admin/configure/system-settings/) — quels réglages s’appliquent à chaud et lesquels se lient au démarrage.
+- [Santé, métriques et journaux](/fr/admin/keep-running/monitoring/) — les métriques de tâches et de cron à surveiller.
+- [Rétention : ce qui est conservé](/fr/admin/history/retention/) — les fenêtres que le compactage et les purges appliquent.
+- [Webhooks](/fr/build/model/automation/webhooks/) — la tâche de livraison que la file porte.
+- [Événements et garanties de livraison](/fr/admin/under-the-hood/events-and-delivery/) — le bus que le contrôle de retard protège.
+- Documentation interne sur GitHub : [jobs.md](https://github.com/wearefacet/facet/blob/main/doc/backend/jobs.md), [cron.md](https://github.com/wearefacet/facet/blob/main/doc/backend/cron.md).

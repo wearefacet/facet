@@ -1,44 +1,43 @@
 ---
-title: Modèles de vue
-description: Composez la page document, le formulaire et le tiroir d’aperçu avec des modèles de vue.
+type: how-to
+title: Concevoir les pages document
+description: Agencez la page détail, le formulaire et le tiroir d’aperçu avec des modèles de vue.
 audience: [author]
 features: [DOM-22, FE-04]
 sidebar:
-  order: 14
-verified_at: fd345fe3
+  order: 1
+verified_at: eee55a2
 ---
 
-Un doctype décide de l’allure de ses pages document. Un modèle de vue est un petit arbre de mise en page stocké sur le doctype. Facet le rend sur la page détail, le formulaire et le tiroir d’aperçu. Sans modèle, chaque surface retombe sur une mise en page générique : une ligne par champ.
+Vos utilisateurs ouvrent un document cent fois par jour, et la mise en page par défaut empile tous les champs dans une longue colonne. Un modèle de vue est un petit arbre de mise en page stocké sur le doctype. Facet le rend sur la page détail, le formulaire et le tiroir d’aperçu : une équipe d’entrepôt voit alors une pastille de statut et des sections groupées à la place d’une liste de champs. Aucun code n’est nécessaire — le modèle est un arbre JSON que vous modifiez dans le Builder ou dans un fichier YAML.
 
 ## Quand l’utiliser
 
-- La liste de champs par défaut cache la structure de vos documents.
-- Vous voulez un en-tête avec une pastille de statut, des sections groupées, ou une table de lignes enfants.
+- La liste de champs par défaut masque la structure de vos documents.
+- Vous voulez un en-tête avec une pastille de statut, des sections groupées ou une table de lignes enfants.
 - Le formulaire doit placer les champs côte à côte au lieu d’une longue colonne.
 
 ## Avant de commencer
 
-- **Droits d’écriture** (`update`) sur la définition du doctype.
+- **Droits de mise à jour** sur la définition du doctype.
 - **Les champs.** Connaissez les noms et les types des champs à afficher.
-- **L’onglet Vues.** Ouvrez le doctype dans **Configurer**, puis l’onglet **Vues**. L’onglet liste les modèles du doctype et en montre un aperçu.
+- **L’onglet Vues.** Ouvrez le doctype dans **Configurer** (ou le brouillon dans le **Builder**), puis l’onglet **Vues**. Il liste les cinq types avec un aperçu, et un mode **Modifier** avec un éditeur JSON.
 
-## Étapes
+## Les cinq types
 
-### 1. Choisissez le `kind`
+Chaque modèle porte un type (kind). Un modèle par type :
 
-Chaque modèle porte un `kind`. Un modèle par `kind` :
-
-| Kind | Surface |
+| Type | Surface |
 | --- | --- |
 | `view` | La page détail du document. |
 | `form` | Les formulaires de création et de modification. |
 | `quickView` | Le tiroir d’aperçu à côté d’une liste. |
 | `card` | La carte sur un tableau kanban. |
-| `inline` | Une ligne dans une table de relations éditable. |
+| `inline` | Une ligne dans une table de relations modifiable. |
 
-Un nouveau doctype démarre sans modèle. Chaque surface utilise alors la mise en page générique ; un modèle reste facultatif pour chaque `kind`.
+Un nouveau doctype démarre sans modèle. Chaque surface utilise alors une mise en page générique que Facet construit à partir de la liste des champs, donc un modèle reste facultatif pour chaque type. Les types absents apparaissent comme des remarques d’information dans le rapport de vérification, pas comme des erreurs — la mise en page générique les couvre.
 
-### 2. Construisez la mise en page avec des nœuds
+## Construire la mise en page à partir des nœuds
 
 Un modèle est un arbre de nœuds. Chaque nœud porte un `type` et quelques propriétés. Les nœuds les plus utilisés :
 
@@ -54,68 +53,63 @@ Un modèle est un arbre de nœuds. Chaque nœud porte un `type` et quelques prop
 | `relation` | Une table de documents enfants ou liés, avec des `columns`. |
 | `input` | Un contrôle de formulaire ; il choisit le contrôle d’après le type déclaré du champ. |
 
-D’autres nœuds existent pour les conditions (`if`), les données imbriquées (`object`, `array`, `dict`), les liens (`link`, `email`), les images (`image-artifact`) et les contrôles forcés (`input-text`, `input-money`).
+D’autres nœuds existent pour les conditions (`if`), les données imbriquées (`object`, `array`, `dict`), les liens (`link`, `email`), les images (`image-artifact`) et les contrôles forcés (`input-text`, `input-money`). La grammaire complète des nœuds, avec chaque propriété requise, se trouve dans le [Schéma du modèle DVT](/fr/reference/dvt-schema/).
 
-### 3. Enregistrez et vérifiez
+## Enregistrer et vérifier
 
-Enregistrez le modèle. Facet le valide contre le doctype : un `input` lié à un champ inconnu ou à un champ en lecture seule est une erreur ; un `kind` `view`, `form` ou `quickView` manquant ne donne qu’une remarque, car la mise en page générique le couvre. Lancez la vérification pour voir le rapport. Voir [Vérifier un domaine avant publication](/fr/build/model/in-app/check-before-publish/).
+Enregistrez le modèle. Facet le valide contre le doctype et refuse toute écriture qui porte une erreur bloquante :
+
+- un `input` lié à un champ inconnu, à un chemin pointé ou à un champ conteneur ou calculé est une erreur — le formulaire ne pourrait jamais enregistrer une telle valeur ,
+- un `input` lié à un champ `read_only` est un avertissement — le nœud se rend, mais la valeur ne peut jamais être enregistrée ,
+- un type de nœud inconnu, une liste d’options vide ou une colonne de relation dupliquée est un avertissement — le nœud se rend mais se dégrade.
+
+Chaque problème nomme sa place dans l’arbre, par exemple `template.children.2.field`. Ouvrez l’onglet Vues, naviguez jusqu’à ce nœud et corrigez la liaison. Lancez **Vérification** pour voir le rapport complet — voir [Vérifier un domaine avant publication](/fr/build/model/in-app/check-before-publish/).
 
 ## Exemple
 
-Un doctype `helpdesk.Ticket` porte les champs `title` (string), `status` (enum : open, closed), `priority` (enum), `due_date` (date), `description` (longtext) et `owner_id` (reference). Ce modèle complet est celui du `kind` `view` du doctype :
-
-```yaml
-content:
-  kind: view
-  parent_doctype: helpdesk.Ticket
-  template:
-    type: col
-    children:
-      - type: header
-        statusField: status
-        chips:
-          - priority
-        subtitle: "Owned by $owner_id"
-      - type: grid
-        layout: 3 1
-        children:
-          - type: col
-            children:
-              - type: section
-                label: Details
-                children:
-                  - type: markdown
-                    field: description
-                  - type: field
-                    label: Due date
-                    value: $due_date
-          - type: sidebar
-            children:
-              - type: section
-                label: Owner
-                children:
-                  - type: field
-                    value: $owner_id
-              - type: record-meta
-                history: true
-meta:
-  parent_id: helpdesk.Ticket
-```
-
-Un document stocke :
+Le doctype `equipment.Item` de Brightwater porte un modèle `form`. Voici sa valeur `template` complète :
 
 ```json
 {
-  "title": "Printer stops mid job",
-  "status": "open",
-  "priority": "high",
-  "due_date": "2026-12-01",
-  "description": "The queue stops after page two.",
-  "owner_id": "iam.Account.01JCATPMKP4N82GVG2J7K4MHZZ"
+  "type": "col",
+  "children": [
+    { "type": "section", "label": "Item", "children": [
+      { "type": "row", "layout": "2fr 1fr", "children": [
+        { "type": "input", "field": "name" },
+        { "type": "input", "field": "category" }
+      ]}
+    ]},
+    { "type": "section", "label": "Stock", "children": [
+      { "type": "row", "layout": "repeat(3, minmax(140px, 1fr))", "children": [
+        { "type": "input", "field": "status" },
+        { "type": "input", "field": "serial_number" },
+        { "type": "input", "field": "purchase_price" }
+      ]}
+    ]},
+    { "type": "section", "label": "Notes", "children": [
+      { "type": "input", "field": "notes" }
+    ]}
+  ]
 }
 ```
 
-La page détail rend alors : un en-tête avec la pastille de statut dans la couleur de l’enum, la priorité à côté, et le sous-titre **Owned by** avec le libellé du compte référencé ; la description en markdown rendu sous **Details**, avec **Due date** à côté ; et une colonne **Owner** avec le libellé du compte et un lien vers l’historique. Les valeurs de référence ne s’affichent jamais comme des ids bruts.
+Le formulaire de création rend trois groupes avec libellés. `name` et sa catégorie sont côte à côte, les trois champs de stock partagent une ligne, et les notes occupent toute la largeur. Chaque `input` choisit son contrôle d’après le type déclaré du champ : un sélecteur de référence pour `category`, une liste de statuts pour `status`, un champ monétaire pour `purchase_price`.
+
+Le même doctype porte un modèle `card` pour le tableau kanban :
+
+```json
+{
+  "type": "col",
+  "children": [
+    { "type": "field", "label": "Status", "value": "$status" },
+    { "type": "field", "label": "Serial number", "value": "$serial_number" }
+  ]
+}
+```
+
+Chaque carte des listes d’objets liées du tableau de maintenance montre le statut et le numéro de série. Les valeurs de référence ne s’affichent jamais comme des ids bruts : un `$field` qui pointe vers un autre document rend le libellé du document référencé.
+
+En mode fichiers, les deux modèles se trouvent dans `views/equipment.Item/document_views/form.yml` et `.../card.yml` dans le dossier du domaine — voir [La structure des fichiers de domaine](/fr/build/model/in-files/domain-files/).
 
 ## Dépannage
 
@@ -125,14 +119,14 @@ Le `$field_name` du modèle ne correspond pas à un champ stocké. Vérifiez l�
 
 **Un contrôle de formulaire manque pour un champ.**
 
-Le type du champ n’a pas de contrôle éditable dans ce nœud, ou le champ est en lecture seule. Utilisez le nœud `input` simple, qui choisit le contrôle d’après le type déclaré.
+Le champ est en lecture seule, ou son type n’a pas de contrôle dans ce nœud. Utilisez le nœud `input` simple, qui choisit le contrôle d’après le type déclaré.
 
 **La vérification liste des problèmes de modèle avec des chemins comme `template.children.2`.**
 
-Chaque problème nomme sa place dans l’arbre. Ouvrez l’onglet Vues, allez jusqu’à ce nœud, et corrigez la liaison ou la propriété.
+Chaque problème nomme sa place dans l’arbre. Ouvrez l’onglet Vues, naviguez jusqu’à ce nœud et corrigez la liaison ou la propriété.
 
 ## Voir aussi
 
-- [Référence du schéma de doctype](/fr/reference/doctype-schema/) — les champs qu’un modèle lie.
-- [Documents, doctypes et projections](/fr/build/deeper/documents-and-projections/) — ce que rend une page document.
-- [Vues de collection](/fr/build/model/views/lists-boards-calendars/) — configurez les pages de liste à côté des pages document.
+- [Schéma du modèle DVT](/fr/reference/dvt-schema/) — chaque type de nœud et chaque propriété requise.
+- [Listes, kanban et calendriers](/fr/build/model/views/lists-boards-calendars/) — configurez les pages de liste à côté des pages document.
+- [Documents, doctypes et projections](/fr/build/deeper/documents-and-projections/) — d’où une page document tire son contenu.

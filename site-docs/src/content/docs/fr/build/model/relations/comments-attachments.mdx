@@ -1,0 +1,155 @@
+---
+type: how-to
+title: Commentaires et pièces jointes
+description: Ajoutez des panneaux de commentaires et de pièces jointes à un doctype, et contrôlez qui peut les utiliser.
+audience: [author]
+features: [DOM-06]
+sidebar:
+  order: 3
+verified_at: eee55a2
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Un ticket de maintenance Brightwater a besoin d’un espace où l’entrepôt
+discute de la réparation et garde les photos des dégâts. Facet place les deux
+à côté du document : un panneau **comments** et un panneau
+**attachments**. Les enregistrements se trouvent dans leurs propres doctypes,
+dans le domaine `core` — le moteur nomme cette forme un **sidecar**, et c’est
+la dernière fois que cette page emploie le mot. Le doctype hôte déclare les
+panneaux qu’il porte ; une déclaration sert tous les doctypes qui
+veulent le panneau, vous ne copiez donc jamais la logique des commentaires
+dans votre domaine.
+
+## Quand l’utiliser
+
+Ajoutez le panneau `comments` quand des personnes discutent d’un
+enregistrement. Ajoutez le panneau `attachments` quand des personnes gardent
+des fichiers avec un enregistrement. Les deux panneaux se déclarent sur le
+doctype : vous pouvez donc les donner à n’importe quel doctype de votre
+domaine.
+
+## Avant de commencer
+
+- **Un domaine brouillon.** Vous modifiez le doctype hôte dans un
+  [domaine brouillon](/fr/build/model/in-app/how-drafts-work/), ou dans le
+  [dossier de domaine sur un serveur de dev](/fr/build/model/in-files/domain-files/).
+- **Rien à créer.** Les doctypes de panneaux `core.Comment` et
+  `core.Attachment` existent sur chaque instance. Vous les déclarez sur votre
+  hôte ; vous ne les créez pas.
+- **Un nom de segment libre.** Un nom de segment (le segment de route du
+  panneau, par exemple `comments`) ne peut pas entrer en collision avec une
+  relation `children` du même nom.
+
+## Étapes
+
+<Tabs syncKey="build-mode">
+<TabItem label="Builder">
+
+1. Ouvrez le doctype dans le **Builder** et trouvez la section **Sidecars**.
+2. Ajoutez une entrée par panneau : le nom de segment (`comments`,
+   `attachments`) et le doctype du panneau (`core.Comment`,
+   `core.Attachment`).
+3. Définissez si vous le souhaitez un **Label** (par exemple `Notes`) et un
+   **Order** pour l’onglet.
+
+</TabItem>
+<TabItem label="Fichiers">
+
+Le ticket Brightwater porte les deux panneaux, exactement tels que le bundle
+les livre :
+
+```yaml
+# equipment/doctypes/equipment.MaintenanceTicket.yml (extrait)
+sidecars:
+  comments:
+    doctype: core.Comment
+    column: target
+  attachments:
+    doctype: core.Attachment
+    column: target
+```
+
+`column` nomme le champ de référence du doctype de panneau qui pointe vers
+l’hôte. `target` est la valeur par défaut et presque toujours le bon choix.
+
+</TabItem>
+</Tabs>
+
+### Vérifier les droits
+
+Une permission de panneau imbriqué suit le chemin de l’hôte. En pratique :
+
+| Droit de l’appelant | Ce qu’il permet |
+| --- | --- |
+| read sur `equipment.MaintenanceTicket` | Lire les commentaires et les pièces jointes. |
+| create sur `equipment.MaintenanceTicket` | Écrire des commentaires et joindre des fichiers. |
+| create sur `equipment.MaintenanceTicket.Comment` | Commenter en tant qu’utilisateur en lecture seule. |
+
+La dernière ligne est le moyen de laisser un lecteur commenter : gardez
+ses droits sur l’hôte en lecture seule et ajoutez la ligne imbriquée
+explicite pour l’action.
+
+### Voir le panneau
+
+Ouvrez un document. Le panneau se tient à côté de la page et affiche un
+onglet par panneau déclaré, avec un compte par onglet. Les commentaires
+acceptent le markdown, gèrent les réponses et notifient une personne quand
+vous la mentionnez. Les pièces jointes affichent le type, la taille,
+l’auteur du téléversement et l’heure.
+
+Une mention est un lien vers un compte. Les deux formes fonctionnent dans un
+corps de commentaire :
+
+```markdown
+Ping [Tom](urn:facet:iam:Account:tom@brightwater.example) about the pole set.
+```
+
+## Exemple
+
+L’API des panneaux crée un commentaire via le chemin de l’hôte :
+
+```sh
+curl -k -X POST "https://facet.localhost:3443/Api/equipment/MaintenanceTicket/MT-2026-0001/comments" \
+  -H "Authorization: Bearer $FACET_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"body": "Pole set frayed at the joint — photos attached."}'
+```
+
+`-k` ignore la vérification du certificat de l’adresse de développement
+locale. Facet déduit le `target` du chemin et l’`author` de l’appelant. Une
+clé `target` dans le corps répond `400` — la route est propriétaire de ce
+champ.
+
+## Dépannage
+
+### Le panneau ne s’affiche pas
+
+Le doctype ne porte pas de carte `sidecars`, ou le doctype a été modifié après
+l’ouverture de la page. Vérifiez la définition et rechargez.
+
+### Commenter répond `403`
+
+Votre rôle peut lire l’hôte mais ne détient ni droit create sur le chemin de
+l’hôte, ni ligne imbriquée explicite. Demandez à l’auteur du domaine le droit
+`create` sur l’hôte, ou la ligne imbriquée montrée dans la table des droits.
+
+### Une création directe de `core.Comment` répond `422`
+
+Les enregistrements de panneau se créent via le document hôte, jamais via la
+route directe. Utilisez le chemin imbriqué montré dans l’exemple.
+
+### Les commentaires disparaissent après une suppression
+
+Supprimer l’hôte supprime ses enregistrements de panneau par une purge
+pilotée par les événements. Si le document hôte lui-même fait l’objet d’un
+retour arrière, les suppressions de la purge restent — les commentaires ne
+reviennent pas avec l’hôte.
+
+## Voir aussi
+
+- [Doctypes sidecar (doc d’ingénierie)](https://github.com/wearefacet/facet/blob/main/doc/backend/sidecar.md) — le contrat sidecar complet.
+- [Fichiers dans les champs](/fr/build/model/data/files/) — stockez des fichiers dans des champs, pas seulement dans le panneau.
+- [Notifications et mentions](/fr/build/model/automation/notifications/) — ce que déclenche une mention.
+- [Application de l’autorisation](/fr/admin/under-the-hood/how-access-is-enforced/) — les deux gardes-fous derrière chaque action de panneau.
+- [Documents : des enregistrements avec une mémoire](/fr/discover/how-it-works/documents/)

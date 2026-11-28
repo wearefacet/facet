@@ -1,0 +1,185 @@
+---
+type: how-to
+title: Relier des documents entre eux
+description: Reliez des documents avec des champs de référence, restreignez les sélecteurs par des filtres et affichez les liens entrants.
+audience: [author]
+features: [DOC-05, DOC-10]
+sidebar:
+  order: 0
+verified_at: eee55a2
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Un ticket de maintenance Brightwater nomme l’article concerné ; une
+ligne de réservation nomme la pièce d’équipement louée. Les documents
+pointent vers d’autres documents. Un champ `reference` porte un lien typé,
+une référence collection en porte plusieurs, et un champ texte long peut
+porter des liens dans du markdown. Facet indexe chaque lien : chaque
+page document peut donc aussi montrer l’inverse, les documents qui pointent
+vers elle.
+
+## Quand l’utiliser
+
+Utilisez des champs de référence quand un enregistrement nomme un autre
+enregistrement sans le posséder — un ticket nomme son article, une réservation
+nomme son client. Quand la partie appartient au tout, modélisez plutôt une
+composition (voir
+[Documents parents et enfants](/fr/build/model/relations/parent-child/)).
+
+## Avant de commencer
+
+- **Une cible qualifiée.** La cible d’une référence est toujours un
+  identifiant de doctype qualifié : `domain.Doctype`, par exemple
+  `equipment.Item`. Facet refuse un nom sans préfixe quand vous enregistrez
+  le doctype, un champ cassé n’arrive donc jamais dans vos données.
+- **Accès en lecture à la cible.** Les utilisateurs ont besoin d’un accès en
+  lecture à un doctype cible pour résoudre ses références.
+- **Où se trouve la cible.** Une référence peut pointer vers un autre domaine
+  — voir
+  [Partager des données entre domaines](/fr/build/model/relations/across-domains/)
+  pour les règles qui s’appliquent entre domaines.
+
+## Étapes
+
+<Tabs syncKey="build-mode">
+<TabItem label="Builder">
+
+1. Ouvrez le doctype dans le **Builder** et ajoutez un champ de type
+   **Reference**.
+2. Choisissez le doctype cible. L’éditeur qualifie la cible pendant que vous
+   travaillez dans un brouillon — vous verrez peut-être l’identifiant du
+   brouillon comme préfixe. À la publication, Facet relie de nouveau chaque
+   cible du même domaine au nom du domaine publié : la forme stockée est
+   donc toujours celle du domaine en direct.
+3. Définissez si vous le souhaitez un **Filter** pour restreindre le
+   sélecteur.
+
+</TabItem>
+<TabItem label="Fichiers">
+
+Le ticket de maintenance Brightwater déclare sa référence d’article :
+
+```yaml
+# equipment/doctypes/equipment.MaintenanceTicket.yml (extrait)
+fields:
+  item:
+    type: reference
+    title: Item
+    doctype: equipment.Item
+    required: true
+    filters: [equality]
+```
+
+La cible est la forme qualifiée `equipment.Item` — un `Item` seul est
+refusé.
+
+</TabItem>
+</Tabs>
+
+### Ce que l’écriture accepte
+
+Les utilisateurs et les appelants API peuvent envoyer un identifiant seul, un
+identifiant qualifié ou un jeton `urn:facet:`. Facet stocke la forme
+qualifiée dans tous les cas :
+
+| Vous envoyez | Facet stocke |
+| --- | --- |
+| `EQ-2026-0001` | `equipment.Item.EQ-2026-0001` |
+| `equipment.Item.EQ-2026-0001` | `equipment.Item.EQ-2026-0001` |
+| `urn:facet:equipment:Item:EQ-2026-0001` | `equipment.Item.EQ-2026-0001` |
+
+### Restreindre le sélecteur avec un filtre
+
+Le `filter` facultatif limite les documents qu’une référence accepte. Facet
+vérifie le filtre à chaque écriture :
+
+```json
+"company": {
+  "type": "reference",
+  "doctype": "clients.Company",
+  "filter": { "status__eq": "active" }
+}
+```
+
+### Autoriser les références anticipées
+
+Une référence doit normalement pointer vers un document qui existe.
+Définissez `dangling: true` quand la cible peut ne pas exister encore, par
+exemple un successeur renseigné dans une étape ultérieure.
+
+### Pointer vers plusieurs documents
+
+Ajoutez `collection: true` pour porter un tableau de références. Facet
+vérifie chaque élément à son tour et refuse une liste qui nomme deux fois la
+même cible :
+
+```json
+"watchers": {
+  "type": "reference",
+  "doctype": "iam.Account",
+  "collection": true
+}
+```
+
+### Lier dans du texte long
+
+Un champ `longtext` accepte des liens markdown vers des documents. Les deux
+formes ci-dessous produisent un lien sur la page et comptent comme un lien
+dans l’index :
+
+```markdown
+Checked with [Nadia](urn:facet:iam:Account:nadia@brightwater.example).
+
+Follow-up for [Main tent 10x15](equipment.Item.EQ-2026-0001).
+```
+
+Les deux formes comptent : un jeton `urn:facet:` n’importe où dans le
+texte, et un lien markdown dont l’adresse est un document. Une adresse à
+points tapée dans le texte brut, sans lien, ne compte pas.
+
+## Exemple
+
+Trois références Brightwater, chacune pointant vers un type de cible
+différent :
+
+```json
+{
+  "fields": {
+    "item": { "type": "reference", "doctype": "equipment.Item", "required": true, "filters": ["equality"] },
+    "assignee": { "type": "reference", "doctype": "iam.Account", "filters": ["equality"] },
+    "client": { "type": "reference", "doctype": "clients.Company", "required": true, "filters": ["equality"] }
+  }
+}
+```
+
+Sur chaque page document, la section **Référencé par** liste les documents
+qui pointent vers elle. Avant une suppression, Facet avertit :
+`N document(s) reference it — deleting it leaves those links dangling`. La
+suppression n’est jamais bloquée ; l’avertissement sert à éclairer le
+choix.
+
+## Dépannage
+
+### Le doctype refuse de s’enregistrer avec une erreur de cible
+
+Le `doctype` déclaré doit être la forme qualifiée `domain.Doctype`. Un nom
+seul comme `"Item"` échoue à la définition, avant toute écriture de valeur.
+
+### Une écriture répond `422` avec une erreur de doctype
+
+Le doctype référencé n’est pas enregistré — le plus souvent parce qu’il
+n’existe encore que dans un brouillon. Publiez d’abord le brouillon, puis
+écrivez la référence.
+
+### Une référence s’affiche vide ou introuvable
+
+Le document cible a été supprimé, ou votre rôle ne peut pas lire son doctype.
+Facet garde la valeur stockée mais ne résout rien pour vous.
+
+## Voir aussi
+
+- [Liens et références inverses (doc d’ingénierie)](https://github.com/wearefacet/facet/blob/main/doc/backend/links.md) — comment fonctionne l’index des liens.
+- [Documents parents et enfants](/fr/build/model/relations/parent-child/) — modélisez des enfants possédés plutôt que des références libres.
+- [Partager des données entre domaines](/fr/build/model/relations/across-domains/) — le contrat d’octroi derrière les références inter-domaines.
+- [Documents, doctypes et projections](/fr/build/deeper/documents-and-projections/) — où se trouve l’index des liens.

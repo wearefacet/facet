@@ -1,0 +1,57 @@
+---
+type: explanation
+title: "Les domaines : là où vivent vos données"
+description: "Voyez comment Facet maintient chaque secteur d’activité séparé et comment les données ne passent d’un secteur à l’autre que par accord."
+audience: [evaluator, author]
+features: [DOM-01, DOM-02, DOM-14]
+verified_at: eee55a2
+sidebar:
+  order: 1
+---
+
+import Illustration from '../../../../../components/Illustration.astro';
+
+Brightwater loue des tentes, des scènes et des systèmes sonores. L’entreprise suit trois choses distinctes : son stock, ses clients et ses réservations. Dans Facet, chacune vit dans son propre **domaine** — un secteur d’activité, maintenu séparé des autres.
+
+*Un domaine garde ses enregistrements à l’intérieur. Passer chez le voisin est une porte que quelqu’un ouvre volontairement.*
+
+<Illustration name="domains-rooms-and-doors" />
+
+## Ce que contient un domaine
+
+Chaque domaine indique quels types d’enregistrements existent et ce que renferme chaque type. Un type d’enregistrement est un **doctype** ; ce que renferme un enregistrement constitue ses **champs**.
+
+Le domaine *equipment* de Brightwater contient le doctype *Item* : nom, catégorie, statut, numéro de série, prix d’achat. Il contient aussi *MaintenanceTicket*, de sorte qu’un générateur en panne devient un travail suivi, et non un pense-bête. Le domaine *clients* contient *Company* et leurs personnes *Contact*. Le domaine *rentals* contient *Booking* et ses lignes.
+
+Les champs portent des types — une date, un prix, un choix dans une liste — si bien que les dates d’une réservation restent des dates et qu’un prix reste un nombre. Un domaine, un modèle ordonné d’une partie du métier.
+
+## Maintenus séparés, franchis volontairement
+
+Rien ne quitte un domaine de son propre chef. Tel est le but : votre liste de clients ne peut pas fuiter discrètement vers un autre secteur, et une erreur dans un modèle ne peut pas en corrompre un autre.
+
+Les enregistrements communiquent néanmoins quand cela a du sens. Une réservation nomme son client : l’enregistrement *Booking* pointe vers un enregistrement *Company* dans le domaine *clients*. Votre rôle décide si vous pouvez suivre ce renvoi.
+
+Copier est une autre histoire. La réservation conserve sa propre copie du nom du client, si bien qu’elle reste lisible même des années plus tard. Cette copie passe par une **attribution** : un accord écrit entre les deux domaines, qui nomme les enregistrements et les champs autorisés à franchir la limite. Le domaine propriétaire des données signe l’accord ; l’autre côté ne fait que lire. Brightwater en gère deux : le nom du client se reporte sur les réservations, et les réservations alimentent le tableau du stock dans *equipment*.
+
+## Commencez par un brouillon
+
+Vous ne modifiez jamais la structure d’un domaine réel pendant que des personnes y travaillent. Vous travaillez dans une copie privée, essayez les champs, les cassez, les réparez. Quand tout fonctionne, une seule étape le transforme en domaine réel — cette étape est **publier**. La publication copie la structure ; les enregistrements d’essai saisis pendant vos expérimentations restent en arrière, sauf si vous choisissez de les emmener.
+
+## Ce que cela signifie pour vous
+
+- Donnez à chaque partie du métier son propre domaine, et chaque domaine reste assez simple pour tenir son explication sur une page.
+- Une question de sécurité appelle une réponse courte : les données ne franchissent la limite que là où quelqu’un a signé une attribution.
+- Les nouveaux types d’enregistrements arrivent dans un brouillon ; une erreur n’atteint donc jamais votre équipe.
+
+## Pour les détails techniques
+
+- [Comment les domaines restent isolés](/fr/build/deeper/domain-isolation/) — les règles de limite, en entier.
+- [Le fonctionnement des brouillons](/fr/build/model/in-app/how-drafts-work/) — l’état de brouillon et le filtre de publication.
+- [Partager des données entre domaines](/fr/build/model/relations/across-domains/) — comment mettre en place une attribution.
+- [Comment les champs copiés restent synchronisés](/fr/build/deeper/cross-domain-replication/) — la mécanique derrière une copie.
+
+## Voir aussi
+
+- [Vue d’ensemble](/fr/discover/how-it-works/) — la place des domaines parmi les cinq idées.
+- [Les documents : enregistrements avec mémoire](/fr/discover/how-it-works/documents/) — les enregistrements que contient un domaine.
+- [Domaines, brouillons et éditeurs de domaines](/fr/build/model/in-app/drafts-and-publishing/) — créez et publiez un domaine, étape par étape.

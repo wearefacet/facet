@@ -1,0 +1,218 @@
+---
+type: how-to
+title: Concevoir un doctype
+description: "Déclarez un doctype : champs, libellé, identifiant, enfants, actions et modèles qui nomment et retrouvent chaque document."
+audience: [author]
+features: [DOM-03]
+sidebar:
+  order: 0
+verified_at: eee55a2
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Chez Brightwater Rentals, chaque équipement à louer est un enregistrement :
+nom, catégorie, statut, prix d’achat. Dans Facet, ce type d’enregistrement
+est un **doctype**. Vous le déclarez une seule fois, et Facet confronte
+chaque écriture à votre déclaration. La déclaration porte les champs,
+l’identifiant, les enfants possédés, les actions, et les modèles qui nomment
+et retrouvent chaque document.
+
+## Quand l’utiliser
+
+Vous ajoutez un doctype à un brouillon, ou vous retravaillez un doctype
+existant. Mettez-le au point, puis publiez. Voir
+[Choisir sa façon de construire](/fr/build/model/) pour les deux endroits où
+vous pouvez éditer.
+
+## Avant de commencer
+
+- **Des droits d’édition.** Il vous faut le droit de modifier les doctypes
+  dans le domaine cible. Dans l’application, le rôle éditeur le détient pour
+  les domaines que vous éditez.
+- **Un domaine d’accueil.** Le domaine doit exister avant que Facet n’y
+  accepte un doctype.
+- **Un nom d’action libre.** Huit noms sont réservés aux
+  [hooks de cycle de vie](/fr/build/model/behaviour/scripts-and-guards/) que
+  Facet appelle lui-même : `validate`, `create`, `update`, `delete`,
+  `migrate`, `snapshot`, `history`, `rollback`. Vos propres actions ne
+  peuvent pas les utiliser.
+
+## Étapes
+
+<Tabs syncKey="build-mode">
+<TabItem label="Builder">
+
+1. Ouvrez le brouillon de votre domaine dans le **Builder** et allez à
+   l’onglet **Doctypes**. Choisissez **Nouveau doctype**.
+2. Remplissez le bloc d’identité : **Nom** (en CamelCase, par exemple
+   `Item`), **Libellé** (ce que voient les utilisateurs), **Icône**, et le
+   **Modèle de libellé** qui nomme chaque document.
+3. Ajoutez une ligne par champ : nom, type, et les contraintes que les
+   données exigent.
+4. Marquez le doctype comme **Racine d’agrégat**, ou rattachez-le à un
+   parent avec **Member of**.
+5. Enregistrez. Facet valide le schéma et compile le script ; les problèmes
+   apparaissent dans l’onglet **Vérification**.
+
+</TabItem>
+<TabItem label="Fichiers">
+
+Créez `doctypes/equipment.Item.yml` dans le dossier du domaine. Voici le
+doctype item de Brightwater ; son script et ses actions vivent dans leurs
+propres fichiers et ont leurs propres pages :
+
+```yaml
+content:
+  icon: package
+  color: "#0F766E"
+  domain: equipment
+  doctype: Item
+  aggregate_root: true
+  schema_version: 1
+  display_name: "{{ name }}"
+  search: "{{ name }} {{ serial_number }}"
+  identifier:
+    template: "EQ-{year}-####"
+  fields:
+    name:
+      type: string
+      title: Name
+      required: true
+      filters: [equality, text_search]
+    category:
+      type: reference
+      title: Category
+      doctype: equipment.Category
+      required: true
+      filters: [equality]
+    status:
+      type: enum
+      title: Status
+      default: available
+      filters: [equality]
+      values:
+        - key: available
+          label: Available
+          color: "#15803d"
+        - key: out
+          label: Out
+          color: "#b45309"
+        - key: in_repair
+          label: In repair
+          color: "#b91c1c"
+    purchase_price:
+      type: money
+      title: Purchase price
+      currency: EUR
+      precision: 2
+      tags: [finance]
+      filters: [comparison, currency]
+    serial_number:
+      type: string
+      title: Serial number
+      unique: true
+      filters: [equality]
+    notes:
+      type: longtext
+      title: Notes
+  sidecars:
+    comments:
+      doctype: core.Comment
+      column: target
+meta:
+  parent_id: equipment
+```
+
+Le watcher applique le fichier à l’enregistrement. Voir
+[L’organisation des fichiers du domaine](/fr/build/model/in-files/domain-files/)
+pour l’emplacement de chaque fichier.
+
+</TabItem>
+</Tabs>
+
+### Rôle de chaque élément
+
+| Élément | Objectif |
+| --- | --- |
+| `label` | Le nom que l’interface affiche, par exemple `Item`. À défaut, il reprend le nom du doctype. |
+| `icon` | Un nom d’icône Lucide en kebab-case, par exemple `package`. Un nom inconnu retombe sur un symbole simple. |
+| `display_name` | Un modèle Jinja2 qui nomme chaque document, par exemple `{{ name }}`. |
+| `search` | Un modèle Jinja2 pour le texte de recherche. Un doctype racine doit déclarer `display_name` ou `search` ; `search` prend par défaut le nom d’affichage, le libellé suffit donc. |
+| `fields` | Les données. Voir [Choisir les types de champs](/fr/build/model/data/field-types/). |
+| `identifier` | Des numéros de référence lisibles. Voir [Identifiants et contraintes d’unicité](/fr/build/model/data/identifiers-uniqueness/). |
+| `children` | Les parties possédées. Voir [Composition parent/enfant](/fr/build/model/relations/parent-child/). |
+| `sidecars` | Les panneaux de commentaires et de pièces jointes. Voir [Ajouter des commentaires et des pièces jointes](/fr/build/model/relations/comments-attachments/). |
+| `actions` | Des opérations typées que les utilisateurs lancent depuis la page détail. Voir [Actions nommées](/fr/build/model/behaviour/named-actions/). |
+| `scopes` | Des filtres de lignes enregistrés qu’un administrateur peut confier à des rôles. Voir [Écrire des règles de lignes pour les rôles](/fr/build/model/access/named-scopes/). |
+| `schema_version` | La version de la forme des données. Ne l’augmentez que si un changement sur un domaine réel l’exige. |
+
+### Racine ou enfant
+
+Un doctype est exactement l’une de ces deux choses :
+
+| Type | Déclaration | Signification |
+| --- | --- | --- |
+| Racine d’agrégat | `aggregate_root: true` | L’enregistrement que les utilisateurs créent et suppriment. C’est l’unité de verrouillage et de contrôle d’accès. |
+| Enfant possédé | `aggregate_root: false` avec `member_of` | Une partie d’un document parent. Voir [Composition parent/enfant](/fr/build/model/relations/parent-child/). |
+
+Les noms de champs suivent `lower_snake_case` ou `camelCase`. Facet refuse
+les autres orthographes, et refuse un champ à la fois `read_only` et
+`write_only`.
+
+## Le chemin d’une écriture
+
+Chaque écriture suit le même chemin : Facet valide le document, ajoute une
+ligne au journal des mutations, met à jour la version actuelle du document et
+publie un événement. Hooks, webhooks et mises à jour en direct réagissent à
+cet événement.
+
+{/* d2
+*One write, four steps*
+direction: down
+writer: "App or user" {class: external}
+log: "Change log" {class: store}
+current: "Current version" {class: store}
+bus: "Event bus" {class: store}
+consumers: "Hooks, webhooks, live updates" {class: external}
+
+writer -> log: validated write
+log -> current
+log -> bus
+bus -> consumers
+*/}
+<div class="d2-diagram">
+<img class="d2-diagram__img d2-diagram__light" src="/diagrams/426a8c44-light.svg" alt="App or user" loading="lazy" />
+<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/426a8c44-dark.svg" alt="App or user" loading="lazy" />
+</div>
+
+## Dépannage
+
+### La création répond `422 Domain 'crm' does not exist`
+
+Créez d’abord le domaine. Un doctype a besoin d’un domaine réel ou de
+brouillon pour exister.
+
+### La création répond `422` avec un nom de clé
+
+Une définition n’accepte que des clés connues, et chaque entrée de champ
+vérifie ses propres clés. Le message nomme la clé et son emplacement. Le plus
+souvent, une contrainte est mal orthographiée, par exemple `reqired` au lieu
+de `required`.
+
+### L’icône ne s’affiche pas
+
+La valeur de l’icône doit correspondre à un nom d’icône Lucide en kebab-case.
+Facet retombe sur un symbole simple quand le nom est inconnu.
+
+### La publication refuse le doctype avec une erreur de libellé
+
+Une racine d’agrégat doit pouvoir produire un libellé. Déclarez un modèle
+`display_name` ou un modèle `search`. Un enfant est atteint par son parent ;
+il en est exempté.
+
+## Voir aussi
+
+- [Schéma de doctype (référence)](/fr/reference/doctype-schema/) — chaque clé de définition et sa forme.
+- [Choisir les types de champs](/fr/build/model/data/field-types/) — le type de chaque champ.
+- [Documents, doctypes et projections](/fr/build/deeper/documents-and-projections/) — comment une définition façonne les documents stockés, une couche plus bas.

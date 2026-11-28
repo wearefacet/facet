@@ -1,29 +1,30 @@
 ---
-title: Intégrer l’assistant
-description: Montez le chat de l’assistant Facet dans votre app avec le package @facetapp/chat.
+title: "Intégrer l’assistant à votre app"
+description: "Montez le chat de l’assistant Facet dans votre app avec le package @facetapp/chat."
+type: how-to
 audience: [developer]
 features: [APP-11, AI-03]
+verified_at: eee55a2
 sidebar:
-  order: 16
-verified_at: a77c6171
+  order: 1
 ---
 
-`@facetapp/chat` monte l’assistant Facet dans votre app, attaché à
-
-l’assistant propre à votre app. Le backend possède le modèle, le prompt et
-les outils. Le package possède l’interface : deux custom elements, une façade
-à un appel, et un driver HTTP. Votre app fournit ses identifiants au travers
+`@facetapp/chat` monte l’assistant Facet dans votre app, attaché à l’assistant
+propre à votre app. Le backend possède le modèle, le prompt et les outils. Le
+package possède l’interface : deux custom elements, une façade à un seul
+appel, et un driver HTTP. Votre app fournit ses identifiants au travers
 d’une seule fonction, et le package ne les voit jamais.
 
-> **Pour les agents :** Contrôle d’accès : `const gate = await facet.assistant()`
-> — `{access, token_budget, name}` ; masquez le lanceur quand `gate.access`
-> est faux. Installation : `pnpm add @facetapp/chat`. Auth : passez un `fetch`
-> qui ajoute `Authorization: DPoP <token>` (une preuve `DPoP` fraîche par
-> requête quand le token est lié) et `X-Requested-With: XMLHttpRequest` —
-> POST/PATCH sans lui répond `403`. Montage : `FacetAssistant.open({ baseUrl,
-> fetch: hostFetch, appId })` ou `FacetAssistant.mount('#chat-root', config)` ;
-> `close()` masque, `destroy()` retire. Route :
-> `POST /Api/assistant/app/conversations`, puis flux (SSE).
+> **Pour les agents :** contrôle d’accès : `const gate = await facet.assistant()`
+> — `{access, configured, token_budget, name}` ; masquez le lanceur quand
+> `gate.access` est faux. Installation : `pnpm add @facetapp/chat`. Auth :
+> passez un `fetch` qui ajoute `Authorization: DPoP <token>` (une preuve
+> `DPoP` fraîche par requête quand le token est lié) et
+> `X-Requested-With: XMLHttpRequest` — POST/PATCH sans lui répond `403`.
+> Montage : `FacetAssistant.open({ baseUrl, fetch: hostFetch, appId })` ou
+> `FacetAssistant.mount('#chat-root', config)` ; `close()` masque,
+> `destroy()` retire. Route : `POST /Api/assistant/app/conversations`, puis
+> flux (SSE).
 
 ## Quand l’utiliser
 
@@ -37,26 +38,43 @@ Intégrez l’assistant quand :
 
 ## Avant de commencer
 
-Trois contrôles doivent passer avant qu’une conversation s’ouvre :
+Trois contrôles doivent passer avant l’ouverture d’une conversation :
 
 - L’appelant est attaché à une app : un token d’app OAuth. Voir
-  [Connexion utilisateur : OAuth 2.1 + PKCE](/fr/build/apps/connect/user-login/) et
-  [Liaison des tokens par DPoP](/fr/build/apps/connect/dpop/).
+  [Connexion utilisateur : OAuth 2.1 + PKCE](/fr/build/apps/connect/user-login/)
+  et [Liaison des tokens par DPoP](/fr/build/apps/connect/dpop/).
 - Le drapeau `assistant_enabled` de l’app est actif. L’admin de l’app le règle
-  sur l’onglet Paramètres ; l’enregistrement exige `update` sur `app.App`. Le
-  champ facultatif `assistant_prompt` sur le même onglet ajoute au prompt des
-  instructions propres à l’app.
+  sur l’onglet Paramètres ; l’enregistrement du réglage exige `update` sur
+  `app.App`. Le champ facultatif `assistant_prompt` sur le même onglet ajoute
+  au prompt des instructions propres à l’app.
 - La connectivité du rôle de l’appelant liste le canal `assistant`.
+
+Une session sur l’instance de dev Brightwater obtient ce contrôle ainsi
+(l’app de check-out a son assistant éteint, donc `access` vaut `false` pour
+elle) :
+
+```json
+{
+  "access": true,
+  "configured": true,
+  "token_budget": null,
+  "name": "Assistant"
+}
+```
 
 Vérifiez ce contrôle depuis votre app avec le SDK :
 
 ```ts
 import { createFacetClient, oauthBrowser } from '@facetapp/sdk';
 
-const auth = oauthBrowser({ slug: 'crm-console', redirectUri: `${location.origin}/callback` });
-const facet = createFacetClient({ baseUrl: 'https://facet.example.com', auth });
+const auth = oauthBrowser({
+	slug: 'brw-checkout',
+	redirectUri: 'http://localhost:5173/auth/callback',
+	baseUrl: 'https://facet.localhost:3443'
+});
+const facet = createFacetClient({ baseUrl: 'https://facet.localhost:3443', auth });
 
-const gate = await facet.assistant(); // { access, token_budget, name }
+const gate = await facet.assistant(); // { access, configured, token_budget, name }
 if (!gate.access) {
 	// Le chat afficherait son panneau de refus. Masquez plutôt le lanceur.
 }
@@ -96,9 +114,9 @@ async function hostFetch(input, init = {}) {
 ```
 
 `getAppToken` et `makeDpopProof` restent à votre charge — voir
-[Liaison des tokens par DPoP](/fr/build/apps/connect/dpop/) pour le contrat de preuve. La
-preuve doit couvrir la méthode et l’URL de la requête. Un token émis sans
-preuve DPoP est un token bearer ; envoyez-le sous
+[Liaison des tokens par DPoP](/fr/build/apps/connect/dpop/) pour le contrat de
+preuve. La preuve doit couvrir la méthode et l’URL de la requête. Un token
+émis sans preuve DPoP est un token bearer ; envoyez-le sous
 `Authorization: Bearer <token>` sans en-tête `DPoP`.
 
 `X-Requested-With` doit accompagner chaque appel qui change l’état. Facet
@@ -111,9 +129,9 @@ stream, cancel et record, et PATCH pour archive.
 import { FacetAssistant } from '@facetapp/chat';
 
 FacetAssistant.open({
-	baseUrl: 'https://facet.company.tld',
+	baseUrl: 'https://facet.localhost:3443',
 	fetch: hostFetch,
-	appId: 'core.app_123', // l’app à laquelle cet assistant est attaché
+	appId: '06H1FQF7NGDJJKSNHXPYT6627M', // l’id du document d’app brw-checkout
 	bubble: true
 });
 ```
@@ -127,9 +145,9 @@ fenêtre est fermée. `FacetAssistant.close()` la masque ;
 
 ```js
 FacetAssistant.mount('#chat-root', {
-	baseUrl: 'https://facet.company.tld',
+	baseUrl: 'https://facet.localhost:3443',
 	fetch: hostFetch,
-	appId: 'core.app_123'
+	appId: '06H1FQF7NGDJJKSNHXPYT6627M'
 });
 ```
 
@@ -150,7 +168,7 @@ propriétés des éléments portent les mêmes champs :
 | `baseUrl` | `string` | — | Origine Facet, avec un préfixe de chemin facultatif, pour le driver HTTP. Requis. |
 | `fetch` | `typeof fetch` | global `fetch` | Votre fetch authentifié — étape 2. |
 | `appId` | `string` | — | L’id `app.App` auquel cet assistant est attaché. Pilote le filtre du rail. |
-| `language` | `string` | — | Étiquette BCP-47. Incorporée au prompt du backend. |
+| `language` | `string` | — | Tag BCP-47. Incorporé au prompt du backend. |
 | `name` | `string` | `'Assistant'` | Nom affiché dans l’en-tête de la fenêtre et les en-têtes des tours. |
 | `driver` | `AssistantDriver` | `HttpAssistantDriver` | Remplacement du transport — voir l’exemple ci-dessous. |
 | `tokens` | `Record<string, string>` | — | Remplacements des tokens `--facet-*`, posés sur les éléments montés. |
@@ -173,8 +191,8 @@ appel refusé se résout en barre d’erreur, si bien qu’aucun appel n’est
 invisible.
 
 Les états de refus et de budget sont intégrés. Un `403` à la création de
-conversation affiche le panneau "Assistant unavailable" et masque la zone de
-saisie. Un `429` sur le flux affiche l’avis de budget sur le tour.
+conversation affiche le panneau « Assistant unavailable » et masque la zone
+de saisie. Un `429` sur le flux affiche l’avis de budget sur le tour.
 
 ### Éléments et thème
 
@@ -205,12 +223,12 @@ import { createMockAssistant, FacetAssistant } from '@facetapp/chat';
 const driver = createMockAssistant(); // en mémoire, réponses scriptées
 
 const conversation = await driver.createAppConversation({ language: 'en-GB' });
-for await (const event of driver.streamAsk(conversation.id, { content: 'Liste les expéditions actives' })) {
+for await (const event of driver.streamAsk(conversation.id, { content: 'List active bookings' })) {
 	console.log(event); // meta → chunk* → done | error | cancelled
 }
 
 // Remettez le mock à la façade pour styliser et tester l’interface sans backend.
-FacetAssistant.open({ baseUrl: 'https://facet.example.com', driver, appId: 'core.app_123' });
+FacetAssistant.open({ baseUrl: 'https://facet.localhost:3443', driver, appId: '06H1FQF7NGDJJKSNHXPYT6627M' });
 ```
 
 Contre un vrai backend, construisez le driver HTTP avec votre fetch
@@ -219,16 +237,19 @@ authentifié et passez-le de la même façon :
 ```ts
 import { HttpAssistantDriver } from '@facetapp/chat';
 
-const driver = new HttpAssistantDriver('https://facet.company.tld', hostFetch);
+const driver = new HttpAssistantDriver('https://facet.localhost:3443', hostFetch);
 ```
 
 ## Dépannage
 
-**Le chat affiche le panneau "Assistant unavailable".**
+**Le chat affiche le panneau « Assistant unavailable ».**
 
 Le drapeau de l’app est éteint, le rôle manque du canal `assistant`, ou
 l’appelant n’est pas attaché à une app. Vérifiez `await facet.assistant()` —
-le champ `access` reflète le même contrôle.
+le champ `access` reflète le même contrôle. Sur l’instance de dev
+Brightwater, l’app `brw-checkout` est livrée avec `assistant_enabled: false` ;
+sa création de conversation répond `403` avec
+`{"error":"You do not have access to the app assistant"}`.
 
 **Chaque POST répond `403`.**
 
@@ -242,17 +263,20 @@ répond `401` sans détail sur le contrôle qui a échoué.
 **Le compteur d’usage n’apparaît jamais.**
 
 L’appelant a un budget illimité. Le compteur n’apparaît que pour un budget
-fini.
+fini. `GET /Api/assistant/usage` répond
+`{total, estimated_total, budget, window_start, window_days}` — un `budget`
+de `null` signifie illimité.
 
 ## Voir aussi
 
-- [Le SDK TypeScript (`@facetapp/sdk`)](/fr/build/apps/data/sdk/) — le
-  contrôle `facet.assistant()`.
-- [Liaison des tokens par DPoP](/fr/build/apps/connect/dpop/) — le schéma de tokens et le
-  contrat de preuve.
+- [Le SDK TypeScript](/fr/build/apps/data/sdk/) — le contrôle
+  `facet.assistant()`.
+- [Liaison des tokens par DPoP](/fr/build/apps/connect/dpop/) — le schéma de
+  tokens et le contrat de preuve.
 - [Le fonctionnement des apps sur Facet](/fr/build/apps/how-apps-work/) —
-  l’attachement aux apps et le plafond d’attribution sur les appels d’outils.
+  l’attachement à une app et le plafond d’attribution sur les appels d’outils.
 - [Gouverner l’assistant](/fr/admin/assistant/govern/) — budgets, noms et
   instructions dans l’app principale.
 - Internes sur GitHub :
   [packages/chat/README.md](https://github.com/wearefacet/facet/blob/main/packages/chat/README.md).
+- [L’assistant : l’IA avec vos droits](/fr/discover/how-it-works/assistant/)

@@ -1,0 +1,61 @@
+---
+type: overview
+title: Référence
+description: "Consultez les détails exacts : API REST, CLI, clés, types de champs, opérateurs, schémas, payloads — pour les humains et les agents."
+audience: [developer, admin, operator]
+features: []
+verified_at: eee55a2
+sidebar:
+  order: 0
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Cet onglet rassemble les détails exacts : routes, commandes, clés, types de
+champs, opérateurs, schémas et payloads. Il répond à « quel est le détail
+exact ? », pas à « comment faire ? ». Quand c’est possible, les pages sont
+générées depuis le code source et restent donc justes sans retouche manuelle —
+ne modifiez jamais une page générée à la main ; lancez sa cible
+`make gen-docs-<name>`.
+
+Vous lisez en tant qu’agent ? Commencez par `/llms.txt`, ou récupérez
+n’importe quelle page en markdown brut à l’adresse `<page path>.md`.
+
+## Que voulez-vous consulter ?
+
+<CardGrid>
+	<LinkCard title="API REST" description="Chaque route, avec l’intégration OpenAPI générée." href="/fr/reference/rest-api/" />
+	<LinkCard title="Commandes CLI" description="La CLI du serveur `facet` et la CLI d’app `@facetapp`." href="/fr/reference/cli-facet/" />
+	<LinkCard title="Clés de configuration" description="Chaque clé de `config.{env}.yml`, avec type et valeur par défaut." href="/fr/reference/config-keys/" />
+	<LinkCard title="Schémas et types de champs" description="Schémas de doctype et de modèle de vue, types de champs, opérateurs de filtre." href="/fr/reference/doctype-schema/" />
+	<LinkCard title="Glossaire" description="Chaque terme du produit et du moteur, défini une seule fois." href="/fr/reference/glossary/" />
+</CardGrid>
+
+## Toutes les pages de cette section
+
+- [Glossaire](/fr/reference/glossary/) — les termes du produit et du moteur en mots simples.
+- [Index des fonctionnalités](/fr/reference/feature-index/) — chaque identifiant de fonctionnalité et la page qui le documente.
+- [API REST](/fr/reference/rest-api/) — la surface HTTP, générée depuis le schéma OpenAPI.
+- [CLI facet](/fr/reference/cli-facet/) — les commandes côté serveur.
+- [CLI des apps Facet](/fr/reference/cli-npm/) — `@facetapp/cli` pour les développeurs d’apps.
+- [Clés du fichier de configuration](/fr/reference/config-keys/) — chaque clé de `config.{env}.yml`.
+- [Clés de réglage système](/fr/reference/system-settings-keys/) — les réglages à l’exécution.
+- [Clés de réglage de compte](/fr/reference/account-settings-keys/) — les réglages par compte.
+- [Schéma de définition de doctype](/fr/reference/doctype-schema/) — le schéma YAML d’un doctype.
+- [Schéma du modèle DVT](/fr/reference/dvt-schema/) — les modèles de vue de document.
+- [Types de champs](/fr/reference/field-types/) — chaque type de champ, généré.
+- [Opérateurs de filtre](/fr/reference/filter-operators/) — chaque opérateur de requête, généré.
+- [Contexte des modèles Jinja2](/fr/reference/jinja2-context/) — les variables disponibles dans les modèles.
+- [API Lua](/fr/reference/lua-api/) — les fonctions appelables depuis les scripts de cycle de vie.
+- [Syntaxe des lignes de permission](/fr/reference/permission-syntax/) — la grammaire d’une ligne de permission.
+- [Outils d’agent](/fr/reference/agent-tools/) — le catalogue d’outils de l’assistant, généré.
+- [Payloads des webhooks](/fr/reference/webhook-payloads/) — chaque corps de webhook sortant.
+- [Réponses d’erreur](/fr/reference/error-responses/) — formes et codes d’erreur.
+- [Sondes et métriques](/fr/reference/health-metrics-names/) — chaque métrique de `/Healthcheck`.
+- [Versions](/fr/reference/changelog/) — ce qui change à chaque version.
+- [Limites](/fr/reference/limits/) — chaque limite stricte, avec sa source.
+
+## Voir aussi
+
+- [Construire](/fr/build/) — les guides pratiques derrière la plupart de ces détails.
+- [Administrer](/fr/admin/) — le guide d’exploitation qui utilise ces clés et ces commandes.

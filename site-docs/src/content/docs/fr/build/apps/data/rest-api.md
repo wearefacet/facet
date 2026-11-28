@@ -1,115 +1,164 @@
 ---
 title: Utiliser l’API REST
-description: Appelez l’API de documents directement — structures, filtres, agrégations, ETags et erreurs.
+description: Créez, lisez, mettez à jour, listez et supprimez des documents en HTTP brut — une seule enveloppe, une grammaire de filtres.
+type: how-to
 audience: [developer]
-features: [DOC-01, DOC-02, DOC-03, DOC-04, PLT-13]
+features: [DOC-01, DOC-02, DOC-03, DOC-04, DOC-14, PLT-12, PLT-13]
+verified_at: c34885a
 sidebar:
-  order: 10
-verified_at: a77c6171
+  order: 0
 ---
 
-L’API de documents est du HTTP et du JSON simples. Une seule enveloppe sert
-chaque lecture et chaque écriture, et une seule grammaire de filtre sert
-chaque liste. Cette page présente les structures : corps de création et de
-mise à jour, filtres de liste, agrégations, entity tags (ETags) et erreurs.
-Le contrat lisible par la machine se trouve dans la
-[Référence de l’API REST](/fr/reference/rest-api/).
+L’API de documents repose sur du HTTP et du JSON simples. Une seule enveloppe
+sert chaque lecture et chaque écriture. Une seule grammaire de filtres sert
+chaque liste. Le calendrier de Nadia, la table clients de Tom et le tableau de
+l’entrepôt de Lucía lisent tous cette surface — et votre app aussi.
 
-> **Pour les agents :** Auth : `Authorization: Bearer fct_…` (clé statique) ou
-> `Authorization: DPoP <token>` plus un en-tête de preuve `DPoP` (token
-> d’app). Séquence : `POST /Api/crm/Company` avec les champs au premier niveau
-> du corps JSON (`201`, enveloppe `{data, meta}`) →
-> `GET /Api/crm/Company/<id>` (gardez l’`ETag`) → renvoyez-le en
-> `If-None-Match: "<etag>"` pour un `304` →
-> `GET /Api/crm/Company?items=50&filters[status__eq]=active&sort=-updated_at`
-> → `PATCH` (merge patch ; `null` retire une clé) → `DELETE` (`204`). Les
-> échecs de validation sont des `422` avec
-> `{error, details:[{field, message, code, params?}]}`. Un document caché ou
-> manquant répond `404` ; un document supprimé répond `410`.
+> **Pour les agents :** Connexion : `POST /Api/iam/login` (cookie) ou
+> `Authorization: Bearer fct_…` (une clé d’API issue de `POST /Api/iam/keys`,
+> épinglée à un rôle, ou une clé d’API d’app) ou `Authorization: DPoP <token>`
+> plus un en-tête de preuve `DPoP` (token d’app). Séquence :
+> `POST /Api/clients/Company` avec les champs au premier niveau du corps JSON
+> (`201`, enveloppe `{data, meta}`) → `GET /Api/clients/Company/<id>`
+> (conservez l’`ETag` — le `mid`) → renvoyez-le en `If-None-Match` pour un
+> `304` →
+> `GET /Api/clients/Company?items=50&filters[status__eq]=confirmed&sort=-updated_at`
+> → `PATCH` (merge patch ; `null` retire une clé) → `DELETE` (`204`) →
+> `POST …/<id>/restore` ramène une pierre tombale. Les échecs de validation
+> sont des `422` avec `{error, details:[{field, message, code}]}`. Un document
+> caché ou manquant répond `404` ; un document supprimé répond `410`.
 
 ## Quand l’utiliser
 
-Utilisez l’API brute quand :
+Appelez l’API directement quand :
 
-- Vous appelez Facet depuis un langage sans SDK.
+- Votre code tourne dans un langage sans SDK.
 - Vous voulez un contrôle direct sur les filtres, la pagination ou les
   validateurs de cache.
-- Vous déboguez une intégration et devez voir les structures brutes.
+- Vous déboguez une intégration et voulez voir les structures brutes.
 
-Pour les apps TypeScript, préférez [le SDK TypeScript](/fr/build/apps/data/sdk/) : types,
-pagination, erreurs typées.
+Pour TypeScript, préférez [le SDK TypeScript](/fr/build/apps/data/sdk/) — il
+enveloppe cette surface avec des handles typés et des erreurs typées.
 
 ## Avant de commencer
 
-- Une instance Facet en fonctionnement et un identifiant avec une attribution
-  de lecture sur le doctype visé. Les créations et les mises à jour exigent
-  `write` ; la suppression exige `delete`.
+- Une instance Facet en fonctionnement et un identifiant capable de lire le
+  doctype visé. Les écritures exigent l’action `write` ; la suppression
+  exige `delete`.
 - Trois identifiants fonctionnent sur chaque route :
-  - `Authorization: Bearer fct_…` — une clé d’API statique
-    ([Comptes de service et clés d’API](/fr/build/apps/connect/backend-apps/)).
+  - `Authorization: Bearer fct_…` — une clé d’API d’app
+    ([Comptes de service pour les apps backend](/fr/build/apps/connect/backend-apps/)).
   - `Authorization: DPoP <token>` avec une preuve fraîche dans l’en-tête
-    `DPoP` — un token d’app ([Liaison des tokens par DPoP](/fr/build/apps/connect/dpop/)).
-  - Un cookie de session navigateur.
-- Une écriture avec session cookie doit porter
-  `X-Requested-With: XMLHttpRequest`. Une requête Bearer ou DPoP sans cookie
-  de session en est exempte.
-- Les chemins portent d’abord un domaine en minuscules : `/Api/crm/Company`.
-  Un premier segment en majuscules (`/OAuth`, `/Ws`) désigne une route
-  d’infrastructure, jamais un domaine.
+    `DPoP` — un token d’app ([Liaison DPoP des tokens](/fr/build/apps/connect/dpop/)).
+  - Un cookie de session navigateur issu de `POST /Api/iam/login`.
+- Une écriture authentifiée par cookie doit porter
+  `X-Requested-With: XMLHttpRequest`. Sans cet en-tête, le contrôle anti-CSRF
+  rejette l’écriture avec `403` : un formulaire POST intersite ne peut poser
+  aucun en-tête personnalisé. Les requêtes Bearer et DPoP ne portent pas de
+  cookie et sont donc exemptées.
+- Le chemin est `/Api/<domain>/<doctype>`. Le premier segment est en
+  minuscules — un premier segment en majuscules (`/OAuth`, `/Ws`) désigne une
+  route d’infrastructure, jamais un domaine.
 
-  Les exemples utilisent `https://facet.example.com` et le doctype
-  `crm.Company`. Remplacez les deux par vos valeurs.
+Les exemples tournent sur une instance de dev à
+`https://facet.localhost:3443` avec les données Brightwater Rentals chargées
+([l’exemple fil rouge](/fr/build/apps/how-apps-work/)). Le certificat de dev
+auto-signé explique le `-k` de chaque `curl`.
 
 ## Étapes
 
-### 1. Lisez un document
+### 1. Lire un document
+
+Connectez-vous une fois et conservez une clé d’API épinglée au rôle
+`manager`. Chaque appel d’API présente son propre identifiant ; un appel
+Bearer ne porte pas de cookie, il n’a donc pas besoin de l’en-tête
+`X-Requested-With` :
 
 ```sh
-curl "https://facet.example.com/Api/crm/Company/01JD8W2G7Q5M2X9K4T6VBNR8D" \
-  -H "Authorization: Bearer $FACET_API_KEY"
+pnpx @facetapp/cli connect --role manager   # se connecte, élit manager, stocke la clé
+NADIA_KEY=$(pnpx @facetapp/cli apikey)
+```
+
+Une réservation du domaine rentals est `BK-2026-0001` — le mariage Maison
+Lumière, du 11 au 13 décembre :
+
+```sh
+curl -sk -H "Authorization: Bearer $NADIA_KEY" \
+  https://facet.localhost:3443/Api/rentals/Booking/BK-2026-0001
+```
+
+```json
+{
+  "data": {
+    "dates": { "end": "2026-12-13", "start": "2026-12-11" },
+    "notes": "Wedding — main lawn. Site contact: Claire.",
+    "total": 1970,
+    "client": "clients.Company.06H1FM1B3MXBPS0JYVM3BDD154",
+    "status": "confirmed",
+    "client_name": "Maison Lumière"
+  },
+  "meta": {
+    "id": "BK-2026-0001",
+    "uri": "urn:facet:rentals:Booking:BK-2026-0001",
+    "mid": "06H1FM1DPGYWFD4D8RR2BXM2S9",
+    "domain": "rentals",
+    "doc_type": "Booking",
+    "version": 1,
+    "schema_version": 1,
+    "display_name": "Maison Lumière",
+    "created_at": "2026-11-26T12:24:08Z",
+    "updated_at": "2026-11-26T12:24:08Z"
+  }
+}
 ```
 
 La réponse est une enveloppe `{ data, meta }`. `data` porte les champs que le
 doctype déclare. `meta` porte les métadonnées système et n’est jamais
 inscriptible :
 
+| Champ | Signification |
+| --- | --- |
+| `id`, `uri` | Id du document ; URN canonique `urn:facet:<domain>:<Doctype>:<id>`. |
+| `mid` | ULID de la dernière mutation appliquée au document. C’est aussi l’`ETag` du document. |
+| `domain`, `doc_type` | L’id du domaine et le nom du doctype. |
+| `version`, `schema_version` | La version du document et la version du schéma du doctype. |
+| `display_name` | Libellé lisible issu du modèle du doctype ; `null` quand le doctype n’en déclare pas. |
+| `created_at`, `updated_at` | Horodatages en UTC. |
+
+### 2. Créer un document
+
+Les champs voyagent au premier niveau du corps JSON. Il n’existe pas de
+wrapper `content` :
+
+```sh
+curl -sk -X POST https://facet.localhost:3443/Api/clients/Company \
+  -H "Authorization: Bearer $NADIA_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{ "name": "Atelier Vermeil", "city": "Lyon" }'
+```
+
+La réponse est `201` :
+
 ```json
 {
-  "data": { "name": "Acme", "status": "active" },
+  "data": { "city": "Lyon", "name": "Atelier Vermeil" },
   "meta": {
-    "id": "crm.Company.01JD8W2G7Q5M2X9K4T6VBNR8D",
-    "uri": "urn:facet:crm:Company:01JD8W2G7Q5M2X9K4T6VBNR8D",
-    "mid": "01JD8W2G7Q5M2X9K4T6VBNR8E",
-    "domain": "crm", "doc_type": "Company",
-    "version": 1, "schema_version": 1,
-    "display_name": "Acme",
-    "created_at": "2026-01-01T12:00:00Z", "updated_at": "2026-01-01T12:00:00Z"
+    "id": "06H1FRV45MM80SVH32K5JCA6BH",
+    "uri": "urn:facet:clients:Company:06H1FRV45MM80SVH32K5JCA6BH",
+    "mid": "06H1FRV45MKNZD49WQA7A843TW",
+    "domain": "clients",
+    "doc_type": "Company",
+    "version": 1,
+    "schema_version": 1,
+    "display_name": "Atelier Vermeil",
+    "created_at": "2026-11-26T12:45:08Z",
+    "updated_at": "2026-11-26T12:45:08Z"
   }
 }
 ```
 
-| Champ                        | Signification |
-| ---------------------------- | ------------- |
-| `id`, `uri`                  | Id de document sous la forme à points `{domain}.{Doctype}.{id}` ; URN canonique. |
-| `mid`                        | ULID de la dernière mutation appliquée au document. |
-| `domain`, `doc_type`         | L’id du domaine et le nom du doctype. |
-| `version`, `schema_version`  | La version du document et la version du schéma du doctype. |
-| `display_name`               | Libellé humain issu du modèle du doctype ; `null` quand le doctype n’en déclare pas. |
-| `created_at`, `updated_at`   | Horodatages en UTC. |
-
-### 2. Créez un document
-
-Les champs voyagent au premier niveau du corps JSON. Il n’y a pas de wrapper
-`content` :
-
-```sh
-curl -X POST "https://facet.example.com/Api/crm/Company" \
-  -H "Authorization: Bearer $FACET_API_KEY" -H "Content-Type: application/json" \
-  -d '{ "name": "Acme", "status": "active" }'
-```
-
-La réponse est `201` avec l’enveloppe de l’étape 1. Un corps emballé dans un
-wrapper ne nomme aucun champ du doctype, donc il échoue avec `422` :
+Un corps qui emballe les champs dans une clé `content` ne nomme aucun champ
+du doctype ; il échoue donc avec `422` :
 
 ```json
 {
@@ -119,276 +168,390 @@ wrapper ne nomme aucun champ du doctype, donc il échoue avec `422` :
 }
 ```
 
-Pour créer un parent avec ses enfants en un appel, envoyez `$content` et
+Pour créer un parent avec ses enfants en un seul appel, envoyez `$content` et
 `$children`. L’appel est une seule transaction : l’échec d’un enfant annule
-tout l’appel. Les clés de `$children` sont des noms de relation sur le
-doctype :
+tout l’appel. Les clés de `$children` sont des noms de relation du doctype :
 
 ```sh
-curl -X POST "https://facet.example.com/Api/crm/Company" \
-  -H "Authorization: Bearer $FACET_API_KEY" -H "Content-Type: application/json" \
-  -d '{ "$content": { "name": "Acme", "status": "active" },
-    "$children": { "memberships": [
-      { "role": "primary", "contact": "crm.Contact.01JD9K2G7Q5M2X9K4T6VBNR8E" } ] } }'
+curl -sk -X POST https://facet.localhost:3443/Api/clients/Company \
+  -H "Authorization: Bearer $NADIA_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{ "$content": { "name": "Café des Sports", "city": "Vienne" },
+    "$children": { "contacts": [ { "name": "Léa Martin", "email": "lea@cafedesports.example" } ] } }'
 ```
 
 La réponse porte une clé `children` en plus, groupée par nom de relation.
 Chaque entrée porte la même forme `{ data, meta }` que le parent :
 
 ```json
-{ "children": { "memberships": [
-  { "data": { "role": "primary" }, "meta": { "id": "crm.CompanyMembership.01JD9K2G7Q5M2X9K4T6VBNR8F" } } ] } }
+{ "children": { "contacts": [
+  { "data": { "name": "Léa Martin", "email": "lea@cafedesports.example" },
+    "meta": { "id": "06H1G0A2B3C4D5E6F7G8H9J0K1L", "parent_id": "06H1G0Z9Y8X7W6V5U4T3S2R1Q0P" } } ] } }
 ```
 
-### 3. Mettez à jour et supprimez
+### 3. Mettre à jour et supprimer
 
 `PATCH` envoie un JSON merge patch (RFC 7386). Une valeur `null` retire une
-clé du document ; le journal des mutations enregistre le retrait comme une
-entrée `unset` :
+clé du document :
 
 ```sh
-curl -X PATCH "https://facet.example.com/Api/crm/Company/01JD8W2G7Q5M2X9K4T6VBNR8D" \
-  -H "Authorization: Bearer $FACET_API_KEY" -H "Content-Type: application/json" \
-  -d '{ "status": "churned", "website": null }'
+curl -sk -X PATCH https://facet.localhost:3443/Api/clients/Company/06H1FRV45MM80SVH32K5JCA6BH \
+  -H "Authorization: Bearer $NADIA_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{ "city": "Annecy", "name": null }'
 ```
 
 La réponse est `200` avec l’enveloppe mise à jour. Les routes de documents
-n’acceptent que PATCH : un `PUT` répond `405` avec un en-tête `Allow`, car
-`PUT` est réservé à la rédaction des définitions sur `core.DocType`.
+acceptent `GET`, `HEAD`, `PATCH` et `DELETE` — un `PUT` répond `405` avec
+`allow: GET, HEAD, PATCH, DELETE`.
 
 `DELETE` applique une suppression douce au document et répond `204` sans
-corps. Le document devient une pierre tombale ; un appel de restauration le
-ramène (voir `410` sous [Erreurs](#erreurs)).
-
-### 4. Listez et filtrez
+corps :
 
 ```sh
-curl "https://facet.example.com/Api/crm/Company?items=50&filters[status__eq]=active&sort=-updated_at" \
-  -H "Authorization: Bearer $FACET_API_KEY"
+curl -sk -X DELETE -o /dev/null -w '%{http_code}\n' \
+  -H "Authorization: Bearer $NADIA_KEY" \
+  https://facet.localhost:3443/Api/clients/Company/06H1FRV45MM80SVH32K5JCA6BH
+# 204
 ```
 
-L’enveloppe de collection porte un tableau de lignes `{ data, meta }`. Le
-`meta` de liste porte `count` et `more` :
+Le document devient une pierre tombale. Sa lecture répond désormais `410` et
+conserve le libellé, pour qu’une vue d’audit puisse encore le nommer :
+
+```json
+{
+  "error": "Document 06H1FRV45MM80SVH32K5JCA6BH was deleted",
+  "deleted_at": "2026-11-26T12:45:27Z",
+  "display_name": "Atelier Vermeil"
+}
+```
+
+`POST /Api/clients/Company/<id>/restore` avec un corps JSON vide ramène le
+document. La réponse porte l’enveloppe restaurée et une liste
+`cascade_restored` pour les enfants que la suppression avait emportés.
+
+### 4. Lister et filtrer
+
+```sh
+curl -skg -H "Authorization: Bearer $NADIA_KEY" \
+  'https://facet.localhost:3443/Api/rentals/Booking?filters[status__eq]=confirmed&select=client_name,status,dates&items=2'
+```
+
+L’option `curl -g` compte : elle empêche `curl` de déformer les crochets de
+la clé de filtre. La réponse est `200` :
 
 ```json
 {
   "data": [
-    { "data": { "name": "Acme", "status": "active" },
-      "meta": { "id": "crm.Company.01JD8W2G7Q5M2X9K4T6VBNR8D", "created_at": "2026-01-01T12:00:00Z", "updated_at": "2026-01-02T09:30:00Z" } },
-    { "data": { "name": "Globex", "status": "active" },
-      "meta": { "id": "crm.Company.01JD9K2G7Q5M2X9K4T6VBNR8E", "created_at": "2026-01-03T08:00:00Z", "updated_at": "2026-01-03T15:11:42Z" } }
+    { "data": { "client_name": "Maison Lumière", "status": "confirmed", "dates": { "end": "2026-12-13", "start": "2026-12-11" } },
+      "meta": { "id": "BK-2026-0001", "display_name": "Maison Lumière", "created_at": "2026-11-26T12:24:08Z", "updated_at": "2026-11-26T12:24:08Z" } },
+    { "data": { "client_name": "Harbour Events Ltd", "status": "confirmed", "dates": { "end": "2026-12-20", "start": "2026-12-19" } },
+      "meta": { "id": "BK-2026-0003", "display_name": "Harbour Events Ltd", "created_at": "2026-11-26T12:24:08Z", "updated_at": "2026-11-26T12:24:08Z" } }
   ],
-  "meta": { "count": 2, "more": false }
+  "meta": { "count": 6, "more": false }
 }
 ```
 
-Pagination : `page` commence à 1 ; `items` est borné à 1..1000 ; les valeurs
-par défaut sont page 1, 100 éléments, tri `id`. `count` plafonne à 1000 et
-inclut une ligne sonde quand une page suivante existe — une page d’un seul
-élément face à un ensemble plus grand rapporte `count: 2`. `more` vaut `true`
-quand une page suivante existe.
+Pagination : `page` commence à 1, `items` est borné à 1..1000, et les valeurs
+par défaut sont page 1, 100 éléments, tri `id`. `count` plafonne à 1000.
+`more` vaut `true` quand une page suivante existe.
 
-Les clés de filtre sont des paires `field__operator` :
+Les clés de filtre ont un seul niveau de crochets,
+`filters[field__operator]=value` :
 
-| Opérateur                                  | Correspondance |
-| ------------------------------------------ | -------------- |
-| `__eq`, `__ne`                             | Égal, différent. |
-| `__gt`, `__gte`, `__lt`, `__lte`           | Comparaison. |
-| `__match`                                  | Contient la sous-chaîne, sans tenir compte de la casse. |
-| `__starts_with`                            | Commence par la valeur, sans tenir compte de la casse. |
-| `__between`                                | Intervalle inclusif ; la valeur est un tableau à deux éléments. |
-| `__in`                                     | Appartenance ; la valeur est un tableau d’au plus 100 entrées. |
-| `__currency`                               | Montant monétaire dans une devise. |
-| `__contains`, `__overlaps`, `__within`     | Tests d’intervalle sur les champs `period` et `dateperiod`. |
-| `search` (clé nue, sans suffixe)           | Correspondance de sous-chaîne sur le corpus de recherche du document. |
-
-**Dates relatives.** Toute borne datetime ou date accepte une date
-relative à la place d’une date absolue : `filters[created_at__gte]=-7d`.
-La grammaire est `[+|-]<n><unité>…` avec les unités `y`, `mo` (mois),
-`w`, `d`, `h`, `m` (minute), `s` ; un `-` initial signifie le passé, `+`
-ou l’absence de signe le futur, et le signe s’applique à chaque
-composant (`-1mo6d` = un mois et six jours en arrière). **`m` est une
-minute et `mo` un mois.** Les mois et les années sont des pas de
-calendrier — `-1mo` depuis le 31 mars donne le 28 février — tandis que
-les semaines, jours, heures, minutes et secondes sont de longueur fixe.
-Sur un champ `datetime` ou `created_at`/`updated_at`, la borne est
-l’instant exact ; sur un champ `date`, elle est tronquée au jour
-calendaire. `__lte` couvre toute la journée où tombe la borne et `__gt`
-commence à celle-ci : `created_at__lte=-7d` signifie « jusqu’à il y a sept
-jours, journée incluse ». Une borne relative avec `h`, `m` ou `s` sur un
-champ `date` répond `422`.
+| Opérateur | Correspondance |
+| --- | --- |
+| `__eq`, `__ne` | Égal, différent. |
+| `__gt`, `__gte`, `__lt`, `__lte` | Comparaison. |
+| `__match` | Contient la sous-chaîne, sans tenir compte de la casse. |
+| `__starts_with` | Commence par la valeur, sans tenir compte de la casse. |
+| `__between` | Intervalle inclusif ; la valeur est un tableau à deux éléments. |
+| `__in` | Appartenance ; la valeur est un tableau d’au plus 100 entrées. |
+| `__currency` | Montant monétaire dans une seule devise. |
+| `__contains`, `__overlaps`, `__within` | Tests d’intervalle sur les champs `period` et `dateperiod`. |
+| `search` (clé nue, sans suffixe) | Correspondance de sous-chaîne sur le corpus de recherche du document. |
 
 Chaque doctype accepte aussi les cibles système `id`, `created_at`,
-`updated_at` et `deleted_at`. Les valeurs de tableau sur la query string
-voyagent encodées en JSON :
-`filters[value__between]=%5B%22USD%202500%22%2C%22USD%201000%22%5D`. Les
-entrées de tri prennent un préfixe `-` pour l’ordre décroissant. Les types
-numériques (integer, money, duration) se trient comme des nombres, pas comme
-du texte. Un champ de filtre inconnu répond `422` avec `unknown_filter_field` ;
-un paramètre inconnu répond `422 Unknown parameter '<key>'`. Une faute de
-frappe ne retombe jamais sur un résultat non filtré.
+`updated_at` et `deleted_at`. Quand une clé ou un opérateur est faux, le
+serveur nomme ce qu’il accepte — une faute de frappe ne retombe jamais sur un
+résultat non filtré :
 
-### 5. Agrégez
-
-`aggregate=count` compte l’ensemble filtré complet. Il ignore `page` et
-`items` et plafonne le compte à 1000. Il répond
-`{ "data": [], "meta": { "count": 87, "more": false } }` :
-
-```sh
-curl "https://facet.example.com/Api/crm/Company?aggregate=count&filters[status__eq]=active" \
-  -H "Authorization: Bearer $FACET_API_KEY"
-```
-
-`aggregate=sum|avg|min|max` exige `field=`. Le champ doit être un champ
-`integer`, `duration` ou `money` de premier niveau. Un agrégat de champ porte
-sur l’ensemble filtré complet, sans plafond. Un champ money renvoie un sac
-avec une entrée par devise présente, jamais un total unique toutes devises
-confondues ; les montants sont des chaînes décimales :
-
-```sh
-curl "https://facet.example.com/Api/crm/Deal?aggregate=sum&field=value" \
-  -H "Authorization: Bearer $FACET_API_KEY"
+```json
+{ "error": "Unknown filter field 'nope' (filterable: account_manager, city, created_at, deleted_at, id, name, search, updated_at)" }
 ```
 
 ```json
-{ "data": { "value": { "USD": "123456.78" } }, "meta": { "count": 87, "more": false } }
+{ "error": "Filter operator 'regex' is not served for field 'name' (allowed: eq, in, match, ne, starts_with)" }
 ```
 
-Un ensemble vide répond `value: 0` pour `sum`, `value: null` pour `avg`, `min`
-et `max`, et `value: {}` pour un champ money. `meta.count` compte les lignes
-correspondantes ; les lignes qui omettent le champ comptent quand même.
+Les valeurs de tableau sur la query string voyagent encodées en JSON, par
+exemple
+`filters[dates__between]=%5B%222026-12-11%22%2C%222026-12-20%22%5D`. Les
+entrées de tri prennent un préfixe `-` pour l’ordre décroissant :
+`sort=-updated_at,id`.
 
-### 6. Mettez les lectures en cache avec les ETags
+**Dates relatives.** Toute borne datetime ou date accepte une date relative à
+la place d’une date absolue : `filters[created_at__gte]=-7d`. La grammaire
+est `[+|-]<n><unité>…` avec les unités `y`, `mo` (mois), `w`, `d`, `h`, `m`
+(minute), `s` ; un `-` initial signifie le passé, `+` ou l’absence de signe
+le futur, et le signe s’applique à chaque composant (`-1mo6d` vaut un mois
+et six jours en arrière). **`m` est une minute et `mo` un mois.** Les mois et
+les années sont des pas de calendrier — `-1mo` depuis le 31 mars donne le
+28 février — tandis que les semaines, jours, heures, minutes et secondes
+sont de longueur fixe. Sur un champ `datetime` ou sur
+`created_at`/`updated_at`, la borne est l’instant exact ; sur un champ
+`date`, elle est tronquée au jour calendaire. `__lte` couvre toute la
+journée où tombe la borne et `__gt` commence à celle-ci :
+`created_at__lte=-7d` signifie « jusqu’à il y a sept jours, journée entière
+incluse ». Une borne relative avec `h`, `m` ou `s` sur un champ `date`
+répond `422`.
 
-Chaque lecture émet un `ETag` fort. Sur un document seul, le tag est l’ULID de
-sa dernière mutation. Sur une collection, le tag combine le rôle, la requête
-et la version du doctype. Renvoyez le tag dans `If-None-Match`, et le serveur
-répond `304 Not Modified` quand rien n’a changé :
+Une seconde forme existe pour les filtres longs : la méthode `QUERY`
+(étape 6) porte les mêmes paramètres dans un corps JSON.
 
-```http
-GET /Api/crm/Company/01JD8W2G7Q5M2X9K4T6VBNR8D
-→ 200
-ETag: "01JD8W2G7Q5M2X9K4T6VBNR8E"
+### Lister les enfants d’un parent
 
-GET /Api/crm/Company/01JD8W2G7Q5M2X9K4T6VBNR8D
-If-None-Match: "01JD8W2G7Q5M2X9K4T6VBNR8E"
-→ 304
-```
+La route imbriquée
+`GET /Api/<domain>/<Doctype>/<id>/<relationship>` liste les enfants d’un
+parent — par exemple `/Api/clients/Company/<id>/contacts`. Elle transmet
+toute la grammaire de liste : `filters`, `sort`, `page`, `items`, `select`,
+`aggregate`, `scope` et `deleted`, avec les valeurs par défaut de la route
+plate (page 1, 100 éléments) et la même validation — un filtre mal formé
+répond `422`, jamais un résultat non filtré. L’ETag de la réponse digère la
+requête entière, si bien que deux pages ou deux tris différents ne
+partagent jamais un validateur. Les listes sidecar — commentaires et pièces
+jointes — font exception : elles restent non paginées.
 
-Un `304` porte `Cache-Control: no-cache`, donc le client revalide à la lecture
-suivante. Une écriture donne au document un nouveau tag, pour qu’un client
-périmé ne reçoive jamais un faux `304`.
+### 5. Agréger
 
-### 7. Envoyez les paramètres de liste dans un corps QUERY
-
-La méthode `QUERY` (RFC 10008) porte les paramètres de liste dans un corps
-JSON uniquement. Préférez-la pour les nouveaux clients ; `GET` garde la fusion
-du corps et de la query string pour la compatibilité ascendante, et la query
-string l’emporte en cas de collision :
+`aggregate=count` compte l’ensemble filtré complet. Il ignore `page` et
+`items` :
 
 ```sh
-curl -X QUERY "https://facet.example.com/Api/crm/Company" \
-  -H "Authorization: Bearer $FACET_API_KEY" -H "Content-Type: application/json" \
-  -d '{ "items": 50, "filters": { "status__eq": "active" }, "sort": ["-updated_at"] }'
+curl -skg -H "Authorization: Bearer $NADIA_KEY" \
+  'https://facet.localhost:3443/Api/rentals/Booking?aggregate=count&filters[status__eq]=confirmed'
 ```
 
-Tout paramètre de query string sur une requête `QUERY` répond `422`. Un corps
-avec un `Content-Type` non JSON répond `415`. Un corps vide signifie les
-valeurs par défaut : page 1, 100 éléments, tri `id`. Les réponses portent
-`Accept-Query: application/json`, pour qu’un client puisse découvrir le format
-depuis toute réponse de liste.
+```json
+{ "data": [], "meta": { "count": 6, "more": false } }
+```
+
+`aggregate=sum|avg|min|max` exige `field=`. Le champ doit être un champ
+`integer`, `duration` ou `money` de premier niveau. Un champ money renvoie
+un sac avec une entrée par devise présente, jamais un total toutes devises
+confondues ; les montants sont des chaînes décimales. Les 44 lignes de
+réservation de Brightwater totalisent 387 pièces louées :
+
+```sh
+curl -skg -H "Authorization: Bearer $NADIA_KEY" \
+  'https://facet.localhost:3443/Api/rentals/BookingLine?aggregate=sum&field=price'
+```
+
+```json
+{ "data": { "value": { "EUR": "8128.00" } }, "meta": { "count": 44, "more": false } }
+```
+
+```sh
+curl -skg -H "Authorization: Bearer $NADIA_KEY" \
+  'https://facet.localhost:3443/Api/rentals/BookingLine?aggregate=sum&field=quantity'
+```
+
+```json
+{ "data": { "value": 387 }, "meta": { "count": 44, "more": false } }
+```
+
+Un ensemble vide répond `value: 0` pour `sum`, `value: null` pour `avg`,
+`min` et `max`, et `value: {}` pour un champ money. Un champ que le doctype
+ne déclare pas, ou un champ non numérique, répond `422` :
+
+```json
+{ "error": "field 'total' is not a numeric field (type: data)" }
+```
+
+### 6. Mettre les lectures en cache avec les ETags
+
+Chaque lecture émet un `ETag` fort. Sur un document seul, le tag est l’ULID
+de sa dernière mutation — le `mid`. Sur une collection, le tag combine le
+compte, le rôle, la requête et la version du doctype. Renvoyez le tag dans
+`If-None-Match` et le serveur répond `304 Not Modified` quand rien n’a
+changé :
+
+```sh
+curl -sk -H "Authorization: Bearer $NADIA_KEY" -D - -o /dev/null \
+  https://facet.localhost:3443/Api/rentals/Booking/BK-2026-0001 | grep -i etag
+# etag: "06H1FM1DPGYWFD4D8RR2BXM2S9"
+
+curl -sk -H "Authorization: Bearer $NADIA_KEY" -o /dev/null -w '%{http_code}\n' \
+  -H 'If-None-Match: "06H1FM1DPGYWFD4D8RR2BXM2S9"' \
+  https://facet.localhost:3443/Api/rentals/Booking/BK-2026-0001
+# 304
+```
+
+Un `304` porte `Cache-Control: no-cache`, si bien que le client revalide à
+la lecture suivante. Une écriture donne au document un nouveau `mid`, pour
+qu’un client périmé ne reçoive jamais un faux `304`.
+
+### 7. Envoyer les paramètres de liste dans un corps QUERY
+
+La méthode `QUERY` porte les paramètres de liste dans un corps JSON
+uniquement. Elle garde les filtres longs lisibles et à l’abri des règles de
+citation du shell :
+
+```sh
+curl -sk -X QUERY https://facet.localhost:3443/Api/clients/Company \
+  -H "Authorization: Bearer $NADIA_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{ "items": 10, "filters": { "city__eq": "Lyon" }, "sort": ["-updated_at"] }'
+```
+
+Tout paramètre de query string sur une requête `QUERY` répond `422` :
+
+```json
+{ "error": "QUERY does not accept query parameters; put them in the request body" }
+```
+
+Un corps avec un `Content-Type` non JSON répond `415`. Un corps mal formé
+répond `422` avec `{"error": "Invalid JSON body"}`. Un corps vide signifie
+les valeurs par défaut : page 1, 100 éléments, tri `id`. Les réponses
+portent `Accept-Query: application/json`, pour qu’un client puisse découvrir
+le format depuis toute réponse de liste.
+
+## La spécification lisible par la machine
+
+Cette surface possède une description lisible par la machine : un fichier
+OpenAPI. L’instance le sert à `GET /Api/openapi.json` à un appelant
+connecté — sans identifiant, elle répond `401`. Le fichier couvre
+volontairement un sous-ensemble de la surface REST ; la page de référence
+l’intègre — voir [API REST](/fr/reference/rest-api/).
 
 ## Erreurs
 
 | Statut | Signification |
-| ------ | ------------- |
-| `422`  | La validation a échoué, ou un nom de filtre, de tri, de select ou de paramètre est faux. |
-| `403`  | Refus de classe : l’identifiant ne porte aucune permission sur le doctype. |
-| `404`  | Sans divulgation : un document manquant et un document caché sont indiscernables. |
-| `405`  | Méthode non autorisée ; l’en-tête `Allow` nomme les méthodes acceptées. |
-| `409`  | Écriture concurrente sur le document. Réémettez la même requête. |
-| `410`  | Pierre tombale : le document est supprimé. |
-| `415`  | Un `Content-Type` non JSON sur une requête qui porte un corps. |
+| --- | --- |
+| `401` | Aucun identifiant, ou un identifiant que la surface refuse (un token MCP sur REST, par exemple). |
+| `403` | L’identifiant ne porte aucune permission sur le doctype ; ou l’en-tête CSRF manque sur une écriture avec cookie. |
+| `404` | Sans divulgation : un document manquant et un document caché sont indiscernables. S’applique aussi à un domaine ou un doctype inconnu. |
+| `405` | Méthode non autorisée ; l’en-tête `Allow` nomme les méthodes acceptées. |
+| `410` | Pierre tombale : le document est supprimé. |
+| `415` | Un `Content-Type` non JSON sur une requête qui consomme un corps. |
+| `422` | La validation a échoué, ou un nom de filtre, de tri, de select ou de paramètre est faux. |
 
 Un corps `422` porte une entrée par champ en échec. Chaque entrée contient
-`field`, `message` et `code` ; une carte `params` porte les interpolations
-d’un `code` à gabarit quand elles existent (l’étape 2 montre un exemple
-complet). Une écriture concurrente répond
-`{ "error": "Concurrent write on this document — retry the request" }`.
-L’écriture perdante n’a jamais atterri, donc une nouvelle écriture prend le
-prochain emplacement libre.
-
-Une lecture d’une pierre tombale répond `410` avec le libellé survivant :
+`field`, `message` et `code` :
 
 ```json
-{ "error": "Document 01JD8W2G7Q5M2X9K4T6VBNR8D was deleted", "display_name": "Acme", "deleted_at": "2026-01-01T12:00:00Z" }
+{
+  "error": "Document validation failed",
+  "details": [{ "field": "name", "message": "is missing", "code": "required" }]
+}
 ```
 
-Restaurez le document avec `POST /Api/crm/Company/<id>/restore` et un corps
-JSON vide. Chaque réponse d’erreur pose `Cache-Control: no-store`, pour
-qu’aucun cache ne garde un échec périmé.
+Pour une erreur de paramètre, le serveur nomme les clés acceptées :
+
+```json
+{ "error": "Unknown parameter 'bogus' (accepted: page, items, sort, select, aggregate, field, scope, deleted)" }
+```
+
+```json
+{ "error": "Unknown select key 'bogus' (accepted: client, client_name, dates, notes, status, total)" }
+```
+
+Chaque réponse d’erreur pose `Cache-Control: no-store`, pour qu’aucun cache
+ne garde un échec périmé. Le catalogue complet se trouve dans la
+[référence des réponses d’erreur](/fr/reference/error-responses/).
 
 ## Exemple
 
-Une séquence couvre le cycle complet créer, lire, mettre à jour et supprimer
-(CRUD) :
+Un cycle complet sur l’instance de dev — créer, lire, mettre à jour,
+vérifier le cache, supprimer, restaurer, supprimer à nouveau :
 
 ```sh
-BASE="https://facet.example.com"
-AUTH="Authorization: Bearer $FACET_API_KEY"
-ID="01JD8W2G7Q5M2X9K4T6VBNR8D"
+BASE=https://facet.localhost:3443
+AUTH="Authorization: Bearer $NADIA_KEY"
+CT='Content-Type: application/json'
 
-curl -s -X POST "$BASE/Api/crm/Company" -H "$AUTH" -H "Content-Type: application/json" \
-  -d '{ "name": "Initech", "status": "lead" }'          # → 201 : meta.id, nouvel ETag
-curl -s -D - -o /dev/null "$BASE/Api/crm/Company/$ID" -H "$AUTH"          # → 200 : copiez l’ETag
-curl -s -D - -o /dev/null "$BASE/Api/crm/Company/$ID" -H "$AUTH" \
-  -H 'If-None-Match: "01JD8W2G7Q5M2X9K4T6VBNR8E"'       # → 304 si inchangé
-curl -s "$BASE/Api/crm/Company?filters[status__eq]=active&sort=-updated_at&items=10" -H "$AUTH"  # → 200
-curl -s -X PATCH "$BASE/Api/crm/Company/$ID" -H "$AUTH" -H "Content-Type: application/json" \
-  -d '{ "status": "active" }'                           # → 200 : enveloppe mise à jour
-curl -s -X DELETE "$BASE/Api/crm/Company/$ID" -H "$AUTH" -o /dev/null -w '%{http_code}\n'  # → 204
+# Création — notez meta.id dans la réponse 201.
+curl -sk -H "$AUTH" -H "$CT" -X POST "$BASE/Api/clients/Company" \
+  -d '{ "name": "Atelier Vermeil", "city": "Lyon" }'
+
+# Lecture — copiez l’ETag (le mid) dans les en-têtes.
+curl -sk -H "$AUTH" -D - -o /dev/null "$BASE/Api/clients/Company/06H1FRV45MM80SVH32K5JCA6BH"
+
+# Lecture conditionnelle — 304 quand rien n’a changé.
+curl -sk -H "$AUTH" -o /dev/null -w '%{http_code}\n' \
+  -H 'If-None-Match: "06H1FRV45MKNZD49WQA7A843TW"' \
+  "$BASE/Api/clients/Company/06H1FRV45MM80SVH32K5JCA6BH"
+
+# Mise à jour — 200 avec l’enveloppe fraîche.
+curl -sk -H "$AUTH" -H "$CT" -X PATCH "$BASE/Api/clients/Company/06H1FRV45MM80SVH32K5JCA6BH" \
+  -d '{ "city": "Annecy" }'
+
+# Liste — une page filtrée.
+curl -skg -H "$AUTH" \
+  "$BASE/Api/clients/Company?filters[name__match]=Vermeil&select=name,city"
+
+# Suppression — 204. La lecture répond ensuite 410.
+curl -sk -H "$AUTH" -X DELETE -o /dev/null -w '%{http_code}\n' \
+  "$BASE/Api/clients/Company/06H1FRV45MM80SVH32K5JCA6BH"
+
+# Restauration — 200 avec l’enveloppe restaurée.
+curl -sk -H "$AUTH" -H "$CT" -X POST "$BASE/Api/clients/Company/06H1FRV45MM80SVH32K5JCA6BH/restore" -d '{}'
+
+# Suppression à nouveau — l’enregistrement est une donnée jetable.
+curl -sk -H "$AUTH" -X DELETE -o /dev/null -w '%{http_code}\n' \
+  "$BASE/Api/clients/Company/06H1FRV45MM80SVH32K5JCA6BH"
 ```
 
 ## Dépannage
 
-**Un document que vous venez de créer répond `404`.**
+**Une création ou une suppression répond `403` avec
+`{"error":"CSRF: Missing X-Requested-With header"}`.**
+
+L’appel porte un cookie de session ; le contrôle CSRF s’applique donc.
+Ajoutez `X-Requested-With: XMLHttpRequest`, ou envoyez une clé d’API en
+`Authorization: Bearer`. Un appel Bearer ou DPoP sans cookie n’a pas besoin
+de cet en-tête.
+
+**Une liste répond `422 Unknown filter field 'name][match'`.**
+
+L’imbrication à la Rack (`filters[name][match]`) n’est pas la grammaire. Un
+seul niveau de crochets porte la clé entière : `filters[name__match]=value`
+— avec `curl -g` pour que les crochets survivent.
+
+**Un document créé il y a quelques instants répond `404`.**
 
 Des périmètres de lignes sur le rôle, ou une attribution manquante, cachent
 la ligne. Un `404` ne divulgue jamais l’existence. Vérifiez ce que
 l’identifiant peut tenter — voir
-[Contrôler votre UI avec le manifest](/fr/build/apps/connect/permission-manifest/).
-
-**Un appel de liste répond `422 Unknown parameter` ou `unknown_filter_field`.**
-
-Une faute de frappe se cache dans la grammaire des paramètres. Vérifiez la
-clé et l’opérateur contre la table de l’étape 4.
+[Dimensionner l’UI avec le manifeste](/fr/build/apps/connect/permission-manifest/).
 
 **Une lecture conditionnelle renvoie `200` à chaque fois.**
 
 La valeur d’`If-None-Match` doit correspondre à l’`ETag` à l’identique,
-guillemets compris.
+guillemets compris. Le `mid` du document change à chaque écriture — copiez
+le tag après l’écriture.
 
-**Une écriture répond `409`.**
+**Une lecture répond `410`.**
 
-Deux écritures concurrentes ont visé le même document. L’écriture perdante
-n’a jamais atterri. Réémettez la même requête.
+Le document est une pierre tombale.
+`POST /Api/<domain>/<doctype>/<id>/restore` le ramène. Un `410` porte
+`display_name`, pour que l’UI puisse étiqueter la ligne.
 
 **Une création répond `422` avec `unknown_field` sur `content`.**
 
 Le corps est emballé dans une clé `content`. Envoyez les champs au premier
 niveau du corps JSON.
 
+**Un agrégat répond `422 field 'x' is not a numeric field`.**
+
+`sum`, `avg`, `min` et `max` prennent un champ `integer`, `duration` ou
+`money` de premier niveau. `aggregate=count` n’a besoin d’aucun champ.
+
 ## Voir aussi
 
-- [Le SDK TypeScript (`@facetapp/sdk`)](/fr/build/apps/data/sdk/) — le wrapper
-  typé de cette surface.
-- [Recherche](/fr/build/apps/data/search/) — la recherche de libellés multi-doctypes en
-  un appel.
-- [Temps réel avec WebSockets](/fr/build/apps/data/realtime/) — des mises à jour
-  poussées au lieu du polling.
-- [Contrôler votre UI avec le manifest](/fr/build/apps/connect/permission-manifest/) — ce
-  que l’identifiant peut tenter.
-- [Référence de l’API REST](/fr/reference/rest-api/) — le contrat lisible par
-  la machine.
-- Internes sur GitHub :
-  [http-layer.md](https://github.com/wearefacet/facet/blob/main/doc/backend/http-layer.md).
+- [Le SDK TypeScript](/fr/build/apps/data/sdk/) — le wrapper typé de cette surface.
+- [Rechercher depuis une app](/fr/build/apps/data/search/) — la recherche de libellés multi-doctypes en un appel.
+- [Temps réel avec WebSockets](/fr/build/apps/data/realtime/) — des mises à jour poussées au lieu du polling.
+- [Dimensionner l’UI avec le manifeste](/fr/build/apps/connect/permission-manifest/) — ce que l’identifiant peut tenter.
+- [Référence de l’API REST](/fr/reference/rest-api/) — la référence complète des routes et des paramètres.
+- [Documents : des enregistrements avec une mémoire](/fr/discover/how-it-works/documents/)

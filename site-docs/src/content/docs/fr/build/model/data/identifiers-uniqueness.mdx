@@ -1,0 +1,171 @@
+---
+type: how-to
+title: Identifiants et contraintes d’unicité
+description: Générez des identifiants lisibles comme EQ-2026-0001, et gardez les valeurs de champs uniques d’un document à l’autre.
+audience: [author]
+features: [DOM-10, DOM-11]
+sidebar:
+  order: 2
+verified_at: eee55a2
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Par défaut, Facet nomme chaque document avec un ULID : un identifiant long,
+triable et opaque, comme `06H1GPGJB49DCCDM4NV957AW3B`. Bien des
+enregistrements gagnent à porter un nombre qu’on peut dire à voix haute —
+les items Brightwater portent `EQ-2026-0001`, et les tickets de maintenance
+`MT-2026-0001`. Un bloc `identifier` sur le doctype génère de tels numéros.
+Les règles d’unicité sur les champs assainissent les données d’une seconde
+façon : deux documents ne peuvent pas porter la même valeur.
+
+## Quand l’utiliser
+
+Ajoutez un identifiant quand les utilisateurs citent des numéros de document
+de vive voix, par courriel ou à l’impression. Ajoutez `unique` quand une
+valeur dupliquée serait une erreur de données, comme deux items avec le
+même numéro de série.
+
+## Avant de commencer
+
+- **L’identifiant devient l’id du document.** Il est généré à la création et
+  ne change jamais.
+- **Un compteur par doctype.** Facet tient un compteur par domaine et par
+  doctype, partagé par tous les émetteurs d’écritures. Les créations
+  concurrentes font la queue sur un verrou ; deux émetteurs ne peuvent donc
+  jamais tirer le même numéro.
+
+## Étapes
+
+<Tabs syncKey="build-mode">
+<TabItem label="Builder">
+
+1. Ouvrez le doctype dans le **Builder** et trouvez la section
+   **Identifier**.
+2. Saisissez le modèle, par exemple `EQ-{year}-####`.
+3. Cochez **Generated only** quand les appelants ne doivent jamais choisir
+   leur propre id.
+4. Pour l’unicité, ouvrez le champ et cochez **Unique**.
+
+</TabItem>
+<TabItem label="Fichiers">
+
+Le doctype item de Brightwater déclare l’identifiant et un numéro de série
+unique :
+
+```yaml
+# equipment/doctypes/equipment.Item.yml (extrait)
+identifier:
+  template: "EQ-{year}-####"
+fields:
+  serial_number:
+    type: string
+    title: Serial number
+    unique: true
+    filters: [equality]
+```
+
+</TabItem>
+</Tabs>
+
+### Façonner le numéro avec un modèle
+
+| Jeton | Signification |
+| --- | --- |
+| `#` | Un chiffre du compteur, complété par des zéros. Quatre chiffres comptent à partir de `0001`. |
+| `{year}` | L’année en cours, par exemple `2026`. |
+| `{month}` | Le mois en cours, par exemple `11`. |
+| `{day}` | Le jour en cours, par exemple `26`. |
+| Du texte quelconque | Du texte littéral, copié tel quel : `EQ-`, `-`, `MT-`. |
+
+Le modèle exige au moins un groupe de `#`, et un groupe compte au plus 18
+chiffres. Le compteur démarre à `1`. Quand l’année ou le mois du modèle
+change, le compteur repart de zéro et la numérotation recommence à `1`.
+
+### Déclarer le bloc identifiant
+
+```json
+"identifier": {
+  "template": "EQ-{year}-####",
+  "genonly": true
+}
+```
+
+`genonly: true` interdit aux appelants de fournir leur propre id à la
+création. Sans lui, le modèle génère quand même l’id quand l’appelant n’en
+fournit pas.
+
+### Ajouter des champs uniques
+
+Posez `unique: true` sur tout champ dont la valeur doit différer d’un
+document à l’autre. Facet vérifie la règle à chaque création et mise à jour.
+Un document sans le champ, ou avec `null`, n’entre jamais en collision ;
+deux documents qui portent tous deux une chaîne vide, si.
+
+```json
+"serial_number": {
+  "type": "string",
+  "required": true,
+  "unique": true,
+  "filters": ["equality"]
+}
+```
+
+À la mise à jour, un document n’entre jamais en collision avec lui-même :
+sa propre valeur stockée est exclue du contrôle.
+
+## Exemple
+
+L’identifiant des items Brightwater a généré ces ids sur l’instance
+d’exemple — les quarante premiers items portent `EQ-2026-0001` à
+`EQ-2026-0040` :
+
+```json
+{
+  "identifier": { "template": "EQ-{year}-####", "genonly": false },
+  "fields": {
+    "serial_number": { "type": "string", "unique": true, "filters": ["equality"] }
+  }
+}
+```
+
+Le numéro est l’id du document ; les pages l’affichent et l’API peut
+retrouver un document par lui — `GET /Api/equipment/Item/EQ-2026-0001`.
+Au 1er janvier, la numérotation repart de `EQ-2027-0001`.
+
+:::caution
+Quand chaque groupe de chiffres atteint son maximum, Facet retombe sur un
+ULID pour l’id suivant. Donnez à un doctype très sollicité assez de
+chiffres, par exemple `######`.
+:::
+
+## Dépannage
+
+### Une écriture répond `422` avec une erreur d’unicité
+
+Un autre document du même doctype porte déjà cette valeur. Retrouvez-le en
+filtrant la liste sur le champ, puis changez la valeur ou corrigez le
+doublon.
+
+### L’appelant ne peut pas choisir l’id
+
+Le doctype déclare `genonly: true`. Les appelants omettent l’id et laissent
+Facet le générer.
+
+### Un document porte un ULID au lieu d’un numéro
+
+Le compteur a débordé, ou le document a été créé avant l’ajout du bloc
+identifiant. Les identifiants s’appliquent aux documents créés une fois le
+bloc en place.
+
+### Deux doctypes remettent leur compteur à zéro à des moments différents
+
+Chaque modèle porte ses propres variables de temps. Un modèle avec
+`{month}` repart chaque mois ; un modèle avec seulement `{year}` repart
+chaque année.
+
+## Voir aussi
+
+- [Schéma de doctype (référence)](/fr/reference/doctype-schema/) — le bloc identifiant et les contraintes de champs en détail.
+- [Choisir les types de champs](/fr/build/model/data/field-types/) — la contrainte `unique` à côté des autres.
+- [Concevoir un doctype](/fr/build/model/data/design-doctypes/) — la place du bloc identifiant dans la déclaration.

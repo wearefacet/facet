@@ -1,42 +1,45 @@
 ---
-title: Envoi des mails
-description: Configurez l’envoi des mails via SMTP, passez le contrôle de production et changez les réglages sans redémarrage.
+title: Courriel sortant
+description: Configurez l’envoi de courriel sortant via SMTP, passez le contrôle de production et testez la livraison avec la sonde intégrée.
+type: how-to
 audience: [operator]
 features: [AUT-07]
 sidebar:
-  order: 7
-verified_at: 008dd880
+  order: 3
+verified_at: eee55a2
 ---
 
-Facet envoie des mails pour les parcours d’identifiants : réinitialisation
-de mot de passe, invitations, premiers identifiants et liens d’activation de la
-MFA. La livraison passe par un seul adaptateur de mail. L’adaptateur par défaut
-imprime les mails sur stdout. La production exige une vraie livraison via SMTP.
-Les notifications dans l’application forment un système à part, qui n’utilise
-jamais le mail.
+Un nouvel arrivant n’a pas reçu le lien d’invitation, et la réinitialisation
+de mot de passe n’a pas abouti non plus. Facet envoie du courriel pour les
+flux d’identifiants : les liens d’invitation pour les premiers identifiants
+et les réinitialisations de mot de passe. La livraison passe par un seul
+adaptateur de courriel. L’adaptateur par défaut imprime le courriel sur
+stdout. La production exige une vraie livraison par SMTP. Les notifications
+dans l’application forment un système séparé qui n’utilise jamais le
+courriel.
 
 ## Quand l’utiliser
 
-Configurez le mail dans ces cas :
+Configurez le courriel quand :
 
-- vous installez SMTP pour une nouvelle installation ;
-- vous faites passer une installation de la livraison stdout à un relais ;
-- vous changez l’adresse d’expédition sans redémarrer.
+- Vous installez SMTP pour une nouvelle installation.
+- Vous faites passer une installation de la livraison stdout à un relais.
+- Vous changez l’adresse d’expédition sans redémarrer.
 
 ## Avant de commencer
 
 - Vous disposez d’un compte de relais SMTP : hôte, port, identifiant, mot
   de passe.
-- Vous connaissez le `APP_ENV` du déploiement.
-- Les clés `mail:` sont des clés à chaud. Un enregistrement des paramètres
-  l’emporte sur le fichier sans redémarrage — voir
+- Vous connaissez la valeur de `APP_ENV` du déploiement.
+- Les clés `mail:` sont des clés chaudes. Un enregistrement de paramètres
+  surpasse le fichier sans redémarrage — voir
   [Paramètres système](/fr/admin/configure/system-settings/).
 
 ## Étapes
 
 ### 1. Définissez la section mail
 
-Renseignez les valeurs SMTP dans `config.{env}.yml` :
+Placez les valeurs SMTP dans `config.{env}.yml` :
 
 ```yaml
 mail:
@@ -62,60 +65,83 @@ Les clés et leurs valeurs par défaut :
 | `mail.smtp.port` | `587` | Le port du relais. |
 | `mail.smtp.username` | aucune | L’utilisateur du relais, quand le relais en demande un. |
 | `mail.smtp.password` | aucune | Le mot de passe du relais. Utilisez `!env` pour le tenir hors du fichier. |
-| `mail.smtp.use_tls` | `true` | Utilise TLS vers le relais. |
+| `mail.smtp.use_tls` | `true` | Passe la connexion en TLS via STARTTLS. |
 
 ### 2. Passez le contrôle de production
 
-Le démarrage refuse `adapter: dev` quand `APP_ENV=production` et que le fichier
-ne définit pas la porte de sortie. L’erreur nomme les clés exactes des deux
-voies :
+Le démarrage refuse `adapter: dev` quand `APP_ENV=production` et que le
+fichier ne définit pas l’échappatoire. L’erreur nomme les clés exactes des
+deux voies :
 
-- Définissez `mail.adapter: smtp` avec les clés `mail.smtp.*` — la voie
-  normale.
-- Ou définissez `mail.allow_dev_adapter_in_production: true` — la voie des
-  installations isolées du réseau. Le mail reste sur stdout.
+- Réglez `mail.adapter: smtp` avec les clés `mail.smtp.*` — la voie normale.
+- Ou réglez `mail.allow_dev_adapter_in_production: true` — la voie hors
+  réseau. Le courriel reste sur stdout.
 
 :::caution
 Chaque environnement qui démarre avec l’adaptateur `dev` journalise un
-avertissement. Un mail qui ne fait qu’imprimer sur stdout n’atteint jamais les
-utilisateurs. Un mail de réinitialisation perdu, et le compte est verrouillé.
-Testez la livraison avant d’ouvrir l’installation aux utilisateurs.
+avertissement. Un courriel qui ne s’imprime que sur stdout n’atteint jamais
+les utilisateurs. Un courriel de réinitialisation perdu signifie un compte
+verrouillé. Testez la livraison avant d’ouvrir l’installation aux
+utilisateurs.
 :::
 
-Le même contrôle s’applique à l’écriture. Un enregistrement à chaud qui fait
-passer l’adaptateur effectif à `dev` sous `APP_ENV=production` est refusé,
-sauf si le fichier définit la même porte de sortie. La porte de sortie, elle,
-ne se définit que dans le fichier.
+Le même contrôle s’applique à l’écriture. Un enregistrement d’exécution qui
+bascule l’adaptateur effectif vers `dev` sous `APP_ENV=production` est
+refusé, sauf si le fichier définit le même échappatoire. L’échappatoire
+lui-même reste propre au fichier.
 
-### 3. Changez les valeurs sans redémarrage
+### 3. Changez les valeurs sans redémarrer
 
-Les clés `mail.*` sont à chaud. Épinglez-les sur la page
+Les clés `mail.*` sont chaudes. Épinglez-les sur la page
 **Configurer → Plateforme → Paramètres**, ou enregistrez le document de
 paramètres :
 
 ```sh
-curl -k -X PATCH -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X PATCH -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "Content-Type: application/json" \
   -d '{"mail": {"from_address": "no-reply@your-company.tld"}}' \
-  "https://facet.localhost:3443/Api/core/SystemSettings/settings"
+  "$(facet-cli host)/Api/core/SystemSettings/settings"
 ```
 
-Un enregistrement des paramètres reconstruit l’adaptateur : le mail
-suivant utilise les nouvelles valeurs. Le contrôle à l’écriture vérifie l’état
-fusionné : `mail.adapter: smtp` exige un `mail.smtp.host` non nul.
+Un enregistrement de paramètres reconstruit l’adaptateur ; le prochain
+courriel utilise donc les nouvelles valeurs. Le contrôle d’écriture vérifie
+l’état fusionné : `mail.adapter: smtp` exige un `mail.smtp.host` non null.
 
 ### 4. Testez la livraison
 
-Lancez une réinitialisation de mot de passe depuis la page Connexion. Le lien
-de réinitialisation arrive uniquement par mail, donc un mail bien livré prouve
-toute la chaîne : adaptateur, relais, adresse d’expédition et TTL du
-lien. Le TTL du lien est `iam.change_password_expiration`, 24 heures par
-défaut.
+La page des paramètres possède une sonde pour cela. Ouvrez
+**Configurer → Plateforme → Paramètres**, cherchez
+**Envoyer un courriel de test**, tapez le destinataire et sélectionnez
+**Envoyer un courriel de test**. Un courriel traverse le connecteur
+enregistré — le même chemin que les réinitialisations de mot de passe et les
+invitations. Enregistrez d’abord toute modification en attente ; le test
+utilise les paramètres enregistrés, pas le formulaire.
+
+Les réponses possibles :
+
+| Réponse | Signification |
+| --- | --- |
+| `200 {adapter, from_address, to}` | Livré. La réponse nomme le transport et l’expéditeur utilisés. |
+| `422` | Facet a refusé avant le réseau : le connecteur est encore `dev`, ou l’adresse est mal formée. |
+| `502` | Le transport a échoué. Le message porte l’erreur propre du relais — `connection refused` ou un échec d’authentification 535 est le diagnostic que vous cherchiez en pressant le bouton. |
+
+Sur une installation qui tourne encore avec l’adaptateur `dev`, la sonde
+refuse avec :
+
+```json
+{"error": "The email connector is off: the 'dev' adapter prints to stdout and delivers nothing. Set mail.adapter to smtp and save before testing"}
+```
+
+En second contrôle, déclenchez une réinitialisation de mot de passe depuis
+la page de connexion. Le lien de réinitialisation arrive uniquement par
+courriel ; un courriel livré prouve donc toute la chaîne : adaptateur,
+relais, adresse d’expédition et TTL du lien. Le TTL du lien est
+`iam.change_password_expiration`, 24 heures par défaut.
 
 ## Exemple
 
-Une installation isolée du réseau qui doit garder la livraison stdout, avec la
-porte de sortie définie :
+Une installation hors réseau qui doit garder la livraison stdout, avec
+l’échappatoire défini :
 
 ```yaml
 mail:
@@ -125,29 +151,36 @@ mail:
   from_name: Facet
 ```
 
-Chaque mail s’imprime sur stdout. Associez-y un flux opérateur qui surveille
-les logs du backend, car les liens de réinitialisation et d’invitation
-n’atteignent jamais une boîte de réception.
+Chaque courriel s’imprime sur stdout. La sonde refuse ici de signaler un
+succès — cela ne prouverait rien, car aucune boîte de réception n’a rien
+reçu. Accompagnez cette posture d’un flux opérateur qui surveille les logs
+du backend, car les liens de réinitialisation et d’invitation n’atteignent
+jamais une boîte de réception.
 
 ## Dépannage
 
-**Le démarrage échoue avec une erreur d’adaptateur de mail.**
+**Le démarrage échoue avec une erreur d’adaptateur de courriel.**
 
-La production refuse l’adaptateur `dev` sans la porte de sortie. Suivez les
-deux voies indiquées dans le message d’erreur, ou voyez l’étape 2.
+La production refuse l’adaptateur `dev` sans l’échappatoire. Suivez les deux
+voies du message d’erreur, ou voyez l’étape 2.
 
-**Le mail n’arrive pas.**
+**Le courriel de test répond `502`.**
 
-Cherchez la tentative d’envoi dans les logs du backend. Puis examinez le
-relais : mauvais port, `use_tls: false` face à un relais qui n’accepte
-que TLS, et échecs d’authentification au relais sont les causes courantes.
-Relancez une réinitialisation de mot de passe pour retester.
+Lisez le message : c’est l’erreur propre du relais. Un mauvais port,
+`use_tls: false` face à un relais qui n’accepte que TLS et les échecs
+d’authentification du relais sont les causes courantes. Corrigez la valeur,
+enregistrez et renvoyez la sonde.
 
-**Un enregistrement à chaud de l’adaptateur est refusé.**
+**Le courriel n’arrive pas.**
 
-Le contrôle à l’écriture exige un `mail.smtp.host` non nul quand l’adaptateur
-vaut `smtp`, et refuse `dev` en production sans la porte de sortie dans le
-fichier.
+Cherchez la tentative d’envoi dans les logs du backend, puis lancez la sonde
+— elle transforme l’échec silencieux en erreur nommée. Déclenchez une
+réinitialisation de mot de passe pour retester le flux de lien.
+
+**Un enregistrement d’exécution de l’adaptateur est refusé.**
+
+Le contrôle d’écriture exige un `mail.smtp.host` non null quand l’adaptateur
+vaut `smtp`, et refuse `dev` en production sans l’échappatoire du fichier.
 
 **La nouvelle adresse d’expédition ne s’applique pas.**
 
@@ -157,21 +190,20 @@ paramètres.
 
 **Le lien de réinitialisation a expiré.**
 
-Le TTL du lien est `iam.change_password_expiration`, 86 à 400 secondes par
-défaut. Demandez un nouveau lien.
+Le TTL du lien est `iam.change_password_expiration`, 86 400 secondes par
+défaut. Demandez un lien neuf.
 
 ## Voir aussi
 
-- [Fichiers de configuration](/fr/admin/configure/configuration-files/) — où se trouve
-  la section `mail:`.
-- [Paramètres système](/fr/admin/configure/system-settings/) — la couche à chaud qui
-  l’emporte sur le fichier.
-- [Notifications dans l’application](/fr/use/notifications/) — le
-  système de notifications distinct.
-- [Sessions, tokens et verrouillages](/fr/admin/people/sessions-lockouts/) —
-  les TTL des liens et les règles de verrouillage.
-- [Bootstrap et tâches CLI](/fr/admin/install/bootstrap/) — `seed:admin`, qui
-  imprime son mot de passe au lieu de l’envoyer par mail.
-- Internes sur GitHub :
-  [config.md](https://github.com/wearefacet/facet/blob/main/doc/backend/config.md),
-  [system-settings.md](https://github.com/wearefacet/facet/blob/main/doc/backend/system-settings.md).
+- [Fichiers de configuration](/fr/admin/configure/configuration-files/) —
+  où vit la section `mail:`.
+- [Paramètres système](/fr/admin/configure/system-settings/) — l’étage
+  d’exécution qui surpasse le fichier.
+- [Notifications dans l’application](/fr/use/notifications/) — le système
+  de notifications séparé.
+- [Sessions et verrouillages](/fr/admin/people/sessions-lockouts/) — les
+  TTL des liens et les règles de verrouillage.
+- [Premier démarrage et initialisation](/fr/admin/install/bootstrap/) —
+  `seed:admin`, qui imprime son mot de passe au lieu de l’envoyer par
+  courriel.
+- Internes sur GitHub : [config.md](https://github.com/wearefacet/facet/blob/main/doc/backend/config.md), [system-settings.md](https://github.com/wearefacet/facet/blob/main/doc/backend/system-settings.md).

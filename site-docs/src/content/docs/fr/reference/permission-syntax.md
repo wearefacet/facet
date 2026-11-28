@@ -6,15 +6,14 @@ audience: [admin, developer]
 features: [RBC-01, RBC-03, RBC-06]
 sidebar:
   order: 15
-verified_at: 008dd880
+verified_at: eee55a2
 ---
 
-Utilisez cette page pour écrire une ligne de permission et vérifier ce que
-chaque forme attribue.
-
-Une ligne de permission est un objet JSON dans le tableau `permissions` d’un
-document `iam.Roles`. Elle attribue une action sur un chemin de doctype, avec
-un périmètre de lignes facultatif et une soustraction de chemins facultative.
+Vous rédigez un rôle et devez savoir exactement ce que chaque ligne de
+permission attribue. Une ligne de permission est un objet JSON dans le tableau
+`permissions` d’un document `iam.Roles`. Elle attribue une action sur un chemin
+de doctype, avec un périmètre de lignes facultatif et une soustraction de
+chemins facultative.
 
 Cette page donne la grammaire exacte que l’analyseur accepte et l’effet de
 chaque forme.
@@ -30,7 +29,7 @@ Une ligne porte quatre parties. `action` et `on` sont obligatoires ;
 
 | Partie | Obligatoire | Forme |
 | --- | --- | --- |
-| `action` | oui | `read`, `create`, `update`, `delete`, `*` (toutes les actions), ou une action nommée comme `activate` ou `publish_artifact`. La correspondance est exacte ; seul `*` est un joker. |
+| `action` | oui | `read`, `create`, `update`, `delete`, `*` (toutes les actions), ou une action nommée comme `activate` ou `publish_artifact`. La correspondance est exacte ; seul `*` est un joker. `write` est un alias réservé aux attributions d’app — une attribution d’application le développe en `create` + `update`, et le validateur de rôles le refuse sur une ligne de permission avec le motif « not a role action ». |
 | `on` | oui | Un chemin séparé par des points : le domaine, puis les segments de doctype. Les noms de domaine sont en minuscules avec des tirets ; les segments de doctype sont en CamelCase. |
 | `scope` | non | Un tableau de chaînes `$<alias>`. Chaque alias nomme un périmètre déclaré sur le doctype feuille. Les alias se combinent en OU. |
 | `except` | non | Un tableau de chemins concrets `domain.Doctype`. Chaque entrée retire son sous-arbre de la ligne. |
@@ -62,13 +61,19 @@ Règles que le validateur impose :
   complet doit être `*.*`. Une forme mixte comme `*.Deal` est une erreur.
 - Une ligne `*.*` est une ligne joker. Le garde-fou d’autorité des rôles
   n’autorise à l’écrire que l’appelant dont le propre rôle atteint `*.*`.
+- Chaque ligne qu’un appelant écrit doit être couverte par les lignes de son
+  propre rôle ou par l’état antérieur du rôle qu’il modifie. Le garde-fou
+  d’autorité des rôles refuse une écriture de rôle qui accorde des pouvoirs
+  que l’appelant ne détient pas (un élargissement).
 
 ## Le champ `scope`
 
-La forme tableau est obligatoire sur tout chemin d’écriture. La forme à chaîne
-unique (`"scope": "$mine"`) est une forme ancienne que des rôles stockés
-peuvent encore porter ; une écriture de rôle avec un périmètre chaîne échoue
-avec `must be an array`.
+L’analyseur accepte les deux formes et les normalise en tableau : une chaîne
+unique devient un tableau à une entrée, et `"$all"` réduit tout le résultat à
+un accès sans restriction. La forme tableau est la forme canonique — envoyez
+toujours celle-ci. La forme à chaîne unique est une forme ancienne que des
+rôles stockés peuvent encore porter ; l’analyseur la normalise toujours, si
+bien qu’aucun chemin d’écriture ne la refuse (écart #12).
 
 | Forme | Lignes couvertes |
 | --- | --- |
@@ -81,7 +86,10 @@ avec `must be an array`.
 Chaque alias doit être déclaré dans le bloc `scopes:` du doctype feuille. Le
 validateur rejette un alias inconnu à l’écriture du rôle ; le contrôle le
 développe par rapport à la définition réelle au moment de la requête. Un rôle
-n’écrit jamais son propre prédicat de requête. Voir
+n’écrit jamais son propre prédicat de requête. Une ligne qui associe `create`
+à un périmètre reste légale — le validateur avertit, car le périmètre ne peut
+pas contrôler une création (aucune ligne à vérifier). Le périmètre est un
+canal d’intention qu’un hook Lua de création lit via `ctx.actor.scope`. Voir
 [Périmètres de lignes](/fr/admin/people/row-scopes/) pour la grammaire de
 déclaration.
 
@@ -162,7 +170,7 @@ Le porteur de ce rôle peut :
 - Mettre à jour un ticket fermé — le périmètre `unresolved` ne correspond pas.
 - Lire ou écrire quoi que ce soit hors de `helpdesk.Ticket` et de ses
   enfants — tout autre doctype répond `403`.
-- Voir les champs étiquetés au-del à de `default` — `visible_tags` vaut
+- Voir les champs étiquetés au-delà de `default` — `visible_tags` vaut
   `["default"]`.
 
 ## Visibilité des champs

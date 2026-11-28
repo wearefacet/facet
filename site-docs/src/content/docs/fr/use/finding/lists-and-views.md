@@ -1,230 +1,226 @@
 ---
+type: how-to
 title: Listes, filtres et vues enregistrées
-description: Travailler une liste en tableau, kanban ou calendrier, la filtrer, puis enregistrer le résultat comme vue.
+description: Ouvrez une liste, passez du tableau au kanban et au calendrier, filtrez-la, puis enregistrez le réglage comme une vue à rouvrir en un clic.
 audience: [user]
-features: [FE-03, DOC-02, DOM-21]
+features: [FE-03, FE-08, DOM-21, DOM-30, FE-25]
 sidebar:
-  order: 3
-verified_at: 49d7c7e5
+  order: 1
+verified_at: c34885a
 ---
 
-Vos enregistrements vivent dans des listes. Chaque doctype en ouvre une, et
-vous choisissez la disposition qui convient au travail :
-
-- **Tableau** — quand vous avez besoin de détail, de colonnes et de tri.
-- **Kanban** — quand le travail passe par des étapes.
-- **Calendrier** — quand les dates comptent.
-
-Resserrez la liste avec des filtres, triez-la, puis enregistrez le réglage
-comme **vue enregistrée** : un onglet nommé que vous rouvrez en un clic,
-ou que vous partagez avec votre équipe.
+Votre travail se passe dans des listes. Chaque type d’enregistrement en
+ouvre une, et vous choisissez la disposition qui convient au travail. Un
+tableau quand vous avez besoin de détail, un kanban quand le travail passe
+par des étapes, un calendrier quand les dates comptent. Resserez la liste
+avec des filtres, puis enregistrez l’ensemble comme **vue**. Une vue est un
+onglet nommé que vous rouvrez en un clic — gardez-la pour vous, ou
+partagez-la avec votre équipe.
 
 ## Avant de commencer
 
-- **L’accès en lecture.** Il vous faut l’accès en lecture au doctype. Sans
-  lui, Facet n’affiche pas la liste. Voir
-  [Comment Facet vérifie les permissions](/fr/admin/under-the-hood/how-access-is-enforced/).
-- **Les droits sur les vues.** Pour créer ou changer des vues enregistrées,
-  votre rôle a besoin des droits create ou update sur les vues. Sans eux, vous
-  pouvez encore utiliser les vues que votre équipe partage.
+- [Visite de l’espace de travail](/fr/use/first-day/) — où se trouvent la
+  barre latérale, la barre supérieure et vos enregistrements.
 
-## Étapes
+## Ouvrir une liste
 
-### 1. Ouvrez une liste
+Ouvrez un domaine dans la barre latérale, puis sélectionnez un type
+d’enregistrement. La liste s’ouvre sur la première vue enregistrée,
+présentée comme un onglet au-dessus du tableau :
 
-Ouvrez un domaine, puis sélectionnez un doctype. La liste s’ouvre sur la
-première vue enregistrée. Vous pouvez aussi ouvrir une vue directement depuis
-le tableau de bord du domaine.
+![Tom's clients list: a table of companies with the view tabs above it and the filter toolbar on top.](/screens/use/finding-lists-1.png)
 
-Un nouveau doctype n’a pas encore de vue : la page affiche un écran
-d’accueil avec une carte par disposition. Choisissez une carte pour créer
-la première vue. Ensuite, les onglets au-dessus du tableau montrent les
-vues, chacune avec une icône pour sa disposition : tableau, kanban ou
-calendrier.
+Un type d’enregistrement sans vue affiche à la place un écran de démarrage :
+une carte par disposition. Choisissez une carte pour construire la première
+vue. Ensuite, chaque onglet porte une icône — tableau, kanban ou calendrier
+— et vous voyez d’un coup d’œil ce qu’il ouvre.
 
-<!-- d2
-tab: "Select a tab" {class: external}
-layout: "Which layout?" {class: decision}
-table: "Rows and sortable columns"
-kanban: "Cards in lanes"
-calendar: "Chips on a date grid"
+## Les trois dispositions
 
-tab -> layout
-layout -> table: Table
-layout -> kanban: Kanban
-layout -> calendar: Calendar
--->
-<div class="d2-diagram">
-<img class="d2-diagram__img d2-diagram__light" src="/diagrams/22678345-light.svg" alt="Select a tab" loading="lazy" />
-<img class="d2-diagram__img d2-diagram__dark" src="/diagrams/22678345-dark.svg" alt="Select a tab" loading="lazy" />
-</div>
+| Disposition | Ce qu’elle affiche | À quoi elle sert |
+|---|---|---|
+| **Tableau** | Une ligne par enregistrement, une colonne par champ | Le détail, le tri, le travail sur de nombreux enregistrements |
+| **Kanban** | Des cartes regroupées en colonnes, une colonne par statut ou par étape | Le travail qui avance : tickets, réservations |
+| **Calendrier** | Des enregistrements posés sur une grille de mois ou de semaine selon un champ de date | Réservations, échéances, plannings |
 
-### 2. Choisissez la disposition
+Chaque disposition répond à une question différente. Lucía tient le tableau
+de maintenance. Chaque ticket se trouve dans la colonne qui correspond à son
+état, et elle déplace une carte quand le travail avance. Le déplacement
+demande le droit de modifier des enregistrements — le même droit que le
+bouton Modifier.
 
-Chaque disposition convient à un travail différent :
+![Lucía's maintenance board: five ticket cards grouped in lanes by status.](/screens/use/finding-lists-2.png)
 
-- **Tableau** — une ligne par enregistrement, une colonne par champ.
-  Utilisez-la quand vous avez besoin de détail. La barre d’outils en haut
-  porte la zone de recherche, le menu « + Ajouter un filtre », et les
-  commandes d’export et d’import.
-- **Kanban** — des cartes en colonnes. Une colonne regroupe les
-  enregistrements par un champ, par exemple le statut. Utilisez-le quand le
-  travail passe par des étapes. Chaque carte montre le nom de l’enregistrement
-  et son heure de mise à jour. Les colonnes se chargent
-  indépendamment : une colonne lente ou vide ne bloque jamais le
-  tableau. Une colonne avec plus d’enregistrements que la première page
-  affiche « Afficher plus ».
-- **Calendrier** — des enregistrements posés sur une grille de mois ou de
-  semaine, selon le champ de date de la vue. Utilisez-le quand les dates
-  comptent. Basculez entre « Mois » et « Semaine », déplacez-vous avec
-  « Précédent », « Suivant » et « Aujourd’hui ». Un jour chargé replie ses
-  puces en une seule puce de groupe, par exemple `4 documents`. Sélectionnez
-  le groupe pour lister les enregistrements.
+Le calendrier pose les enregistrements sur les jours où ils ont lieu.
+Basculez entre **Mois** et **Semaine**, et déplacez-vous avec **Précédent**,
+**Suivant** et **Aujourd’hui**. Un jour chargé replie ses entrées en une
+seule puce — par exemple `4 documents` — et la sélection de la puce les
+liste.
 
-  Dans chaque disposition, sélectionnez une ligne, une carte ou une puce pour
-  ouvrir l’enregistrement dans le tiroir d’aperçu. Le tiroir porte un aperçu
-  plus les commandes « Modifier » et « Ouvrir en pleine page ».
+![Nadia's booking calendar for December: bookings placed on their date ranges.](/screens/use/finding-lists-3.png)
 
-### 3. Resserez la liste avec des filtres
+Dans chaque disposition, la sélection d’une ligne, d’une carte ou d’une puce
+ouvre un aperçu à côté de la liste. L’aperçu porte **Modifier** et
+**Ouvrir en pleine page**.
 
-Les filtres ne gardent que les enregistrements dont vous avez besoin.
-Utilisez la barre d’outils :
+## Resserrer la liste
 
-1. Sélectionnez « + Ajouter un filtre ». Un menu liste les champs filtrables.
-2. Sélectionnez un champ. Une puce apparaît, avec l’opérateur et une commande
-   de valeur.
-3. Choisissez l’opérateur et saisissez une valeur. La liste se met à jour
+Les filtres ne gardent que les enregistrements dont vous avez besoin :
+
+1. Sélectionnez **+ Ajouter un filtre** dans la barre d’outils. Un menu
+   liste les champs que vous pouvez filtrer.
+2. Sélectionnez un champ. Une puce apparaît dans la barre d’outils, avec la
+   comparaison et une commande de valeur.
+3. Choisissez la comparaison et saisissez une valeur. La liste se met à jour
    pendant la saisie.
 
-Le menu des opérateurs n’offre que les comparaisons que le champ
-supporte :
+Le menu n’offre que les comparaisons que le champ prend en charge :
 
-| Opérateur | Libellé | Pour |
-| --- | --- | --- |
-| égalité | `is` ou `=` | Texte, listes de choix, références, nombres, dates |
-| différence | `is not` ou `à` | Les mêmes champs |
-| comparaison | `>`, `≥`, `<`, `≤` | Nombres, dates, montants |
-| intervalle | `between` | Deux bornes, par exemple une plage de dates |
-| ensemble | `is any of` | Plusieurs valeurs d’une liste de choix à la fois |
-| texte | `contains` | Une partie de mot, sans sensibilité à la casse |
+| Vous voulez | La puce affiche | Convient à |
+|---|---|---|
+| Une correspondance exacte | `is` ou `=` | Texte, listes de choix, références, nombres, dates |
+| Une exclusion exacte | `is not` ou `≠` | Les mêmes champs |
+| Un seuil | `>`, `≥`, `<`, `≤` | Nombres, dates, montants |
+| Une plage | `between` | Deux bornes, par exemple une plage de dates |
+| Plusieurs valeurs à la fois | `is any of` | Listes de choix |
+| Une partie de mot | `contains` | Texte, sans distinction de casse |
 
-Une puce `between` ou `is any of` ne filtre rien tant que vous n’avez pas
-saisi ses bornes ou choisi ses valeurs.
+Deux puces ne font rien tant que vous ne les remplissez pas : une puce
+`between` demande les deux bornes, et `is any of` au moins une valeur. C’est
+voulu — une plage à moitié remplie cacherait sinon des lignes en silence.
 
-:::tip
-La zone de recherche à gauche de la barre d’outils est un filtre de plus. Elle
-correspond à une partie du nom de l’enregistrement et à son texte de
-recherche, sans sensibilité à la casse. Appuyez sur `/` pour y sauter.
-:::
+La zone de recherche à gauche de la barre d’outils est un filtre de plus.
+Elle porte sur une partie du nom de l’enregistrement, sans distinction de
+casse. Appuyez sur `/` pour y aller.
 
-### 4. Triez et paginez
+## Trier et paginer
 
-**Trier.** Dans le tableau, sélectionnez un en-tête de colonne pour trier
-dessus. Sélectionnez à nouveau pour inverser l’ordre. La petite flèche montre
-le sens. Les cartes kanban et calendrier suivent l’ordre enregistré dans la
-vue.
+Dans le tableau, sélectionnez un en-tête de colonne pour trier dessus, puis
+sélectionnez à nouveau pour inverser l’ordre. La petite flèche montre le
+sens. Les cartes du kanban et du calendrier suivent l’ordre enregistré dans
+la vue.
 
-**Paginer.** Sous le tableau, le pagineur parcourt les pages. Le libellé, par
-exemple `1–25 sur 340`, dit où vous en êtes. Le décompte plafonne à
+Sous le tableau, le pagineur parcourt les pages. Le libellé, par exemple
+`1–25 sur 340`, montre où vous en êtes. Le décompte plafonne à 1000 —
+au-delà, la liste affiche `1000+`, et les filtres font baisser le nombre.
 
-1000 ; au-delàà, la liste affiche `1000+`, et vous la resserrez avec des
-filtres.
+## Travailler la liste au clavier
 
-### 5. Enregistrez le réglage comme vue
+La liste répond au clavier aussi bien qu’à la souris. `j` et `k` (ou les
+touches fléchées) déplacent le surlignage dans les lignes, et `Enter` ouvre
+l’enregistrement surligné — d’abord dans l’aperçu, puis en page complète.
+`Esc` efface le surlignage, et `/` va à la zone de recherche. `C` démarre un
+nouvel enregistrement de ce type. Les touches lettres se reposent pendant la
+saisie, donc elles ne se déclenchent jamais depuis un champ de texte.
 
-Une vue enregistrée stocke la disposition, les filtres, et (pour un tableau)
-les colonnes et leur ordre. Construisez-la une fois, puis rouvrez-la en un
-clic.
+## Enregistrer votre réglage comme vue
 
-1. Sélectionnez la commande « Créer une nouvelle vue » à côté des onglets.
-   Vos filtres actuels restent actifs pendant l’édition.
-2. Choisissez le type de vue : Tableau, Calendrier ou Kanban.
-3. Nommez la vue, par exemple `Affaires ouvertes`.
-4. Réglez la portée. « Personnelle » signifie que vous seul la voyez.
-   « Générale » signifie que toute l’équipe la partage. Vous ne pouvez plus
-   changer cela après l’enregistrement.
-5. Réglez les détails selon le type : les colonnes pour un tableau, les
-   colonnes pour un kanban, le champ de date pour un calendrier. Ajoutez des
-   filtres à l’étape « Filtres ».
-6. Sélectionnez « Créer la vue ».
+Une vue stocke la disposition, les filtres et — pour un tableau — les
+colonnes et leur ordre. Construisez-la une fois, puis rouvrez-la en un clic :
 
-**Changer une vue.** Sélectionnez « Modifier la vue actuelle » à côté des
-onglets.
+1. Sélectionnez le **+** à côté des onglets (**Créer une nouvelle vue**).
+2. Choisissez le type de vue : Tableau, Kanban ou Calendrier.
+3. Nommez-la, par exemple `Mes affaires ouvertes`.
+4. Choisissez la portée. **Personnelle** signifie que vous seul la voyez.
+   **Générale** signifie que toute l’équipe la partage.
+5. Réglez les détails : les colonnes pour un tableau, les colonnes pour un
+   kanban, le champ de date pour un calendrier. Les filtres viennent à
+   l’étape Filtres.
+6. Sélectionnez **Créer la vue**.
 
-**Effacez vos filtres.** Retirez chaque puce avec sa commande « Supprimer le
-filtre », sans enregistrer.
+Une nouvelle vue démarre personnelle : vous seul la voyez. Certains rôles ne
+peuvent créer que des vues personnelles — si vous ne pouvez pas choisir
+**Générale**, demandez à votre administrateur. Vos filtres restent actifs
+pendant l’édition, donc ce que vous voyez est ce que vous enregistrez.
+
+**Modifier une vue.** Sélectionnez **Modifier la vue actuelle** à côté des
+onglets. Les changements s’appliquent à tous ceux qui utilisent la vue,
+alors accordez-vous avec votre équipe avant de modifier une vue partagée.
+
+**Supprimer une vue.** Sélectionnez **Supprimer la vue actuelle**. Une vue
+enregistrée disparaît pour tous les comptes, alors ne supprimez une vue
+générale que quand l’équipe est d’accord.
 
 :::caution[Personnelle et générale ne basculent pas]
 Une vue garde sa portée à vie. Pour passer une vue personnelle à l’équipe,
-créez une copie générale avec les mêmes réglages. Puis supprimez la vue
-personnelle. Ne supprimez une vue générale que quand l’équipe est d’accord.
+créez une copie générale avec les mêmes réglages, puis supprimez la vue
+personnelle.
 :::
 
-### 6. Épinglez une vue
+## Épingler une vue
 
-Sélectionnez « Épingler la vue actuelle » à côté des onglets pour épingler la
-vue courante. Une vue épinglée apparaît sur le tableau de bord du domaine, si
-bien que votre liste quotidienne est à un clic. Sélectionnez à nouveau la
-commande pour désépingler.
+Sélectionnez la commande d’épinglage à côté des onglets pour épingler la vue
+où vous êtes. Une vue épinglée apparaît comme une carte sur le tableau de
+bord du domaine, et votre liste quotidienne est à un clic de l’écran
+d’accueil. Sélectionnez à nouveau la commande pour désépingler.
 
-## Exemple
+## Partager une vue par un lien
 
-Partagez une liste filtrée avec un collègue par le lien de la vue :
+L’adresse d’une liste transporte la vue ouverte, si bien qu’un lien ouvre la
+même liste filtrée pour un collègue :
 
 ```
-https://facet.localhost:3443/crm/Deal?view=affaires_ouvertes
+https://facet.localhost:3443/rentals/Booking?view=calendar
 ```
 
-La partie après `view=` est le nom de la vue, en petites lettres avec des
-tirets bas. Quiconque a le lien et les droits voit la même liste avec les
-mêmes filtres.
+La partie après `view=` est le nom de la vue en petites lettres avec des
+tirets bas. Quiconque a le lien et le droit de lire les enregistrements voit
+la même liste. Il faut toujours l’accès en lecture — un lien n’ouvre jamais
+des enregistrements que le rôle cache.
+
+## Restaurer un enregistrement supprimé
+
+Basculez l’interrupteur en haut de la liste de **En direct** à **Supprimé**
+pour voir les enregistrements envoyés à la corbeille. Sélectionnez
+**Restaurer** sur une ligne pour le ramener — la restauration demande le
+droit de modifier des enregistrements. Facet conserve les enregistrements
+supprimés, si bien qu’une erreur n’est jamais définitive.
 
 ## Dépannage
 
 ### La liste est vide
 
-Commencez par les filtres.
-
-1. Retirez les puces de filtre une par une. Une puce sans valeur filtre
-   tout.
-2. Vérifiez la vue. Les filtres enregistrés de la vue s’appliquent avant les
-   vôtres.
-3. Basculez « En direct » / « Supprimé » sur « Supprimé ». Les
-   enregistrements sont peut-être à la corbeille.
+Commencez par les filtres. Retirez chaque puce une par une — une puce à
+valeur vide filtre tout. Vérifiez ensuite la vue elle-même : une vue
+enregistrée applique ses propres filtres avant les vôtres, alors changez
+d’onglet pour comparer. Toujours vide ? Basculez l’interrupteur sur
+**Supprimé** ; les enregistrements sont peut-être à la corbeille. Si les
+enregistrements manquent autant dans la liste **En direct** que dans
+**Supprimé**, demandez à votre administrateur — votre rôle ne les atteint
+peut-être pas.
 
 ### Un champ manque dans le menu Ajouter un filtre
 
-Seuls les champs que l’auteur a rendus filtrables apparaissent. Les champs que
-votre rôle ne peut pas lire restent dehors aussi. Demandez à l’auteur du
-doctype, ou à votre administrateur.
+Seuls les champs que l’auteur du domaine a rendus filtrables apparaissent,
+et seuls les champs que votre rôle peut lire. Demandez à l’auteur du domaine
+ou à votre administrateur.
 
 ### Le filtre ne renvoie rien
 
-1. Vérifiez l’orthographe de la valeur. `contains` correspond à une partie de
-   mot, mais un filtre `is` exige la valeur exacte, par exemple `open` et non
-   `Open`.
-2. Remplissez les deux bornes d’un filtre `between`, « De » d’abord. Une puce
-   `between` avec une borne vide ne filtre rien.
+Vérifiez d’abord l’orthographe. `contains` porte sur une partie de mot, mais
+un filtre `is` exige la valeur exacte — `open`, pas `Open`. Vérifiez ensuite
+une puce `between` : une borne vide filtre tout, alors remplissez De
+d’abord.
 
 ### Vous ne pouvez ni créer ni modifier une vue
 
-Votre rôle manque du droit sur les vues. Utilisez les vues partagées, ou
-demandez à votre administrateur. Voir
-[Rôles, niveaux et garde-fou d’autorité](/fr/admin/people/who-can-change-roles/).
+Votre rôle ne porte pas le droit de modifier les vues. Vous pouvez encore
+utiliser les vues que votre équipe partage. Demandez à votre administrateur
+— voir [Rôles : qui voit et fait quoi](/fr/discover/how-it-works/roles/)
+pour savoir comment les rôles décident de cela.
 
-### Une colonne kanban montre plus d’enregistrements qu’elle n’en liste
+### Une colonne de kanban montre plus d’enregistrements qu’elle n’en liste
 
-Le badge de décompte compte toute la colonne, plafonné à 1000. Le tableau
-affiche la première page par colonne. Sélectionnez « Afficher plus » dans
-cette colonne pour charger la page suivante.
+Le décompte d’une colonne lit toute la colonne, et le tableau n’affiche que
+la première page. Sélectionnez **Afficher plus** au bas de la colonne pour
+charger la page suivante.
 
 ### Le calendrier est vide
 
-La vue s’ancre sur un champ de date. Les enregistrements sans valeur dans ce
-champ n’apparaissent pas.
-
-1. Ouvrez « Modifier la vue actuelle » et vérifiez le champ de date.
-2. Déplacez-vous vers le mois cherché, avec « Aujourd’hui » et les flèches.
+La vue s’ancre sur un champ de date, et les enregistrements sans valeur dans
+ce champ n’apparaissent pas. Ouvrez **Modifier la vue actuelle** et
+vérifiez le champ de date. Déplacez-vous ensuite vers le bon mois avec
+**Aujourd’hui** et les flèches.
 
 ## Voir aussi
 
@@ -232,11 +228,13 @@ champ n’apparaissent pas.
   apparaissent.
 - [Consulter et modifier un document](/fr/use/documents/view-and-edit/) —
   ce qui s’ouvre depuis une ligne ou une carte.
-- [Recherche et palette de commandes](/fr/use/finding/search/) —
-  trouvez des enregistrements dans tout le domaine.
-- [Importer et exporter des données](/fr/use/documents/import-export/) — exportez
-  exactement ce que le tableau montre.
-- [Concevoir des doctypes](/fr/build/model/data/design-doctypes/) — comment les
-  doctypes et leurs champs se définissent.
-- [Comment Facet vérifie les permissions](/fr/admin/under-the-hood/how-access-is-enforced/) —
-  pourquoi certains enregistrements restent cachés.
+- [Recherche et palette de commandes](/fr/use/finding/search/) — trouver des
+  enregistrements dans tous les domaines.
+- [Raccourcis clavier](/fr/use/finding/keyboard-shortcuts/) — la carte
+  complète, liste et espace de travail.
+- [Importer et exporter des données](/fr/use/documents/import-export/) —
+  exporter exactement ce que le tableau montre.
+- [Rôles : qui voit et fait quoi](/fr/discover/how-it-works/roles/) —
+  pourquoi certains enregistrements et champs restent hors de vos listes.
+- [Listes, kanban et calendriers (pour les auteurs)](/fr/build/model/views/lists-boards-calendars/) —
+  comment l’auteur du domaine façonne ces vues.

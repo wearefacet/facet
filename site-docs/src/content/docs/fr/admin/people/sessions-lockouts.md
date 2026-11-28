@@ -1,18 +1,26 @@
 ---
-title: Sessions, tokens et verrouillages
-description: "Voyez où vivent les sessions, comment les tokens tournent, et comment fonctionnent limitation et verrouillages."
+title: Sessions et verrouillages
+description: Voyez comment fonctionnent les sessions et les tokens de connexion, comment meurt un token volé, et comment se comportent la limitation et les verrouillages.
+type: how-to
 audience: [admin]
 features: [IAM-01, IAM-02, IAM-10, IAM-11]
+verified_at: eee55a2
 sidebar:
-  order: 8
-verified_at: f1409cdc
+  order: 9
 ---
 
-Facet scinde chaque connexion en deux identifiants. Le token d’accès est un
-token signé à courte durée de vie. Le refresh token est un token opaque de
-longue durée qui représente une session côté serveur dans Redis. Cette page
-explique les deux, la règle de rotation, et le comportement des
-verrouillages.
+Un ordinateur portable est volé chez Brightwater. Ravi se pose deux
+questions : combien de temps fonctionne une connexion volée, et à quelle
+vitesse peut-il la couper ? Les réponses sont sur cette page. Facet scinde
+chaque connexion en deux identifiants. Le token d’accès est un token signé
+à courte durée de vie — 15 minutes par défaut. Le refresh token est un
+token opaque de longue durée qui représente une session côté serveur, et la
+révocation de cette session coupe les deux.
+
+## Avant de commencer
+
+- [Gérer les comptes](/fr/admin/people/accounts/) — les comptes dont cette
+  page contrôle les sessions et les verrouillages.
 
 ## Quand l’utiliser
 
@@ -24,8 +32,8 @@ verrouillages.
 
 ### Où vivent les sessions
 
-Une session est un hash dans Redis sous `session:{id}`. Elle porte les
-ids de refresh courant et précédent, l’id du compte, le rôle élu, les
+Une session est un hash dans Redis sous `session:{id}`. Elle porte les ids
+de refresh courant et précédent, l’id du compte, le rôle élu, les
 horodatages, le User-Agent, l’adresse du client, et le mode de livraison du
 token. Les sessions s’inscrivent aussi dans un ensemble par compte et un
 ensemble par app. Une perte complète de Redis ne force qu’une reconnexion ;
@@ -41,12 +49,12 @@ durée de vie par défaut est de 900 secondes, fixée par
 
 Les claims sur chaque token :
 
-| Claim | Contenu                                              |
-| ----- | ----------------------------------------------------- |
-| `sub` | L’id du compte.                                       |
-| `sid` | L’id de la session.                                   |
-| `role`| L’id du rôle élu.                                     |
-| `jti` | Un id de token unique.                                |
+| Claim | Contenu |
+| --- | --- |
+| `sub` | L’id du compte. |
+| `sid` | L’id de la session. |
+| `role` | L’id du rôle élu. |
+| `jti` | Un id de token unique. |
 | `typ` | Le genre de token, `access` pour les sessions navigateur. |
 
 La clé de signature vient de la variable d’environnement `JWT_SIGNING_KEY`,
@@ -69,18 +77,28 @@ le fait tourner :
 1. L’id de refresh présenté passe en `previous`.
 2. Un nouvel id de refresh le remplace.
 3. Pendant une fenêtre de grâce de 10 secondes
-   (`iam.jwt.refresh_grace_window`), les deux ids sont acceptés, si bien que
-   deux requêtes parallèles ne tuent pas la session.
+   (`iam.jwt.refresh_grace_window`), les deux ids sont acceptés, si bien
+   que deux requêtes parallèles ne tuent pas la session.
 
-  Un id présenté qui ne correspond à aucun des deux est une réutilisation de
-  token. Facet supprime la session aussitôt et écrit un événement
-  `refresh_reuse` dans le journal des connexions. Le token d’accès déjà émis
-  reste valable jusqu’à son TTL, la même règle qu’une révocation explicite.
+Un id présenté qui ne correspond à aucun des deux est une réutilisation de
+token. Facet supprime la session aussitôt et écrit un événement
+`refresh_reuse` dans le journal des connexions. Le token d’accès déjà émis
+reste valable jusqu’à son TTL, la même règle qu’une révocation explicite.
 
-  La durée de vie de la session est de 14 jours, fixée par
-  `iam.jwt.refresh_token_ttl`. Chaque refresh réussi relance le compte à
+La durée de vie de la session est de 14 jours, fixée par
+`iam.jwt.refresh_token_ttl`. Chaque refresh réussi relance le compte à
+rebours.
 
-  rebours.
+Les trois durées viennent des fichiers de configuration livrés. Depuis
+`config.dev.yml` :
+
+```yaml
+iam:
+  jwt:
+    access_token_ttl: 900
+    refresh_token_ttl: 1209600
+    refresh_grace_window: 10
+```
 
 ### Les modes de livraison
 
@@ -90,18 +108,26 @@ tout changement d’état : rien ne tourne, la session reste.
 
 ### La gestion des sessions
 
-| Route                                  | Ce qu’elle fait                                                                                          |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `GET /Api/iam/sessions`                 | Liste les sessions de l’appelant avec ids et métadonnées.                                                   |
-| `DELETE /Api/iam/sessions/:session_id`  | Révoque une de ses sessions. Idempotent : un id inconnu répond `200` avec `revoked: false`.                  |
-| `DELETE /Api/iam/sessions`              | Révoque chaque session de l’appelant sauf la courante.                                                      |
-| `DELETE /Api/iam/apps/:app_id/sessions` | Révoque chaque session que l’appelant détient pour une app.                                                 |
+| Route | Ce qu’elle fait |
+| --- | --- |
+| `GET /Api/iam/sessions` | Liste les sessions de l’appelant avec ids et métadonnées. |
+| `DELETE /Api/iam/sessions/:session_id` | Révoque une de ses sessions. Idempotent : un id inconnu répond `200` avec `revoked: false`. |
+| `DELETE /Api/iam/sessions` | Révoque chaque session de l’appelant sauf la courante. |
+| `DELETE /Api/iam/apps/:app_id/sessions` | Révoque chaque session que l’appelant détient pour une app. |
+
+Sur l’instance en marche, la route de liste répond :
+
+```json
+{"sessions": [{"session_id": "b556a6eb…", "created_at": "2026-11-26T13:31:56Z", "last_used": "2026-11-26T13:32:02Z", "user_agent": "curl/8.23.0", "ip": "127.0.0.1", "app": null, "role": "iam.Roles.viewer"}]}
+```
 
 Après une révocation, le token d’accès vivant fonctionne jusqu’à
 l’expiration de son TTL ; le refresh suivant échoue parce que la ligne de
 session a disparu. Les titulaires de comptes gèrent leurs propres sessions
 dans l’espace de travail — voir
-[Vos paramètres, sessions et clés d’API](/fr/use/account/).
+[Paramètres, sessions et clés API](/fr/use/account/).
+
+<!-- screenshot: use-account-sessions -->
 
 ### La limitation des connexions
 
@@ -110,17 +136,17 @@ s’appliquent. Les compteurs et l’indicateur de verrouillage sont des clés
 séparées ; un compteur peut expirer pendant que le verrouillage tient
 toujours.
 
-| Compteur                                 | Déclencheur                                | Effet                                                                      |
-| ----------------------------------------- | ------------------------------------------- | --------------------------------------------------------------------------- |
-| Tentatives de mot de passe par compte     | 10 mots de passe faux                       | La prochaine tentative pose l’indicateur de verrouillage ; la connexion répond `429`. |
+| Compteur | Déclencheur | Effet |
+| --- | --- | --- |
+| Tentatives de mot de passe par compte | 10 mots de passe faux | La prochaine tentative pose l’indicateur de verrouillage ; la connexion répond `429`. |
 | Tentatives de mot de passe par adresse client | 20 mots de passe faux depuis une adresse | La connexion répond `429` tant que le compteur est à sa limite. Pas d’indicateur de verrouillage. |
-| Réponses au défi MFA                      | 5 réponses fausses                          | Le défi est supprimé et l’indicateur de verrouillage est posé.              |
-| Vérification MFA à l’enrôlement           | 5 codes faux                                | Le point d’entrée répond `429`. Pas d’indicateur de verrouillage.           |
-| Vérification MFA après connexion          | 5 codes faux                                | Le point d’entrée répond `429` tant que le compteur est à sa limite. Pas d’indicateur de verrouillage. |
+| Réponses au défi MFA | 5 réponses fausses | Le défi est supprimé et l’indicateur de verrouillage est posé. |
+| Vérification MFA à l’enrôlement | 5 codes faux | Le point d’entrée répond `429`. Pas d’indicateur de verrouillage. |
+| Vérification MFA après connexion | 5 codes faux | Le point d’entrée répond `429` tant que le compteur est à sa limite. Pas d’indicateur de verrouillage. |
 
 Chaque compteur expire 300 secondes après son premier incrément, et un
-incrément ultérieur ne le prolonge pas. Un succès remet à zéro les compteurs
-de mot de passe et le compteur MFA d’après-connexion.
+incrément ultérieur ne le prolonge pas. Un succès remet à zéro les
+compteurs de mot de passe et le compteur MFA d’après-connexion.
 
 L’indicateur de verrouillage a sa propre clé, `login_lockout:<account_id>`,
 avec son propre compte à rebours de 300 secondes. Il démarre quand
@@ -129,6 +155,14 @@ L’indicateur est posé par la limite de mot de passe du compte et par le
 verrouillage du défi MFA. Tant que l’indicateur est présent, chaque
 connexion répond `429` avant toute vérification de mot de passe, même après
 l’expiration du compteur qui l’a causé.
+
+Sur l’instance en marche, le dixième mot de passe faux répond
+`{"error": "Invalid credentials", "remaining_attempts": "0"}`, et chaque
+tentative ultérieure — mot de passe juste compris — répond :
+
+```json
+{"error": "Too many attempts. Try again later."}
+```
 
 La trace d’audit est délibérée : seul le verrouillage écrit une ligne dans
 le journal des connexions. Chaque tentative échouée va plutôt dans le
@@ -188,14 +222,15 @@ Révoquez chaque session d’un compte depuis l’API, comme titulaire du compte
 ou avec son identifiant :
 
 ```sh
-curl -k -X DELETE -H "Authorization: Bearer $FACET_API_KEY" \
+curl -k -X DELETE -H "Authorization: Bearer $(facet-cli apikey)" \
   -H "X-Requested-With: XMLHttpRequest" \
-  "https://facet.localhost:3443/Api/iam/sessions"
+  "$(facet-cli host)/Api/iam/sessions"
 ```
 
-La réponse donne le nombre : `{"ok": true, "revoked": 3}`. Chaque
-session révoquée écrit un événement `session_revoked`. La session courante
-survit à l’appel.
+La réponse donne le nombre : `{"ok": true, "revoked": 3}`. Chaque session
+révoquée écrit un événement `session_revoked`. La session courante survit à
+l’appel — sur l’instance en marche, un appel avec une seule session vivante
+a répondu `{"ok": true, "revoked": 0}`.
 
 ## Dépannage
 
@@ -224,10 +259,10 @@ du backend sous `facet.iam.login` pour la trace par tentative.
 
 ## Voir aussi
 
-- [Se connecter, MFA, réinitialiser votre mot de passe](/fr/use/first-day/sign-in/) —
-  les étapes de connexion et de MFA.
-- [Vos paramètres, sessions et clés d’API](/fr/use/account/) —
-  la liste de sessions en libre-service.
+- [Connexion, MFA et mot de passe](/fr/use/first-day/sign-in/) — les étapes
+  de connexion et de MFA.
+- [Paramètres, sessions et clés API](/fr/use/account/) — la liste de
+  sessions en libre-service.
 - [Auditer l’activité](/fr/admin/history/audit/) — le journal des
   connexions.
 - [Imposer le MFA](/fr/admin/people/mfa/) — les limites de débit du MFA.
@@ -235,3 +270,4 @@ du backend sous `facet.iam.login` pour la trace par tentative.
   connexion vérifie.
 - Internes sur GitHub :
   [iam.md](https://github.com/wearefacet/facet/blob/main/doc/backend/iam.md).
+- [Sécurité et gouvernance](/fr/discover/security/)

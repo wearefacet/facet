@@ -1,202 +1,191 @@
 ---
-title: Paramètres, sessions et clés API
-description: Régler votre fuseau horaire et votre langue, relire vos sessions, et gérer les clés API des clients machine.
+type: how-to
+title: Vos réglages et clés API
+description: Réglez votre fuseau horaire et votre langue, connectez un agent IA, gérez les clés API qui agissent en votre nom, et déconnectez des appareils.
 audience: [user]
 features: [FE-17, PLT-17, IAM-09, IAM-11]
 sidebar:
-  order: 12
-verified_at: 49d7c7e5
+  order: 6
+verified_at: eee55a2
 ---
 
-Les pages Paramètres rassemblent vos préférences personnelles, vos clés d’API
-(interface de programmation), et vos sessions actives. Tout ce qui est ici
-n’appartient qu’à votre compte. Les autres comptes gardent leurs propres
+Les dates de vos réservations s’affichent dans le mauvais fuseau horaire, ou
+un outil de reporting a besoin de son propre accès à Facet. Les pages de
+réglages corrigent le premier cas et permettent le second. Elles rassemblent
+vos préférences personnelles, les clés qui laissent une machine agir en votre
+nom, et la liste des appareils connectés sous votre identité. Tout ce qui se
+trouve ici ne concerne que votre compte — chaque personne garde ses propres
 réglages.
 
 ## Avant de commencer
 
-- **Un compte.** Il vous faut un compte connecté. Pour l’aide à la connexion,
-  voir [Connexion, MFA et mot de passe](/fr/use/first-day/sign-in/).
-- **Vos réglages seulement.** Votre administrateur gère les rôles et les
-  données de compte. Cette page ne couvre que vos réglages personnels.
+- [Connexion, MFA et mot de passe](/fr/use/first-day/sign-in/) — il vous faut
+  une session connectée pour accéder aux réglages.
 
-## Étapes
+![The settings page: chapters for General, Notifications, MCP endpoints and Active sessions on the left.](/screens/use/account-1.png)
 
-### 1. Ouvrez vos réglages
+## Ouvrir vos réglages
 
-1. Sélectionnez votre nom de compte en bas de la barre latérale.
-2. Sélectionnez « Mes paramètres ».
+Sélectionnez votre nom en bas de la barre latérale. Le menu s’ouvre :
 
-La page montre des chapitres à gauche : « Général », « Notifications »,
-« Points de terminaison MCP » et « Sessions actives ». Les comptes avec le
-rôle administrateur intégré voient aussi « Visite de bienvenue ». Chaque
-changement s’enregistre aussitôt ; le champ fait clignoter
-« Enregistré ».
+- **Mes paramètres** — la page que cet article parcourt.
+- **Clés API** — pour l’accès machine, traité plus bas.
+- **Webhooks** — envoyer un message à un autre système quand des
+  enregistrements changent.
+- **Changer de rôle** — apparaît quand vous détenez deux rôles ou plus.
+- **Déconnexion**.
 
-Le même menu ouvre « Clés API » (plus bas) et « Webhooks ». Il affiche
-« Changer de rôle » quand vous détenez deux rôles ou plus, et « Déconnexion ».
+Sur la page de réglages, les chapitres se trouvent à gauche : **Général**,
+**Notifications**, **Points de terminaison MCP** et **Sessions actives**. Les
+comptes qui détiennent le rôle administrateur intégré voient aussi **Visite
+de bienvenue**. Chaque changement s’enregistre aussitôt — le champ affiche
+brièvement **Enregistré**.
 
-### 2. Réglez votre fuseau horaire
+Votre administrateur gère votre nom et votre adresse e-mail — ils ne
+figurent pas sur cette page. Il en va de même pour votre mot de passe : vous
+ne le changez que lorsqu’un administrateur vous délivre un mot de passe
+temporaire et que Facet vous le demande à la connexion. Voir
+[Connexion, MFA et mot de passe](/fr/use/first-day/sign-in/).
 
-Dans « Général », ouvrez « Fuseau horaire » et choisissez une option :
+## Régler votre fuseau horaire
 
-- « Automatique » — Facet utilise le fuseau de l’appareil d’où vous vous
-  connectez.
-- « Valeur par défaut du serveur » — Facet utilise la valeur par défaut de
-  cette instance Facet.
+Dans **Général**, ouvrez **Fuseau horaire** et choisissez une option :
+
+- **Automatique** — Facet utilise le fuseau de l’appareil depuis lequel vous
+  vous connectez.
+- **Valeur par défaut du serveur** — Facet utilise la valeur par défaut de
+  cette installation Facet.
 - Une zone nommée de la liste, par exemple `Europe/Paris`.
 
-La ligne « Heure actuelle » sous les sélecteurs prévisualise votre choix.
-Facet affiche les dates et les heures dans toute l’application dans ce fuseau.
-Votre choix ne s’applique qu’à vous.
+La ligne **Heure actuelle**, juste en dessous, prévisualise votre choix.
+Facet affiche les dates et les heures dans toute l’application dans ce
+fuseau. Le choix ne s’applique qu’à vous — un collègue dans un autre bureau
+voit le sien.
 
-### 3. Réglez votre langue
+## Régler votre langue
 
-Dans « Général », ouvrez « Langue ». Choisissez « English », « Français » ou
-« Valeur par défaut du serveur ». La page se recharge dans la nouvelle langue.
+Dans **Général**, ouvrez **Langue** et choisissez **English**, **Français**
+ou **Valeur par défaut du serveur**. La page se recharge dans la nouvelle
+langue.
 
-### 4. Réglez les notifications dans l’application
+## Copier un point de terminaison MCP
 
-Dans « Notifications », utilisez l’interrupteur « Notifications dans
-l’application ». Il affiche ou cache les notifications dans la cloche de la
-barre supérieure. Quand vous rallumez les notifications, vous voyez celles qui
-sont arrivées pendant qu’elles étaient éteintes.
+Dans **Points de terminaison MCP**, Facet liste une adresse pour chaque rôle
+que vous détenez. Un agent IA — un programme d’assistance tel que Claude
+Desktop — se connecte à Facet par cette adresse. Il travaille ensuite comme
+ce rôle, sous les mêmes règles que vous. À la première connexion, l’agent se
+connecte par une fenêtre de navigateur. Sélectionnez **Copier** pour copier
+l’adresse. Quand aucun de vos rôles n’expose de point de terminaison, la
+page l’indique.
 
-:::note
-Facet livre les notifications dans l’application seulement. Il n’y a pas de
-livraison par e-mail.
-:::
+## Vos clés API
 
-### 5. Rejouez la visite de bienvenue
+Une clé API laisse un programme — un script, un outil de reporting, une
+intégration — appeler l’interface de Facet en votre nom, sous un rôle que
+vous choisissez. Le programme peut alors tout faire de ce que ce rôle
+permet, et rien de plus. Tel est l’intérêt et le risque : quiconque détient
+la clé agit comme vous. Traitez une clé comme un mot de passe. Collez-la
+directement là où le programme en a besoin, ne l’envoyez jamais par
+messagerie ni par e-mail, et révoquez-la une fois le travail terminé. Votre
+administrateur définit ce que les rôles peuvent faire ; voir
+[Les rôles : qui voit et fait quoi](/fr/discover/how-it-works/roles/).
 
-Les comptes avec le rôle administrateur intégré voient le chapitre « Visite
-de bienvenue ». Allumez « Afficher la visite de bienvenue ». La visite s’ouvre
-à votre prochain chargement de l’application.
+![The API keys page: the list of keys with name, role, last used and status.](/screens/use/account-2.png)
 
-### 6. Copiez un point de terminaison MCP
+**Créer une clé**
 
-Dans « Points de terminaison MCP », Facet liste une URL pour chaque rôle que
-vous détenez. Un agent MCP (Model Context Protocol) se connecte à Facet par
-cette URL. L’agent agit comme ce rôle. À la première connexion, l’agent se
-connecte via un flux dans le navigateur. Sélectionnez « Copier » pour copier l’URL.
-
-### 7. Gérez vos clés d’API
-
-Une clé d’API laisse un client machine appeler l’API Facet. La clé agit comme
-vous, sous l’un de vos rôles. Ouvrez le menu du compte en bas de la barre
-latérale et sélectionnez « Clés API ».
-
-**Créez une clé**
-
-1. Sélectionnez « Créer une clé ».
-2. Dans « Nom », tapez un libellé. Vous seul le voyez. Jusqu’à 100 caractères.
-3. Dans « Rôle », choisissez l’un de vos rôles attribués. La clé ne peut faire
-   que ce que ce rôle permet.
-4. Dans « Expire le », choisissez une date. Laissez vide pour une clé qui
+1. Ouvrez le menu du compte et sélectionnez **Clés API**.
+2. Sélectionnez **Créer une clé**.
+3. Dans **Nom**, tapez un libellé. Vous seul le voyez — jusqu’à 100
+   caractères.
+4. Dans **Rôle**, choisissez l’un de vos rôles attribués. La clé ne peut
+   faire que ce que ce rôle permet.
+5. Dans **Expire le**, choisissez une date, ou laissez vide pour une clé qui
    n’expire jamais.
-5. Sélectionnez « Créer une clé ».
-6. Facet montre la clé en clair une seule fois. Sélectionnez « Copier » et
-   gardez-la en lieu sûr.
+6. Sélectionnez **Créer une clé**. Facet affiche la clé complète une seule
+   fois — sélectionnez **Copier** et conservez-la en lieu sûr.
 
 :::caution
-Facet montre la clé en clair une seule fois. Vous ne pourrez pas la récupérer
-plus tard. Si vous la perdez, créez une nouvelle clé.
+La clé complète s’affiche une seule fois et ne peut pas être récupérée
+ensuite. Si vous la perdez, créez une nouvelle clé.
 :::
 
-**Utilisez une clé**
+**Révoquer une clé**
 
-Le client envoie la clé dans l’en-tête `Authorization: Bearer`. Une vraie clé
-commence par `fct_`. Cet exemple appelle l’API Facet avec une clé :
+1. Dans la liste des clés, sélectionnez **Révoquer** sur la ligne de la clé.
+2. Confirmez avec **Révoquer la clé**. Les programmes qui utilisent la clé
+   cessent de fonctionner aussitôt, et ceci est irréversible.
 
-```sh
-export FACET_API_KEY="fct_paste-the-key-you-copied"
-curl -k https://facet.localhost:3443/Api/iam/me \
-  -H "Authorization: Bearer $FACET_API_KEY"
-```
+La ligne reste dans la liste avec le badge **Révoquée**. Chaque ligne montre
+le nom de la clé, son préfixe court, le rôle, **Dernière utilisation**,
+**Expire le**, et un statut : **Active**, **Expirée** ou **Révoquée**. Une
+clé sans expiration affiche **Jamais**.
 
-Facet répond avec votre profil de compte en JSON. L’indicateur `-k` saute la
-vérification du certificat TLS de l’adresse de développement.
-
-**Révoquez une clé**
-
-1. Dans la liste des clés, sélectionnez « Révoquer » sur la ligne de la clé.
-2. Confirmez avec « Révoquer la clé ».
-
-Les clients qui utilisent la clé cessent de fonctionner aussitôt. La ligne
-reste dans la liste avec le badge « Révoquée ». La liste montre le nom, le
-préfixe, le rôle, l’heure de « Dernière utilisation », l’heure d’« Expire le »
-et le statut de chaque clé : « Active », « Expirée » ou « Révoquée ». Une
-clé sans date d’expiration affiche « Jamais ».
-
-:::note
 Une clé cesse aussi de fonctionner quand elle expire, quand vous perdez le
-rôle, ou quand votre compte est désactivé.
-:::
+rôle sous lequel elle agit, ou quand votre compte est désactivé. La clé
+complète commence toujours par `fct_` — les pages détail expliquent comment
+un programme la transmet :
 
-### 8. Relisez vos sessions actives
+- [Clés API (admin)](/fr/admin/apps-access/api-keys/) — le fonctionnement des
+  clés, pour la personne qui gère les accès.
+- [Apps backend et comptes de service](/fr/build/apps/connect/backend-apps/) —
+  la voie de l’identité machine qu’empruntent les développeurs.
 
-Dans « Sessions actives », Facet liste vos sessions courantes, une ligne par
-appareil ou application. Chaque ligne montre l’appareil ou l’application,
-l’adresse IP, le rôle que la session porte, et les heures « Créé » et
-« Dernière utilisation ». Une ligne sans détails d’appareil affiche
-« Appareil inconnu ».
+## Déconnecter un appareil
 
-**Déconnectez un appareil**
+Dans **Sessions actives**, Facet liste chaque appareil ou application
+connecté sous votre identité. Chaque ligne montre l’appareil ou
+l’application, l’adresse réseau, le rôle sous lequel la session s’exécute,
+et les heures **Créé** et **Dernière utilisation**. Une ligne sans détails
+d’appareil affiche **Appareil inconnu**.
 
-1. Sélectionnez « Révoquer » sur la ligne de session.
-2. Confirmez avec « Révoquer la session ».
+**Déconnecter un appareil.** Sélectionnez **Révoquer** sur sa ligne et
+confirmez avec **Révoquer la session**. L’appareil se déconnecte à son
+prochain rafraîchissement.
 
-L’appareil se déconnecte à son prochain rafraîchissement.
+**Déconnecter tous les autres appareils.** Sélectionnez **Révoquer les
+autres sessions** et confirmez avec **Révoquer les autres**. Votre session
+actuelle reste connectée, et Facet indique combien de sessions il a
+révoquées.
 
-**Déconnectez tous les autres appareils**
-
-1. Sélectionnez « Révoquer les autres sessions ».
-2. Confirmez avec « Révoquer les autres ».
-
-Votre session courante reste connectée. Facet rapporte combien de sessions il
-a révoquées. Une liste vide affiche « Aucune session active. ».
-
-:::note
-Un token d’accès déjà émis continue de fonctionner jusqu’à son expiration,
-pour quelques minutes par défaut. Après, l’appareil doit se reconnecter.
-:::
+Facet ne coupe pas un appareil en pleine action : une connexion déjà ouverte
+continue de fonctionner quelques minutes, puis l’appareil doit se
+reconnecter.
 
 ## Dépannage
 
 ### L’entrée Clés API manque dans le menu du compte
 
-Votre rôle actif ne permet pas l’accès d’API. Ouvrez le menu du compte et
-essayez « Changer de rôle », ou demandez à votre administrateur.
+Votre rôle actif ne permet pas l’accès API. Ouvrez le menu du compte et
+essayez **Changer de rôle**, ou demandez à votre administrateur d’autoriser
+l’accès API sur l’un de vos rôles.
 
 ### Vous ne pouvez pas créer de clé
 
-Vérifiez ces champs et réessayez :
+Vérifiez le formulaire. Le rôle doit être l’un de vos rôles attribués, et il
+doit permettre l’accès API. La date d’expiration doit être dans le futur.
 
-1. Le rôle doit être l’un de vos rôles attribués.
-2. Le rôle doit permettre l’accès d’API.
-3. La date d’expiration doit être dans le futur.
+### Une clé a cessé de fonctionner
 
-### La clé ne fonctionne pas
+Ouvrez **Clés API** et vérifiez le statut. Les clés **Révoquée** et
+**Expirée** ne fonctionnent plus jamais — créez une nouvelle clé. Si le
+statut est **Active**, demandez à votre administrateur si le rôle permet
+toujours l’accès API.
 
-1. Vérifiez que le client envoie la clé complète dans l’en-tête
-   `Authorization: Bearer`.
-2. Ouvrez « Clés API » et vérifiez le statut. Les clés « Révoquée » et
-   « Expirée » ne fonctionnent plus jamais. Créez une nouvelle clé.
+### Un appareil fonctionne encore un moment après la révocation
 
-### Un appareil fonctionne encore un moment après votre révocation
-
-Un token d’accès déjà émis reste valable jusqu’à son expiration, pour
-quelques minutes par défaut. Après, l’appareil doit se reconnecter.
+Une connexion déjà ouverte continue de fonctionner jusqu’à sa fin — quelques
+minutes par défaut. Ensuite, l’appareil doit se reconnecter.
 
 ## Voir aussi
 
 - [Connexion, MFA et mot de passe](/fr/use/first-day/sign-in/) — connexion,
-  configuration du second facteur, et réinitialisation du mot de passe.
-- [Notifications](/fr/use/notifications/) — ce que contrôle la
-  préférence de notification dans l’application.
-- [Contextes d’authentification](/fr/admin/under-the-hood/one-role-at-a-time/) — comment une
-  session ou une clé d’API se résout en un rôle.
-- [Rôles, niveaux et garde-fou d’autorité](/fr/admin/people/who-can-change-roles/) —
-  ce qu’un rôle peut permettre pour vous et pour vos clés.
-- [Référence](/fr/reference/) — les points de terminaison d’API qu’une clé
-  peut appeler.
+  configuration du second facteur, et changement de mot de passe.
+- [Notifications](/fr/use/notifications/) — ce que contrôle l’interrupteur
+  des notifications dans l’application.
+- [Connecter un agent IA](/fr/build/first-hour/connect-an-agent/) — mettre un
+  point de terminaison MCP au service de votre travail.
+- [Les rôles : qui voit et fait quoi](/fr/discover/how-it-works/roles/) — ce
+  qu’un rôle permet, pour vous et pour vos clés.
+- [Sécurité et gouvernance](/fr/discover/security/)
+- [Clés de réglage de compte](/fr/reference/account-settings-keys/)

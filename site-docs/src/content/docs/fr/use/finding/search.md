@@ -1,156 +1,152 @@
 ---
+type: how-to
 title: Recherche et palette de commandes
-description: Trouver des enregistrements avec la recherche, et rejoindre n’importe quelle page ou commande depuis la palette.
+description: Rejoignez toute page ou tout enregistrement avec la palette de commandes, et cherchez dans un domaine ou dans tous ceux que vous pouvez lire.
 audience: [user]
 features: [FE-07, DOC-06]
 sidebar:
-  order: 7
-verified_at: 49d7c7e5
+  order: 2
+verified_at: eee55a2
 ---
 
-La palette de commandes ouvre des pages, des enregistrements et des commandes
-depuis une seule zone. Appuyez sur `Ctrl+K`, ou sélectionnez la zone de
-recherche dans la barre supérieure. La palette cherche aussi dans vos
-enregistrements. Cette page montre les deux usages.
+Vous vous souvenez d’un bout de nom — un client, une tente, une réservation —
+et vous voulez l’enregistrement, pas le chemin pour y arriver. La **palette
+de commandes** sert à cela : une seule zone qui ouvre des pages, trouve des
+enregistrements et lance des commandes. Appuyez sur `Ctrl+K` et tapez.
+
+## Avant de commencer
+
+- [Visite de l’espace de travail](/fr/use/first-day/) — la disposition depuis
+  laquelle cette page navigue.
+
+![The search box in the top bar — the same box the Ctrl+K shortcut opens.](/screens/use/finding-search-1.png)
 
 ## La palette de commandes
 
-### 1. Ouvrez la palette
+Appuyez sur `Ctrl+K` (`Cmd+K` sur un Mac), ou sélectionnez la zone de
+recherche dans la barre supérieure. La palette s’ouvre avec au plus quatre
+groupes :
 
-Appuyez sur `Ctrl+K`. Sur macOS, appuyez sur `Cmd+K`. Vous pouvez aussi
-sélectionner la zone de recherche dans la barre supérieure.
+| Groupe | Ce qu’il contient |
+|---|---|
+| **Naviguer** | Domaines et types d’enregistrements — sélectionnez-en un pour ouvrir sa liste |
+| **Récents** | Les enregistrements que vous avez ouverts récemment dans ce domaine |
+| **Enregistrements** | Les enregistrements qui correspondent à ce que vous tapez |
+| **Actions** | Des commandes, comme ouvrir l’assistant ou replier la barre latérale |
 
-La palette montre jusqu’à quatre groupes : **Naviguer**, **Récents**,
-**Enregistrements** et **Actions**. Un groupe sans entrée reste caché.
+Un groupe sans rien à afficher reste caché. Déplacez-vous avec `↑` et `↓`,
+exécutez avec `Enter`, fermez avec `Esc` — appuyer à nouveau sur `Ctrl+K`
+ferme aussi la palette.
 
-:::tip
-Appuyez à nouveau sur `Ctrl+K` pour fermer la palette. `Échap` la ferme aussi.
-:::
+Dans **Configurer**, la palette liste les pages de Configurer et un chemin de
+retour vers l’espace de travail. Le Builder n’a pas de zone de recherche dans
+la barre supérieure, mais `Ctrl+K` y ouvre quand même la palette.
 
-:::note
-Dans Configurer, la palette liste les sections de Configurer et un chemin de
-retour vers l’espace de travail. Le mode Builder n’a pas de zone de recherche
-dans la barre supérieure, mais `Ctrl+K` y ouvre quand même la palette.
-:::
+## Chercher des enregistrements
 
-### 2. Sautez à une page
+Tapez au moins deux caractères. Le groupe **Enregistrements** liste les
+correspondances, groupées par type d’enregistrement, les plus proches
+d’abord :
 
-Tapez le nom d’un domaine ou d’un doctype. Le groupe **Naviguer** liste les
-correspondances. Sélectionnez-en une pour ouvrir la page.
+- La recherche porte sur une partie de mot : `vire` trouve *Château de
+  Vireloup*.
+- La casse et les accents ne comptent pas : `chateau` trouve le même
+  enregistrement.
+- Les résultats montrent des noms d’enregistrements, pas des valeurs de
+  champs.
+- La recherche renvoie au plus 25 enregistrements, dont au plus 5 d’un même
+  type d’enregistrement. Un terme trop courant réclame un mot plus long pour
+  resserrer les résultats.
 
-Le groupe **Récents** liste les enregistrements que vous avez ouverts
-récemment dans le domaine courant.
+Certains enregistrements sont des parties d’un parent — une ligne de
+réservation dans une réservation, un contact dans une société. Quand la
+correspondance porte sur la partie, le résultat montre le nom du parent,
+avec la partie concernée en dessous. Sa sélection ouvre l’enregistrement
+parent.
 
-### 3. Cherchez des enregistrements
+## Élargir la recherche à tous les domaines
 
-Tapez au moins deux caractères, par exemple `inv`. Le groupe
-**Enregistrements** liste les enregistrements correspondants. Chaque résultat
-montre le nom de l’enregistrement. Sélectionnez un résultat pour ouvrir
-l’enregistrement.
+La recherche démarre dans votre domaine courant. Pour chercher partout,
+sélectionnez **Rechercher « … » dans tous les domaines** au bas des
+résultats. La palette marque alors le périmètre élargi avec une pastille
+**Tous les domaines** ; sélectionnez la pastille pour revenir à votre
+domaine.
 
-Certains enregistrements sont des parties d’un enregistrement parent. Une
-correspondance sur une partie montre le nom du parent, avec la partie qui a
-correspondu en dessous. La sélection ouvre l’enregistrement parent.
+L’option est toujours là, même quand votre domaine n’a aucune correspondance
+— c’est le moyen d’atteindre un enregistrement qui se trouve dans un autre
+domaine.
 
-:::tip
-Sélectionnez **Rechercher « … » dans tous les domaines** pour
-élargir la recherche. La palette marque alors le périmètre élargi avec une
-pastille **Tous les domaines**. Sélectionnez la pastille pour chercher à
+## Lancer une commande
 
-nouveau dans le domaine courant.
-:::
+Le groupe **Actions** liste les commandes que votre rôle autorise : les
+mêmes pages et commandes que la barre latérale affiche. Une commande que
+votre rôle n’autorise pas n’apparaît pas. Sélectionnez-en une pour
+l’exécuter.
 
-### 4. Lancez une commande
+## Ce que la recherche trouve — et ce qu’elle ignore
 
-Le groupe **Actions** liste des commandes. Exemples : ouvrir le Builder,
-ouvrir Configurer, afficher les raccourcis clavier, replier la barre latérale.
-Les commandes suivent les mêmes droits que la barre latérale. Une commande que
-votre rôle n’autorise pas n’apparaît pas.
+La recherche lit les noms des enregistrements et le texte de recherche que
+l’auteur du domaine a défini pour chaque type d’enregistrement. Ce texte
+porte le nom et les champs clés — et, pour les commentaires, le texte du
+commentaire. Vous cherchez dans ce texte, pas dans les champs de
+l’enregistrement un par un.
 
-Déplacez-vous avec `↑` et `↓`. Appuyez sur `Entrée` pour lancer l’élément
-sélectionné.
+La recherche ne trouve **pas** :
 
-## La recherche de documents
+- Les fichiers et leur contenu — les pièces jointes restent hors de la
+  recherche.
+- Les enregistrements que votre rôle ne peut pas lire. La recherche suit les
+  mêmes règles que vos listes : ce que vous ne pouvez pas ouvrir
+  n’apparaît pas. Voir
+  [Rôles : qui voit et fait quoi](/fr/discover/how-it-works/roles/).
+- Les enregistrements supprimés, pas même dans la corbeille.
 
-### 1. Tapez votre terme
-
-La recherche démarre à deux caractères. Tapez deux lettres ou plus, par
-exemple `ada`.
-
-### 2. Lisez les résultats
-
-La recherche correspond à une partie de mot. Le terme `ada` correspond à
-
-« Ada Lovelace ». La recherche ignore la casse et les accents.
-
-Les correspondances les plus proches arrivent en premier. La palette groupe
-les résultats par doctype. La recherche renvoie au plus 25 enregistrements, et
-au plus 5 enregistrements par doctype.
-
-Les résultats montrent des noms d’enregistrements. Ils ne montrent pas de
-valeurs de champs.
-
-### 3. Élargissez ou resserrez le périmètre
-
-La recherche couvre le domaine courant. Utilisez **Rechercher « … »
-dans tous les domaines** pour chercher dans chaque domaine que vous pouvez
-lire. Cette option est toujours présente, même quand le domaine courant n’a
-aucune correspondance — c’est le chemin pour trouver un enregistrement qui
-se trouve dans un autre domaine.
-
-### Ce que la recherche lit
-
-- Un doctype n’apparaît dans la recherche que si sa définition définit un texte
-  de recherche. Le texte porte d’habitude le nom de l’enregistrement et des
-  champs clés. Les auteurs de doctypes posent ce texte dans la définition du
-  doctype.
-- Vous ne voyez que les enregistrements que votre rôle peut lire.
-- Les enregistrements supprimés n’apparaissent jamais.
-
-La zone de recherche d’une page de liste est un filtre, pas cette recherche.
-Elle resserre la liste courante. Elle correspond au texte de recherche, au nom
-de l’enregistrement et à son identifiant. Voir
+La zone de recherche d’une page de liste est autre chose : elle filtre la
+seule liste où vous êtes. Voir
 [Listes, filtres et vues enregistrées](/fr/use/finding/lists-and-views/).
 
 ## Dépannage
 
 ### La recherche ne renvoie aucun enregistrement
 
-1. Vérifiez le terme. La recherche demande deux caractères ou plus.
-2. Vérifiez le doctype. Il ne définit peut-être aucun texte de recherche, et
-   n’apparaît donc jamais ici.
-3. Vérifiez vos droits. Votre rôle ne lit peut-être pas le doctype.
-4. Vérifiez l’enregistrement. Il vit peut-être dans un autre domaine, ou il
-   est peut-être supprimé.
+Parcourez cette liste :
 
-La palette affiche **Aucun résultat pour « … »** quand rien ne
-correspond.
+1. Tapez au moins deux caractères.
+2. Essayez un morceau plus long du nom. Un terme court peut atteindre la
+   limite de 25 enregistrements avant que le vôtre n’apparaisse.
+3. Vérifiez le périmètre. L’enregistrement se trouve peut-être dans un autre
+   domaine — sélectionnez **Rechercher « … » dans tous les domaines**.
+4. Vérifiez le type d’enregistrement. Si son auteur n’a défini aucun texte
+   de recherche, il n’apparaît jamais ici.
+5. Toujours rien ? L’enregistrement est peut-être supprimé, ou votre rôle ne
+   l’atteint peut-être pas. Demandez à votre administrateur.
+
+La palette affiche **Aucun résultat pour « … »** quand rien ne correspond.
 
 ### Le groupe Enregistrements manque
 
-Tapez au moins deux caractères. Si la requête de recherche échoue, la palette
-cache le groupe Enregistrements. Les autres groupes restent utilisables.
+Tapez d’abord au moins deux caractères. Si la requête de recherche échoue,
+la palette cache le groupe Enregistrements et garde les autres groupes
+utilisables — rechargez la page s’il reste absent.
 
 ### Une commande manque dans Actions
 
-Les commandes suivent vos droits. Dans Configurer, la palette liste les
-sections de Configurer à la place des commandes de l’espace de travail.
+Les commandes suivent votre rôle, comme la barre latérale. Si la barre
+latérale n’affiche pas la page, la palette ne la propose pas non plus.
 
 ### La barre supérieure n’a pas de zone de recherche
 
-Le mode Builder n’en a pas. Appuyez sur `Ctrl+K`.
+C’est le Builder. Appuyez plutôt sur `Ctrl+K`.
 
 ## Voir aussi
 
-- [Raccourcis clavier](/fr/use/finding/keyboard-shortcuts/) — chaque combinaison
-  de touches, y compris `Ctrl+K`.
+- [Raccourcis clavier](/fr/use/finding/keyboard-shortcuts/) — chaque
+  combinaison de touches, y compris `Ctrl+K`.
 - [Listes, filtres et vues enregistrées](/fr/use/finding/lists-and-views/) —
   la zone de recherche qui filtre une liste.
 - [Consulter et modifier un document](/fr/use/documents/view-and-edit/) —
   ce qui s’ouvre quand vous sélectionnez un résultat.
 - [Le tableau de bord](/fr/use/first-day/dashboard/) — montre les mêmes
   enregistrements récemment ouverts.
-- [Domaines et isolation](/fr/discover/how-it-works/domains/) — pourquoi la
-  recherche démarre dans votre domaine courant.
-- [Documents, doctypes et projections](/fr/build/deeper/documents-and-projections/) —
-  d’où viennent les noms d’enregistrements et le texte de recherche.
+- [Libellés et texte de recherche](/fr/build/model/views/names-and-search/) —
+  comment l’auteur du domaine choisit ce que la recherche lit.

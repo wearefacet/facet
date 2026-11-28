@@ -1,98 +1,97 @@
 ---
-title: Mises à niveau et arrêt propre
-description: Passez à une nouvelle version et arrêtez le backend sans couper les traitements en cours.
+title: "Mettre à niveau Facet"
+description: "Passez Facet à une nouvelle version, annulez une version sans risque, et arrêtez le backend sans couper le travail en cours."
+type: how-to
 audience: [operator]
 features: [PLT-15, PLT-11]
+verified_at: eee55a2
 sidebar:
-  order: 16
-verified_at: 008dd880
+  order: 4
 ---
 
-Une version est une nouvelle image de conteneur. L’entrypoint migre le schéma
-au démarrage, donc une mise à niveau tient en un pull, un redémarrage, et un
-contrôle de santé. Un arrêt est un signal : le backend ferme ses ports
-d’écoute, envoie des trames de fermeture à chaque WebSocket, attend les
-requêtes en cours, puis démonte ses sous-systèmes dans un ordre fixe.
+Une nouvelle version est sortie et l’installation a deux versions de
+retard. Mettre Facet à niveau est délibérément ennuyeux. Une version
+est une nouvelle image de conteneur, et le point d’entrée migre le
+schéma au démarrage. Une mise à niveau est un pull, un redémarrage et
+un contrôle de santé. Un arrêt est aussi un signal. Sur un signal, le
+backend ferme ses listeners et envoie une trame de fermeture à chaque
+WebSocket. Il attend les requêtes en cours, puis démonte ses
+sous-systèmes dans un ordre fixe.
+
+## Ce qu’est une version
+
+Les versions à ce jour — 0.2.0-beta (2026-11-20), 0.2.1 (2026-11-24),
+0.2.2 (2026-11-26), 0.2.3 (2026-11-28) — suivent `MAJOR.MINOR.PATCH`,
+avec `0.x` traité comme beta. Le projet est avant 1.0 : une version
+peut contenir des changements de rupture. Chaque version porte une
+section **Deployment notes** dans `CHANGELOG.md` ; lisez-la avant de
+récupérer les images. Elle nomme les étapes que cette page ne peut pas
+connaître à l’avance — une variable d’environnement requise, une valeur
+par défaut changée, un re-téléchargement d’image imposé.
+
+Les migrations de base de données sont en append-only et portent des
+sections `-- DOWN` testées, si bien qu’un changement de schéma peut
+être annulé via `facet migrate:down`. C’est toute la politique engagée
+aujourd’hui ; cette page ne promet pas plus que le changelog et le code
+ne le tiennent.
 
 ## Quand l’utiliser
 
-Utilisez ce runbook quand :
-
-- vous passez une installation à une nouvelle étiquette de version,
-- vous arrêtez ou redémarrez une instance du backend,
-- vous vérifiez qu’un arrêt a été propre.
+- Vous passez une installation à un nouveau tag de version.
+- Vous arrêtez ou redémarrez une instance backend.
+- Vous vérifiez qu’un arrêt était propre.
 
 ## Avant de commencer
 
-- Épinglez une étiquette de version, par exemple `1.4.2`. Ne suivez pas
-  `latest` en production — voir
-  [Déployer avec des conteneurs](/fr/admin/install/containers/).
-- Prenez un instantané de la base de données avant de revenir en arrière sur
-  une migration. Un retour arrière exécute du DDL que seul un instantané peut
-  annuler.
-- Retenez la règle append-only : les fichiers de migration appliqués ne
-  sont jamais édités, renumérotés, ni fusionnés.
+- Épinglez un tag de version, par exemple `0.2.2`. Ne suivez pas `latest` en production — voir [Exécuter avec des conteneurs](/fr/admin/install/containers/).
+- Lisez les **Deployment notes** de la version dans `CHANGELOG.md`.
+- Prenez un instantané de la base avant d’annuler une migration. Une annulation exécute du DDL que seul un instantané peut défaire.
+- Connaissez la règle d’append-only : les fichiers de migration appliqués ne sont jamais édités, renumérotés ni fusionnés.
 
 ## Étapes
 
-### 1. Montez en version
+### 1. Passer à la nouvelle version
 
 ```sh
 docker compose -f docker/compose.prod.yml pull
 docker compose -f docker/compose.prod.yml up -d
 ```
 
-La nouvelle image du backend démarre et son entrypoint exécute une
+La nouvelle image backend démarre et son point d’entrée exécute une
 chaîne :
 
 ```text
 render config (when absent) → migrate → seed:core → server
 ```
 
-Chaque étape est idempotente. L’étape migrate réessaie trois fois, puis le
-démarrage s’arrête. Après le démarrage, vérifiez que le backend est
-prêt :
+Chaque étape est idempotente. L’étape migrate réessaie trois fois, puis
+le démarrage s’arrête. Après le démarrage, contrôlez la disponibilité :
 
 ```sh
 curl -sf https://facet.example.tld/Healthcheck
 ```
 
-### 2. Respectez les deux contraintes de schéma
+### 2. Respecter les deux contraintes de schéma
 
-- Le binaire embarque ses migrations à la compilation. Une image déployée
-  n’a besoin d’aucune arborescence `db/` sur le disque, et un fichier de
-  migration modifié exige une reconstruction.
-- Après la première version, `db/migrations/` est append-only. N’éditez, ne
-  renumérotez, ni ne fusionnez jamais un fichier qu’une base installée a
-  appliqué. Un fichier édité désynchronise chaque déploiement de la liste
-  appliquée dans `_migrations`.
+- Le binaire embarque ses migrations à la compilation. Une image
+  déployée n’a pas besoin de l’arbre `db/` sur disque, et un fichier de
+  migration changé exige une reconstruction.
+- Après la première version, `db/migrations/` est en append-only.
+  N’éditez, ne renumérotez, ne fusionnez jamais un fichier qu’une base
+  installée a appliqué.
 
-  Pour annuler une mise à niveau, revenez sur le schéma avec
-  `facet migrate:down` depuis un conteneur ponctuel de la nouvelle image,
-  après l’instantané. Les règles complètes d’application et de retour
-  arrière sont dans [Migrations de la base de données](/fr/admin/keep-running/migrations/).
+Pour annuler une mise à niveau, annulez le schéma avec
+`facet migrate:down` depuis un conteneur à usage unique de la nouvelle
+image, après l’instantané. Les règles complètes d’application et
+d’annulation sont dans
+[Migrations de base de données](/fr/admin/keep-running/migrations/).
 
-### 3. Épinglez UTC pour le travail manuel en base
+### 3. Connaître la séquence d’arrêt
 
-Chaque colonne d’horodatage stocke l’UTC sans marque de fuseau. Deux couches
-épinglent la zone de la session : l’application ajoute `TimeZone=UTC` à
+Le handler piège `SIGTERM`, `SIGINT` et `SIGHUP` dès le premier moment
+du démarrage. Un signal exécute cette séquence :
 
-chaque connexion du pool, et la migration du schéma a posé la valeur par
-défaut du rôle applicatif à UTC. Un client qui se connecte avec un autre rôle
-reçoit la valeur par défaut du serveur et doit poser la zone lui-même.
-
-:::caution
-Une session non UTC ne corrompt pas les lectures, mais elle fausse les
-écritures. Les valeurs par défaut de `now()` et les casts d’horodatage
-stockent l’heure de la machine locale, et PostgreSQL supprime le décalage
-sans avertissement. Épinglez `TimeZone=UTC` sur `psql`, les outils BI, et les
-scripts de mise à niveau.
-:::
-
-### 4. Retenez la séquence d’arrêt
-
-Le gestionnaire attrape `SIGTERM`, `SIGINT` et `SIGHUP` dès le premier
-instant du démarrage. Un signal lance cette séquence :
+*Un signal, cinq étapes, exit 0.*
 
 <!-- d2
 direction: down
@@ -115,24 +114,24 @@ teardown -> exit
 </div>
 
 Le teardown arrête les sous-systèmes du plus récent au plus ancien :
-cron, jobs, hooks, livraison des webhooks, passages sidecar, réplication,
-abonnés du cache, fanout WebSocket, et le gestionnaire d’événements en
+cron, jobs, hooks, livraison de webhooks, passes sidecar, réplication,
+abonnés au cache, fanout WebSocket, et le gestionnaire d’événements en
 dernier. Il draine le DDL d’index en arrière-plan avec une borne de
-5 secondes, puis ferme les pools de la base de données. Chaque étape
-s’exécute même si une étape antérieure a levé une erreur. Un second signal
-sort immédiatement : le teardown tourne toujours, mais l’attente du
-drain non.
+5 secondes, puis ferme les pools de base de données. Chaque étape
+s’exécute même quand une étape précédente lève une exception. Un second
+signal sort à l’instant : le teardown tourne toujours, mais l’attente
+de drain non.
 
-Sur un déploiement multi-instances, un arrêt propre libère aussitôt les
-verrous de shard Redis, si bien qu’une instance voisine prend le relais des
-flux sans attendre l’expiration du verrou.
+Sur un déploiement multi-instances, un arrêt propre libère les verrous
+de shard Redis à l’instant. Une instance pair prend les streams sans
+attendre la fin de vie des verrous.
 
-### 5. Donnez au drain une grâce suffisante
+### 4. Donner assez de délai de grâce au drain
 
-L’application borne son propre drain à 30 secondes. Le runtime de conteneurs
-tue le processus plus tôt si sa période de grâce est plus courte. Docker
-Compose en donne 10 par défaut. Montez-la au-dessus de la borne du
-drain :
+L’application borne son propre drain à 30 secondes. Le runtime de
+conteneur tue le processus plus tôt si sa période de grâce est plus
+courte. Docker Compose donne 10 secondes par défaut, et le fichier
+compose livré ne l’élève pas. Posez-le au-dessus de la borne de drain :
 
 ```yaml
 services:
@@ -142,60 +141,61 @@ services:
 
 ## Exemple
 
-Un runbook de mise à niveau complet pour une installation Compose :
+Un runbook complet de mise à niveau pour une installation Compose :
 
 ```sh
-# 1. Récupérez les nouvelles images de version.
+# 1. Lisez les Deployment notes de la version dans CHANGELOG.md.
+
+# 2. Récupérez les images de la nouvelle version.
 docker compose -f docker/compose.prod.yml pull
 
-# 2. Recréez la pile. L’entrypoint migre et réensemence les doctypes core.
+# 3. Recréez la pile. Le point d’entrée migre et relance la seed des doctypes core.
 docker compose -f docker/compose.prod.yml up -d
 
-# 3. Vérifiez que le backend est prêt.
+# 4. Contrôlez la disponibilité.
 curl -sf https://facet.example.tld/Healthcheck
 
-# 4. Plus tard, à l’arrêt du backend, confirmez l’arrêt propre dans les logs :
+# 5. Plus tard, quand vous arrêtez le backend, confirmez l’arrêt propre dans les journaux :
 #    la ligne "graceful shutdown complete" termine la séquence.
 ```
 
-L’image Docker fait aussi tourner son propre healthcheck sur
-`http://127.0.0.1:3000/Healthcheck` toutes les 10 secondes, donc `docker ps`
-affiche l’état sans outil supplémentaire.
+L’image exécute aussi son propre healthcheck sur
+`http://127.0.0.1:3000/Healthcheck` toutes les 10 secondes. `docker ps`
+montre l’état sans outillage supplémentaire.
 
 ## Dépannage
 
 **Le runtime tue le backend avant la fin du teardown.**
 
-La période de grâce est plus courte que le drain. Posez `stop_grace_period`
-au-dessus de 30 secondes, comme dans le fragment ci-dessus.
+La période de grâce est plus courte que le drain. Posez
+`stop_grace_period` au-dessus de 30 secondes, comme dans le fragment
+ci-dessus.
 
 **Le démarrage s’arrête après trois tentatives de migrate.**
 
-Lisez les logs du backend : une base injoignable ou un problème de
-permissions en est la cause habituelle. Corrigez la cause, puis relancez
-`docker compose up -d`.
+Lisez les journaux backend : une base injoignable ou un problème de
+permissions est la cause habituelle. Corrigez la cause, puis lancez
+`docker compose up -d` de nouveau.
 
 **Vous devez annuler la partie schéma d’une mise à niveau.**
 
-Prenez un instantané, puis lancez `facet migrate:down` depuis un conteneur
-ponctuel de la nouvelle image. Voir
-[Migrations de la base de données](/fr/admin/keep-running/migrations/) pour la syntaxe
-de cible et les garde-fous.
+Prenez un instantané, puis lancez `facet migrate:down` depuis un
+conteneur à usage unique de la nouvelle image. Voir
+[Migrations de base de données](/fr/admin/keep-running/migrations/)
+pour la syntaxe de cible et les garde-fous.
 
 **`/Healthcheck` répond `503` après la mise à niveau.**
 
 Lisez `database`, `redis` et `events` dans le corps — voir
-[Contrôles de santé, métriques, tracing, logs](/fr/admin/keep-running/monitoring/).
-Une migration en échec se nomme elle-même dans les logs du backend.
+[Santé, métriques et journaux](/fr/admin/keep-running/monitoring/).
+Une migration en échec se nomme dans les journaux backend.
 
 ## Voir aussi
 
-- [Migrations de la base de données](/fr/admin/keep-running/migrations/) — application
-  et retour arrière en détail, et la règle UTC.
-- [Déployer avec des conteneurs](/fr/admin/install/containers/) — les images,
-  les étiquettes, et la chaîne de l’entrypoint.
-- [Déployer en production](/fr/admin/install/production/) — le pas-à-pas complet du
-  déploiement.
-- [Contrôles de santé, métriques, tracing, logs](/fr/admin/keep-running/monitoring/) —
-  les sondes que ce runbook vérifie.
-- Internes sur GitHub : [shutdown.md](https://github.com/wearefacet/facet/blob/main/doc/backend/shutdown.md), [migrations.md](https://github.com/wearefacet/facet/blob/main/doc/backend/migrations.md).
+- [Migrations de base de données](/fr/admin/keep-running/migrations/) — appliquer et annuler en entier, et la règle UTC.
+- [Exécuter avec des conteneurs](/fr/admin/install/containers/) — images, tags, et la chaîne de point d’entrée.
+- [Passer en production](/fr/admin/install/production/) — le parcours de déploiement complet.
+- [Santé, métriques et journaux](/fr/admin/keep-running/monitoring/) — les sondes que ce runbook contrôle.
+- [Versions](/fr/reference/changelog/) — le changelog d’où cette page lit ses notes.
+- Documentation interne sur GitHub : [shutdown.md](https://github.com/wearefacet/facet/blob/main/doc/backend/shutdown.md), [migrations.md](https://github.com/wearefacet/facet/blob/main/doc/backend/migrations.md).
+- [CLI facet](/fr/reference/cli-facet/)

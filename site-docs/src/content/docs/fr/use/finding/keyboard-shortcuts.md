@@ -1,63 +1,74 @@
 ---
+type: reference
 title: Raccourcis clavier
-description: Se déplacer dans l’espace de travail, les listes et les documents au clavier.
+description: "Toutes les combinaisons de touches : naviguer dans les listes, ouvrir et enregistrer, ouvrir la palette, l’assistant et la feuille de raccourcis."
 audience: [user]
 features: [FE-08]
 sidebar:
-  order: 8
-verified_at: 49d7c7e5
+  order: 3
+verified_at: eee55a2
 ---
 
-Ces tables listent les raccourcis clavier de l’espace de travail. Dans les
-tables, une combinaison `Ctrl` signifie `Ctrl` sur Windows et Linux, et `Cmd`
-sur macOS.
+L’espace de travail répond au clavier aussi bien qu’à la souris. Les tables
+suivantes listent chaque raccourci et l’endroit où il agit. Dans les tables,
+`Ctrl` désigne `Ctrl` sur Windows et Linux, et `Cmd` sur un Mac.
 
-:::tip
-Appuyez sur `?` pour voir les raccourcis qui marchent maintenant. La boîte de
-dialogue liste les raccourcis de la page où vous êtes.
-:::
+Appuyez sur `?` — hors d’un champ de texte — pour voir les raccourcis qui
+fonctionnent en ce moment. La feuille ne liste que les raccourcis de la page
+où vous êtes. Elle est donc plus courte que cette référence.
 
-## N’importe où dans l’espace de travail
+## Partout dans l’espace de travail
 
-| Raccourci | Contexte | Action |
-| --- | --- | --- |
-| `Ctrl+K` | Espace de travail | Ouvrir ou fermer la palette de commandes |
-| `Ctrl+I` | Pages avec l’assistant | Ouvrir ou fermer la fenêtre de l’assistant |
-| `Ctrl+\` | Espace de travail | Replier ou déplier la barre latérale |
-| `?` | Espace de travail, hors d’un champ de texte | Afficher la boîte de dialogue des raccourcis clavier |
-| `Échap` | Fenêtre de l’assistant, focus à l’intérieur | Réduire la fenêtre de l’assistant |
+| Raccourci | Action |
+|---|---|
+| `Ctrl+K` | Ouvrir ou fermer la palette de commandes |
+| `Ctrl+I` | Ouvrir ou fermer l’assistant |
+| `Ctrl+\` | Replier ou déplier la barre latérale |
+| `?` | Afficher la feuille des raccourcis clavier |
+| `Esc` | Réduire la fenêtre de l’assistant, quand vous y tapez |
 
 ## Sur une liste
 
-| Raccourci | Contexte | Action |
-| --- | --- | --- |
-| `C` | Page de liste, votre rôle autorise la création | Démarrer un nouvel enregistrement de ce doctype |
-| `j` ou `↓` | Page de liste | Surligner la ligne suivante |
-| `k` ou `↑` | Page de liste | Surligner la ligne précédente |
-| `Entrée` | Page de liste | Ouvrir l’enregistrement surligné |
-| `Entrée` | Tiroir d’aperçu ouvert | Ouvrir la pleine page de l’enregistrement |
-| `Échap` | Page de liste | Effacer le surlignage de ligne |
-| `/` | Page de liste avec une zone de recherche | Aller à la zone de recherche de la liste |
+| Raccourci | Action |
+|---|---|
+| `C` | Démarrer un nouvel enregistrement de ce type d’enregistrement |
+| `j` ou `↓` | Surligner la ligne suivante |
+| `k` ou `↑` | Surligner la ligne précédente |
+| `Enter` | Ouvrir l’enregistrement surligné dans l’aperçu |
+| `Enter` | Avec l’aperçu ouvert, ouvrir la page complète de l’enregistrement |
+| `Esc` | Effacer le surlignage de la ligne |
+| `/` | Aller à la zone de recherche de la liste, quand la liste en a une |
 
-Les raccourcis de ligne apparaissent sur les listes qui ouvrent les
-enregistrements dans le tiroir d’aperçu. Le tiroir d’aperçu est l’aperçu de
-l’enregistrement sur le côté de la page. Le raccourci `/` apparaît quand le
-doctype a une zone de recherche.
+## Dans un enregistrement
 
-## Dans un document
+| Raccourci | Action |
+|---|---|
+| `E` | Modifier l’enregistrement |
+| `Ctrl+S` | Enregistrer le formulaire |
+| `Ctrl+Enter` | Enregistrer le formulaire |
 
-| Raccourci | Contexte | Action |
-| --- | --- | --- |
-| `E` | Page du document, votre rôle autorise la mise à jour | Modifier l’enregistrement |
-| `Ctrl+S` | Éditeur | Enregistrer le formulaire |
-| `Ctrl+Entrée` | Éditeur | Enregistrer le formulaire |
+## Les règles qui régissent ces raccourcis
+
+Les raccourcis de lettres suivent les mêmes droits que les boutons : `C`
+n’apparaît que là où votre rôle peut créer des enregistrements, `E` que là où
+il peut les modifier. Rien de caché, rien en plus.
+
+Les lettres et `?` ne se déclenchent pas pendant la saisie — seules les
+combinaisons avec `Ctrl` le font. Voilà pourquoi `Ctrl+K` fonctionne depuis
+une zone de recherche, mais pas `j`. Dans une boîte de dialogue ouverte, la
+boîte de dialogue possède le clavier, et les raccourcis de l’espace de
+travail s’effacent.
+
+Les combinaisons que le navigateur possède déjà — `Ctrl+C` pour copier,
+`Ctrl+T` pour un nouvel onglet — restent au navigateur. Facet ne les prend
+pas.
 
 ## Dépannage
 
 ### Un raccourci lettre ne fait rien
 
-Le focus se tient dans un champ de texte. Les raccourcis lettre ne se
-déclenchent pas pendant que vous tapez. Sélectionnez d’abord hors du champ.
+Le focus se trouve dans un champ de texte. Sélectionnez d’abord hors du
+champ — les lettres ne se déclenchent jamais pendant la saisie.
 
 ### Un raccourci ne fait rien quand une boîte de dialogue est ouverte
 
@@ -66,21 +77,23 @@ dialogue.
 
 ### `C` ou `E` ne fait rien
 
-Votre rôle ne permet peut-être pas la création ou la mise à jour. Le raccourci
-suit les mêmes droits que les boutons.
+Votre rôle n’autorise ni création ni modification sur ce type
+d’enregistrement. Le raccourci suit les mêmes droits que les boutons — si le
+bouton est absent, la touche reste silencieuse. Demandez à votre
+administrateur ; voir
+[Rôles : qui voit et fait quoi](/fr/discover/how-it-works/roles/).
 
 ### Une combinaison du navigateur reste native
 
-`Ctrl+C`, `Ctrl+T` et les combinaisons semblables appartiennent au navigateur
-ou au système d’exploitation. Facet ne les utilise pas.
+`Ctrl+C`, `Ctrl+T` et leurs voisines appartiennent au navigateur ou au
+système d’exploitation. Facet ne les utilise pas et les laisse tranquilles.
 
 ## Voir aussi
 
-- [Recherche et palette de commandes](/fr/use/finding/search/) —
-  ce qu’ouvre `Ctrl+K`.
+- [Recherche et palette de commandes](/fr/use/finding/search/) — ce qu’ouvre
+  `Ctrl+K`.
 - [Listes, filtres et vues enregistrées](/fr/use/finding/lists-and-views/) —
-  les listes sur lesquelles ces raccourcis de ligne marchent.
+  les listes sur lesquelles ces raccourcis de ligne fonctionnent.
 - [Consulter et modifier un document](/fr/use/documents/view-and-edit/) —
   modifier avec `E`, enregistrer avec `Ctrl+S`.
-- [Utiliser l’assistant](/fr/use/assistant/) — la fenêtre qu’ouvre
-  `Ctrl+I`.
+- [Utiliser l’assistant](/fr/use/assistant/) — la fenêtre qu’ouvre `Ctrl+I`.

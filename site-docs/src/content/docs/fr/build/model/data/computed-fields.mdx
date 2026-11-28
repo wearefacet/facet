@@ -1,0 +1,178 @@
+---
+type: how-to
+title: Champs calculés
+description: Calculez la valeur d’un champ avec une fonction Lua, relancée par Facet à chaque changement d’une entrée.
+audience: [author, developer]
+features: [DOM-09]
+sidebar:
+  order: 3
+verified_at: eee55a2
+---
+
+**Lua est nécessaire pour cette page.** Un champ calculé exécute une petite
+fonction Lua issue du script du doctype. Si vous n’avez jamais écrit de Lua,
+commencez par l’introduction de dix lignes dans
+[API Lua (référence)](/fr/reference/lua-api/).
+
+Un champ calculé maintient une valeur à jour sans qu’un utilisateur la
+saisisse. Une réservation Brightwater montre le principe : le `total` de la
+réservation est la somme de ses lignes, et personne ne le tape. Vous déclarez
+le champ, nommez une fonction et listez les entrées qui déclenchent un
+recalcul. Facet exécute la fonction à la création, puis à chaque changement
+d’une entrée listée, et enregistre le résultat sur le document.
+
+## Quand l’utiliser
+
+Ajoutez un champ calculé pour une valeur que les utilisateurs maintiendraient
+sinon à la main, avec des erreurs à la clé : un total sur les lignes d’une
+réservation, une ancienneté en jours, un numéro d’affichage assemblé par
+morceaux. Un champ calculé n’accepte jamais une saisie utilisateur ; Facet la
+refuse.
+
+## Avant de commencer
+
+- **Trois éléments.** Un champ calculé porte le type `data`, un nom `compute`
+  et une liste `compute_when`.
+- **Une fonction dans le script.** La fonction doit exister dans le
+  [script](/fr/build/model/behaviour/scripts-and-guards/) du doctype. Facet le
+  vérifie à l’enregistrement du doctype.
+- **Lecture seule par conception.** Le calcul peut lire des documents, mais
+  jamais les écrire. Pour modifier d’autres documents, passez par une action
+  ou un hook de domaine.
+
+## Étapes
+
+### 1. Déclarer le champ
+
+```json
+"total": {
+  "type": "data",
+  "compute": "booking_total",
+  "compute_when": ["lines"]
+}
+```
+
+La valeur `compute` nomme la fonction exportée ; Facet appelle
+`compute_booking_total`. Chaque entrée de `compute_when` est soit un champ du
+doctype, soit le nom d’une relation enfant. Tout le reste est refusé à
+l’enregistrement du doctype.
+
+### 2. Écrire la fonction
+
+Renvoyez la valeur. Le motif de module complet s’applique, comme dans tout
+script de doctype :
+
+```lua
+local export = {}
+
+function export.compute_booking_total(ctx)
+  return (ctx.root.qty or 0) * (ctx.root.unit_price or 0)
+end
+
+return export
+```
+
+Renvoyer `nil` vide le champ. Servez-vous en pour une valeur conditionnelle,
+par exemple une ancienneté qui reste vide tant que la date d’embauche
+n’existe pas.
+
+### 3. Calculer à partir des enfants
+
+Quand `compute_when` nomme une relation enfant, Facet vous prépare les lignes
+enfants réelles dans `ctx.children` et relance le champ du parent à chaque
+changement d’un enfant de cette relation. C’est ainsi que la réservation
+Brightwater somme ses lignes :
+
+```lua
+local export = {}
+
+function export.compute_booking_total(ctx)
+  local total = 0
+  for _, line in ipairs((ctx.children or {}).lines or {}) do
+    local qty = line.quantity or 0
+    local price = 0
+    if line.price and line.price.value then
+      price = tonumber(line.price.value) or 0
+    end
+    total = total + qty * price
+  end
+  return total
+end
+
+return export
+```
+
+Le champ déclare `compute_when: ["lines"]`, où `lines` est l’entrée
+`children` du doctype.
+
+## Exemple
+
+Le doctype de réservation Brightwater déclare ici deux éléments qui
+comptent :
+
+```json
+{
+  "fields": {
+    "total": { "type": "data", "compute": "booking_total", "compute_when": ["lines"] }
+  },
+  "children": {
+    "lines": { "doctype": "BookingLine", "collection": true }
+  }
+}
+```
+
+Une création avec une ligne — quantité `2`, prix `250` — enregistre
+`total: 500`. Ajoutez une seconde ligne : le recalcul s’exécute dans la même
+écriture et enregistre la nouvelle somme. Quand le déclencheur est une
+relation enfant, la relance écrit la valeur du parent comme entrée
+d’historique à part entière, et l’audit montre qui et quoi l’a déclenchée.
+
+:::note
+Le nom d’affichage et le texte de recherche d’un doctype sont aussi dérivés,
+mais par des modèles Jinja2, pas par Lua. Voir
+[Noms d’affichage et texte de recherche](/fr/build/model/views/names-and-search/).
+:::
+
+## Quand les recalculs s’exécutent
+
+- **À la création**, chaque champ calculé s’exécute.
+- **À la mise à jour**, seuls les champs dont la liste `compute_when` recoupe
+  les champs modifiés s’exécutent. Un champ sans liste `compute_when`
+  s’exécute à chaque mise à jour.
+- **Au changement d’un enfant**, les champs du parent nommés d’après la
+  relation s’exécutent une fois l’écriture de l’enfant posée.
+- Les champs sont triés topologiquement : un champ qui lit un autre champ
+  calculé s’exécute après lui.
+- Une fonction en échec annule toute l’écriture, si bien qu’aucune valeur
+  périmée n’est enregistrée.
+
+## Dépannage
+
+### Le champ reste vide
+
+La fonction a renvoyé `nil`, ou un déclencheur n’a jamais tiré. Vérifiez que
+chaque entrée de `compute_when` est un nom de champ ou une relation enfant du
+même doctype. Facet refuse sinon la définition.
+
+### La valeur reste périmée après un changement d’enfant
+
+La liste `compute_when` doit nommer la relation enfant, pas un champ de
+l’enfant. Avec `["lines"]`, chaque changement sous `lines` relance le champ
+du parent.
+
+### L’écriture répond `422` avec `Computed fields failed`
+
+La fonction a levé une erreur. Lisez le message, corrigez la fonction et
+enregistrez le doctype.
+
+### Un utilisateur a tenté de définir le champ
+
+Les champs calculés refusent la saisie utilisateur par conception. Retirez le
+champ du formulaire, ou transformez-le en champ normal sans calcul.
+
+## Voir aussi
+
+- [API Lua (référence)](/fr/reference/lua-api/) — la surface de calcul et ses limites.
+- [Composition parent/enfant](/fr/build/model/relations/parent-child/) — les enfants que le calcul lit.
+- [Noms d’affichage et texte de recherche](/fr/build/model/views/names-and-search/) — dériver noms et texte de recherche avec des modèles Jinja2.
+- [Comment les anciens documents suivent un nouveau schéma](/fr/build/deeper/schema-evolution/) — ce qu’un changement calculé coûte sur un domaine réel.

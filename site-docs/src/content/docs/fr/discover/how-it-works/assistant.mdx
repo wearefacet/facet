@@ -1,0 +1,61 @@
+---
+type: explanation
+title: "L’assistant : une IA avec vos droits"
+description: "Découvrez comment l’assistant répond selon vos propres droits, où il apparaît et ce qu’un administrateur contrôle."
+audience: [evaluator, admin]
+features: [AI-01, AI-02, AI-03, AI-05, AI-07, AI-08]
+verified_at: eee55a2
+sidebar:
+  order: 5
+---
+
+import Illustration from '../../../../../components/Illustration.astro';
+
+Nadia demande : « Quelles tentes sont libres le 14 juin ? » L’assistant consulte le stock et répond — exactement les tentes que Nadia a le droit de voir, pas davantage. Toute la page repose sur cette règle : **l’assistant n’a aucun droit propre.**
+
+*Il agit en tant que vous, sous votre rôle. Ses modifications sont les vôtres, dans l’historique, signalées comme travail de l’assistant.*
+
+<Illustration name="assistant-acts-as-you" />
+
+## Il agit en tant que vous
+
+L’assistant ne voit et ne modifie que ce que permet votre rôle. Ce que vous ne pouvez pas lire, il ne peut pas le lire ; ce que vous n’avez pas le droit de modifier, il ne peut pas le modifier. Lorsqu’il modifie quelque chose — une date, un statut, une note — l’historique l’enregistre sous votre nom. Une mention indique que la saisie vient de l’assistant. Vous pouvez ouvrir **Historique** sur n’importe quel enregistrement et voir chaque modification de ce type, comme toute autre.
+
+## Où le rencontrer
+
+L’assistant apparaît à trois endroits :
+
+- **L’espace de travail.** Un panneau de chat accompagne chaque page. Interrogez-le sur vos données ; il peut ouvrir l’enregistrement qu’il a trouvé.
+- **Le Builder.** Un second assistant vous aide à façonner les types d’enregistrements eux-mêmes : décrivez un *MaintenanceTicket*, et il rédige les champs et les écrans dans votre copie de travail.
+- **Dans les apps.** Une app peut intégrer le même chat ; l’écran de sortie répond donc aussi aux questions — toujours sous les droits de la personne connectée.
+
+## Les agents se connectent aussi
+
+Votre agent d’IA de programmation, ou Claude Desktop, peut se connecter directement à Facet — par un connecteur standard appelé MCP. Un agent se connecte toujours sous un rôle fixe unique que vous choisissez pour lui, et les mêmes vérifications s’appliquent à chacun de ses appels. Sa boîte à outils ne contient que des outils de documents — lire, modifier, agir, rechercher. Il ne possède aucun outil pour remodeler vos types d’enregistrements.
+
+## Votre modèle, vos règles
+
+Facet n’apporte aucun service d’IA propre. Un administrateur connecte le modèle de langage — tout service qui parle le format OpenAI courant — avec un endpoint, une clé et un nom de modèle. Le modèle ne touche jamais votre base de données. Il lit ce que les outils de l’assistant récupèrent pour lui, selon vos droits, et rien de plus.
+
+## Vous gardez le contrôle
+
+Une réponse en cours s’arrête avec **Arrêter**. Un administrateur peut désactiver l’assistant pour un rôle et plafonner ce que chaque compte peut dépenser. Le plafond est un budget de tokens sur 30 jours glissants ; le panneau affiche le compteur. Lorsque le budget est épuisé, le panneau l’indique, et le plafond se lève à mesure que l’ancienne consommation sort de la fenêtre.
+
+## Ce que cela signifie pour vous
+
+- Posez vos questions dans vos propres mots ; les réponses respectent les mêmes règles que votre propre écran.
+- La piste d’audit reste complète : le travail de l’assistant est visible, attribuable et annulable.
+- Adopter l’IA ne signifie pas ouvrir les portes — cela signifie délivrer un badge de plus.
+
+## Pour les détails techniques
+
+- [IA et permissions en détail](/fr/admin/under-the-hood/ai-and-permissions/) — comment un appel d’outil est vérifié et consigné.
+- [Connecter des agents via MCP](/fr/build/apps/agents/mcp/) — configurer une connexion d’agent.
+- [Connecter un modèle de langage](/fr/admin/assistant/connect-a-model/) — la configuration de l’administrateur.
+- [Interroger l’assistant](/fr/use/assistant/) — le mode d’emploi au quotidien.
+
+## Voir aussi
+
+- [Vue d’ensemble](/fr/discover/how-it-works/) — la place de l’assistant parmi les cinq idées.
+- [Les rôles : qui voit quoi et fait quoi](/fr/discover/how-it-works/roles/) — les droits qu’il emprunte.
+- [Intégrer l’assistant dans votre app](/fr/build/apps/host/embed-assistant/) — le chat dans votre propre app.

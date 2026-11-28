@@ -1,0 +1,50 @@
+---
+type: explanation
+title: Vue d’ensemble
+description: "Une image et cinq idées : ce que Facet fait chaque fois que votre équipe lit ou modifie un enregistrement."
+audience: [evaluator]
+features: []
+verified_at: eee55a2
+sidebar:
+  order: 0
+---
+
+import Illustration from '../../../../../components/Illustration.astro';
+
+Avant les détails, une seule image. Voici ce qui se passe chaque fois qu’une personne chez Brightwater consulte ou modifie un enregistrement.
+
+*Une porte. Un seul ensemble de vérifications. Une seule mémoire.*
+
+<Illustration name="how-it-works-one-door" />
+
+## Cinq idées, cinq pages brèves
+
+**Vos enregistrements vivent dans des domaines.** Un domaine est un secteur d’activité — pour Brightwater : *equipment*, *clients*, *rentals*. Chacun reste séparé ; rien ne franchit la limite sans l’accord de quelqu’un. Lisez [Les domaines : là où vivent vos données](/fr/discover/how-it-works/domains/).
+
+**Chaque enregistrement est un document doué de mémoire.** Créez une réservation, modifiez-la, regretez-la — chaque étape est consignée, avec son auteur et sa date, et vous pouvez annuler. Lisez [Les documents : enregistrements avec mémoire](/fr/discover/how-it-works/documents/).
+
+**Un rôle décide qui voit quoi et qui fait quoi.** Tom ne voit que ses propres clients ; Lucía ne voit jamais les prix d’achat. Les vérifications s’appliquent à chaque lecture et à chaque écriture, dans chaque app, pour chaque agent. Lisez [Les rôles : qui voit quoi et fait quoi](/fr/discover/how-it-works/roles/).
+
+**Les apps se connectent de l’extérieur.** L’application de sortie d’entrepôt se connecte via Facet et n’atteint que ce qu’on lui a accordé. Facet peut l’héberger ; vos données lui survivent. Lisez [Apps : vite créées, librement remplacées](/fr/discover/how-it-works/apps/).
+
+**L’assistant répond dans vos mots.** Vous posez la question en langage courant ; il lit les enregistrements pour vous et les modifie quand vous le demandez — selon vos droits, sous votre nom dans l’historique. Lisez [L’assistant : une IA avec vos droits](/fr/discover/how-it-works/assistant/).
+
+## Ce que cela signifie pour vous
+
+- Vous décrivez le métier ; Facet le conserve. Le modèle de données épouse vos services, et non les modules d’un fournisseur.
+- Personne ne configure la sécurité dans chaque outil. Les règles résident en un seul endroit et s’appliquent partout.
+- Remplacer une app est une tâche ordinaire, pas un projet de migration.
+- Vous pouvez confier un vrai travail à un agent d’IA, car ses droits sont aussi bornés que ceux de n’importe qui.
+
+## Pour les détails techniques
+
+- [Contextes d’authentification](/fr/admin/under-the-hood/one-role-at-a-time/) — comment chaque canal aboutit à une seule identité et à un seul rôle.
+- [Comment l’accès est contrôlé](/fr/admin/under-the-hood/how-access-is-enforced/) — où se trouvent les vérifications et dans quel ordre.
+- [Le journal des mutations en détail](/fr/admin/under-the-hood/change-log/) — la mémoire, ligne par ligne.
+- [Événements et livraison](/fr/admin/under-the-hood/events-and-delivery/) — comment les réactions à un changement sont livrées.
+
+## Voir aussi
+
+- [Pourquoi Facet](/fr/discover/why-facet/) — les problèmes derrière le tableau.
+- [Sécurité et gouvernance](/fr/discover/security/) — les mêmes vérifications, présentées pour un audit.
+- Le glossaire rassemble tous les termes du produit : [Glossaire](/fr/reference/glossary/).

@@ -1,11 +1,12 @@
 ---
 title: Import/export en masse via l’API
-description: Faites entrer et sortir les documents d’un doctype en CSV ou en JSON via les routes d’import/export.
+description: Faites entrer et sortir les documents d’un doctype en CSV ou en JSON via les routes d’export et d’import par jobs.
+type: how-to
 audience: [developer]
 features: [DOC-11]
+verified_at: eee55a2
 sidebar:
-  order: 14
-verified_at: a77c6171
+  order: 5
 ---
 
 Ces routes font sortir les documents d’un doctype de Facet, puis les y
@@ -14,14 +15,14 @@ seul point dans le temps. Un import tourne dans une seule transaction :
 toutes les lignes arrivent, ou aucune.
 
 > **Pour les agents :** Export : `POST /Api/<domain>/<doctype>/export?format=csv`
-> répond `202 {job_id, status_url}`. Interrogez
-> `GET /Api/<domain>/<doctype>/import_export/<job_id>`, puis téléchargez depuis
-> `GET /Api/<domain>/<doctype>/import_export/<job_id>/download` ; `wait=true`
-> renvoie le fichier directement. Import : `POST /Api/<domain>/<doctype>/import`
-> avec le corps CSV ou JSON ; un `422` nomme la ligne et le problème. L’upsert
-> se base sur la colonne `id` ; une seule transaction ; la première ligne en
-> échec annule tout. Les POST exigent `X-Requested-With` pour les sessions par
-> cookie.
+> répond `202 {job_id, status_url}` (`wait=true` renvoie le fichier directement).
+> Import : `POST /Api/<domain>/<doctype>/import` avec le corps CSV ou JSON répond
+> `202 {job_id, row_count, status_url}` ; interrogez
+> `GET /Api/<domain>/<doctype>/import_export/<job_id>` pour `{id, status, error, result}`.
+> Une seule transaction : la première ligne en échec annule tout. L’upsert se base
+> sur la colonne `id`. Les POST en session par cookie exigent
+> `X-Requested-With: XMLHttpRequest` ; les appels par clé API n’ont besoin d’aucun
+> en-tête CSRF.
 
 ## Quand l’utiliser
 
@@ -36,10 +37,15 @@ Utilisez les routes d’import/export quand :
 
 - Les exports exigent le droit `read` sur le doctype. Un import exige les
   droits `create` et `update`, car un upsert peut faire l’un ou l’autre.
-- Les routes refusent les doctypes enfants (`member_of`) et les doctypes
-  sidecar dans les deux sens.
+- Les routes refusent les doctypes enfants (`member_of`) et les
+  [doctypes sidecar](/fr/build/model/relations/comments-attachments/) dans les
+  deux sens.
 - Les sessions par cookie doivent envoyer `X-Requested-With: XMLHttpRequest`
-  sur les POST. Une authentification bearer sans cookie en est exemptée.
+  sur les POST. Un identifiant bearer sans cookie en est exempté.
+
+Les appels réels de cette page ont été exécutés sur une instance de dev à
+l’adresse `https://facet.localhost:3443` avec les données Brightwater Rentals
+chargées.
 
 ## Routes
 
@@ -55,39 +61,62 @@ Utilisez les routes d’import/export quand :
 
 ### 1. Exporter un doctype
 
+Chaque appel API présente son propre identifiant. Émettez une clé épinglée au
+rôle `manager` de Nadia et gardez-la dans une variable :
+
 ```sh
-curl -s -X POST "https://facet.company.tld/Api/crm/Company/export?format=csv" \
-  -H "Authorization: Bearer $FACET_TOKEN" \
-  -H "X-Requested-With: XMLHttpRequest"
+NADIA_KEY=$(pnpx @facetapp/cli connect --role manager >/dev/null && pnpx @facetapp/cli apikey)
 ```
 
-La réponse est `202` :
+Un appel avec `wait=true` bloque jusqu’à la fin du job et renvoie le fichier
+lui-même. Cette session a exporté les sociétés Brightwater :
+
+```sh
+curl -sk -H "Authorization: Bearer $NADIA_KEY" \
+  -X POST 'https://facet.localhost:3443/Api/clients/Company/export?format=csv&wait=true' \
+  -o companies.csv
+```
+
+`companies.csv` contient :
+
+```csv
+id,city,name,account_manager
+06H1FM1B3MXBPS0JYVM3BDD154,Lyon,Maison Lumière,iam.Account.06H1FKYQFRDS3FBJ6HTX6FNQAE
+06H1FM1B68KB1PJVVAM92B38YS,Annecy,Festival des Collines,iam.Account.06H1FKYQFRDS3FBJ6HTX6FNQAE
+```
+
+Sans `wait=true`, l’appel répond `202` :
 
 ```json
 {
   "job_id": "01JBK2M4N6P8R0T2V4X6Z8B2D4",
-  "status_url": "/Api/crm/Company/import_export/01JBK2M4N6P8R0T2V4X6Z8B2D4"
+  "status_url": "/Api/clients/Company/import_export/01JBK2M4N6P8R0T2V4X6Z8B2D4"
 }
 ```
 
-Interrogez la route de statut jusqu’à ce que `status` vaille `succeeded` ou
-`failed`. Téléchargez ensuite le fichier depuis la route de téléchargement.
-Avec `wait=true`, l’appel bloque jusqu’à la fin du job : en cas de succès la
-réponse est le fichier lui-même, en cas d’échec c’est `500` avec
-`{"job_id", "error"}`.
+Interrogez la route de statut jusqu’à ce que `status` vale `succeeded` ou
+`failed`, puis téléchargez le fichier depuis la route de téléchargement. Sur
+un job en échec, la route de téléchargement n’est pas le fichier : lisez
+`error` dans la réponse de statut.
+
+`format=csv|json` choisit la sortie. Un format inconnu répond `422` :
+
+```json
+{ "error": "Unknown or missing format: xlsx (supported: csv, json)" }
+```
 
 Les filtres suivent la grammaire de liste, par exemple
-`filters[status__eq]=active`. `sort`, `page`, `per_page` et `items` répondent
-`422` : l’export est figé à l’ordre des id.
+`filters[status__eq]=confirmed`. `sort`, `page`, `per_page` et `items`
+répondent `422` : l’export est figé à l’ordre des id.
 
 ### 2. Exporter la vue tableau actuelle
 
 ```sh
-curl -s -X POST "https://facet.company.tld/Api/crm/Company/export_view" \
-  -H "Authorization: Bearer $FACET_TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "X-Requested-With: XMLHttpRequest" \
-  -d '{"columns": ["name", "status", "amount"], "sort": ["-created_at", "id"], "filters": {"status__eq": "active"}, "timezone": "Europe/Paris"}'
+curl -sk -X POST \
+  'https://facet.localhost:3443/Api/clients/Company/export_view' \
+  -H "Authorization: Bearer $NADIA_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{"columns": ["name", "city"], "sort": ["-created_at", "id"], "filters": {"city__eq": "Lyon"}, "timezone": "Europe/Paris"}'
 ```
 
 - `columns` est requis. Chaque clé doit être un champ du doctype ou une
@@ -98,24 +127,49 @@ curl -s -X POST "https://facet.company.tld/Api/crm/Company/export_view" \
   elles restent en UTC.
 
 :::note[Ce fichier est une vue, pas une source d’import]
-Un export de vue rend les timestamps dans la zone demandée. Un ré-import de ce
-fichier échoue sur les cellules sans zone.
+Un export de vue rend les timestamps dans la zone demandée. Un ré-import de
+ce fichier échoue sur les cellules sans zone.
 :::
 
 ### 3. Importer un fichier
 
-La route prend le format d’un paramètre `format=`, sinon du `Content-Type`,
-sinon de la forme du corps : un `[` en tête se lit comme du JSON.
+La route prend le format d’un paramètre `format=`, sinon du
+`Content-Type`, sinon de la forme du corps : un `[` en tête se lit comme du
+JSON. Cette session a importé une ligne au format Brightwater :
 
 ```sh
-curl -s -X POST "https://facet.company.tld/Api/crm/Company/import" \
-  -H "Authorization: Bearer $FACET_TOKEN" \
-  -H "Content-Type: text/csv" \
-  -H "X-Requested-With: XMLHttpRequest" \
-  --data-binary @companies.csv
+cat > probe.json <<'EOF'
+[{"content":{"name":"Import Probe Co","city":"Bastia"}}]
+EOF
+
+```sh
+curl -sk -X POST \
+  'https://facet.localhost:3443/Api/clients/Company/import' \
+  -H "Authorization: Bearer $NADIA_KEY" \
+  -H 'Content-Type: application/json' \
+  --data-binary @probe.json
 ```
 
-La réponse est `202` avec `{"job_id", "row_count", "status_url"}`.
+La réponse est `202` :
+
+```json
+{
+  "job_id": "06H1FSDH1016A18QYX19T1YB79",
+  "row_count": 1,
+  "status_url": "/Api/clients/Company/import_export/06H1FSDH1016A18QYX19T1YB79"
+}
+```
+
+Interrogez la route de statut :
+
+```json
+{
+  "id": "06H1FSDH1016A18QYX19T1YB79",
+  "status": "succeeded",
+  "error": null,
+  "result": { "created": 1, "skipped": 0, "updated": 0, "row_count": 1 }
+}
+```
 
 L’analyse structurelle tourne avant le job. Un fichier mal formé répond `422`
 et nomme la ligne :
@@ -135,33 +189,20 @@ Un aller-retour complet : exportez avec `wait=true`, ré-importez le fichier,
 interrogez le job :
 
 ```sh
-# 1. Exportez et attendez : l’appel renvoie le fichier CSV directement.
-curl -s -X POST "https://facet.company.tld/Api/crm/Company/export?format=csv&wait=true" \
-  -H "Authorization: Bearer $FACET_TOKEN" \
-  -H "X-Requested-With: XMLHttpRequest" \
-  -o companies.csv
+BASE=https://facet.localhost:3443
+AUTH="Authorization: Bearer $NADIA_KEY"
+
+# 1. Exportez et attendez : l’appel renvoie le fichier CSV directement.
+curl -sk -H "$AUTH" \
+  -X POST "$BASE/Api/clients/Company/export?format=csv&wait=true" -o companies.csv
 
 # 2. Ré-importez le fichier.
-curl -s -X POST "https://facet.company.tld/Api/crm/Company/import" \
-  -H "Authorization: Bearer $FACET_TOKEN" \
-  -H "Content-Type: text/csv" \
-  -H "X-Requested-With: XMLHttpRequest" \
-  --data-binary @companies.csv
+curl -sk -H "$AUTH" -H 'Content-Type: text/csv' \
+  -X POST "$BASE/Api/clients/Company/import" --data-binary @companies.csv
 
 # 3. Interrogez le statut du job (le job_id de la réponse d’import).
-curl -s "https://facet.company.tld/Api/crm/Company/import_export/01JBK2M4N6P8R0T2V4X6Z8B2D4" \
-  -H "Authorization: Bearer $FACET_TOKEN"
-```
-
-Un job d’export réussi rapporte :
-
-```json
-{
-  "id": "01JBK2M4N6P8R0T2V4X6Z8B2D4",
-  "status": "succeeded",
-  "error": null,
-  "result": { "artifact_id": "01JARQ5G7X9K2M3N4P5Q6R7S8T", "row_count": 128, "format": "csv" }
-}
+curl -sk -H "$AUTH" \
+  "$BASE/Api/clients/Company/import_export/01JBK2M4N6P8R0T2V4X6Z8B2D4"
 ```
 
 ## Le contrat d’import
@@ -174,11 +215,8 @@ Un job d’export réussi rapporte :
   ressuscite jamais un document supprimé. Un id absent en crée un.
 - **Les deux droits sont nécessaires.** La première ligne que votre rôle ne
   peut pas écrire fait échouer le fichier.
-- **Attribution.** Chaque ligne enregistre `actioner_id: "import"` dans
+- **Attribution.** Chaque ligne enregistre l’import comme sa cause dans
   l’audit.
-- **Les doctypes `genonly` refusent les id fournis.** Un doctype dont
-  l’identifiant est généré par le système ne crée jamais un document à partir
-  d’un id fourni.
 
   Un import en mode attente répond `200` avec `{row_count, created, updated,
   skipped}`. Un échec de ligne attendu répond `422` avec la ligne en cause.
@@ -197,10 +235,10 @@ Un job d’export réussi rapporte :
 | --- | --- |
 | Texte scalaire | Tel qu’il est stocké. |
 | Types structurés | JSON dans la cellule. |
-| Monétaire | `USD 1.0` — le préfixe de devise est requis à l’import. |
+| Monétaire | `EUR 4800.00` — le préfixe de devise est requis à l’import. |
 | Booléen | `true` / `false`. |
-| Référence | Id qualifié, par exemple `crm.Company.abc`. |
-| Fichier | L’id d’artifact seulement ; les octets ne bougent pas. |
+| Référence | Id qualifié, par exemple `clients.Company.<id>`. |
+| Fichier | L’id d’artefact seulement ; les octets ne bougent pas. |
 | Cellule vide | Se décode en `null` ; elle vide le champ à la mise à jour. |
 | Colonne absente | Laisse le champ intact. |
 | Texte commençant par `=`, `+`, `-`, `@`, ou une tabulation | S’exporte avec un `'` en tête — le garde-fou anti-formule. Le décodage retire un `'` de tête. |
@@ -220,7 +258,8 @@ cette ligne et soumettez de nouveau.
 
 **Le job échoue sur un champ `money`.**
 
-Une cellule monétaire exige le préfixe de devise : `USD 1.0`, pas `1.0`.
+Une cellule monétaire exige le préfixe de devise : `EUR 4800.00`, pas
+`4800.00`.
 
 **Certaines lignes sont `skipped`.**
 

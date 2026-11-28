@@ -175,6 +175,8 @@ src/content/docs/fr/start/install.md  → /fr/start/install/
 Rules:
 
 - Write English first. Add the French page afterwards, with the same path under `fr/`.
+- The French twin keeps the English file's extension: `use/index.mdx` pairs with `fr/use/index.mdx`, not with a `.md` file at the same slug. A leftover `.md` next to an `.mdx` twin is a second source for the same route — delete it.
+- Some English pages are `.mdx` (tab indexes, `build/model/data/`, `build/model/relations/`, `discover/how-it-works/`, `discover/why-facet.mdx`, `reference/rest-api.mdx`). When auditing the two trees, scan both extensions — a `.md`-only scan hides those twins and makes them look stale.
 - French pages follow the style guide in [`site-docs-fr-style.md`](site-docs-fr-style.md): translate the meaning, not the words; the glossary there fixes which terms stay English and which UI labels come from `frontend/messages/fr.json`.
 - When a French page is missing, Starlight still serves the `/fr/...` route with the English content and shows an "untranslated" notice banner.
 - UI strings (search, pagination, theme toggle) localize automatically; Starlight ships built-in French translations.

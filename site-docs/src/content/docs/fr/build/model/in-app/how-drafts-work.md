@@ -1,19 +1,21 @@
 ---
-title: Brouillon → publication
-description: Itérez sur les doctypes dans un brouillon jetable, puis publiez la structure vers un domaine réel en une transaction.
+type: explanation
+title: Le fonctionnement des brouillons
+description: "Un brouillon est une copie privée d’un domaine : vous l’éditez librement, le vérifiez, puis publiez sa structure vers un domaine réel."
 audience: [author]
-features: [DOM-02]
+features: [DOM-02, DOM-16]
 sidebar:
-  order: 4
-verified_at: f1409cdc
+  order: 0
+verified_at: eee55a2
 ---
 
-Vous ne modifiez pas directement les doctypes d’un domaine réel. Vous ouvrez
-un brouillon, vous y changez les définitions, puis vous publiez quand le
-résultat est prêt. Cette page décrit ce que l’état de brouillon autorise, et
-ce que la publication vérifie avant d’écrire.
+Vous ne modifiez jamais un domaine réel directement. Vous travaillez dans
+une copie privée, la vérifiez, et la passez en réel en une seule étape
+quand elle est prête. Cette copie est un **brouillon**, et la bascule est
+la **publication**. Cette page décrit le cycle de vie, ce qu’un brouillon
+autorise, et ce que la publication vérifie avant de valider.
 
-## Explication
+## Le cycle de vie
 
 <!-- d2
 live: "Live domain"
@@ -39,98 +41,134 @@ publish -> dropped
 <img class="d2-diagram__img d2-diagram__dark" src="/diagrams/fba6aa4e-dark.svg" alt="Live domain" loading="lazy" />
 </div>
 
-**Deux états.** Un domaine porte un indicateur `draft`. Un brouillon est un
-vrai domaine, avec un nom généré automatiquement qui commence par `_`. Facet
-fonde chaque garde-fou sur cet indicateur, jamais sur le préfixe. Dans un
-brouillon :
+Deux portes ouvrent un brouillon. **Nouveau domaine** part d’un brouillon
+vide. **Modifier un existant** dérive un domaine réel — la structure suit,
+pas les données. Dans les deux cas, le brouillon reçoit un nom autogénéré
+qui commence par `_`, sans jamais risquer de collision avec un nom réel. Le
+nom cible de la publication, vous le fixez vous-même dans le champ **Nom**
+du brouillon.
 
-- la version de schéma peut diminuer ou sauter un cran,
-- les modifications destructives, comme la suppression d’un champ ou un
-  changement de type, sont permises à version inchangée,
+Dans un brouillon, Facet lève les règles de version qui protègent les
+données réelles :
+
+- la version de schéma peut reculer ou sauter en avant,
+- un champ peut être retiré ou changer de type à version identique,
 - un changement de version n’exige aucune fonction de migration,
-- tout le reste passe toujours la validation : noms de champs, noms
-  d’actions, compilation des scripts.
+- tout le reste reste validé : noms de champs, noms d’actions, compilation
+  des scripts.
 
-  **Ce que fait la publication.** `POST /Api/core/Domain/:id/publish`
-  transforme le brouillon en domaine réel. Publier, c’est copier puis
-  supprimer, pas renommer. La cible reçoit de nouvelles lignes sous son
-  propre nom ; le brouillon est ensuite supprimé. En mode écrasement, le
-  document `core.Domain` réel reste tel quel : sa description, ses context
-  sets et ses hooks gardent leurs valeurs réelles, et un hook du brouillon
-  que le domaine réel n’a pas revient en avertissement. Avant d’écrire quoi
-  que ce soit, la publication vérifie que :
+Le domaine réel continue de servir ses définitions actuelles pendant que
+vous éditez. Vos changements n’atteignent les autres comptes qu’à la
+publication.
 
-- le nom cible ne contient que des lettres minuscules, des chiffres et des
-  tirets, et commence par une lettre. Un `_` initial répond `422` : ce
+## Ce que la publication vérifie
+
+La publication est une seule transaction, et elle revalide tout ce qui
+implique la cible. Avant d’écrire quoi que ce soit, elle vérifie que :
+
+- le nom cible n’utilise que des lettres minuscules, des chiffres et des
+  tirets, et commence par une lettre. Un `_` initial répond `422` — ce
   préfixe est réservé aux brouillons,
 - la source est un brouillon, lu sous un verrou de ligne,
-- le graphe de composition est fermé — chaque entrée `children:` a un
-  `member_of` correspondant,
-- en mode création (`overwrite: false`, par défaut), le nom cible est
-  libre. Un nom qu’un domaine réel porte déjà répond `409`,
-- en mode écrasement (`overwrite: true`), le nom cible peut déjà exister.
-  Chaque doctype dont la structure diffère de celle du réel doit porter un
-  `schema_version` exactement égal à la version réelle plus un, et une
-  fonction de migration pour cet écart ; un écart sans fonction répond
-  `422`. Un doctype de structure identique passe sans changement de version.
+- le graphe de composition est fermé : chaque entrée `children:` a un
+  `member_of` correspondant chez l’enfant, et inversement,
+- en mode à neuf (le défaut), le nom cible est libre. Un nom qu’un domaine
+  réel porte déjà répond `409`,
+- en mode écrasement (`overwrite: true`), chaque doctype dont la structure
+  diffère du réel porte une `schema_version` d’exactement la version réelle
+  plus un, avec une fonction de migration pour cette étape. Un doctype dont
+  la structure est identique se publie tel quel.
 
-  Puis, en une seule transaction, la publication :
+La fenêtre de publication affiche ces résultats — les compteurs
+d’anomalies, la barrière de version, les demandes d’accès — avant votre
+confirmation.
 
-- copie chaque définition de doctype et ses modèles de vue,
-- repointe les références internes au domaine vers le nouveau nom,
-- en mode écrasement, aligne les modèles de vue du réel sur ceux du
-  brouillon : un modèle changé est mis à jour, un modèle propre au
-  brouillon est créé, un modèle propre au réel est supprimé. Les vues
-  enregistrées ne sont jamais touchées,
-- transfère les éditeurs de domaines du brouillon,
-- ouvre des tickets d’attribution de domaine quand les définitions touchent
-  d’autres domaines,
-- supprime le brouillon.
+## Pourquoi les documents de test n’arrivent jamais en production
 
-Un crash avant le commit laisse le brouillon intact. Vous pouvez relancer
-la même publication.
+La publication copie la seule structure : les définitions de doctypes, leurs
+modèles de vue, et le document du domaine. Les documents créés pendant les
+tests sont jetables. Sans choix supplémentaire, ils sont supprimés
+logiquement avec le brouillon, et rien de ce que vous avez tapé pendant vos
+essais n’aboutit dans les données de production.
 
-  **Que deviennent les documents.** La publication ne migre jamais les
-  documents réels à l’avance. Ils restent à leur version de schéma stockée.
-  Une migration à la demande parcourt la chaîne à la prochaine lecture. La
-  barrière de version garantit que chaque écart a une fonction ; le
-  parcours à la demande ne peut donc échouer sur une entrée manquante.
+Vous pouvez transporter certains documents de test : la fenêtre de
+publication propose une option **Importer les documents existants**, et
+l’API accepte un champ `documents` sur
+`POST /Api/core/Domain/:id/publish`. L’import se fait par doctype, et
+seulement vers une cible qui ne définit pas encore ce doctype — une
+sélection en collision avec des lignes de production existantes répond
+`422`, si bien que des lignes de brouillon ne fusionnent jamais avec des
+lignes de production.
 
-  **Les données d’un brouillon sont jetables.** Les documents créés dans le
-  brouillon ne passent pas de l’autre côté — la publication les supprime
-  logiquement avec le brouillon. Seule la structure se publie. Un token
-  d’aperçu vous permet de tester d’abord : il ouvre les routes standard
-  pour les documents du brouillon, sous votre propre identité.
+## Fonctionnement
 
-  **Le compromis.** Les vérifications qui protègent les données réelles ne
-  tournent pas pendant l’édition. Un problème de version n’apparaît qu’à la
-  publication, quand la barrière le refuse, et vous revenez au brouillon
-  pour le corriger. Un brouillon dérivé d’un domaine réel ne suit plus ce
-  domaine ensuite. Les deux peuvent diverger, et la comparaison n’a lieu
-  qu’au moment de publier. Deux états, c’est aussi deux copies d’une
-  définition. Le domaine réel continue de servir ses définitions actuelles
-  pendant que vous éditez le brouillon. Vos changements n’atteignent les
-  autres utilisateurs qu’à la publication. Une dernière limite : la
-  réplication reste inerte dans un brouillon. Un domaine de brouillon ne
-  sert jamais de source ni de consommateur de réplication, vous ne pouvez
-  donc pas tester un champ `replicate` avant de publier.
+Cette section s’adresse au lecteur qui veut le mécanisme complet.
+
+**Le drapeau, pas le préfixe.** Un brouillon est un vrai document
+`core.Domain` avec un drapeau `draft: true`. Chaque garde-fou se branche
+sur le drapeau ; le préfixe `_` n’est que cosmétique. Le nom est
+autogénéré (un `_` suivi d’un suffixe unique), si bien que personne ne
+choisit jamais un nom de brouillon.
+
+**Copier puis supprimer, pas renommer.** La publication copie chaque
+définition de doctype et ses modèles de vue vers la cible, relie les cibles
+de référence du même domaine au nouveau nom, transfère les co-éditeurs du
+brouillon, puis supprime le brouillon. Le journal des mutations n’accepte
+que les ajouts : un renommage sur place réécrirait l’histoire. Copier puis
+supprimer donne à la cible des lignes neuves sous sa propre identité. Un
+crash avant la validation laisse un brouillon intact — réessayez la même
+publication.
+
+**Le mode écrasement préserve le document du domaine réel.** La cible garde
+sa description, ses ensembles de contexte, et ses hooks. Un hook déclaré
+dans le brouillon mais absent du domaine réel revient comme avertissement
+dans la réponse de publication — le contournement est de modifier les hooks
+du domaine réel. Les modèles de vue réels convergent vers ceux du
+brouillon : ceux qui ont changé se mettent à jour, ceux du brouillon
+seulement se créent, ceux du réel seulement se suppriment. Les vues de
+collection enregistrées ne sont jamais touchées.
+
+**La réplication reste inerte dans un brouillon.** Un brouillon est exclu
+comme source de réplication et comme consommateur, si bien qu’un champ
+`replicate` ne peut pas être exercé avant la publication. Vous pouvez le
+déclarer — le schéma l’accepte — et la première publication sur la cible
+lance la validation complète de la réplication. C’est la seule surface de
+définition qui ne se déclenche pas en mode brouillon.
+
+**Un brouillon par domaine réel.** Un domaine qui a déjà un brouillon
+ouvert refuse la dérivation et répond `409`. Abandonnez ou publiez le
+premier brouillon avant de dériver à nouveau.
+
+**Un brouillon dérivé ne suit pas sa source.** Le domaine réel et le
+brouillon divergent chacun de leur côté, et la barrière ne les compare
+qu’à la publication.
+
+**Un cache en retard d’une à deux secondes.** Une définition enregistrée
+atteint le serveur en marche par un événement. Une écriture de document qui
+tombe dans la seconde ou les deux secondes qui suivent la sauvegarde peut
+encore tourner avec l’ancienne définition — retestez après une courte
+attente avant de juger une correction.
+
+**Un doctype réel que le brouillon ne définit plus reste sur la cible.** La
+publication ne touche que les doctypes que le brouillon définit. La
+suppression d’un doctype qui porte des données réelles a sa propre
+sémantique et sort du périmètre de l’action de publication.
 
 :::tip
-Appelez l’endpoint de vérification avant de publier :
-`GET /Api/core/Domain/:id/check`. Il signale les problèmes doctype par
+Lancez **Vérification** avant de publier. Elle rapporte les anomalies par
 doctype — références cassées, problèmes de modèles, vues manquantes — et la
-confirmation de publication affiche la même liste.
+confirmation de publication montre la même liste. Voir
+[Vérifier avant de publier](/fr/build/model/in-app/check-before-publish/).
 :::
 
 ## Voir aussi
 
-- [Construction](/fr/build/) — le chemin de création, d’un brouillon vide à
-
-  un domaine réel.
-- [Concevoir des doctypes](/fr/build/model/data/design-doctypes/) — comment déclarer
-  champs et modèles.
-- [Domaines et isolation](/fr/discover/how-it-works/domains/) — ce qu’un
-  domaine borne.
-- [Évolution du schéma](/fr/build/deeper/schema-evolution/) — la barrière de
-  version et la migration à la demande en détail.
+- [Choisir votre façon de construire](/fr/build/model/) — les deux modes,
+  et comment choisir.
+- [Brouillons, éditeurs et publication](/fr/build/model/in-app/drafts-and-publishing/)
+  — ouvrir un brouillon et le publier, étape par étape.
+- [Vérifier avant de publier](/fr/build/model/in-app/check-before-publish/)
+  — lisez les diagnostics.
+- [Ce que deviennent les anciens documents sous un nouveau schéma](/fr/build/deeper/schema-evolution/)
+  — le sort des documents réels après une publication en écrasement.
 - Internes sur GitHub : [draft-domains.md](https://github.com/wearefacet/facet/blob/main/doc/backend/draft-domains.md).
