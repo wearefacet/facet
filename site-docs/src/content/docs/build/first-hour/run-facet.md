@@ -135,6 +135,8 @@ same credential works again.
   mount, and the TLS edge in detail.
 - [The `facet-cli` developer CLI](/reference/cli-npm/) — `setup-dev` and the
   other commands, with their options.
+- [Config file keys](/reference/config-keys/) — every key the generated
+  `config.dev.yml` sets, with its type and default.
 - [Security and governance](/discover/security/)
 
 ## Next

@@ -157,7 +157,7 @@ ask the authorize endpoint what the consent screen would show:
 
 ```sh
 curl -sk -H "Authorization: Bearer $RAVI_KEY" \
-  "$HOST/OAuth/authorize?response_type=code&client_id=06H1FQF7NG357EQ0P348Z2BEV5&redirect_uri=http%3A%2F%2Flocalhost%3A5173%2Fauth%2Fcallback&code_challenge=JNVgr1Czh8QJ1zYgaq6fQFQT5bbfH90Snk4IEaRPQAc&code_challenge_method=S256&state=winter-fair-43' \
+  "$HOST/OAuth/authorize?response_type=code&client_id=06H1FQF7NG357EQ0P348Z2BEV5&redirect_uri=http%3A%2F%2Flocalhost%3A5173%2Fauth%2Fcallback&code_challenge=JNVgr1Czh8QJ1zYgaq6fQFQT5bbfH90Snk4IEaRPQAc&code_challenge_method=S256&state=winter-fair-43" \
   -H 'Accept: application/json'
 ```
 
