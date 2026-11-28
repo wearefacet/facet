@@ -37,8 +37,9 @@ PostgreSQL image also works. Retrieval-augmented assistant features stay off
 until the `vector` extension exists on the server.
 :::
 
-The repo publishes no RAM or disk figure. Size the host from your own load:
-the state stores dominate, and the application processes are stateless.
+The application processes are light: the state stores dominate. For the
+measured numbers behind a sizing decision — throughput, latency, memory —
+see [Performance & sizing](/admin/install/performance/).
 
 ## The topology
 

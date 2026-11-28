@@ -65,7 +65,7 @@ A writer or reviewer traces a feature to its pages — or finds the pages a chan
 | AUT-01 | Event bus | [Health, metrics and logs](/admin/keep-running/monitoring/), [Events and delivery guarantees](/admin/under-the-hood/events-and-delivery/) |
 | AUT-02 | Domain event hooks | [React to events and schedules](/build/model/automation/event-hooks/) |
 | AUT-03 | Outbound webhooks | [Send webhooks](/build/model/automation/webhooks/), [Webhook payloads](/reference/webhook-payloads/) |
-| AUT-04 | Background jobs | [Background jobs and cron](/admin/keep-running/jobs-cron/) |
+| AUT-04 | Background jobs | [Performance & sizing](/admin/install/performance/), [Background jobs and cron](/admin/keep-running/jobs-cron/) |
 | AUT-05 | Cron scheduler and maintenance | [Background jobs and cron](/admin/keep-running/jobs-cron/), [Events and delivery guarantees](/admin/under-the-hood/events-and-delivery/) |
 | AUT-06 | In-app notifications | [Notifications and mentions](/build/model/automation/notifications/), [Notifications](/use/notifications/) |
 | AUT-07 | Outbound email | [Email](/admin/configure/email/) |
@@ -188,7 +188,7 @@ A writer or reviewer traces a feature to its pages — or finds the pages a chan
 | PLT-02 | System settings | [System settings](/admin/configure/system-settings/), [Require MFA](/admin/people/mfa/), [System settings keys](/reference/system-settings-keys/) |
 | PLT-03 | Secret store | [Back up and restore](/admin/keep-running/backup-restore/), [Secret and write-only fields](/build/model/data/secret-fields/) |
 | PLT-04 | Artifact store | [File storage](/admin/configure/file-storage/), [Back up and restore](/admin/keep-running/backup-restore/), [Upload and serve files](/build/apps/data/files/), [Files in fields](/build/model/data/files/) |
-| PLT-05 | Managed indexes | [Indexes](/admin/keep-running/indexes/) |
+| PLT-05 | Managed indexes | [Performance & sizing](/admin/install/performance/), [Indexes](/admin/keep-running/indexes/) |
 | PLT-06 | Health probes | [Health, metrics and logs](/admin/keep-running/monitoring/), [Health and metrics names](/reference/health-metrics-names/) |
 | PLT-07 | Metrics | [Health, metrics and logs](/admin/keep-running/monitoring/), [Health and metrics names](/reference/health-metrics-names/) |
 | PLT-08 | OpenTelemetry tracing | [Health, metrics and logs](/admin/keep-running/monitoring/) |
@@ -196,7 +196,7 @@ A writer or reviewer traces a feature to its pages — or finds the pages a chan
 | PLT-10 | Database topology | [Configuration files](/admin/configure/configuration-files/), [System requirements](/admin/install/requirements/) |
 | PLT-11 | Migrations | [Go to production](/admin/install/production/), [Database migrations](/admin/keep-running/migrations/), [Upgrade Facet](/admin/keep-running/upgrades/), [facet CLI](/reference/cli-facet/) |
 | PLT-12 | OpenAPI specification | [Use the REST API](/build/apps/data/rest-api/), [REST API](/reference/rest-api/) |
-| PLT-13 | HTTP admission gates | [Use the REST API](/build/apps/data/rest-api/), [Error responses](/reference/error-responses/) |
+| PLT-13 | HTTP admission gates | [Performance & sizing](/admin/install/performance/), [Use the REST API](/build/apps/data/rest-api/), [Error responses](/reference/error-responses/) |
 | PLT-14 | Currency registry and money math | [Currencies](/admin/configure/currencies/) |
 | PLT-15 | Graceful shutdown | [Upgrade Facet](/admin/keep-running/upgrades/) |
 | PLT-16 | Container images | [Run with containers](/admin/install/containers/), [Go to production](/admin/install/production/), [System requirements](/admin/install/requirements/), [Set up a dev environment](/build/dev-environment/), [Run Facet](/build/first-hour/run-facet/) |

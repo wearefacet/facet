@@ -31,7 +31,7 @@ Vous dimensionnez un hôte pour Facet avant le premier déploiement. Facet tourn
 La pile de version livre l’image `pgvector/pgvector:0.8.0-pg17`. Une image PostgreSQL standard fonctionne aussi. Les fonctions d’assistant à récupération augmentée restent désactivées tant que l’extension `vector` n’existe pas sur le serveur.
 :::
 
-Le dépôt ne publie aucun chiffre de RAM ou de disque. Dimensionnez l’hôte d’après votre propre charge : les magasins d’état dominent, et les processus applicatifs sont sans état.
+Les processus applicatifs restent légers : les magasins d’état dominent. Les chiffres mesurés qui éclairent un dimensionnement — débit, latence, mémoire — sont sur la page [Performances et dimensionnement](/fr/admin/install/performance/).
 
 ## La topologie
 

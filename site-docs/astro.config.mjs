@@ -201,6 +201,7 @@ const adminSidebar = [
 	'admin',
 	collapsed('Install', [
 		'admin/install/requirements',
+		'admin/install/performance',
 		'admin/install/containers',
 		'admin/install/production',
 		'admin/install/bootstrap',

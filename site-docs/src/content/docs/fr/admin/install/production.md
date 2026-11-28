@@ -5,7 +5,7 @@ type: how-to
 audience: [operator]
 features: [PLT-16, APP-06, PLT-11, IAM-12]
 sidebar:
-  order: 2
+  order: 3
 verified_at: eee55a2
 ---
 

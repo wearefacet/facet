@@ -65,7 +65,7 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 | AUT-01 | Event bus | [Santé, métriques et journaux](/fr/admin/keep-running/monitoring/), [Événements et garanties de livraison](/fr/admin/under-the-hood/events-and-delivery/) |
 | AUT-02 | Domain event hooks | [Hooks d’événement et planifiés](/fr/build/model/automation/event-hooks/) |
 | AUT-03 | Outbound webhooks | [Envoyer des webhooks](/fr/build/model/automation/webhooks/), [Payloads des webhooks](/fr/reference/webhook-payloads/) |
-| AUT-04 | Background jobs | [Tâches de fond et cron](/fr/admin/keep-running/jobs-cron/) |
+| AUT-04 | Background jobs | [Performances et dimensionnement](/fr/admin/install/performance/), [Tâches de fond et cron](/fr/admin/keep-running/jobs-cron/) |
 | AUT-05 | Cron scheduler and maintenance | [Tâches de fond et cron](/fr/admin/keep-running/jobs-cron/), [Événements et garanties de livraison](/fr/admin/under-the-hood/events-and-delivery/) |
 | AUT-06 | In-app notifications | [Notifications et mentions](/fr/build/model/automation/notifications/), [Notifications](/fr/use/notifications/) |
 | AUT-07 | Outbound email | [Courriel sortant](/fr/admin/configure/email/) |
@@ -188,7 +188,7 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 | PLT-02 | System settings | [Paramètres système](/fr/admin/configure/system-settings/), [Imposer le MFA](/fr/admin/people/mfa/), [Clés de réglage système](/fr/reference/system-settings-keys/) |
 | PLT-03 | Secret store | [Sauvegarde et restauration](/fr/admin/keep-running/backup-restore/), [Champs secrets et en écriture seule](/fr/build/model/data/secret-fields/) |
 | PLT-04 | Artifact store | [Stockage des fichiers](/fr/admin/configure/file-storage/), [Sauvegarde et restauration](/fr/admin/keep-running/backup-restore/), [Téléverser et servir des fichiers](/fr/build/apps/data/files/), [Fichiers dans les champs](/fr/build/model/data/files/) |
-| PLT-05 | Managed indexes | [Index](/fr/admin/keep-running/indexes/) |
+| PLT-05 | Managed indexes | [Performances et dimensionnement](/fr/admin/install/performance/), [Index](/fr/admin/keep-running/indexes/) |
 | PLT-06 | Health probes | [Santé, métriques et journaux](/fr/admin/keep-running/monitoring/), [Sondes et métriques](/fr/reference/health-metrics-names/) |
 | PLT-07 | Metrics | [Santé, métriques et journaux](/fr/admin/keep-running/monitoring/), [Sondes et métriques](/fr/reference/health-metrics-names/) |
 | PLT-08 | OpenTelemetry tracing | [Santé, métriques et journaux](/fr/admin/keep-running/monitoring/) |
@@ -196,7 +196,7 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 | PLT-10 | Database topology | [Fichiers de configuration](/fr/admin/configure/configuration-files/), [Prérequis système](/fr/admin/install/requirements/) |
 | PLT-11 | Migrations | [Passer en production](/fr/admin/install/production/), [Migrations de base de données](/fr/admin/keep-running/migrations/), [Mettre à niveau Facet](/fr/admin/keep-running/upgrades/), [CLI facet](/fr/reference/cli-facet/) |
 | PLT-12 | OpenAPI specification | [Utiliser l’API REST](/fr/build/apps/data/rest-api/), [API REST](/fr/reference/rest-api/) |
-| PLT-13 | HTTP admission gates | [Utiliser l’API REST](/fr/build/apps/data/rest-api/), [Réponses d’erreur](/fr/reference/error-responses/) |
+| PLT-13 | HTTP admission gates | [Performances et dimensionnement](/fr/admin/install/performance/), [Utiliser l’API REST](/fr/build/apps/data/rest-api/), [Réponses d’erreur](/fr/reference/error-responses/) |
 | PLT-14 | Currency registry and money math | [Devises](/fr/admin/configure/currencies/) |
 | PLT-15 | Graceful shutdown | [Mettre à niveau Facet](/fr/admin/keep-running/upgrades/) |
 | PLT-16 | Container images | [Exécuter avec des conteneurs](/fr/admin/install/containers/), [Passer en production](/fr/admin/install/production/), [Prérequis système](/fr/admin/install/requirements/), [Installer l’environnement de dev](/fr/build/dev-environment/), [Lancer Facet](/fr/build/first-hour/run-facet/) |

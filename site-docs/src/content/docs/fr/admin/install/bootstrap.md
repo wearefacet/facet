@@ -5,7 +5,7 @@ type: how-to
 audience: [operator]
 features: [IAM-12, DOM-24]
 sidebar:
-  order: 3
+  order: 4
 verified_at: eee55a2
 ---
 
