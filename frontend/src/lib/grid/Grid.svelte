@@ -1827,12 +1827,17 @@
 {/snippet}
 
 <style>
+	/* Fill chain: the list-view host gives the grid its height on the grid
+	   surface. The toolbar and the footer keep their content height. The row
+	   frame takes the rest, and its rows scroll inside. Outside a flex column
+	   parent (stories), flex does nothing and the grid keeps content height. */
 	.grid-wrap {
 		display: flex;
 		flex-direction: column;
 		gap: 0;
 		min-width: 0;
 		min-height: 0;
+		flex: 1;
 	}
 
 	.grid-error {

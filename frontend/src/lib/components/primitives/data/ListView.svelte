@@ -269,6 +269,20 @@
 	/** Convenience: the active view data (or null). */
 	const activeView = $derived(activeItem?.data ?? null);
 
+	// The fill chain — the host `.listview` becomes a full-height flex column
+	// for the surfaces that scroll their rows inside the frame (kanban, grid,
+	// table). This mirrors the render branches in the template: the table
+	// fills when the `{:else}` branch renders it — a table view, the
+	// trash-mode grid fallback, or a tab-less listing. Loading, the
+	// zero-views starter, and Calendar keep their content height.
+	const tableFill = $derived(
+		!loading &&
+			!(showTabs && views.length === 0) &&
+			!(activeView?.surface === 'calendar' && activeView.config?.calendar) &&
+			!(activeView?.surface === 'kanban' && activeView.config?.kanban) &&
+			!(activeView?.surface === 'grid' && !includeDeleted)
+	);
+
 	/**
 	 * localStorage key the `Table` persists its manual state (sort, filters,
 	 * rows-per-page) under — per parent doctype, active collection view
@@ -609,6 +623,8 @@
 		<div
 			class="listview"
 			class:kanban-fill={activeView?.surface === 'kanban' && activeView.config?.kanban}
+			class:grid-fill={activeView?.surface === 'grid' && !includeDeleted}
+			class:table-fill={tableFill}
 		>
 			{#if showTabs && views.length > 0}
 				<Tabs {tabs} bind:active onchange={selectView}>
@@ -870,10 +886,13 @@
 		overflow: hidden;
 	}
 
-	/* Kanban surface only — the fill chain. The host becomes a flex column
-	   and takes the full height. The board then fills the page, and each
-	   lane fits the board. Table and Calendar keep their content height. */
-	.listview.kanban-fill {
+	/* Kanban, grid, and table surfaces — the fill chain. The host becomes a
+	   flex column and takes the full height. The board fills the page, and
+	   each lane fits the board. The grid and table frames take the rest, and
+	   their rows scroll inside. Calendar keeps its content height. */
+	.listview.kanban-fill,
+	.listview.grid-fill,
+	.listview.table-fill {
 		display: flex;
 		flex-direction: column;
 		height: 100%;
