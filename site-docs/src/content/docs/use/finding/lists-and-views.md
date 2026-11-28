@@ -1,19 +1,20 @@
 ---
 type: how-to
 title: Lists, boards and calendars
-description: Open a list, switch between table, kanban and calendar layouts, filter it, and save the result as a view you can reopen in one click.
+description: Open a list, switch between table, kanban, calendar and grid layouts, filter it, and save the result as a view you can reopen in one click.
 audience: [user]
-features: [FE-03, FE-08, DOM-21, DOM-30, FE-25]
+features: [FE-03, FE-08, DOM-21, DOM-30, FE-23, FE-25]
 sidebar:
   order: 1
-verified_at: c34885a
+verified_at: f3decbf
 ---
 
 Your work lives in lists. Every record type opens one, and you pick the
 layout that fits the job. A table when you need detail, a board when work
-moves through stages, a calendar when dates matter. Narrow the list with
-filters, then save the whole setup as a **view**. A view is a named tab you
-reopen in one click — keep it to yourself, or share it with your team.
+moves through stages, a calendar when dates matter, a grid when a
+spreadsheet feels fastest. Narrow the list with filters, then save the whole
+setup as a **view**. A view is a named tab you reopen in one click — keep it
+to yourself, or share it with your team.
 
 ## Before you start
 
@@ -28,16 +29,17 @@ the first saved view, shown as a tab above the table:
 
 A record type with no views yet shows a starter screen instead: one card per
 layout. Pick a card to build the first view. After that, the tabs carry an
-icon each — table, board, or calendar — so you can see at a glance what a
-tab opens.
+icon each — table, board, calendar, or grid — so you can see at a glance what
+a tab opens.
 
-## The three layouts
+## The four layouts
 
 | Layout | What it shows | Use it for |
 |---|---|---|
 | **Table** | One row per record, one column per field | Detail, sorting, working through many records |
 | **Kanban** | Cards grouped in lanes, one lane per status or stage | Work that moves: tickets, bookings |
 | **Calendar** | Records placed on a month or week grid by a date field | Bookings, deadlines, schedules |
+| **Grid** | The list as a spreadsheet: one row per record, one selectable cell per field | Fast entry and clean-up, copy to and from Excel or Sheets |
 
 Each layout answers a different question. Lucía runs the maintenance board. Every ticket sits in the lane that
 matches its state, and she drags a card when the work moves on. Dragging
@@ -52,6 +54,12 @@ folds its entries into one chip — for example `4 documents` — and selecting
 the chip lists them.
 
 ![Nadia's booking calendar for December: bookings placed on their date ranges.](/screens/use/finding-lists-3.png)
+
+The grid works like a spreadsheet. Select a cell, type, and the change saves.
+Select a range and copy it into Excel or Google Sheets, or paste a block from
+them. A column the view author gave a summary shows its count, sum, or
+average under the rows. Press `Enter` on a selected cell to open the record
+in the preview; on a field you can change, typing starts the edit instead.
 
 In every layout, selecting a row, card, or chip opens a preview beside the
 list. The preview holds **Edit** and **Open full page**.
@@ -87,8 +95,8 @@ part of the record name, not case-sensitive. Press `/` to jump to it.
 ## Sort and page
 
 In the table, select a column heading to sort by it, and select again to
-reverse the order. The small arrow shows the direction. Board and calendar
-cards follow the order saved in the view.
+reverse the order. The small arrow shows the direction. The grid headers sort
+the same way. Board and calendar cards follow the order saved in the view.
 
 Below the table, the pager moves through the pages. The label, for example
 `1–25 of 340`, shows where you are. The count caps at 1000 — beyond that the
@@ -101,7 +109,9 @@ arrow keys) move the highlight through the rows, and `Enter` opens the
 highlighted record — first in the preview, then as the full page. `Esc`
 clears the highlight, and `/` jumps to the search box. `C` starts a new
 record of this type. The letter keys rest while you type, so they never
-fire from a text field.
+fire from a text field. In the grid, the arrow keys move the selected cell
+instead, and `Enter` opens the record — or starts the edit on a field you
+can change.
 
 ## Save your setup as a view
 
@@ -109,12 +119,13 @@ A view stores the layout, the filters, and — for a table — the columns and
 their order. Build it once, then reopen it in one click:
 
 1. Select the **+** beside the tabs (**Create a new view**).
-2. Choose the view type: Table, Kanban, or Calendar.
+2. Choose the view type: Table, Kanban, Calendar, or Grid.
 3. Name it, for example `My open deals`.
 4. Choose the scope. **Personal** means only you see it. **General** means
    the whole team shares it.
 5. Set the details: columns for a table, lanes for a kanban, the date field
-   for a calendar. Filters come in the Filters step.
+   for a calendar, columns and their totals for a grid. Filters come in the
+   Filters step.
 6. Select **Create view**.
 
 A new view starts personal: only you see it. Some roles may create personal

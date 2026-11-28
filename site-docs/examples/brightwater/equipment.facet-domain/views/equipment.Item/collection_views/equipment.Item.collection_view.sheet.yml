@@ -1,0 +1,19 @@
+---
+content:
+  name: Sheet
+  config:
+    columns:
+      - key: name
+        width: 240px
+      - key: category
+        width: 140px
+      - key: status
+        width: 120px
+      - key: purchase_price
+        width: 140px
+        summary: sum
+    grid:
+      frozen: 1
+  surface: grid
+meta:
+  parent_id: equipment.Item

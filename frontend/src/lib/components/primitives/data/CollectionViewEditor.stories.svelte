@@ -66,13 +66,12 @@
 		await sleep(50);
 		const canvas = within(document.body);
 		// Picker step: Table is pre-selected; Calendar (crm.Deal has date
-		// fields) and Kanban are enabled; Grid is shown as "soon".
+		// fields), Kanban, and Grid are all enabled.
 		await expect(canvas.getByRole('heading', { name: 'New view' })).toBeVisible();
 		await expect(canvas.getByText('Rows and sortable columns')).toBeVisible();
 		await expect(canvas.getByText('Date-based grid')).toBeVisible();
 		await expect(canvas.getByText('Cards grouped into lanes')).toBeVisible();
-		// Grid is the only disabled forward signal now.
-		await expect(canvas.getAllByText('Soon').length).toBe(1);
+		await expect(canvas.getByText('Spreadsheet-style editing')).toBeVisible();
 		await fireEvent.click(canvas.getByRole('button', { name: 'Next' }));
 		await sleep(20);
 		// Config step: an unrestricted creator can choose General.
@@ -1002,10 +1001,9 @@
 		const dlg = within(document.body);
 		// Edit mode skips the picker and prefills the grid draft from the
 		// `view` prop: the frozen count, the Edit opt-out, the summaries, and
-		// the sort. The PATCH targets a seeded view id — the backend store
-		// has no grid view yet (the picker keeps the surface disabled, and
-		// the CollectionView seed's surface enum does not carry `grid`), so
-		// the story drives the write through an existing child.
+		// the sort. The PATCH targets a seeded view id — the fixture store
+		// carries no grid view of its own, so the story drives the write
+		// through an existing child.
 		await expect(dlg.getByRole('heading', { name: 'Edit view' })).toBeVisible();
 		await expect(dlg.getByRole('combobox', { name: 'Frozen columns' })).toHaveValue('1');
 		await expect(dlg.getByText('Frozen')).toBeVisible();

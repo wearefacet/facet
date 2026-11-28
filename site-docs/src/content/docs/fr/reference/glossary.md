@@ -52,7 +52,7 @@ Déployez-le avec la CLI ou modifiez-le dans le watcher de domaine.
 → [Déplacer des domaines avec des bundles](/fr/build/model/bundles/)
 
 **Collection view** — Une façon enregistrée de lister les enregistrements
-d’un doctype : tableau, kanban, calendrier ou autre surface, avec ses filtres
+d’un doctype : tableau, kanban, calendrier ou grille, avec ses filtres
 et ses colonnes. Une vue est personnelle ou partagée.
 → [Listes, kanban et calendriers](/fr/build/model/views/lists-boards-calendars/)
 

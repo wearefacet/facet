@@ -1025,6 +1025,64 @@ describe Facet::Document::List do
     end
   end
 
+  it "builds the order clause with the id tie-breaker" do
+    with_temp_doctype("listsortclause") do |db, domain, doctype|
+      ensure_domain(db, domain)
+      create_schema = %({"doctype": "#{doctype}", "domain": "#{domain}", "fields": {"name": {"type": "string"}, "age": {"type": "integer"}}})
+      expect_create_success(Facet::Document::Create.call(db, "core", "DocType", create_schema, Facet::RBAC::AuthContext.system))
+      defn = Facet::Doctype::DefinitionStore.fetch!(db, "#{domain}.#{doctype}").as(Facet::Doctype::DoctypeDefinition)
+
+      # A field sort ends with the id tie-breaker — the type-appropriate
+      # expression first, then the stable row id.
+      Facet::Document::List.build_order_clause(["-name"], defn).should eq("content->>'name' DESC, id ASC")
+      Facet::Document::List.build_order_clause(["age"], defn).should eq("jsonb_as_numeric(content->'age') ASC, id ASC")
+      # An id entry the caller authored is left where it stands, never doubled.
+      Facet::Document::List.build_order_clause(["name", "id"], defn).should eq("content->>'name' ASC, id ASC")
+      Facet::Document::List.build_order_clause(["-id"], defn).should eq("id DESC")
+      # An empty sort keeps the bare default.
+      Facet::Document::List.build_order_clause([] of String, defn).should eq("id ASC")
+    end
+  end
+
+  it "keeps offset paging stable when every sort key ties (id tie-breaker)" do
+    with_temp_doctype("listsorttie") do |db, domain, doctype|
+      ensure_domain(db, domain)
+      create_schema = %({"doctype": "#{doctype}", "domain": "#{domain}", "fields": {"name": {"type": "string"}}})
+      expect_create_success(Facet::Document::Create.call(db, "core", "DocType", create_schema, Facet::RBAC::AuthContext.system))
+
+      ids = (1..5).map do
+        result = Facet::Document::Create.call(db, domain, doctype, %({"name": "same"}), Facet::RBAC::AuthContext.system)
+        expect_create_success(result)
+        result.as(Facet::Document::Create::Result).projection.id
+      end
+
+      # Five rows share one sort key; two rows per page. Without the
+      # tie-breaker the order inside the tie is unspecified and offset pages
+      # could duplicate or skip rows; with it the union of the pages is
+      # exactly the document set.
+      collected = [] of String
+      totals = [] of Int64
+      [1, 2, 3].each do |page|
+        list = Facet::Document::List.call(
+          db, domain, doctype,
+          sort: ["name"], page: page, items_per_page: 2,
+          auth_context: Facet::RBAC::AuthContext.system
+        )
+        list.should be_a(Facet::Document::List::Result)
+        result = list.as(Facet::Document::List::Result)
+        result.items.each { |item| collected << item.id }
+        totals << result.total
+      end
+
+      # The count window is offset-relative (5 → 3 → 1), so each page saw
+      # its remaining share and no page duplicated or skipped a row.
+      totals.should eq([5, 3, 1] of Int64)
+      collected.size.should eq(5)
+      collected.uniq.size.should eq(5)
+      collected.sort.should eq(ids.sort)
+    end
+  end
+
   it "answers 422 for a bad sort in aggregate count mode" do
     with_temp_doctype("listsortcount") do |db, domain, doctype|
       ensure_domain(db, domain)

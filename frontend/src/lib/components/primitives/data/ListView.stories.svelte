@@ -437,6 +437,55 @@
 </Story>
 
 <Story
+	name="GridView"
+	play={async ({ canvasElement }) => {
+		await sleep(400);
+		const canvas = within(canvasElement);
+		// The Sheet tab is a grid surface — selecting it renders the
+		// spreadsheet grid instead of the table.
+		const sheetTab = canvas.getByRole('tab', { name: 'Sheet' });
+		await fireEvent.click(sheetTab);
+		await sleep(400);
+		await expect(sheetTab).toHaveAttribute('aria-selected', 'true');
+		// The grid surface renders (role="grid"), not a table.
+		await expect(canvas.getByRole('grid')).toBeVisible();
+		await expect(canvas.queryByRole('table')).toBeNull();
+		// The grid fixture freezes the first column (`grid.frozen: 1`) and
+		// carries the authored headers.
+		const frozenHeader = canvasElement.querySelector('.head-cell.frozen');
+		expect(frozenHeader).not.toBeNull();
+		const headerText = [...canvasElement.querySelectorAll('.head-cell')].map((e) =>
+			e.textContent?.trim()
+		);
+		await expect(headerText).toContain('Deal');
+		await expect(headerText).toContain('Value');
+		// Rows render as gridcells keyed per row.
+		const cells = canvasElement.querySelectorAll('[role="gridcell"][data-row]');
+		expect(cells.length).toBeGreaterThan(0);
+		// Switching back to a table tab renders the table again.
+		await fireEvent.click(canvas.getByRole('tab', { name: 'All Deals' }));
+		await sleep(300);
+		await expect(canvas.getByRole('table')).toBeVisible();
+	}}
+>
+	{#snippet template()}
+		<CanFixture manifest={adminManifest}>
+			<div
+				style="position: relative; width: 100%; height: 80vh; min-height: 560px; overflow: hidden; padding: 24px;"
+			>
+				<ListView
+					{driver}
+					doctype={dealDef}
+					parentDocId="crm.Deal"
+					pageSize={25}
+					viewerId="iam.Account.viewer"
+				/>
+			</div>
+		</CanFixture>
+	{/snippet}
+</Story>
+
+<Story
 	name="PinView"
 	play={async ({ canvasElement }) => {
 		await sleep(400);

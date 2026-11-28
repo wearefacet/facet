@@ -1,21 +1,22 @@
 ---
 type: how-to
 title: Listes, kanban et calendriers
-description: "Offrez à la page de liste d’un doctype des vues enregistrées : tableau, kanban et calendrier."
+description: "Offrez à la page de liste d’un doctype des vues enregistrées : tableau, kanban, calendrier et grille."
 audience: [author]
-features: [DOM-21, DOM-29, DOM-32]
+features: [DOM-21, DOM-29, DOM-32, FE-23]
 sidebar:
   order: 2
-verified_at: c34885a
+verified_at: f3decbf
 ---
 
-L’entrepôt de Brightwater suit quarante objets en location, et l’équipe de maintenance traite les tickets en cartes, pas en lignes. La page de liste d’un doctype affiche un onglet par vue enregistrée, et chaque vue porte un nom et une surface : un tableau avec des colonnes choisies, un tableau kanban avec ses colonnes, ou un calendrier posé sur des dates. Les vues sont des documents du doctype, donc vous décidez quels onglets chaque utilisateur voit.
+L’entrepôt de Brightwater suit quarante objets en location, et l’équipe de maintenance traite les tickets en cartes, pas en lignes. La page de liste d’un doctype affiche un onglet par vue enregistrée, et chaque vue porte un nom et une surface : un tableau avec des colonnes choisies, un tableau kanban avec ses colonnes, un calendrier posé sur des dates, ou une grille qui s’édite comme un tableur. Les vues sont des documents du doctype, donc vous décidez quels onglets chaque utilisateur voit.
 
 ## Quand l’utiliser
 
 - Le jeu de colonnes par défaut ne convient pas au travail d’une équipe.
 - Une équipe travaille sur les documents en cartes, déplacées selon un statut ou une valeur.
 - Un planning compte plus que l’ordre des lignes, par exemple des visites planifiées.
+- Une équipe saisit ou nettoie des données le plus vite dans une grille façon tableur.
 
 ## Avant de commencer
 
@@ -24,7 +25,7 @@ L’entrepôt de Brightwater suit quarante objets en location, et l’équipe de
 
 ## Créer une vue
 
-Ouvrez la page de liste du doctype. La barre d’onglets au-dessus du tableau liste les vues enregistrées. Sélectionnez le bouton plus, au bout de la barre (**Créer une nouvelle vue**), pour ouvrir l’éditeur de vues. Un doctype sans vue affiche à la place l’écran d’accueil : une carte par surface — tableau, kanban, calendrier. Choisissez une carte et l’éditeur s’ouvre avec cette surface présélectionnée.
+Ouvrez la page de liste du doctype. La barre d’onglets au-dessus du tableau liste les vues enregistrées. Sélectionnez le bouton plus, au bout de la barre (**Créer une nouvelle vue**), pour ouvrir l’éditeur de vues. Un doctype sans vue affiche à la place l’écran d’accueil : une carte par surface — tableau, kanban, calendrier, grille. Choisissez une carte et l’éditeur s’ouvre avec cette surface présélectionnée.
 
 ### Choisir la surface
 
@@ -33,8 +34,9 @@ Ouvrez la page de liste du doctype. La barre d’onglets au-dessus du tableau li
 | `table` | Une liste de colonnes ordonnée. Chaque colonne porte une `key`, un `label` facultatif et une `width` facultative. |
 | `kanban` | Un champ `group_by` avec `mode: values`, ou des colonnes fixes avec un filtre chacune (`mode: custom`). |
 | `calendar` | Un champ date `discriminator`, un `end_field` facultatif, un champ `color_by`, un `week_start` et un `title_template` pour les pastilles. |
+| `grid` | La liste de colonnes du tableau, plus `summary` et `editable` par colonne, et un objet `grid` : `frozen` colonnes figées, un objet `filters`, une entrée `sort` et `allow_create`. |
 
-À l’enregistrement, Facet valide la configuration contre le doctype. Un champ de regroupement kanban doit être un champ enum ou booléen inscriptible qui sert les filtres d’égalité ; un discriminateur de calendrier doit être un champ period, ou un champ date ou datetime qui sert les filtres de comparaison. Une configuration qui ne peut pas se rendre répond `422` avec le chemin du champ, au lieu de produire une surface vide. Le calendrier est proposé pour tout doctype : les timestamps système `created_at` et `updated_at` servent de discriminateur quand le doctype n’a aucun champ date propre.
+À l’enregistrement, Facet valide la configuration contre le doctype. Un champ de regroupement kanban doit être un champ enum ou booléen inscriptible qui sert les filtres d’égalité ; un discriminateur de calendrier doit être un champ period, ou un champ date ou datetime qui sert les filtres de comparaison. Une colonne de grille avec un `summary` autre que `count` demande un champ `integer`, `duration` ou `money` ; `editable` demande un champ que la grille sait écrire. Une clé de `grid.filters` doit servir son opérateur, une entrée de `grid.sort` doit nommer un champ triable, et `grid.frozen` est un entier de 0 au nombre de colonnes. Une configuration qui ne peut pas se rendre répond `422` avec le chemin du champ, au lieu de produire une surface vide. Le calendrier est proposé pour tout doctype : les timestamps système `created_at` et `updated_at` servent de discriminateur quand le doctype n’a aucun champ date propre.
 
 :::tip
 Le titre d’une pastille de calendrier peut porter des valeurs de champs. Écrivez un template Jinja2 dans `title_template`, par exemple `{{ name }}`. Seuls les champs du doctype, la variable réservée `content` et les timestamps système y sont admis.
@@ -79,7 +81,7 @@ Le watcher applique le fichier à l’enregistrement — voir [Le watcher de dom
 
 ## Exemple
 
-L’exemple Brightwater porte trois vues enregistrées à titre de comparaison.
+L’exemple Brightwater porte quatre vues enregistrées à titre de comparaison.
 
 **Un tableau.** La liste des objets est livrée avec une vue générale, **All items**, avec cinq colonnes dans l’ordre d’affichage :
 
@@ -134,6 +136,29 @@ content:
   surface: calendar
 meta:
   parent_id: rentals.Booking
+```
+
+**Une grille.** La liste des objets est aussi livrée avec une vue feuille. La colonne du nom reste figée à gauche pendant le défilement, et la colonne du prix affiche sa somme sous les lignes. Un champ calculé ou en lecture seule se rend en cellule non éditable :
+
+```yaml
+content:
+  name: Sheet
+  config:
+    columns:
+      - key: name
+        width: 240px
+      - key: category
+        width: 140px
+      - key: status
+        width: 120px
+      - key: purchase_price
+        width: 140px
+        summary: sum
+    grid:
+      frozen: 1
+  surface: grid
+meta:
+  parent_id: equipment.Item
 ```
 
 ## L’état vide

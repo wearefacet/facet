@@ -1,0 +1,28 @@
+---
+content:
+  name: Sheet
+  config:
+    columns:
+    - key: title
+      label: Deal
+      width: 240px
+    - key: value
+      label: Value
+      width: 140px
+      summary: sum
+    - key: probability
+      label: Prob.
+      width: 100px
+      summary: avg
+    - key: status
+      label: Status
+      width: 120px
+    - key: expected_close_date
+      label: Expected Close
+      width: 150px
+    grid:
+      frozen: 1
+      sort: ["-probability"]
+  surface: grid
+meta:
+  parent_id: crm.Deal

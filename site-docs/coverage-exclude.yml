@@ -5,6 +5,3 @@
 
 - id: DOC-08
   reason: Internal copy primitive with no user-facing surface (document copy is used by portable export, artifact owner flows and secret adoption only).
-
-- id: FE-23
-  reason: Grid view ships as a component and a view-editor step, but no app surface mounts it and the backend surface enum rejects it (see ledgers/discrepancies.md #14); not user-reachable, so no page may document it as usable.

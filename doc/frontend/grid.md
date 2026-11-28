@@ -7,10 +7,14 @@ through the same `FieldValue` renderer the table uses, and every write follows t
 rules — schema validation, RBAC, and the mutation log. The grid is not a spreadsheet engine:
 there are no formulas, no free cells, and no rows outside the listing.
 
-The surface ships as a component with its stories. The listing's surface picker
-(`CollectionViewSurfaceStep`) keeps `grid` disabled, and `ListView` dispatches only table,
-calendar, and kanban — the editor authors grid views (the editor stories create and edit
-them), but no app surface mounts the grid yet.
+`ListView` mounts the surface for a view whose `surface` is `grid` (the surface picker
+offers `grid`; the tab carries the grid glyph). The view's `config.columns` feed the grid
+columns — `summary` rides through, and writability re-derives from the doctype schema.
+`config.grid.filters` seed the toolbar filter map under the page's URL filters, and
+`config.grid.sort` seeds the session sort; a header click overrides the sort per view for
+the session. A `{#key}` wrapper remounts the surface per view, so a mount-seeded filter
+map never leaks across tabs. Trash mode never renders the grid — a tombstone cannot edit —
+and falls back to the table.
 
 ## Source files
 
@@ -84,8 +88,11 @@ or what a Σ cell can aggregate.
 
 ## Surface
 
-`Grid.svelte` mounts the table's toolbar pattern (search, filter chips) and the table's
-footer pattern (range, rows-per-page, pagination). On top of that it adds:
+`ListView` hands the surface its datasource, the doctype driver, the resolved columns, the
+merged filter map, the active sort, and the toolbar actions; a row click opens the peek
+drawer, a reference click opens the referenced document. `Grid.svelte` mounts the table's
+toolbar pattern (search, filter chips) and the table's footer pattern (range,
+rows-per-page, pagination). On top of that it adds:
 
 - **Frozen columns** — the first `grid.frozen` data columns stick left over px widths
   (`position: sticky`); the rightmost sticky cell carries the frozen-edge shadow. A non-px
@@ -197,10 +204,14 @@ editor stories read the saved payload back from the driver (`CreateGrid`, `EditG
 
 ## Gate status
 
-The backend `Document::CollectionViewGate` validates `table`, `calendar`, and `kanban`
-configs (see [`backend/collection-view.md`](../backend/collection-view.md) → Config
-validation). A `grid` surface passes the backend gate unvalidated today; the frontend
-`buildConfig` normalization is the write path's only guard.
+The backend `Document::CollectionViewGate` validates all four surfaces — `table`,
+`calendar`, `kanban`, and `grid` (see
+[`backend/collection-view.md`](../backend/collection-view.md) → Config validation). The
+grid rules mirror the frontend: at least one column, known column keys, `summary` only on
+aggregate-able types, `editable: true` only on writable fields, `grid.frozen` within the
+column count, `grid.filters` keys that serve their operators, and `grid.sort` entries that
+exist and are sortable. The frontend `buildConfig` normalization applies the same rules at
+authoring time.
 
 ## Quirks
 

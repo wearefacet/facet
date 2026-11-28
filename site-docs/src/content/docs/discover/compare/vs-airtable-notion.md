@@ -93,7 +93,7 @@ No. Airtable is a collaborative workspace that keeps your data in its cloud, wit
 Yes. Airtable exports tables as CSV; Notion exports a workspace as HTML, Markdown or CSV. Facet imports documents and domains, and its API supports ongoing syncs. Plan the mapping first: field types and links need decisions, and a file copy does not make them. The assistant can help you design the target model.
 
 **Do I lose the spreadsheet feel?**
-You lose free-form cells; you keep the views. Facet's workspace gives list, calendar and kanban views plus an edit page per document, and the assistant sets them up for you. Formulas and cell-level improvisation are not the model; structure is. When a team needs a screen shaped exactly to its work, it can build one with an AI tool and publish it on Facet.
+You lose free-form cells; you keep the views. Facet's workspace gives list, calendar, kanban and spreadsheet-style grid views plus an edit page per document, and the assistant sets them up for you. Formulas and cell-level improvisation are not the model; structure is. When a team needs a screen shaped exactly to its work, it can build one with an AI tool and publish it on Facet.
 
 **What does Facet cost as the team grows?**
 There is no per-seat licence. The software is free to use and self-host, for any number of users. You pay for your servers and the AI usage on your own key.

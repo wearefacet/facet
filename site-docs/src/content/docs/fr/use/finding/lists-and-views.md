@@ -1,18 +1,19 @@
 ---
 type: how-to
 title: Listes, filtres et vues enregistrées
-description: Ouvrez une liste, passez du tableau au kanban et au calendrier, filtrez-la, puis enregistrez le réglage comme une vue à rouvrir en un clic.
+description: Ouvrez une liste, passez du tableau au kanban, au calendrier ou à la grille, filtrez-la, puis enregistrez le réglage comme une vue à rouvrir en un clic.
 audience: [user]
-features: [FE-03, FE-08, DOM-21, DOM-30, FE-25]
+features: [FE-03, FE-08, DOM-21, DOM-30, FE-23, FE-25]
 sidebar:
   order: 1
-verified_at: c34885a
+verified_at: f3decbf
 ---
 
 Votre travail se passe dans des listes. Chaque type d’enregistrement en
 ouvre une, et vous choisissez la disposition qui convient au travail. Un
 tableau quand vous avez besoin de détail, un kanban quand le travail passe
-par des étapes, un calendrier quand les dates comptent. Resserez la liste
+par des étapes, un calendrier quand les dates comptent, une grille quand le
+tableur est le plus rapide. Resserez la liste
 avec des filtres, puis enregistrez l’ensemble comme **vue**. Une vue est un
 onglet nommé que vous rouvrez en un clic — gardez-la pour vous, ou
 partagez-la avec votre équipe.
@@ -32,16 +33,17 @@ présentée comme un onglet au-dessus du tableau :
 
 Un type d’enregistrement sans vue affiche à la place un écran de démarrage :
 une carte par disposition. Choisissez une carte pour construire la première
-vue. Ensuite, chaque onglet porte une icône — tableau, kanban ou calendrier
-— et vous voyez d’un coup d’œil ce qu’il ouvre.
+vue. Ensuite, chaque onglet porte une icône — tableau, kanban, calendrier ou
+grille — et vous voyez d’un coup d’œil ce qu’il ouvre.
 
-## Les trois dispositions
+## Les quatre dispositions
 
 | Disposition | Ce qu’elle affiche | À quoi elle sert |
 |---|---|---|
 | **Tableau** | Une ligne par enregistrement, une colonne par champ | Le détail, le tri, le travail sur de nombreux enregistrements |
 | **Kanban** | Des cartes regroupées en colonnes, une colonne par statut ou par étape | Le travail qui avance : tickets, réservations |
 | **Calendrier** | Des enregistrements posés sur une grille de mois ou de semaine selon un champ de date | Réservations, échéances, plannings |
+| **Grille** | La liste en façon tableur : une ligne par enregistrement, une cellule sélectionnable par champ | La saisie et le nettoyage rapides, le copier-coller avec Excel ou Sheets |
 
 Chaque disposition répond à une question différente. Lucía tient le tableau
 de maintenance. Chaque ticket se trouve dans la colonne qui correspond à son
@@ -58,6 +60,15 @@ seule puce — par exemple `4 documents` — et la sélection de la puce les
 liste.
 
 ![Nadia's booking calendar for December: bookings placed on their date ranges.](/screens/use/finding-lists-3.png)
+
+La grille travaille comme un tableur. Sélectionnez une cellule, saisissez,
+et la modification s’enregistre. Sélectionnez une plage et copiez-la vers
+Excel ou Google Sheets, ou collez un bloc copié dans l’un de ces tableurs.
+Une colonne à laquelle
+l’auteur de la vue a donné un total affiche son décompte, sa somme ou sa
+moyenne sous les lignes. Appuyez sur `Enter` sur une cellule sélectionnée
+pour ouvrir l’enregistrement dans l’aperçu ; sur un champ que vous pouvez
+modifier, la saisie démarre l’édition à la place.
 
 Dans chaque disposition, la sélection d’une ligne, d’une carte ou d’une puce
 ouvre un aperçu à côté de la liste. L’aperçu porte **Modifier** et
@@ -97,7 +108,8 @@ casse. Appuyez sur `/` pour y aller.
 
 Dans le tableau, sélectionnez un en-tête de colonne pour trier dessus, puis
 sélectionnez à nouveau pour inverser l’ordre. La petite flèche montre le
-sens. Les cartes du kanban et du calendrier suivent l’ordre enregistré dans
+sens. Les en-têtes de la grille trient de la même façon. Les cartes du kanban
+et du calendrier suivent l’ordre enregistré dans
 la vue.
 
 Sous le tableau, le pagineur parcourt les pages. Le libellé, par exemple
@@ -111,7 +123,10 @@ touches fléchées) déplacent le surlignage dans les lignes, et `Enter` ouvre
 l’enregistrement surligné — d’abord dans l’aperçu, puis en page complète.
 `Esc` efface le surlignage, et `/` va à la zone de recherche. `C` démarre un
 nouvel enregistrement de ce type. Les touches lettres se reposent pendant la
-saisie, donc elles ne se déclenchent jamais depuis un champ de texte.
+saisie, donc elles ne se déclenchent jamais depuis un champ de texte. Dans la
+grille, les touches fléchées déplacent la cellule sélectionnée à la place, et
+`Enter` ouvre l’enregistrement — ou démarre l’édition sur un champ que vous
+pouvez modifier.
 
 ## Enregistrer votre réglage comme vue
 
@@ -119,13 +134,13 @@ Une vue stocke la disposition, les filtres et — pour un tableau — les
 colonnes et leur ordre. Construisez-la une fois, puis rouvrez-la en un clic :
 
 1. Sélectionnez le **+** à côté des onglets (**Créer une nouvelle vue**).
-2. Choisissez le type de vue : Tableau, Kanban ou Calendrier.
+2. Choisissez le type de vue : Tableau, Kanban, Calendrier ou Grille.
 3. Nommez-la, par exemple `Mes affaires ouvertes`.
 4. Choisissez la portée. **Personnelle** signifie que vous seul la voyez.
    **Générale** signifie que toute l’équipe la partage.
 5. Réglez les détails : les colonnes pour un tableau, les colonnes pour un
-   kanban, le champ de date pour un calendrier. Les filtres viennent à
-   l’étape Filtres.
+   kanban, le champ de date pour un calendrier, les colonnes et leurs totaux
+   pour une grille. Les filtres viennent à l’étape Filtres.
 6. Sélectionnez **Créer la vue**.
 
 Une nouvelle vue démarre personnelle : vous seul la voyez. Certains rôles ne

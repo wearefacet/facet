@@ -6,11 +6,11 @@
 	import type { CollectionSurface } from '$lib/collectionView/types.js';
 
 	/**
-	 * Step 1 of the create flow — the four-surface picker. `table`,
-	 * `calendar`, and `kanban` are selectable (every doctype anchors a
-	 * calendar on its `created_at` / `updated_at` meta keys when it declares
-	 * no date fields of its own); `grid` renders disabled as a forward
-	 * signal. The selection lives in the parent; this step only reports it.
+	 * Step 1 of the create flow — the four-surface picker. Every surface is
+	 * selectable (`table`, `calendar`, `kanban`, `grid`; a doctype with no
+	 * date fields of its own still anchors a calendar on its `created_at` /
+	 * `updated_at` meta keys). The selection lives in the parent; this step
+	 * only reports it.
 	 */
 	let {
 		value,
@@ -95,10 +95,12 @@
 		<span class="cve-surface-name">{m.list_editor_surface_kanban()}</span>
 		<span class="cve-surface-desc">{m.list_editor_kanban_desc()}</span>
 	</button>
-	<div
-		class="cve-surface cve-surface-disabled"
-		aria-disabled="true"
-		title={m.list_editor_coming_soon()}
+	<button
+		type="button"
+		class="cve-surface"
+		class:cve-surface-on={value === 'grid'}
+		aria-pressed={value === 'grid'}
+		onclick={() => onselect('grid')}
 	>
 		<span class="cve-surface-glyph" aria-hidden="true">
 			<svg
@@ -116,8 +118,8 @@
 			</svg>
 		</span>
 		<span class="cve-surface-name">{m.list_editor_surface_grid()}</span>
-		<span class="cve-surface-desc">{m.list_editor_soon()}</span>
-	</div>
+		<span class="cve-surface-desc">{m.list_editor_surface_grid_desc()}</span>
+	</button>
 </div>
 
 <style>
@@ -132,7 +134,7 @@
 
 	.cve-surfaces {
 		display: grid;
-		grid-template-columns: repeat(3, 1fr);
+		grid-template-columns: repeat(2, 1fr);
 		gap: 10px;
 	}
 
@@ -153,18 +155,13 @@
 			box-shadow 0.12s;
 	}
 
-	.cve-surface:hover:not(.cve-surface-disabled) {
+	.cve-surface:hover {
 		border-color: var(--border-strong);
 	}
 
 	.cve-surface-on {
 		border-color: var(--accent);
 		box-shadow: 0 0 0 3px var(--accent-weak);
-	}
-
-	.cve-surface-disabled {
-		opacity: 0.45;
-		cursor: not-allowed;
 	}
 
 	.cve-surface-glyph {

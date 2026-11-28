@@ -156,7 +156,7 @@ Cette page relie chaque identifiant de fonctionnalité de l'inventaire (138 fonc
 | FE-20 | Internationalization | [Langues](/fr/admin/configure/languages/) |
 | FE-21 | OAuth consent page | [Connexion utilisateur : OAuth 2.1 + PKCE](/fr/build/apps/connect/user-login/) |
 | FE-22 | Assistant chat UI | [Interroger l’assistant](/fr/use/assistant/) |
-| FE-23 | Grid view (dormant) | Exclu de la documentation utilisateur |
+| FE-23 | Grid view | [Listes, kanban et calendriers](/fr/build/model/views/lists-boards-calendars/), [Listes, filtres et vues enregistrées](/fr/use/finding/lists-and-views/) |
 | FE-24 | Peek drawer | [Consulter et modifier un document](/fr/use/documents/view-and-edit/) |
 | FE-25 | Trash mode and restore | [Listes, filtres et vues enregistrées](/fr/use/finding/lists-and-views/) |
 

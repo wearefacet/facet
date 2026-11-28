@@ -15,8 +15,8 @@ A `core.CollectionView` is a saved **listing surface** (tab) for a doctype's doc
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `name` | string | yes | Tab label shown in the listing UI (e.g. "All", "My Pipeline"). |
-| `surface` | enum | yes | Presentation layout. `table`, `calendar`, or `kanban`; `grid` will follow. |
-| `config` | object | — | Surface-specific config. For `table`: `{ columns: [{ key, label?, width? }] }`. |
+| `surface` | enum | yes | Presentation layout: `table`, `calendar`, `kanban`, or `grid`. |
+| `config` | object | — | Surface-specific config. For `table` and `grid`: `{ columns: [{ key, label?, width? }] }` — grid columns may add `summary` / `editable`, plus a `grid` settings object (see the `config.grid` vocabulary below). The `calendar` and `kanban` surfaces carry their own surface-named config objects. |
 | `owner_id` | reference (`iam.Account`) | — | Creator account id for personal views; null for general views. |
 
 ## General vs personal
@@ -31,7 +31,7 @@ A `core.CollectionView` is a saved **listing surface** (tab) for a doctype's doc
 A new doctype ships with **no views** — the check reports an `:info` notice
 (`No CollectionView defined for …`) until you create at least one, and the
 workspace listing shows a starter screen instead of tabs. Create one table
-view per doctype so it lists its records; add kanban/calendar views when
+view per doctype so it lists its records; add kanban/calendar/grid views when
 the doctype's fields serve them.
 
 Use the `create_collection_view` tool: pass `doctype` (the qualified doctype id), `name`, `surface`, and optional `config` / `owner_id`. The tool enforces that the doctype is in the draft domain and sets `meta.parent_id` for you.
@@ -63,6 +63,33 @@ config:
 - `width` — optional CSS width.
 
 When `config.columns` is absent, the frontend falls back to the doctype's first eight flat fields, so a view can omit `config` entirely for a default listing.
+
+## `config.grid` vocabulary
+
+The `grid` surface (spreadsheet-style editing) reuses the table's `config.columns` plus two
+column keys and a `grid` settings object:
+
+```yaml
+config:
+  columns:
+    - { key: title, width: "300px" }
+    - { key: value, width: "160px", summary: sum }
+    - { key: won, width: "96px", editable: false }
+  grid:
+    frozen: 1 # leading columns pinned left
+    filters: { status__ne: lost } # view-level base filter, as on kanban
+    sort: ["-value"] # one entry; default ["-updated_at"]
+    allow_create: true # ghost new-row line; absent = off
+```
+
+- `summary` — `count`, `sum`, `avg`, `min`, or `max` on a column. `count` works on any
+  column; the others need an `integer`, `duration`, or `money` field.
+- `editable` — only the `false` opt-out persists; a writable column edits by default.
+  `editable: true` on a field the cell editors do not cover (containers, `data`, `file`,
+  `secret`, `any`, `read_only`) fails the gate.
+- `frozen` — integer from 0 to the column count.
+- `filters` — keys must serve their operators, the kanban rule.
+- `sort` — one entry, `-` prefixed for descending; the field must be sortable.
 
 ## How views attach to doctypes
 

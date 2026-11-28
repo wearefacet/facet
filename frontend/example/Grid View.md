@@ -1,7 +1,7 @@
 # Grid surface (`surface: grid`)
 
-Status: **proposal, reconciled with the platform** — the fourth `core.CollectionView`
-listing surface, the one `types.ts` and `collection-view.md` already reserve.
+Status: **landed** — the fourth `core.CollectionView` listing surface, mounted by
+`ListView`. The deferred slices stay listed under Phasing.
 
 The grid is the listing as a spreadsheet: a selected cell, keyboard navigation, range
 selection, copy/paste with Excel and Google Sheets, fill down, and edits that save one cell
@@ -34,7 +34,7 @@ defers. Every reuse is named, so an implementer never invents what exists.
 
 | Need | Existing code |
 |---|---|
-| Tab strip, view pin/edit/delete | `ListView` (tabs carry surface icons; add a grid icon) |
+| Tab strip, view pin/edit/delete | `ListView` (tabs carry surface icons, grid included) |
 | Toolbar (search, filter chips) | `TableToolbar`, mounted by `Grid` exactly as `Table` does |
 | Cell display (enum chips, ref capsules, money, dates) | `FieldValue` + `cellKind.ts` |
 | Optimistic single-cell write, revert + toast | `Table.toggleInlineBoolean` — generalized into `writeQueue` |
@@ -271,10 +271,10 @@ per currency) is client-side over the loaded rows only.
 | `frontend/src/lib/grid/editors/*.svelte` | `CellEditor` over the existing form inputs | **landed** |
 | `frontend/src/lib/grid/fieldTypes.ts` | the writable + aggregate-able type sets, shared by the surface and the editor | **landed** |
 | `frontend/src/lib/grid/PastePreview.svelte` | the preview dialog | phase 3 |
-| `frontend/src/lib/components/primitives/data/CollectionViewGridForm.svelte` | the view editor's grid step | **landed** (stories in place; the surface picker keeps `grid` disabled until the listing mounts the surface) |
-| `src/document/collection_view_gate.cr` → `validate_grid` | backend gate rules | phase 4 |
-| `doc/frontend/grid.md`, `doc/backend/collection-view.md` | docs | phase 4 |
-| assistant skill `collection-views.md` | the `grid` vocabulary | phase 4 |
+| `frontend/src/lib/components/primitives/data/CollectionViewGridForm.svelte` | the view editor's grid step | **landed** (stories in place; the surface picker offers `grid`) |
+| `src/document/collection_view_gate.cr` → `validate_grid` | backend gate rules | **landed** |
+| `doc/frontend/grid.md`, `doc/backend/collection-view.md` | docs | **landed** |
+| assistant skill `collection-views.md` | the `grid` vocabulary | **landed** |
 
 Datasource groundwork (landed with phase 1): `ListParams.field` + HTTP serialization +
 MockDataSource field aggregates mirroring `List::Aggregate` (numbers; money bags per
@@ -290,10 +290,10 @@ currency; `null` for an empty set), and the `validateDraft` save gate treats `gr
    PATCH per row, cap 4, undo), cell-local 422 states, boolean flip, the refresh-clobber
    rule.
 3. **Bulk** — TSV paste + preview, fill down / handle, clear range, ghost new-row line.
-4. **App integration** — `ListView` branch + tab icon + trash skip, `CollectionViewGridForm`
-   (✅ landed with stories; the picker keeps `grid` disabled until the listing mounts the
-   surface), backend `validate_grid`, the `id` sort tie-breaker, docs
-   (`doc/frontend/grid.md` landed).
+4. **App integration** — ✅ landed: the `ListView` branch + tab icon + trash skip,
+   `CollectionViewGridForm` (stories in place; the picker offers `grid`), backend
+   `validate_grid`, the `id` sort tie-breaker, docs (`doc/frontend/grid.md`,
+   `doc/backend/collection-view.md`).
 
 Deferred beyond phase 4: sub-field columns, live-flash/conflict machinery, keyset cursors
 + windowing + count estimate + aggregate cost control, `select` projection, series fill,

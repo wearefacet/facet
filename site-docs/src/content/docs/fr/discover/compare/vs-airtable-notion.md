@@ -92,7 +92,7 @@ Non. Airtable est un espace de travail collaboratif qui garde vos données dans 
 Oui. Airtable exporte les tables en CSV ; Notion exporte un espace de travail en HTML, Markdown ou CSV. Facet importe des documents et des domaines, et son API accepte des synchronisations continues. Concevez d’abord la correspondance : les types de champs et les liens demandent des décisions, pas une simple copie de fichiers. L’assistant peut vous aider à dessiner le modèle cible, ou notre équipe peut mener la migration.
 
 **Est-ce que je perds la sensation tableur ?**
-Vous perdez les cellules libres ; vous gardez les vues. Le portail de Facet donne des vues liste, calendrier et kanban, plus une page d’édition par document, et l’assistant les met en place pour vous. Les formules et l’improvisation au niveau de la cellule ne sont pas le modèle ; la structure l’est. Quand une équipe a besoin d’un écran taillé exactement pour son travail, elle en construit un avec un outil IA et le publie sur Facet.
+Vous perdez les cellules libres ; vous gardez les vues. Le portail de Facet donne des vues liste, calendrier, kanban et grille façon tableur, plus une page d’édition par document, et l’assistant les met en place pour vous. Les formules et l’improvisation au niveau de la cellule ne sont pas le modèle ; la structure l’est. Quand une équipe a besoin d’un écran taillé exactement pour son travail, elle en construit un avec un outil IA et le publie sur Facet.
 
 **Combien coûte Facet quand l’équipe grandit ?**
 Il n’y a pas de licence par siège. Le logiciel est gratuit à l’usage et à l’auto-hébergement, pour un nombre d’utilisateurs quelconque. Vous payez vos serveurs, l’usage IA sur votre propre clé, et, si vous le voulez, notre hébergement géré ou nos services de conception.

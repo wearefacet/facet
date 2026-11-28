@@ -51,7 +51,7 @@ the CLI or edit it in the domain watcher.
 → [Domain bundles as files](/build/model/bundles/)
 
 **Collection view** — A saved way to list one doctype's records: table,
-kanban, calendar, or another surface, with its own filters and columns. A
+kanban, calendar, or grid, with its own filters and columns. A
 view is personal or shared.
 → [Lists, boards and calendars](/build/model/views/lists-boards-calendars/)
 
@@ -139,7 +139,7 @@ message to your URL when a doctype changes.
 → [Outbound webhooks](/build/model/automation/webhooks/)
 
 **Workspace** — The web application where people work with documents:
-lists, boards, calendars, forms, and the assistant.
+lists, boards, calendars, grids, forms, and the assistant.
 → [The workspace](/use/)
 
 ## Engine words

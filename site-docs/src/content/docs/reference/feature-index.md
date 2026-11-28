@@ -156,7 +156,7 @@ A writer or reviewer traces a feature to its pages — or finds the pages a chan
 | FE-20 | Internationalization | [Languages](/admin/configure/languages/) |
 | FE-21 | OAuth consent page | [Sign users in](/build/apps/connect/user-login/) |
 | FE-22 | Assistant chat UI | [Ask the assistant](/use/assistant/) |
-| FE-23 | Grid view (dormant) | Excluded from user docs |
+| FE-23 | Grid view | [Lists, boards and calendars](/build/model/views/lists-boards-calendars/), [Lists, boards and calendars](/use/finding/lists-and-views/) |
 | FE-24 | Peek drawer | [Open and edit a document](/use/documents/view-and-edit/) |
 | FE-25 | Trash mode and restore | [Lists, boards and calendars](/use/finding/lists-and-views/) |
 

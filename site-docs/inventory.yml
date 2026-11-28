@@ -353,7 +353,7 @@
   name: Assistant chat UI
   area: FE
 - id: FE-23
-  name: Grid view (dormant)
+  name: Grid view
   area: FE
 - id: FE-24
   name: Peek drawer

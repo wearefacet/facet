@@ -1,26 +1,27 @@
 ---
 type: how-to
 title: Lists, boards and calendars
-description: Give a doctype's list page saved table, kanban, and calendar views.
+description: Give a doctype's list page saved table, kanban, calendar, and grid views.
 audience: [author]
-features: [DOM-21, DOM-29, DOM-32]
+features: [DOM-21, DOM-29, DOM-32, FE-23]
 sidebar:
   order: 2
-verified_at: c34885a
+verified_at: f3decbf
 ---
 
 The Brightwater warehouse tracks forty rental items, and the maintenance
 team works through tickets as cards, not rows. A doctype's list page shows
 one tab per saved view, and each view carries a name and a surface: a table
-with chosen columns, a kanban board with lanes, or a calendar placed on
-dates. Views are documents on the doctype, so you decide which tabs every
-user sees.
+with chosen columns, a kanban board with lanes, a calendar placed on
+dates, or a grid that edits like a spreadsheet. Views are documents on the
+doctype, so you decide which tabs every user sees.
 
 ## When to use this
 
 - The default column set does not fit the work of a team.
 - A team works on documents as cards, moved over a status or a value.
 - A schedule matters more than a row order, for example planned visits.
+- A team enters or cleans data fastest in a spreadsheet grid.
 
 ## Before you start
 
@@ -35,8 +36,8 @@ user sees.
 Open the doctype's list page. The tab strip above the table lists the saved
 views. Select the plus control at the end of the strip (**Create a new
 view**) to open the view editor. A doctype with no views shows a starter
-screen instead: one card per surface — table, kanban, calendar. Pick a card
-and the editor opens with that surface preselected.
+screen instead: one card per surface — table, kanban, calendar, grid. Pick a
+card and the editor opens with that surface preselected.
 
 ### Choose the surface
 
@@ -45,13 +46,18 @@ and the editor opens with that surface preselected.
 | `table` | An ordered column list. Each column has a `key`, an optional `label`, and an optional `width`. |
 | `kanban` | A `group_by` field with `mode: values`, or fixed lanes with a filter each (`mode: custom`). |
 | `calendar` | A `discriminator` date field, an optional `end_field`, a `color_by` field, a `week_start`, and a `title_template` for the chips. |
+| `grid` | The table's column list, plus per-column `summary` and `editable`, and a `grid` object: `frozen` leading columns, a `filters` object, a `sort` entry, and `allow_create`. |
 
 Facet validates the config against the doctype when you save. A kanban
 group-by field must be a writable enum or boolean field that serves equality
 filters; a calendar discriminator must be a period field, or a date or
-datetime field that serves comparison filters. A config that cannot render
-answers `422` with the field path instead of landing an empty surface. The
-calendar is offered for every doctype: the system timestamps `created_at`
+datetime field that serves comparison filters. A grid column with a `summary`
+other than `count` needs an `integer`, `duration`, or `money` field;
+`editable` needs a field the grid can write. A `grid.filters` key must serve
+its operator, a `grid.sort` entry must name a sortable field, and
+`grid.frozen` is an integer from 0 to the column count. A config that cannot
+render answers `422` with the field path instead of landing an empty surface.
+The calendar is offered for every doctype: the system timestamps `created_at`
 and `updated_at` work as the discriminator when the doctype has no date
 field of its own.
 
@@ -117,7 +123,7 @@ watcher](/build/model/in-files/domain-watcher/).
 
 ## Example
 
-The Brightwater example carries three saved views you can compare against.
+The Brightwater example carries four saved views you can compare against.
 
 **A table.** The item list ships one general view, **All items**, with five
 columns in display order:
@@ -178,6 +184,31 @@ content:
   surface: calendar
 meta:
   parent_id: rentals.Booking
+```
+
+**A grid.** The item list also ships a sheet view. The name column stays
+frozen at the left while you scroll, and the price column shows its sum
+under the rows. A computed or read-only field renders as a read-only cell:
+
+```yaml
+content:
+  name: Sheet
+  config:
+    columns:
+      - key: name
+        width: 240px
+      - key: category
+        width: 140px
+      - key: status
+        width: 120px
+      - key: purchase_price
+        width: 140px
+        summary: sum
+    grid:
+      frozen: 1
+  surface: grid
+meta:
+  parent_id: equipment.Item
 ```
 
 ## The empty state

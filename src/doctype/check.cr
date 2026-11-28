@@ -800,7 +800,7 @@ module Facet
             severity: :info,
             category: :view,
             field: nil,
-            message: "No CollectionView defined for #{definition.qualified_name} — the listing shows the view starter. Create at least one collection view (table, kanban, or calendar) so the doctype has a listing surface.",
+            message: "No CollectionView defined for #{definition.qualified_name} — the listing shows the view starter. Create at least one collection view (table, kanban, calendar, or grid) so the doctype has a listing surface.",
           )
         end
       end
