@@ -198,6 +198,18 @@
 	/** Small settle budget for debounced fetches and portal restores. */
 	const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
+	/** Bits puts the focus on the palette input some time after the dialog
+	 *  shows. A key sent before that lands on body and is lost — the
+	 *  highlight does not move. Each play that sends keys to the open
+	 *  palette first waits for the input to hold the focus. */
+	async function awaitPaletteFocus(): Promise<void> {
+		await waitFor(() =>
+			expect(
+				within(document.body).getByRole('combobox', { name: 'Search records and actions' })
+			).toHaveFocus()
+		);
+	}
+
 	const { Story } = defineMeta({
 		title: 'Components/Features/Search/CommandPalette',
 		component: CommandPalette,
@@ -262,6 +274,7 @@
 
 		await waitFor(() => expect(body.getByRole('dialog')).toBeVisible());
 		await waitFor(() => expect(body.getByText('Company')).toBeVisible());
+		await awaitPaletteFocus();
 
 		// The input is a combobox with popup state and an owned listbox (B-392).
 		const input = body.getByRole('combobox', { name: 'Search records and actions' });
@@ -365,6 +378,8 @@
 		try {
 			await waitFor(() => expect(body.getByRole('dialog')).toBeVisible());
 			await waitFor(() => expect(body.getByText('Company')).toBeVisible());
+			// A key sent before Bits moves the focus onto the dialog is lost.
+			await awaitPaletteFocus();
 
 			// The rows render as options; the highlight is the `active` class
 			// and rides `aria-activedescendant` on the input.
@@ -411,6 +426,8 @@
 		const body = within(document.body);
 		await waitFor(() => expect(body.getByRole('dialog')).toBeVisible());
 		await waitFor(() => expect(body.getByText('Company')).toBeVisible());
+		// A key sent before Bits moves the focus onto the dialog is lost.
+		await awaitPaletteFocus();
 
 		const highlighted = (): Element[] =>
 			[...document.body.querySelectorAll('button.palette-row')].filter((el) =>
@@ -479,6 +496,8 @@
 			await userEvent.keyboard('{Control>}k{/Control}');
 			await waitFor(() => expect(body.getByRole('dialog')).toBeVisible());
 			await waitFor(() => expect(body.getByText('Company')).toBeVisible());
+			// A key sent before Bits moves the focus onto the dialog is lost.
+			await awaitPaletteFocus();
 
 			await userEvent.keyboard('{ArrowDown}');
 			await userEvent.keyboard('{ArrowDown}');
