@@ -175,12 +175,12 @@ sandbox_lines.each do |line|
       params = m.[2].strip.empty? ? [] of String : m.[2].split(",").map(&.strip)
       members << Member.new(current_block[:ns], m.[1], nil, params, current_block[:gate])
       inline_depth = 1
-    		elsif !line.matches?(/^\s*(util|date|math)\s=/) && !line.strip.empty?
-      			# Comment lines document the table in the source (e.g. the `end`
-      			# keyword note on the date block); they are not members.
-      			unless line.strip.starts_with?("--")
-      				fail!("unrecognized heredoc line in the #{current_block[:ns]} block: #{line.strip.inspect}")
-      			end
+    elsif !line.matches?(/^\s*(util|date|math)\s=/) && !line.strip.empty?
+      # Comment lines document the table in the source (e.g. the `end`
+      # keyword note on the date block); they are not members.
+      unless line.strip.starts_with?("--")
+        fail!("unrecognized heredoc line in the #{current_block[:ns]} block: #{line.strip.inspect}")
+      end
     end
   end
 end

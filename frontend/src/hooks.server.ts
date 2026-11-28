@@ -140,7 +140,11 @@ const handleCsp: Handle = async ({ event, resolve }) => {
 	// not be touched. The shim tag is shorter than the carry tail, so a tag
 	// split across two chunks is still stamped.
 	const stamp = (html: string): string =>
-		html.split(CSP_NONCE_PLACEHOLDER).join(nonce).split('<script>').join(`<script nonce="${nonce}">`);
+		html
+			.split(CSP_NONCE_PLACEHOLDER)
+			.join(nonce)
+			.split('<script>')
+			.join(`<script nonce="${nonce}">`);
 
 	const response = await resolve(event, {
 		transformPageChunk: ({ html, done }: { html: string; done: boolean }) => {

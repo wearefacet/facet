@@ -244,8 +244,8 @@ module Facet::Assistant::DomainBuilder
           seed_doctype_in_draft(db, "core", "Comment")
 
           result = call_domain_builder_tool(agent, "update_doctype",
-            {"doctype_id" => JSON::Any.new("core.Comment"),
-             "definition" => doctype_definition_json("Comment", "core"),
+            {"doctype_id"       => JSON::Any.new("core.Comment"),
+             "definition"       => doctype_definition_json("Comment", "core"),
              "unsafe_core_edit" => JSON::Any.new(false)})
 
           result["ok"].as_bool.should be_false
@@ -268,8 +268,8 @@ module Facet::Assistant::DomainBuilder
             "fields": {"body": {"type": "string", "required": true}}
           }))
           result = call_domain_builder_tool(agent, "update_doctype",
-            {"doctype_id" => JSON::Any.new("core.Comment"),
-             "definition" => new_defn,
+            {"doctype_id"       => JSON::Any.new("core.Comment"),
+             "definition"       => new_defn,
              "unsafe_core_edit" => JSON::Any.new(true)})
 
           result["ok"].as_bool.should be_true
